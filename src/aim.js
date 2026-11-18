@@ -1,5 +1,6 @@
 import { RELEASE_GRAVITY, projectilePoint, sweptHit, MAX_SPEED } from './physics.js';
 import { PLAYER_SIZE, clamp } from './levels.js';
+import { panicPace, panicTicksFor } from './pace.js';
 
 /** Everything that a launch preview must decide, in ONE DOM-free module:
  *  the parabolic path, its speed band, the first surface or target it meets,
@@ -23,8 +24,10 @@ export const ARC = {
   reach: 0.12,
   ray: 12, // 200 ms of forward travel at 60 Hz, in simulation ticks
   raySpeed: 26, // px / tick; below this a nudge is not a panic
-  slowScale: 0.2,
-  slowTicks: 30, // half a second at 60 Hz, in wall-clock ticks
+  // The automatic grace. Shallow and short by design: enough to read the
+  // threat and press, never enough to feel like the game stopped.
+  slowScale: 0.55,
+  slowTicks: 16, // ~270 ms at 60 Hz; pace.js shortens it further with tempo
 };
 
 // Cool cyan at a gentle tap, crimson at terminal velocity, white hot at the
@@ -194,9 +197,17 @@ export function corridorReach(lock) {
  *  rendered dots. Targets are first-hit surfaces on that corridor. When one
  *  is caught, the release is bent toward its centre by a bounded fraction of
  *  the angle, and reported so the reticle can snap and the input can chirp. */
-export function magnetize(start, velocity, combat, { focus = false, geometry = [] } = {}) {
+export function magnetize(
+  start,
+  velocity,
+  combat,
+  { focus = false, geometry = [], corridor: width = null } = {},
+) {
   if (!velocity?.power) return { ...velocity, lock: null };
-  const corridor = focus ? ARC.corridorFocus : ARC.corridor,
+  // A caller may hand in a tempo-widened corridor. Steering help should grow
+  // as the game speeds up, never shrink: forgiving controls are what let a
+  // rookie keep up with a game that reads as hyperspeed.
+  const corridor = width ?? (focus ? ARC.corridorFocus : ARC.corridor),
     speed = Math.hypot(velocity.x, velocity.y),
     ux = velocity.x / speed,
     uy = velocity.y / speed;
@@ -251,12 +262,12 @@ export function impactPreview(start, velocity, combat, path) {
 
 /** Full aim snapshot. Cheap enough for every pointermove: the arc is bounded
  *  at 190 ticks × 2-tick samples and there are at most a few dozen bodies. */
-export function predictAim(run, velocity, { focus = false, magnetic = true } = {}) {
+export function predictAim(run, velocity, { focus = false, magnetic = true, corridor = null } = {}) {
   if (!run || !velocity?.power) return null;
   const start = { ...run.world.player.position },
     // The live input already carries its magnet answer; never bend it twice.
     lockOn = magnetic
-      ? magnetize(start, velocity, run.combat, { focus })
+      ? magnetize(start, velocity, run.combat, { focus, corridor })
       : { ...velocity, lock: velocity.lock ?? null },
     path = arcPath(start, lockOn, { geometry: run.world.geometry, line: run.state.line }),
     speed = Math.hypot(lockOn.x, lockOn.y),
@@ -315,7 +326,7 @@ export function panicWindow(run, pressed, motion = true) {
   if (s.panicGrants.includes(key)) return s.panic;
   if (s.panicGrants.length >= 2) return s.panic;
   s.panicGrants.push(key);
-  s.panicTicks = ARC.slowTicks;
+  s.panicTicks = panicTicksFor(s);
   s.panicWarm = 0;
   s.panic = {
     kind: threat.kind,
@@ -323,7 +334,7 @@ export function panicWindow(run, pressed, motion = true) {
     y: threat.y,
     ux: threat.ux,
     uy: threat.uy,
-    ticks: ARC.slowTicks,
+    ticks: s.panicTicks,
     born: run.world.clock,
   };
   s.warning = Math.max(s.warning || 0, 0.55);
@@ -337,5 +348,6 @@ export function panicGrip(state) {
   return Math.min(1, state.panicWarm / 5, state.panicTicks / 5);
 }
 export function panicScale(state) {
-  return 1 - (1 - ARC.slowScale) * panicGrip(state);
+  const floor = panicPace(state);
+  return 1 - (1 - floor) * panicGrip(state);
 }

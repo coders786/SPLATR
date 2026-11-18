@@ -15,6 +15,7 @@ import { TYPES } from './shapes.js';
 import { createOpening } from './opening.js';
 import { beginStroke, printKill, impactFor, SHEAR } from './stroke.js';
 import { IMPACT } from './impact.js';
+import { PACE, breathFor, focusPace, tempoOf, assistRange } from './pace.js';
 
 export const MAX_EDGE = 3,
   CHAIN_TIME = 144,
@@ -140,12 +141,15 @@ export function createRun(
     );
   }
   function aimAt(q, assist = true) {
+    // The snap radius widens with tempo: at full speed a tap that is "close
+    // enough" is the difference between steering and fighting the controls.
+    const range = assistRange(s).snap;
     let to = q,
-      best = 62; // a tap snaps only when it is actually on the shape
+      best = range; // a tap snaps only when it is actually near the shape
     if (assist)
       for (const e of combat.enemies.values()) {
         const d = Math.hypot(e.x - q.x, e.y - q.y),
-          reach = Math.min(best, e.r + 12); // tiny shapes don't get a wide snap
+          reach = Math.min(best, e.r + range * 0.2); // tiny shapes don't get a wide snap
         if (d < reach) {
           to = e;
           best = d;
@@ -205,6 +209,7 @@ export function createRun(
     s.held = s.depleted = false;
     s.shots++;
     s.breath = 0;
+    s.breathMax = 0;
     s.firstAir = false;
     s.warning = 0;
     s.panic = null;
@@ -240,10 +245,21 @@ export function createRun(
     s.blade = 0;
     emit('break', { ...world.player.position, angle: world.player.angle });
   }
+  /** Grant a breath and remember how long THIS one is, so the pace ramp can
+   *  normalise against it. Dividing by the base constant made a long breath
+   *  push the multiplier below its own floor. */
+  function grantBreath(ticks) {
+    if (ticks <= 0) return;
+    s.breath = Math.max(s.breath, ticks);
+    s.breathMax = Math.max(ticks, s.breath, s.breathMax || 0);
+  }
   function hurt(cause) {
     if (s.opening || s.phase !== 'playing' || s.invul > 0) return false;
     s.hp--;
-    s.invul = 92;
+    // Mercy is real-world reaction time. A faster game compresses world time
+    // into fewer frames, so the window is stretched to keep the player's
+    // actual recovery time unchanged.
+    s.invul = PACE.invulTicks;
     s.chain = s.chainTime = s.drive = s.blade = s.parry = s.breath = 0;
     s.panic = null;
     s.panicTicks = s.panicWarm = 0;
@@ -263,7 +279,7 @@ export function createRun(
     s.swingStart = world.clock;
     if (s.opening) lesson.hit(e.hp > 0);
     if (e.hp > 0) {
-      if (!s.opening)s.breath=Math.max(s.breath,48);
+      if (!s.opening) grantBreath(breathFor(s, 'cut'));
       s.stop = Math.max(e.pinned ? 5 : 2, s.stop);
       e.fault = s.slashAngle - e.angle;
       emit('armor', { x: e.x, y: e.y, r: e.r, cut: s.slashAngle, hp: e.hp, kind: e.kind });
@@ -286,10 +302,12 @@ export function createRun(
       { points, release } = printKill(stroke, e, base, fromShear, s.slashAngle, hpBefore);
     // A small kill is still an impact: a short beat, never a free full
     // launch. A full-size kill buys a real choice, longer on the first one.
-    if (!s.opening && !fromShear && e.small) s.breath = Math.max(s.breath, 42);
+    if (!s.opening && !fromShear && e.small) grantBreath(breathFor(s, 'small'));
     if (!s.opening && !e.small && !fromShear) {
       if (e.sentry && s.story) s.firstAir = true;
-      s.breath = s.firstAir ? 124 : s.band < 3 ? 64 : 52;
+      grantBreath(
+        s.firstAir ? breathFor(s, 'firstAir') : Math.round(breathFor(s, 'cut') * 1.35),
+      );
     }
     if (!s.bestStroke || stroke.points > s.bestStroke.points) s.bestStroke = stroke;
     s.score += points;
@@ -446,7 +464,7 @@ export function createRun(
       glideAt = Infinity;
       // Also leave a short beat after crossing empty space. No phantom
       // impact, refund or freeze for missing the target.
-      if (!world.grounded) s.breath = 42;
+      if (!world.grounded) grantBreath(breathFor(s, 'small'));
     }
     // The lethal stripe should not first enter view a tenth of a second
     // before impact. Telegraph a descent and give it a readable final beat.
@@ -464,12 +482,21 @@ export function createRun(
       }
     }
     if (!s.panicTicks) panicWindow({ world, state: s, combat }, false, true);
-    const pace = Math.min(
-      1 - 0.64 * s.warning,
-      s.breath ? 0.24 + 0.76 * Math.max(0, 1 - s.breath / 12) : 1,
-      panicScale(s),
-    );
+    // Pacing, from one place: a breath is a short lean, the Redline is a
+    // shove, and nothing here is allowed to crawl. `held` focus sets its own
+    // floor through world.slow, which advanceTiming also caps.
+    const focusFloor = s.held ? focusPace(s) : 1,
+      pace = Math.min(
+        1 - (1 - PACE.warnDepth) * s.warning,
+        s.breath
+          ? PACE.breathScale +
+            (1 - PACE.breathScale) * (1 - s.breath / Math.max(1, s.breathMax || PACE.breathTicks))
+          : 1,
+        panicScale(s),
+        focusFloor,
+      );
     if(s.breath) s.breath--;
+    if(!s.breath) s.breathMax=0;
     stepPhysics(world, (dt) => combat.move(dt, s.band),pace);
     // One contact per tick, straight from Matter's resolved normal. A wall,
     // a deck, a plate that stops the blade: the pose bends the same way.
@@ -593,6 +620,12 @@ export function createRun(
     aimAt,
     nearest,
     suggestion,
+    /** 0..1 how fast this run has become; read by input and the HUD. */
+    get tempo() {
+      return tempoOf(s);
+    },
+    /** The live steering range for this run, one source for corridor + snap. */
+    assist: (o) => assistRange(s, o),
     skipOpening: () => enterField(false),
     retire,
     dispose() {

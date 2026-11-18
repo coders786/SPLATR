@@ -33,9 +33,11 @@ export function createCamera() {
     const inset = room ? 0.28 : 0.32;
     const ax = stationary ? (forward > 0 ? inset : 1 - inset) : 0.48;
     const ay = stationary ? (room ? 0.76 : portrait ? 0.69 : 0.78) : 0.56;
+    // A weaker lean into travel. The old values threw the whole frame a few
+    // dozen pixels on every launch, which reads as a lurch rather than speed.
     return {
-      x: p.x - (width / (base * z)) * ax + vx * 4,
-      y: p.y - (height / (base * z)) * ay + vy * 3.5,
+      x: p.x - (width / (base * z)) * ax + vx * 2.1,
+      y: p.y - (height / (base * z)) * ay + vy * 1.7,
     };
   }
   function snap(p, stationary = false) {
@@ -63,9 +65,10 @@ export function createCamera() {
       snap(p, true);
     },
     snap,
-    /** widen 0..1 pulls the lens back to a readable 0.75 while the player
-     *  holds a slow-motion aim, peeks for a panic escape, or studies the
-     *  field. Zoom is not a cheat: it changes what is VISIBLE, not reach. */
+    /** The lens does NOT dolly. A fixed scale, with only the faintest lean
+     *  into speed, because a zoom that moves while you aim is the fastest way
+     *  to make a fast game unwatchable. `widen` is accepted and ignored so
+     *  callers and tests keep one signature. */
     tick(p, v, stationary, motion = true, next = null, widen = 0) {
       prevX = x;
       prevY = y;
@@ -73,10 +76,12 @@ export function createCamera() {
       last = { ...p };
       docked = stationary;
       const speed = Math.hypot(v.x, v.y);
-      const targetZoom =
-        (stationary || !motion ? 1 : 1 - Math.min(0.105, speed * 0.003)) *
-        (1 - 0.25 * clamp(widen, 0, 1));
-      zoom += (targetZoom - zoom) * (widen > 0 ? 0.11 : 0.065);
+      // A slow, continuous pull-back with speed only: more of the field is
+      // visible the faster you fly. It is deliberately gentle (0.94 at
+      // terminal) and NEVER tied to aiming, which is the dolly that made
+      // holding a shot feel like the room was breathing.
+      const targetZoom = stationary || !motion ? 1 : 1 - Math.min(0.06, speed * 0.0018);
+      zoom += (targetZoom - zoom) * 0.09;
       const d = desired(p, stationary, motion ? v.x : 0, motion ? v.y : 0);
       if (next) {
         d.x += clamp(
@@ -90,8 +95,8 @@ export function createCamera() {
           (height / (base * zoom)) * 0.14,
         );
       }
-      x += (d.x - x) * 0.13;
-      y += (d.y - y) * 0.14;
+      x += (d.x - x) * 0.17;
+      y += (d.y - y) * 0.17;
       // Never lose the player at the edge of a narrow screen on a sharp turn.
       const vw = width / (base * zoom),
         vh = height / (base * zoom);
@@ -132,8 +137,8 @@ export const inView = (view, p, margin = 100) =>
 export function frameRun(camera,run,motion=true){
   const s=run.state,p=run.world.player;
   const looking=s.opening?s.opening.rest && s.phase!=='ready':s.phase==='playing' && (s.breath>0 || s.held || p.velocity.y>3);
-  // Mid-air aim, or an automatic panic beat, opens the lens to 0.75. The
-  // player's own position and the next choice stay inside that wider view.
-  const widen=!s.opening && (s.held||s.panicTicks>0) ? 1 : 0;
-  camera.tick(p.position,p.velocity,s.phase==='ready',motion,looking?run.nearest():null,widen);
+  // No widen flag: the lens holds one scale. Aiming, a panic grace and a
+  // decision beat all used to pull the camera back, and that dolly is the
+  // single most disorienting thing a fast game can do to a player.
+  camera.tick(p.position,p.velocity,s.phase==='ready',motion,looking?run.nearest():null,0);
 }

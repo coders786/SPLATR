@@ -9,6 +9,7 @@ import { freshSeed, district, openingFacing } from './levels.js';
 import { TYPES, SPECIES } from './shapes.js';
 import { drawSpecimen } from './field-guide.js';
 import { drawStrokePrint } from './print.js';
+import { SPEEDS, setSpeed, speedIndexOf, speed } from './pace.js';
 const $ = (id) => document.getElementById(id),
   game = $('game'),
   canvas = $('arena'),
@@ -54,6 +55,9 @@ const pref = matchMedia('(prefers-reduced-motion: reduce)'),
     music: storage.get('music', '1') === '1',
     assist: storage.get('assist', '1') === '1',
   };
+// The picked speed is a real preference: it survives a reload and can be
+// changed between runs without touching a designer constant.
+setSpeed(storage.get('pace', 'fast'));
 const score = (n) => String(n).padStart(6, '0'),
   two = (n) => String(n).padStart(2, '0');
 let best = Math.max(0, Math.floor(Number(storage.get('best', 0)) || 0));
@@ -234,6 +238,8 @@ function syncSettings() {
     b.querySelector('b').textContent = on ? 'On' : 'Off';
     b.setAttribute('aria-pressed', on);
   }
+  $('pace-opt').querySelector('b').textContent=speed().label;
+  setText('pace-note',speed().note);
   $('opening-opt').querySelector('b').textContent=mix==='full'?'Full field':'Gradual';
   setText('opening-note',mix==='full'?'Start among mixed enemies, without the opening scene.':'Start with a single Fang. The paper racks appear only on your very first run.');
   for (const b of document.querySelectorAll('.sound')) {
@@ -248,6 +254,14 @@ function syncSettings() {
       : 'Enter'
     : 'Unavailable';
 }
+$('pace-opt').onclick = () => {
+  const next = SPEEDS[(speedIndexOf(speed().id) + 1) % SPEEDS.length];
+  setSpeed(next.id);
+  storage.set('pace', next.id);
+  dirty = true;
+  syncSettings();
+  audio.menu();
+};
 $('opening-opt').onclick = () => {
   mix=mix==='full'?'gradual':'full';
   storage.set('fieldMix',mix);

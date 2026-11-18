@@ -1,5 +1,6 @@
 import Matter from 'matter-js';
 import { PLAYER_SIZE } from './levels.js';
+import { speed } from './pace.js';
 
 const { Engine, Composite, Bodies, Body } = Matter;
 export const STEP_MS = 1000 / 60;
@@ -9,8 +10,15 @@ export const BASE_GRAVITY = 0.001;
 const GRAVITY_Y = 1.35;
 const MAX_SPIN = 0.18;
 const MAX_TRAVEL = 5; // maximum corner travel per collision sample
-const SLOW = 0.15;
-export const SLOW_MIN = 0.15;
+// The floor on time. 0.15 made a held aim feel like a different, syrupy game.
+// The exact floor is the speed the PLAYER picked (see pace.js); 0.5 is the
+// default "Fast" setting, and no setting is allowed to crawl.
+export const SLOW_MIN = 0.5;
+/** The live floor: whatever speed the player has selected. A held aim never
+ *  sinks below this, and it is what the gravity easing is normalised against. */
+export function slowFloor() {
+  return speed().floor;
+}
 const DEAD_ZONE = 7;
 
 export function createPhysics(level) {
@@ -93,20 +101,23 @@ function capVelocity(body) {
 export function setBulletTime(world, on, immediate = false) {
   world.slow = Boolean(on);
   if (immediate) {
-    world.engine.timing.timeScale = world.focusScale = on ? SLOW : 1;
+    world.engine.timing.timeScale = world.focusScale = on ? slowFloor() : 1;
     world.engine.gravity.scale = BASE_GRAVITY * (on ? 0.1 : 1);
   }
 }
 
 function advanceTiming(world, pace) {
-  const target=world.slow?SLOW:1;
-  world.focusScale+=(target-world.focusScale)*(world.slow?.32:.54);
+  const floor = slowFloor();
+  const target=world.slow?floor:1;
+  // Snappier in, snappier out: the slower the transition, the more the world
+  // reads as "lurching" rather than as speed changing.
+  world.focusScale+=(target-world.focusScale)*(world.slow?.46:.62);
   if(Math.abs(target-world.focusScale)<.002)world.focusScale=target;
   // A cut, the Redline warning or an automatic hazard grace buys reading
   // time without changing the committed parabola. Only *held* focus
   // lightens gravity and spends focus; the two never multiply.
   world.engine.timing.timeScale=Math.min(world.focusScale,pace);
-  world.engine.gravity.scale=BASE_GRAVITY*(1-.9*(1-world.focusScale)/(1-SLOW));
+  world.engine.gravity.scale=BASE_GRAVITY*(1-.9*(1-world.focusScale)/(1-floor));
 }
 
 

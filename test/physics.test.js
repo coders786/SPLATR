@@ -9,6 +9,7 @@ import {
   setBulletTime,
   launch,
   BASE_GRAVITY,
+  SLOW_MIN,
   MAX_SPEED,
   MAX_PULL,
   sweptHit,
@@ -36,18 +37,24 @@ test('pool-cue vector: dead zone, reversed direction, linear power and radial ca
   close(diagonal.x, -diagonal.y);
 });
 
-test('bullet time eases to 15% time / 10% gravity, then release restores baseline', () => {
+test('bullet time eases to a 50% floor, then release restores baseline', () => {
   const w = lab();
   setBulletTime(w, true);
   stepPhysics(w);
-  assert.ok(w.engine.timing.timeScale < 1 && w.engine.timing.timeScale > 0.15);
+  assert.ok(w.engine.timing.timeScale < 1 && w.engine.timing.timeScale > SLOW_MIN);
   ticks(30, () => stepPhysics(w));
-  close(w.engine.timing.timeScale, 0.15);
+  // Half speed, never less. A 0.15 floor made a held aim feel like a
+  // different game, which is exactly what the fast build is removing.
+  close(w.engine.timing.timeScale, SLOW_MIN);
+  assert.equal(SLOW_MIN, 0.5);
+  // Gravity still goes fully light while focus is held: at half speed the
+  // committed parabola stays readable, and gravity returning on release is
+  // what makes the launch feel committed rather than floaty.
   close(w.engine.gravity.scale, BASE_GRAVITY * 0.1);
   // Release does not hard-snap back to real time: the scale eases up, so a
-  // 0.2-scale panic grace passes through the same interpolation.
+  // shallow panic grace passes through the same interpolation.
   setBulletTime(w, false);
-  assert.ok(w.engine.timing.timeScale >= 0.15 && w.engine.timing.timeScale < 1);
+  assert.ok(w.engine.timing.timeScale >= SLOW_MIN && w.engine.timing.timeScale < 1);
   ticks(20, () => stepPhysics(w));
   close(w.engine.timing.timeScale, 1);
   setBulletTime(w, true, true);

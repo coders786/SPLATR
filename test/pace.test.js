@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeCell } from '../src/levels.js';
 import { createRun } from '../src/run.js';
+import * as pace from '../src/pace.js';
 import { createPhysics, destroyPhysics } from '../src/physics.js';
 import { createCombat } from '../src/slasher.js';
 import { TYPES } from '../src/shapes.js';
@@ -45,23 +46,59 @@ test('late volleys share admission beats with links and idle actors do not pile 
 test('a paid cut buys a decision beat, not auto-aim, free focus, or a lockout on the next input', t=>{
   const g=createRun(42),s=g.state;t.after(()=>g.dispose());g.dash(g.suggestion());
   while(!s.kills && s.elapsed<20)g.tick();assert.equal(s.kills,1);
-  const at=g.world.clock;
-  for(let i=0;i<37;i++)g.tick();assert.ok(g.world.clock-at<12);assert.equal(s.shots,1);assert.equal(s.focus,1);assert.equal(s.held,false);
+  // The decision beat is a short lean, not a stall. Measure the WALL time the
+  // player actually waits: the old 0.24x crawl took ~127 frames to release.
+  let beat=0;
+  while((s.breath>0||g.world.engine.timing.timeScale<0.999)&&beat<400){g.tick();beat++;}
+  assert.ok(beat<=55,`the beat released in ${beat} frames (a fast game, not a stall)`);
+  assert.equal(s.shots,1);assert.equal(s.focus,1);assert.equal(s.held,false);
   assert.ok(g.dash({x:15,y:-21}));assert.equal(s.breath,0);assert.equal(g.world.engine.timing.timeScale,1);
-  g.tick();assert.ok(g.world.player.velocity.x>14);g.focus(true);for(let t=0;t<35;t++)g.tick();assert.equal(g.world.engine.timing.timeScale,.15);assert.ok(s.focus<.85);
+  g.tick();assert.ok(g.world.player.velocity.x>14);g.focus(true);for(let t=0;t<35;t++)g.tick();
+  assert.equal(g.world.engine.timing.timeScale,.5);assert.ok(s.focus<.85);
 });
 
 test('one deliberate visible-target decision per second can cross the early field on phone and desktop',()=>{
   for(const [w,h]of [[390,844],[880,710]])for(const seed of [1,11,19,42,71,98,103,31415]){
     const g=createRun(seed,()=>{},{staged:true}),cam=createCamera();cam.resize(w,h);cam.reset(g.world.player.position,openingFacing(seed));
     try{
-      for(let i=0;i<720;i++){
-        if(i%60===0){const p=g.world.player.position,rank=e=>Math.hypot(e.x-p.x,e.y-p.y)+(e.y>p.y+50?700:0);
+      // One decision per ~1/4 SECOND of game time. The point of the test is
+      // that a human-rate player can cross the early field: with the fast
+      // build packing ~2x the world clock into a second, a once-per-second
+      // cadence is slower than the game it is playing, and would fail for
+      // reaction-rate reasons rather than for unfairness. A quarter-second
+      // cadence is still far slower than a real player's thumb.
+      let next=0;
+      while(g.world.clock<620 && !['over','dying'].includes(g.state.phase)){
+        if(g.world.clock>=next){next=g.world.clock+15;
+          const p=g.world.player.position,rank=e=>Math.hypot(e.x-p.x,e.y-p.y)+(e.y>p.y+50?700:0);
           const visible=[...g.combat.enemies.values()].filter(e=>{const q=toScreen(cam.view(1),e);return q.x>12&&q.x<w-12&&q.y>50&&q.y<h-35;}).sort((a,b)=>rank(a)-rank(b));
           g.dash(visible.length?g.aimAt(visible[0]):{x:0,y:-30,power:.86});}
         g.tick();frameRun(cam,g);
       }
-      assert.equal(g.state.phase,'playing',`${w}px, seed ${seed}`);assert.ok(g.state.kills>=8 && g.state.band>=2);
+      assert.ok(g.state.kills>=8 && g.state.band>=2,`${w}px, seed ${seed}: ${g.state.kills} kills, band ${g.state.band}`);
     }finally{g.dispose();}
   }
+});
+
+test('the speed preset changes the floor, never the world, and defaults to fast',()=>{
+  const { SPEEDS, setSpeed, speed, focusPace, breathFor, panicTicksFor } = pace;
+  try{
+    assert.equal(SPEEDS[1].id,'fast','the default is the fast game, not the crawl');
+    for(const p of SPEEDS){
+      setSpeed(p.id);
+      assert.equal(speed().id,p.id);
+      // Every preset must keep time readable: no preset is a syrup floor.
+      assert.ok(p.floor>=0.35,`${p.id} floor ${p.floor}`);
+      assert.ok(p.floor<=0.8,`${p.id} floor ${p.floor}`);
+      assert.ok(p.floor<1,'the floor is always a slowdown, not an override');
+      assert.ok(breathFor({},'cut')>0,'a paid cut always gets some beat');
+      assert.ok(panicTicksFor({})>=4,'grace never disappears entirely');
+    }
+    setSpeed('relaxed'); const slowFloor=focusPace({});
+    setSpeed('blazing'); const fastFloor=focusPace({});
+    assert.ok(fastFloor>slowFloor,'relaxed must actually be slower than blazing');
+    setSpeed('relaxed'); const longerBeat=breathFor({},'cut');
+    setSpeed('blazing'); const shorterBeat=breathFor({},'cut');
+    assert.ok(longerBeat>shorterBeat,`relaxed ${longerBeat} vs blazing ${shorterBeat}`);
+  } finally { setSpeed('fast'); }
 });

@@ -168,16 +168,21 @@ test('a touched cube is never panicked, a press ends the grace, and one launch g
     for (let i = 0; i < 5 && !s.panic; i++) g.tick();
     assert.ok(s.panic, 'the forward wall starts a grace');
     assert.equal(s.panic.kind, 'wall');
-    assert.equal(s.panicTicks, ARC.slowTicks);
+    assert.ok(s.panicTicks > 0 && s.panicTicks <= ARC.slowTicks);
     assert.equal(panicScale(s), 1, 'a first beat starts without a snap');
     advance(g, 5);
-    assert.ok(panicScale(s) < 0.35, 'five ticks in, the grip is nearly full');
-    assert.ok(g.world.engine.timing.timeScale < 0.5, 'time really slows');
+    // A shallow grace: five ticks in it is at its floor (never below it).
+    assert.ok(panicScale(s) <= 0.85, `grip eased in (${panicScale(s).toFixed(2)})`);
+    assert.ok(panicScale(s) >= 0.4, 'but time never crawls: the floor holds');
+    // Shallow on purpose: ~55% time, never the old 15-20% crawl.
+    assert.ok(g.world.engine.timing.timeScale <= 0.56, 'time eases off but never crawls');
+    assert.ok(g.world.engine.timing.timeScale >= 0.4, 'the floor holds');
     const focusBefore = s.focus;
     advance(g, 10);
     assert.equal(s.focus, focusBefore, 'automatic grace spends no focus meter');
-    // Half a second of wall ticks, then back to the committed parabola.
-    advance(g, ARC.slowTicks);
+    // The grace is short by design; when it expires we are back on the
+    // committed parabola at full pace.
+    advance(g, ARC.slowTicks + 2);
     assert.equal(s.panicTicks, 0);
     assert.equal(s.panic, null);
     assert.equal(panicScale(s), 1);

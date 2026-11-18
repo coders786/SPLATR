@@ -36,7 +36,8 @@ test('finite cuts, passive refill, bounded focus; misses eventually time out a c
   assert.ok(g.dash(v));
   g.focus(true);
   advance(g, 45);
-  assert.equal(g.world.engine.timing.timeScale, 0.15);
+  // Half speed is the floor now: a held aim must not turn the game into syrup.
+  assert.equal(g.world.engine.timing.timeScale, 0.5);
   assert.ok(s.held && s.focus < 0.78);
   g.focus(false);
   assert.equal(g.world.engine.timing.timeScale, 1);

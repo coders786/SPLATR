@@ -35,7 +35,12 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
   function magnetic(v, focus) {
     const r = get();
     if (!v?.power || !assist() || !r) return v;
-    const out = magnetize(r.world.player.position, v, r.combat, { focus });
+    // One corridor answer for this run: it widens with tempo, and a held aim
+    // widens it further. The vector that is drawn is the vector that fires.
+    const out = magnetize(r.world.player.position, v, r.combat, {
+      focus,
+      corridor: r.assist({ focus }).corridor,
+    });
     acquire(out); // one tick per acquisition, not per pointermove
     return out;
   }

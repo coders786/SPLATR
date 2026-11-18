@@ -41,7 +41,12 @@ function pad(c) {
 function drawArc(c, run, aim, alpha, scale, hint, time, view) {
   // A vector that came through input already has its magnet answer. Re-bending
   // it here would draw a promise different from the one that fires.
-  const a = predictAim(run, aim, { focus: true, magnetic: !('lock' in aim) });
+  // The corridor the input used, so the drawn arc and the fired shot agree.
+  const a = predictAim(run, aim, {
+    focus: true,
+    magnetic: !('lock' in aim),
+    corridor: run.assist?.({ focus: true }).corridor ?? null,
+  });
   if (!a) return null;
   const rgb = speedRgb(a.power);
   // Trim the drawn trail at the first REAL contact and at the edge of the
