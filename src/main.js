@@ -10,6 +10,7 @@ import { TYPES, SPECIES } from './shapes.js';
 import { drawSpecimen } from './field-guide.js';
 import { drawStrokePrint } from './print.js';
 import { SPEEDS, setSpeed, speedIndexOf, speed } from './pace.js';
+import { TIERS } from './motion.js';
 import { speedReadout } from './motion.js';
 import { MAX_SPEED } from './physics.js';
 const $ = (id) => document.getElementById(id),
@@ -189,6 +190,14 @@ function event(type, d) {
     case 'drive':
       audio.strike('drive');
       say('Overdrive.');
+      break;
+    case 'tier':
+      // Crossing into a new speed tier is the mastery moment this game was
+      // missing: the player did something right, and until now the only reward
+      // was a slightly longer smear. Naming the tier out loud turns a
+      // continuous variable into an achievement.
+      audio.strike(d.id === 'redline' ? 'drive' : 'armor');
+      say(`${d.label}  ·  ×${d.multiplier}`);
       break;
     case 'repair':
       pop('Crown split · Hull +1', 55, 3);
@@ -371,6 +380,17 @@ function updateHUD() {
   // rather than in two places that drift apart.
   const needle = dial.querySelector('.speedo-needle');
   if (needle) needle.style.transform = `rotate(${-90 + readout.kmh * 1.8}deg)`;
+  // Speed tier pips. `readout.band` is already the tier name, so the pips and
+  // the word under the dial can never disagree -- one source, two encodings.
+  const tier = TIERS.find((t) => t.label === readout.band) || TIERS[0],
+    pips = $('tier-pips');
+  if (pips) {
+    pips.style.setProperty('--tier', tier.tint);
+    for (let i = 0; i < pips.children.length; i++) {
+      pips.children[i].classList.toggle('on', i <= tier.index);
+      pips.children[i].classList.toggle('now', i === tier.index);
+    }
+  }
   $('drive').hidden = !!s.opening || s.drive <= 0;
   $('drive-meter').style.transform = `scaleX(${s.drive / 175})`;
   // Nonvisual equivalents only. The proof strip itself never draws words.

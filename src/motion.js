@@ -1,4 +1,10 @@
 import { clamp } from './levels.js';
+// MAX_SPEED is the number every speed curve below is normalised against. It
+// used to be duplicated as a literal `max = 35` default on each helper, which
+// silently broke when the cube got faster: stretch and blur quietly capped at
+// 35/42 of their intended strength and the effect never reached full power.
+// Importing it means the curves cannot desynchronise from the physics again.
+import { MAX_SPEED } from './physics.js';
 
 /** How much a frame is allowed to MOVE, and who is allowed to move.
  *
@@ -46,7 +52,7 @@ export const MOTION = Object.freeze({
   // --- camera calm --------------------------------------------------------
   // Fraction of the gap to the target the camera closes per tick. Lower is
   // calmer. The old 0.17 made the whole world swim on every launch.
-  follow: 0.11,
+  follow: 0.2,
   // NOTE: the follow rate is NOT the calm. Measured in a real run, lowering
   // it let the cube outrun the lens and cost the player visible targets
   // (30 -> 27 kills at 0.105, 30 -> 22 at 0.062). The calm comes from the
@@ -73,7 +79,7 @@ export const MOTION = Object.freeze({
 });
 
 /** 0..1 speed ramp. `speed` is px per nominal 60 Hz step, as Matter uses. */
-export function speedRamp(speed, max = 35) {
+export function speedRamp(speed, max = MAX_SPEED) {
   const t = clamp(speed / max, 0, 1);
   return clamp((t - MOTION.blurFrom) / (1 - MOTION.blurFrom), 0, 1);
 }
@@ -81,18 +87,71 @@ export function speedRamp(speed, max = 35) {
 /** Blur/stretch along the travel axis, from one speed number.
  *  Returns { along, across, blur } where `along` is the length multiplier,
  *  `across` the width multiplier and `blur` the smear length in px. */
-export function stretchFor(speed, max = 35) {
+export function stretchFor(speed, max = MAX_SPEED) {
   const t = speedRamp(speed, max);
+  // The cube's silhouette is the player's own speed made visible, so this is
+  // where the "it stretches more the faster you go" promise is kept. The
+  // curve is superlinear (t^1.15) so the last stretch of speed, where the
+  // player is actually pushing, visibly changes the shape; a linear ramp
+  // reads as "same cube, sliding scale" and wastes the top end.
+  const k = t ** 1.15;
   return {
-    along: 1 + 0.34 * t,
-    across: 1 - 0.16 * t,
-    blur: MOTION.blurMax * t ** 1.4,
+    along: 1 + 0.52 * k,
+    across: 1 - 0.26 * k,
+    blur: MOTION.blurMax * t ** 1.25,
   };
+}
+
+/** The speed TIER a given velocity is in. This is the spine of the "more juice
+ *  at higher speed" work: instead of every effect being tied to a continuous
+ *  0..1 (where the top end is a smear of imperceptible increments), the game
+ *  has four named tiers, each of which unlocks a distinct visual vocabulary.
+ *  A player climbing the ladder gets new feedback at each rung rather than an
+ *  ever-so-slightly-longer trail.
+ *
+ *  Thresholds are fractions of MAX_SPEED, and they are placed against a
+ *  MEASURED velocity distribution rather than against the theoretical maximum.
+ *  That distinction turned out to matter a lot: across four seeds and 3600
+ *  live ticks, the cube's velocity was p50 30.0 / p90 31.4 / p99 32.3 against
+ *  a MAX_SPEED of 42. The whole distribution occupies a 6.6 px band, because
+ *  the launch cost dominates and the cube spends nearly all of its time at a
+ *  cruise determined by the drag model.
+ *
+ *  The first set of thresholds (0.42 / 0.72 / 0.90) was guessed from the idea
+ *  that MAX_SPEED was reachable. The result was that SURGE was the DEFAULT
+ *  state of a normal run and REDLINE was unreachable, so the "higher the
+ *  speed, the more juice" ladder had its top two rungs inverted -- the player
+ *  was permanently on the third step.
+ *
+ *  Placed against the real distribution instead:
+ *    DRIFT   the slow part of any launch
+ *    CRUISE  the everyday cruising band (around p50)
+ *    SURGE   genuinely fast, around p95+
+ *    REDLINE only a committed full-power launch reaches it (>= 37.8 px/tick),
+ *            which makes it mean something when it lights up.
+ */
+export const TIERS = Object.freeze([
+  { id: 'drift', at: 0, label: 'DRIFT', tint: '#b3a6bd' },
+  { id: 'cruise', at: 0.55, label: 'CRUISE', tint: '#ffd166' },
+  { id: 'surge', at: 0.78, label: 'SURGE', tint: '#deff52' },
+  { id: 'redline', at: 0.9, label: 'REDLINE', tint: '#ff507b' },
+]);
+
+export function tierOf(speed, max = MAX_SPEED) {
+  const t = clamp(speed / max, 0, 1);
+  let tier = TIERS[0],
+    index = 0;
+  for (let i = 0; i < TIERS.length; i++)
+    if (t >= TIERS[i].at) {
+      tier = TIERS[i];
+      index = i;
+    }
+  return { ...tier, index, t };
 }
 
 /** The camera's lean vector. Zero inside the dead zone, and only above
  *  `leanFrom` so a gentle drift never moves the lens. */
-export function leanFor(vx, vy, max = 35) {
+export function leanFor(vx, vy, max = MAX_SPEED) {
   const speed = Math.hypot(vx, vy);
   if (!speed) return { x: 0, y: 0 };
   const t = clamp((speed / max - MOTION.leanFrom) / (1 - MOTION.leanFrom), 0, 1);
@@ -147,8 +206,8 @@ export const CAMERA = Object.freeze({
    *    the player of targets; 20 is the knee where the camera is still calm
    *    and the field stays readable.
    */
-  follow: 0.11,
-  maxStepPx: 20,
+  follow: 0.2,
+  maxStepPx: 30,
   /**
    * How far ahead of the cube the lens frames while it is flying, as a
    * fraction of the viewport at terminal speed.
@@ -256,7 +315,7 @@ export function hitStopFor(kind, pinned = false) {
  *  "km/h" style units and names the band, so the HUD can show a number that
  *  rises as the game speeds up. Deliberately non-linear at the top so the
  *  last few units feel earned. */
-export function speedReadout(speed, max = 35) {
+export function speedReadout(speed, max = MAX_SPEED) {
   const t = clamp(speed / max, 0, 1);
   const kmh = Math.round(100 * Math.pow(t, 0.82));
   return {

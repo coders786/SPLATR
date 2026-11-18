@@ -28,8 +28,13 @@ test('the player stretches and blurs with speed, monotonically and capped', () =
     const e = stretchFor(s);
     assert.ok(e.blur >= prevBlur, `blur fell at speed ${s}`);
     assert.ok(e.blur <= MOTION.blurMax + 1e-9, `blur over cap at ${s}`);
-    assert.ok(e.along >= 1 && e.along <= 1.35, `along out of range at ${s}`);
-    assert.ok(e.across > 0.8 && e.across <= 1, `across out of range at ${s}`);
+    // The ceiling rose with the "more juice at higher speed" pass: the cube
+    // now reaches 1.52 along at REDLINE instead of 1.34, so the last stretch
+    // of speed is visible rather than a rounded-off constant. `across` narrows
+    // further to match, but must never reach 0 (a zero-width cube cannot be
+    // aimed).
+    assert.ok(e.along >= 1 && e.along <= 1.55, `along out of range at ${s}`);
+    assert.ok(e.across > 0.7 && e.across <= 1, `across out of range at ${s}`);
     prevBlur = e.blur;
   }
   // A resting cube is completely still: no stretch, no smear.

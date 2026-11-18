@@ -3,10 +3,20 @@ import { createBackdrop } from './atmosphere.js';
 import { arc, blade, cube, disk, foe, line, cutHalf, nick, shearInk, poly, trace } from './art.js';
 import { INK, TYPES, TAU, CUBE, pose, bodyPose, bisect, mix } from './shapes.js';
 import { PAD, SPAWN, PLAYER_SIZE, clamp, randomSource, openingFacing } from './levels.js';
+import { MAX_SPEED } from './physics.js';
 import { sightPicture } from './guide.js';
 import { ARC, predictAim, speedRgb } from './aim.js';
 import { elongate, squashed, wave } from './impact.js';
-import { MOTION, createShake, stretchFor, animationState, fade, appear, ANIM } from './motion.js';
+import {
+  MOTION,
+  createShake,
+  stretchFor,
+  animationState,
+  fade,
+  appear,
+  ANIM,
+  tierOf,
+} from './motion.js';
 import {sceneFor,drawStory} from './storyboard.js';
 import { SHEAR, impactFor } from './stroke.js';
 import { rackInk, contactInk, drawSweep } from './cut-ink.js';
@@ -497,6 +507,111 @@ export function createRenderer(canvas) {
         e.angle += (e.spin || 0) * dt;
       }
   }
+  /** Screen-space speed feedback.
+   *
+   *  Runs after the world is drawn and before the HUD, in device-independent
+   *  screen coordinates. The intensity is driven by the cube's speed through
+   *  `tierOf`, not by raw velocity, so the frame changes in four discrete
+   *  steps a player can actually perceive instead of drifting imperceptibly.
+   *
+   *  Deliberately excluded: anything that moves the WORLD (no zoom, no roll,
+   *  no scale). A screen-space shake or zoom at high speed is the fastest way
+   *  to make a fast game unwatchable, which is a thing this project has
+   *  already learned the hard way. These effects add light and lines only.
+   */
+  function speedField(c, world, v, time) {
+    // `world.player` is a Matter body: its coordinates live on `.position`.
+    // Reading `.x`/`.y` here yields undefined, and every stroke then lands at
+    // NaN and disappears without an error -- which is exactly how this layer
+    // shipped invisible three times in a row.
+    const body = world.player,
+      p = body.position,
+      speed = Math.hypot(body.velocity.x, body.velocity.y),
+      tier = tierOf(speed, MAX_SPEED);
+    if (tier.index === 0) return;
+    const sweep = tier.t;
+    c.save();
+    c.setTransform(canvas.width / w, 0, 0, canvas.height / h, 0, 0);
+
+    // 1. Vignette. Painted from the edges inward; intensity and tint come from
+    //    the tier so a REDLINE frame is unmistakably different at a glance.
+    const vig = c.createRadialGradient(
+      w / 2,
+      h / 2,
+      Math.min(w, h) * 0.3,
+      w / 2,
+      h / 2,
+      Math.max(w, h) * 0.72,
+    );
+    vig.addColorStop(0, 'rgba(0,0,0,0)');
+    vig.addColorStop(0.55, `rgba(0,0,0,${0.12 * sweep})`);
+    vig.addColorStop(1, `rgba(0,0,0,${0.55 * sweep})`);
+    c.fillStyle = vig;
+    c.fillRect(0, 0, w, h);
+
+    // 2. Tier tint at the edges. `lighter` rather than `overlay`: the scene is
+    //    nearly black, and overlay on black is a no-op, which is why the first
+    //    version of this was invisible. Additive light also suits the look --
+    //    the world feels lit rather than washed.
+    if (tier.index >= 2) {
+      const glow = c.createRadialGradient(
+        w / 2,
+        h / 2,
+        Math.min(w, h) * 0.22,
+        w / 2,
+        h / 2,
+        Math.max(w, h) * 0.62,
+      );
+      glow.addColorStop(0, 'rgba(0,0,0,0)');
+      glow.addColorStop(0.7, 'rgba(0,0,0,0)');
+      glow.addColorStop(1, tier.tint);
+      c.globalCompositeOperation = 'lighter';
+      c.globalAlpha = 0.12 + 0.2 * sweep;
+      c.fillStyle = glow;
+      c.fillRect(0, 0, w, h);
+      c.globalAlpha = 1;
+      c.globalCompositeOperation = 'source-over';
+    }
+
+    // 3. Speed lines.
+    //
+    //    Anchored around the cube and biased BEHIND its direction of travel:
+    //    the space the player just came from is what should be streaming past.
+    //    Lines only exist in a narrow cone behind the cube, because a full
+    //    360-degree starburst is not speed, it is a sunburst -- the first
+    //    working version of this did exactly that and overwhelmed the frame.
+    //
+    //    They are also biased to a single flat tint at low alpha. Speed reads
+    //    through MOVEMENT and repetition, not through brightness; bright lines
+    //    compete with the enemies, and enemies must always win.
+    if (tier.index >= 2) {
+      const cx = (p.x - v.x) * v.scale,
+        cy = (p.y - v.y) * v.scale,
+        travel = Math.atan2(body.velocity.y, body.velocity.x),
+        behind = travel + Math.PI,
+        reach = Math.hypot(w, h);
+      c.globalCompositeOperation = 'lighter';
+      c.lineCap = 'round';
+      const lines = 5 + Math.round(4 * sweep);
+      for (let i = 0; i < lines; i++) {
+        const spread = (i / Math.max(1, lines - 1) - 0.5) * 1.5,
+          a = behind + spread + Math.sin(time * 0.03 + i * 1.9) * 0.05,
+          r0 = 120 + 30 * Math.sin(i * 2.1),
+          r1 = r0 + reach * (0.32 + 0.3 * sweep) * (0.75 + 0.25 * Math.sin(i * 1.7));
+        c.strokeStyle = tier.tint;
+        c.globalAlpha = (0.06 + 0.12 * sweep) * (1 - Math.abs(spread));
+        c.lineWidth = 1.1 + sweep * 1.4;
+        c.beginPath();
+        c.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
+        c.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+        c.stroke();
+      }
+      c.globalAlpha = 1;
+      c.globalCompositeOperation = 'source-over';
+    }
+    c.restore();
+  }
+
   function draw(run, alpha, aim, motion, device='mouse') {
     transform();
     const { world, state: s, combat } = run,
@@ -595,6 +710,21 @@ export function createRenderer(canvas) {
           c.restore();
         }
     }
+    // ── speed field ────────────────────────────────────────────────────────
+    //
+    // The cube's own stretch sells speed locally, but a fast game also needs the
+    // FRAME to agree. Everything below is a screen-space effect keyed to the
+    // cube's speed tier, so climbing the ladder changes the whole image rather
+    // than just the player's silhouette:
+    //
+    //   CRUISE  – a faint warm vignette appears. The image starts to close in.
+    //   SURGE   – streak lines radiate from the direction of travel, and the
+    //             vignette picks up the tier's tint.
+    //   REDLINE – the edges bloom rose and the streaks thicken.
+    //
+    // All of it is drawn in screen space AFTER the world, and none of it
+    // touches enemies: they are drawn before this layer, sharp, always.
+    if (motion) speedField(c, world, v, time);
     if (motion && s.phase === 'playing') streak(c, trail, p, s.blade > 0);
     // One expanding ring per contact, at the point the silhouettes met. A
     // shockwave is the cheapest honest way to say "something stopped here".

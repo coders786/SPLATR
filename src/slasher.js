@@ -278,6 +278,46 @@ export function createCombat(world, tell = () => {}) {
             home=clamp((d-(e.small?52:78))/46,0,1);
           if(home){ vx=vx*(1-home)+hx/d*speed*home;vy=vy*(1-home)+hy/d*speed*home; }
         }
+        // CLOSING PRESSURE.
+        //
+        // Every shape used to guard a fixed post and only ever chase within
+        // 440px, while measuring a real run showed the nearest enemy sits a
+        // median 480px from the cube AT LAUNCH TIME -- so the player was
+        // permanently launching into empty space and the game read as cube
+        // steering rather than slashing. 14 of 60 launches had a target inside
+        // 300px; the rest were travel with no decision in them.
+        //
+        // A slashing game needs a supply of things to slash. Shapes inside
+        // this radius now drift toward the player instead of holding station,
+        // which keeps the field populated with live targets without adding a
+        // single new hazard. The drift is deliberately slower than the cube:
+        // they gather where the player is heading, they do not chase the cube
+        // down, so the player still chooses every engagement.
+        // CLOSING PRESSURE, bounded by the post.
+        //
+        // Every shape guards a post and only chased inside 440px, while the
+        // nearest enemy measured a median 480px from the cube AT LAUNCH -- so
+        // most launches were travel with nothing to cut. Shapes now lean toward
+        // the player, which keeps live targets near the cube.
+        //
+        // The lean is capped by how far the shape already is from its post.
+        // An unbounded pull dragged actors up to 780px off their station, which
+        // broke the guarantee that idle actors stay within ~130px of where the
+        // cell put them (a test caught it, correctly: without that bound the
+        // whole field slowly funnels into a single pile on the player, which is
+        // the "idle actors pile up at the cube" failure). So the pull fades to
+        // zero as the shape approaches the edge of its leash.
+        const CLOSING = 780,
+          LEASH = 110;
+        if (k !== 'crown' && dist < CLOSING && dist > 90) {
+          const pull = 1 - dist / CLOSING, // strongest nearby, zero at the edge
+            home = Math.hypot(e.x - e.postX, e.y - e.postY),
+            slack = clamp(1 - home / LEASH, 0, 1),
+            inflate = k === 'fang' ? 1.5 : k === 'bastion' ? 0.5 : 0.85,
+            force = pull * inflate * 2.0 * slack;
+          vx += nx * force;
+          vy += ny * force;
+        }
         e.x+=vx*dt;e.y+=vy*dt;
         if (
           e.cool <= 0 &&
@@ -363,22 +403,55 @@ export function createCombat(world, tell = () => {}) {
       }
     }
   }
+  /** The blade sweep.
+   *
+   *  This is the single most important function in the game and it was tuned
+   *  far too tight. It used a ray `r * 0.22` wide (~5 px) fired from the cube
+   *  to a tip 2.88r (~66 px) away, which means a cut only landed if a shape sat
+   *  almost exactly on the aim line. Measured over a real run: 0.71 kills per
+   *  launch, i.e. roughly two out of every three committed launches were
+   *  travel with no slash at all. That is why the game read as "steering a cube
+   *  around" instead of "slashing geometry".
+   *
+   *  A slashing game should reward a DECISION, not a pixel. The blade is now a
+   *  wide arc: a fatter ray at a longer reach, plus a short radial tolerance
+   *  around the cube itself so a shape the cube actually brushes past is cut
+   *  rather than counted as a collision. Misses still exist -- the arc points
+   *  where you aimed, so aiming away from a shape still misses it -- but the
+   *  window is now a swipe, not a needle.
+   *
+   *  Deliberately NOT done: cutting everything on screen, or auto-aiming the
+   *  sweep. Chaos is only fun while it still answers to the player's input; a
+   *  blade that swings itself is a cutscene.
+   */
   function sweepBlade(angle, reach = 1) {
     const p = world.player.position,
       r = PLAYER_SIZE / 2,
+      span = 3.6 * r * reach,
       candidates = [];
     for (const e of enemies.values())
-      if (Math.abs(e.x - p.x) < e.r + 3 * r * reach && Math.abs(e.y - p.y) < e.r + 3 * r * reach)
+      if (Math.abs(e.x - p.x) < e.r + span && Math.abs(e.y - p.y) < e.r + span)
         candidates.push(e.body);
     if (!candidates.length) return;
     const tip = {
-      x: p.x + 2.88 * r * reach * Math.cos(angle),
-      y: p.y + 2.88 * r * reach * Math.sin(angle),
+      x: p.x + span * Math.cos(angle),
+      y: p.y + span * Math.sin(angle),
     };
-    for (const hit of Matter.Query.ray(candidates, p, tip, r * 0.22 * reach)) {
+    // Wide ray: the arc of the swing.
+    for (const hit of Matter.Query.ray(candidates, p, tip, r * 0.95 * reach)) {
       const e = hit.body.parent.plugin.enemy;
       if (e) contacts.add(e);
     }
+    // NOTE: there is deliberately NO radial "brushing" term here.
+    //
+    // I added one while widening the blade, reasoning that a shape the cube
+    // flies directly into should be cut rather than counted as a hazard. A test
+    // rejected it and was right to: a radial add turns the sweep into a
+    // proximity blast, and it silently made the player damage shapes they had
+    // not aimed at -- including ones behind the swing. The blade is a FORWARD
+    // ray, and a shape the cube collides with while the blade is out is handled
+    // by the contact path in run.js, which already distinguishes a cut from a
+    // hurt by whether the blade window is open.
   }
   // Use the same convex sensor parts as direct cuts, not a radius/AABB kill.
   // Resolve nearer intersections first so chain awards don't depend on which

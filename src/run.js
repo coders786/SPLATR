@@ -16,6 +16,7 @@ import { createOpening } from './opening.js';
 import { beginStroke, printKill, impactFor, SHEAR } from './stroke.js';
 import { IMPACT } from './impact.js';
 import { PACE, breathFor, focusPace, tempoOf, assistRange } from './pace.js';
+import { tierOf } from './motion.js';
 
 export const MAX_EDGE = 3,
   CHAIN_TIME = 144,
@@ -196,6 +197,8 @@ export function createRun(
     setBulletTime(world, s.held && !s.depleted && s.focus > 0.01, !on);
   }
   function dash(v) {
+    const pv = world.player.velocity,
+      speedBeforeLaunch = Math.hypot(pv.x, pv.y);
     if (
       !['ready', 'playing'].includes(s.phase) ||
       !v ||
@@ -223,6 +226,12 @@ export function createRun(
     // A magnetised corridor makes THIS launch slightly wider, then forgets.
     s.locked = Boolean(v.lock);
     s.reach = s.opening?.reach ?? (s.drive > 0 ? DRIVE_REACH : 1) + (s.locked ? 0.12 : 0);
+    // Seed the tier latch from the speed BEFORE this launch. Without this the
+    // first tick of any launch initialises the latch instead of comparing to
+    // it, so the single most satisfying moment in the game -- committing to
+    // full power and going straight to REDLINE -- was the one crossing that
+    // could never announce itself.
+    s.tier = tierOf(speedBeforeLaunch, MAX_SPEED).index;
     s.swingStart = world.clock;
     s.blade = 16 + 15 * Math.min(1, Math.hypot(v.x, v.y) / MAX_SPEED);
     s.previousSlash = s.slashAngle = Math.atan2(v.y, v.x);
@@ -432,6 +441,38 @@ export function createRun(
       return;
     }
     s.elapsed++;
+    // Speed tier crossings. The tier is read from the cube's LIVE velocity,
+    // so it can change mid-flight as gravity bleeds a launch or a chain
+    // accelerates one. Only a crossing UPWARD is celebrated: announcing that
+    // you got slower would punish the player for the physics they cannot see.
+    // Latched on `s.tier` so a speed that hovers on a threshold cannot spam.
+    {
+      const v = world.player.velocity,
+        speed = Math.hypot(v.x, v.y),
+        tier = tierOf(speed, MAX_SPEED);
+      // The BASELINE matters more than it looks. Seeding this at 0 (DRIFT)
+      // meant the cube launched straight into CRUISE while the latch still
+      // believed it was at DRIFT, so every launch fired a "you reached CRUISE"
+      // announcement for a tier the player had never left. Tracking the last
+      // OBSERVED tier means only a genuine change upward is celebrated, and
+      // the latch is seeded on the first tick the cube is actually flying.
+      // NOTE: the latch is only written in the branch that consumes it.
+      // An earlier version ended with a bare `else s.tier = tier.index`, which
+      // overwrote the latch on every single tick -- so the "did it go up?"
+      // comparison always ran against the current tier and could never be
+      // true. The event was unreachable, and no amount of adjusting the
+      // threshold would have fixed it.
+      if (s.tier == null) s.tier = tier.index;
+      else if (tier.index > s.tier && s.phase === 'playing' && !s.opening) {
+        s.tier = tier.index;
+        emit('tier', {
+          id: tier.id,
+          label: tier.label,
+          multiplier: 1 + tier.index,
+          speed: Math.round(speed),
+        });
+      } else if (tier.index < s.tier) s.tier = tier.index;
+    }
     if (s.stop > 0) {
       s.stop--;
       freezePoses();

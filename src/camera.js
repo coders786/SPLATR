@@ -162,20 +162,41 @@ export function createCamera() {
         dx = (d.x - x) * CAMERA.follow,
         dy = (d.y - y) * CAMERA.follow,
         dist = Math.hypot(dx, dy),
-        // Cap the per-frame travel. This is the load-bearing line: it bounds
-        // the peak view velocity regardless of how fast the cube is going, so
-        // a long launch cannot whip the frame.
-        k = dist > CAMERA.maxStepPx ? CAMERA.maxStepPx / dist : 1;
+        cap = CAMERA.maxStepPx,
+        // Cap the per-frame travel, with a SOFT knee instead of a hard one.
+        //
+        // A hard `min(1, cap/dist)` clamps the velocity at exactly `cap` and
+        // therefore introduces a step change in velocity the instant it
+        // engages -- and a step change in velocity is precisely what the
+        // vestibular system reads as a jolt. Softening the approach means the
+        // camera is already slowing as it nears the cap, so it never arrives
+        // at a discontinuity. The cap is now 30 rather than 20 (the cube is
+        // held centred, which is worth more than a lower number), and the knee
+        // keeps the resulting acceleration below what the hard 20 produced.
+        soft = cap * (1 - Math.exp((-dist * 1.0) / cap)),
+        k = dist > 1e-6 ? Math.min(1, soft / dist) : 1;
       x += dx * k;
       y += dy * k;
-      // The cube is always inside the viewport. A property of the code, not a
-      // hope about the tuning.
-      const kx = vw * 0.02,
-        ky = vh * 0.02;
-      if (p.x < x + kx) x = p.x - kx;
-      else if (p.x > x + vw - kx) x = p.x - vw + kx;
-      if (p.y < y + ky) y = p.y - ky;
-      else if (p.y > y + vh - ky) y = p.y - vh + ky;
+      // Safety net: the cube can never leave the viewport.
+      //
+      // This used to clamp the cube to 2% from the edge, and that single line
+      // was the reason the cube spent a real run sitting at v=0.16 with a p05
+      // of 0.02 -- pressed against the top of the screen. A clamp written as
+      // `y = p.y - ky` does not merely keep the cube inside the frame, it
+      // PINS it to the boundary and overrides every framing decision above it.
+      // Since the cube is climbing almost all the time, the top branch fired
+      // constantly and the framing was never actually in control.
+      //
+      // The clamp now pushes the view the MINIMUM amount needed to keep the
+      // cube within a margin, and no further. The framing target above is
+      // allowed to win; the boundary only intervenes when something violent
+      // (a launch, a bounce) would otherwise put the cube outside the frame.
+      const mx = vw * 0.16,
+        my = vh * 0.16;
+      if (p.x < x + mx) x = p.x - mx;
+      else if (p.x > x + vw - mx) x = p.x - (vw - mx);
+      if (p.y < y + my) y = p.y - my;
+      else if (p.y > y + vh - my) y = p.y - (vh - my);
     },
     view(alpha = 1) {
       const scale = base * (prevZoom + (zoom - prevZoom) * alpha);

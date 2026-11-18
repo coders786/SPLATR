@@ -1095,3 +1095,48 @@ body:has(#panel[open]) #hud {
     color: var(--l);
   }
 }
+
+/* Speed tier pips.
+   Four marks under the dial, one per tier. They exist because the dial shows a
+   continuous number and a continuous number is hard to feel: a player can tell
+   they are fast, but not that they just crossed into the next tier. Lighting
+   pips makes the tier change discrete and therefore noticeable, which is the
+   difference between "I got faster" and "I reached SURGE".
+   Filled with the tier's own tint so the HUD and the screen effects agree. */
+#tier-pips {
+  position: absolute;
+  bottom: 12px;
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+#tier-pips i {
+  width: 7px;
+  height: 3px;
+  background: #4a3448;
+  transform: skewX(-14deg);
+  transition:
+    background 160ms linear,
+    transform 160ms cubic-bezier(0.3, 1.5, 0.5, 1),
+    box-shadow 160ms linear;
+}
+/* The pips light cumulatively: reaching SURGE lights three, not just the
+   third. That makes the ladder legible at a glance instead of a puzzle about
+   which single dot is currently on. */
+#tier-pips i.on {
+  background: var(--tier, var(--l));
+  transform: skewX(-14deg) scaleY(1.5);
+  box-shadow: 0 0 6px var(--tier, var(--l));
+}
+#tier-pips i.now {
+  transform: skewX(-14deg) scaleY(2.1);
+}
+@media (prefers-reduced-motion: reduce) {
+  #tier-pips i {
+    transition: background 160ms linear;
+  }
+  #tier-pips i.on,
+  #tier-pips i.now {
+    transform: skewX(-14deg);
+  }
+}
