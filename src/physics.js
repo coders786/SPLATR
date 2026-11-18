@@ -79,13 +79,29 @@ export function placePlayer(world, p) {
 }
 
 /** Pool cue: drag to the LEFT to travel RIGHT. Clamp the vector's length
- * rather than each component, so a diagonal shot has no speed advantage. */
+ *  rather than each component, so a diagonal shot has no speed advantage.
+ *
+ *  The response is deliberately ELASTIC at the short end and identical at the
+ *  long end:
+ *
+ *    - A tiny drag is nearly free. A thumb that moves 8 px while settling onto
+ *      the glass used to launch at 8/176 of full speed in an almost random
+ *      direction, which is the worst possible feel for a beginner.
+ *    - The middle of the pull is expanded, so the useful band of powers is
+ *      physically larger and a rookie can actually find 60% instead of
+ *      jumping from 20% to 90%.
+ *    - `power` is still exactly 1 at MAX_PULL, so a full commit is unchanged.
+ *
+ *  Direction is untouched: only the length of the vector is reshaped.
+ */
+const easePower = (t) => t * t * (2.4 - 1.4 * t);
 export function dragVector(origin, pointer) {
   const dx = origin.x - pointer.x,
     dy = origin.y - pointer.y;
   const length = Math.hypot(dx, dy);
-  const power = Math.min(length / MAX_PULL, 1);
   if (length < DEAD_ZONE) return { x: 0, y: 0, power: 0 };
+  const raw = Math.min(length / MAX_PULL, 1),
+    power = easePower(raw);
   const k = (power * MAX_SPEED) / length;
   return { x: dx * k, y: dy * k, power };
 }

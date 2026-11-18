@@ -25,13 +25,28 @@ const ticks = (n, fn) => {
 const lab = (options = {}) =>
   createPhysics({ seed: 1, spawn: { x: 160, y: 240 }, solids: [], ...options });
 
-test('pool-cue vector: dead zone, reversed direction, linear power and radial cap', () => {
+test('pool-cue vector: dead zone, reversed direction, elastic power and radial cap', () => {
   const origin = { x: 100, y: 100 };
   assert.deepEqual(dragVector(origin, { x: 103, y: 101 }), { x: 0, y: 0, power: 0 });
+  // A full pull is still exactly full speed, and still exactly along the pull.
+  const full = dragVector(origin, { x: 100 - MAX_PULL, y: 100 });
+  close(full.power, 1);
+  close(full.x, MAX_SPEED);
+  // Half a pull is deliberately a little UNDER half speed (elastic short end),
+  // so the useful band of powers is physically larger and a stray thumb
+  // movement cannot fire a near-full shot.
   const half = dragVector(origin, { x: 100 - MAX_PULL / 2, y: 100 });
-  close(half.x, MAX_SPEED / 2);
   close(half.y, 0);
-  close(half.power, 0.5);
+  assert.ok(half.power > 0.3 && half.power < 0.5, `half pull = ${half.power}`);
+  close(half.x, MAX_SPEED * half.power);
+  // Monotonic: more pull is never less speed, and it never exceeds the cap.
+  let prev = 0;
+  for (let d = 8; d <= MAX_PULL * 2; d += 6) {
+    const v = dragVector(origin, { x: 100 - d, y: 100 });
+    assert.ok(v.power >= prev - 1e-9, `not monotonic at ${d}px`);
+    assert.ok(v.power <= 1);
+    prev = v.power;
+  }
   const diagonal = dragVector(origin, { x: -1000, y: 1200 });
   close(Math.hypot(diagonal.x, diagonal.y), MAX_SPEED);
   close(diagonal.x, -diagonal.y);

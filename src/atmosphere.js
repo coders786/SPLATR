@@ -113,9 +113,12 @@ function ticks(c, r, ink, from, count) {
 }
 export function createBackdrop(c) {
   const dots = c.createPattern(dotSheet('#170f20aa'), 'repeat'),
-    glints = Array.from({ length: 75 }, (_, i) => {
+    // Three depth planes of drifting flecks. One plane of 1.8px specks reads
+    // as sensor noise; three planes at different parallax rates read as dust
+    // hanging in a deep room.
+    glints = Array.from({ length: 190 }, (_, i) => {
       const rand = randomSource(hash(41, i, 9));
-      return [rand(), rand(), rand(), rand()];
+      return [rand(), rand(), rand(), rand(), rand()];
     });
   let grad = null,
     key = '';
@@ -134,12 +137,56 @@ export function createBackdrop(c) {
     }
     c.fillStyle = grad;
     c.fillRect(0, 0, w, h);
-    for (const [u, v, z, n] of glints) {
-      const xx = ((((u * w - x * z * 0.1) % (w + 26)) + w + 26) % (w + 26)) - 12,
-        yy = ((((v * h - y * z * 0.09) % (h + 26)) + h + 26) % (h + 26)) - 12;
-      c.fillStyle = n > 0.8 ? '#8a6573' : '#514252';
-      c.fillRect(xx, yy, n > 0.9 ? 4 : 1.8, n > 0.9 ? 2 : 1.6);
+    // A warm haze sitting on the horizon line. Flat gradients give the eye no
+    // anchor; a soft glow is what tells you how far away the far plane is.
+    if (!bright) {
+      const glow = c.createRadialGradient(
+        w * 0.5,
+        h * 0.78,
+        0,
+        w * 0.5,
+        h * 0.78,
+        Math.max(w, h) * 0.62,
+      );
+      glow.addColorStop(0, ['#4a2740', '#4d2634', '#43263f', '#22333c'][band % 4] + '99');
+      glow.addColorStop(0.55, ['#3a2033', '#3d2029', '#352031', '#1b2830'][band % 4] + '55');
+      glow.addColorStop(1, '#00000000');
+      c.fillStyle = glow;
+      c.fillRect(0, 0, w, h);
     }
+    // Dust, in three planes. Deeper planes drift slower and draw duller, so
+    // the parallax sells depth without any of it competing with a target.
+    for (const [u, v, z, n, layer] of glints) {
+      const depth = 0.05 + layer * 0.12,
+        px2 = ((((u * w - x * z * depth) % (w + 26)) + w + 26) % (w + 26)) - 12,
+        py2 = ((((v * h - y * z * depth) % (h + 26)) + h + 26) % (h + 26)) - 12;
+      const big = n > 0.965,
+        mid = n > 0.86;
+      c.globalAlpha = big ? 0.85 : mid ? 0.5 : 0.26 - layer * 0.04;
+      c.fillStyle = big ? '#c39aae' : mid ? '#8a6573' : '#6a5872';
+      const sz = big ? 3.1 : mid ? 1.9 : 1.3;
+      c.fillRect(px2, py2, sz, sz * (big ? 1.6 : 1));
+      if (big) {
+        // The few bright flecks get a cross so they read as glints, not dust.
+        c.globalAlpha = 0.3;
+        c.fillRect(px2 - 3, py2 + sz * 0.6, sz + 6, 0.9);
+      }
+    }
+    c.globalAlpha = 1;
+    // Vignette: pulls attention to the middle of the field and hides the
+    // hard edge of the ruins at the bottom of the viewport.
+    const vig = c.createRadialGradient(
+      w * 0.5,
+      h * 0.52,
+      Math.min(w, h) * 0.34,
+      w * 0.5,
+      h * 0.52,
+      Math.max(w, h) * 0.82,
+    );
+    vig.addColorStop(0, '#00000000');
+    vig.addColorStop(1, bright ? '#08060e88' : '#08060ebb');
+    c.fillStyle = vig;
+    c.fillRect(0, 0, w, h);
   }
   // In the Undercut the sky is an abandoned printing works. The roller has a
   // frame and a paper feed: it mustn't read as another Pulse wind-up circle.
@@ -226,6 +273,74 @@ export function createBackdrop(c) {
     ]);
     for (let j = 0; j < 3; j++) line(c, shadow, 2, 168 + j * 4, 28, 180 + j * 2, 16);
     c.restore();
+  }
+  /** Mid-ground: the layer the eye needs to judge distance.
+   *
+   *  The old backdrop jumped straight from empty gradient to a single small
+   *  motif, which is why the field read as flat. These are tall, dim, and
+   *  near-black: they fill the gap between the far motifs and the ruins at
+   *  the bottom without ever competing with a target, because they carry no
+   *  bright pixels at all.
+   */
+  function midground(x, y, w, h, s, seed, band) {
+    const pitch = 232 * s,
+      first = Math.floor(x / pitch) - 2,
+      last = first + Math.ceil(w / pitch) + 3;
+    for (let j = first; j <= last; j++) {
+      const rn = hash(seed, j, band * 7 + 3),
+        px = j * pitch - x,
+        ww = (84 + ((rn >>> 5) % 104)) * s,
+        hh = (215 + ((rn >>> 11) % 330)) * s,
+        // The field scrolls UP as you climb, so structures must enter from
+        // the bottom and rise out of frame, not sit just below it forever.
+        base = h * 1.02 - y * 0.34,
+        top = base - hh;
+      if (px > w + 40 || px + pitch < -40) continue;
+      if (top > h + 60) continue;
+      // Two tones only, both within a few steps of the sky, so they read as
+      // distance rather than as scenery you could crash into.
+      const ink = rn & 1 ? '#191325' : '#1d1529';
+      const kind = rn % 5;
+      c.save();
+      c.translate(px, top);
+      c.fillStyle = ink;
+      if (kind === 0) {
+        // A needle: thin spine, two drying-rack arms.
+        c.fillRect(ww * 0.44, 0, ww * 0.12, hh);
+        for (let k = 1; k < 5; k++) {
+          const yy = hh * (k / 5);
+          c.fillRect(0, yy, ww, 2.2 * s);
+        }
+      } else if (kind === 1) {
+        // A stepped monolith.
+        c.fillRect(0, hh * 0.28, ww, hh * 0.72);
+        c.fillRect(ww * 0.2, hh * 0.1, ww * 0.6, hh * 0.2);
+        c.fillRect(ww * 0.36, 0, ww * 0.28, hh * 0.12);
+      } else if (kind === 2) {
+        // A broken arch, one shoulder collapsed.
+        c.fillRect(0, hh * 0.2, ww * 0.16, hh * 0.8);
+        c.fillRect(ww * 0.84, hh * 0.45, ww * 0.16, hh * 0.55);
+        c.fillRect(0, hh * 0.2, ww * 0.62, hh * 0.1);
+      } else if (kind === 3) {
+        // Stacked slabs, cut with one bright seam each.
+        for (let k = 0; k < 6; k++) {
+          const yy = hh * (k / 6),
+            inset = (k % 2) * ww * 0.09;
+          c.fillRect(inset, yy, ww - inset * 2, hh / 6 - 3 * s);
+        }
+      } else {
+        // A leaning mast with guy-wires.
+        c.save();
+        c.rotate(((rn >>> 17) % 5 - 2) * 0.012);
+        c.fillRect(ww * 0.46, 0, ww * 0.08, hh);
+        for (let k = 1; k <= 3; k++) {
+          const yy = hh * (0.6 + k * 0.12);
+          c.fillRect(ww * 0.1, yy, ww * 0.8, 1.6 * s);
+        }
+        c.restore();
+      }
+      c.restore();
+    }
   }
   function relic(theme, x, y, r, n) {
     c.save();
@@ -328,6 +443,8 @@ export function createBackdrop(c) {
       px = v.panX * s,
       py = v.panY * s;
     base(w, h, px, py, false, districtIndex(seed, band));
+    // Depth order: sky, mid-ground structures, far motifs, then ruins.
+    midground(px * 0.34, py * 0.55, w, h, s, seed, band);
     // Each backdrop mark belongs to a band in world space. Climbing reveals
     // a new motif rather than tiling identical moons or upside-down skylines.
     const pw = 1510 * s,

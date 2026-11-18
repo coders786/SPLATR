@@ -625,7 +625,13 @@ export function createRun(
       return tempoOf(s);
     },
     /** The live steering range for this run, one source for corridor + snap. */
-    assist: (o) => assistRange(s, o),
+    assist: (o = {}) =>
+      assistRange(s, {
+        ...o,
+        // In flight the player has already committed: widen the help without
+        // making the caller remember to ask. On the ground it stays tighter.
+        airborne: o.airborne ?? !world.grounded,
+      }),
     skipOpening: () => enterField(false),
     retire,
     dispose() {

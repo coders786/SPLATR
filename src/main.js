@@ -10,6 +10,8 @@ import { TYPES, SPECIES } from './shapes.js';
 import { drawSpecimen } from './field-guide.js';
 import { drawStrokePrint } from './print.js';
 import { SPEEDS, setSpeed, speedIndexOf, speed } from './pace.js';
+import { speedReadout } from './motion.js';
+import { MAX_SPEED } from './physics.js';
 const $ = (id) => document.getElementById(id),
   game = $('game'),
   canvas = $('arena'),
@@ -312,6 +314,16 @@ function updateHUD() {
   $('hull').setAttribute('aria-label', `${s.hp} hull remaining`);
   setText('sector', s.opening ? 'Cutting room' : `Sector ${two(s.band)}`);
   setText('district', s.opening ? `Rack ${two(s.opening.row + 1)} / 03` : district(seed, s.band));
+  // Speedometer: the cube's own velocity, not the world's tempo, so the
+  // number is about the player's flying rather than the game's difficulty.
+  const vel = run.world.player.velocity,
+    readout = speedReadout(Math.hypot(vel.x, vel.y), MAX_SPEED),
+    dial = $('speedo');
+  dial.dataset.band = readout.band;
+  dial.setAttribute('aria-label', `Speed ${readout.kmh}, ${readout.band.toLowerCase()}`);
+  setText('speedo-value', readout.kmh);
+  setText('speedo-band', readout.band);
+  $('speedo').querySelector('.speedo-fill').style.strokeDashoffset = 100 - readout.kmh;
   $('drive').hidden = !!s.opening || s.drive <= 0;
   $('drive-meter').style.transform = `scaleX(${s.drive / 175})`;
   // Nonvisual equivalents only. The proof strip itself never draws words.

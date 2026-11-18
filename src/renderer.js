@@ -6,6 +6,7 @@ import { PAD, SPAWN, PLAYER_SIZE, clamp, randomSource, openingFacing } from './l
 import { sightPicture } from './guide.js';
 import { ARC, predictAim, speedRgb } from './aim.js';
 import { elongate, squashed, wave } from './impact.js';
+import { MOTION, createShake, stretchFor, animationState } from './motion.js';
 import {sceneFor,drawStory} from './storyboard.js';
 import { SHEAR, impactFor } from './stroke.js';
 import { rackInk, contactInk, drawSweep } from './cut-ink.js';
@@ -320,8 +321,8 @@ export function createRenderer(canvas) {
     h,
     lastView,
     revision = 0,
-    kick = 0,
-    bearing = 0,
+    anim = 'rest',
+    shake = createShake(),
     stain = 0,
     facing = 1,
     rand = randomSource(1);
@@ -354,28 +355,25 @@ export function createRenderer(canvas) {
     camera.reset(SPAWN, facing, room);
     lastView = camera.view(1);
     rand = randomSource(seed ^ 7737);
-    kick = stain = 0;
+    shake.reset();
+    stain = 0;
     trail.length = shards.length = imprints.length = sparks.length = 0;
   }
   function event(type, d, motion) {
-    if (type === 'armor' && motion && kick < 2.1) {
-      kick = 2.1;
-      bearing = d.cut;
-    }
+    if (type === 'armor' && motion) shake.ask(2.1, d.cut, 0.8);
     if (type === 'armor' || (type === 'cut' && !d.small && !d.fromShear)) {
       imprints.push({ ...d, type, life: type === 'armor' ? 16 : 9 });
-      if (imprints.length > 8) imprints.shift();
+      if (imprints.length > MOTION.maxImprints) imprints.shift();
     }
     if (type === 'shear' || type === 'parry') {
       imprints.push({ ...d, type, life: type === 'shear' ? 18 : 13 });
-      if (imprints.length > 8) imprints.shift();
+      if (imprints.length > MOTION.maxImprints) imprints.shift();
       return;
     }
+    // Every impact asks for shake; the bank decides how much is affordable,
+    // so a long chain can never leave the screen permanently vibrating.
     const recoil = (force, angle) => {
-      if (motion && force > kick) {
-        kick = force;
-        bearing = angle;
-      }
+      if (motion) shake.ask(force, angle, 1);
     };
     if (type === 'hurt' || type === 'break') {
       stain = 1;
@@ -445,8 +443,8 @@ export function createRenderer(canvas) {
           col: i % 2 ? col : INK.paper,
         });
       }
-    if (shards.length > 32) shards.splice(0, shards.length - 32);
-    if (sparks.length > 36) sparks.splice(0, sparks.length - 36);
+    if (shards.length > MOTION.maxShards) shards.splice(0, shards.length - MOTION.maxShards);
+    if (sparks.length > MOTION.maxSparks) sparks.splice(0, sparks.length - MOTION.maxSparks);
   }
   function syncScene(run,nearest){
     const s=run.state,b=run.world.player,k=sceneFor(s,nearest,b.velocity.y>0,s.line-b.position.y);
@@ -460,15 +458,20 @@ export function createRenderer(canvas) {
     syncScene(run,s.story?run.nearest():null);
     if(scene)sceneTicks++;
     frameRun(camera,run,motion);
+    // The whole frame agrees on one animation state; effects that belong to
+    // one state (a hit-stop pose, a death settle) can then be written once.
+    anim = animationState(s);
     const dt = s.phase === 'dying' ? 1 : s.stop ? 0 : world.engine.timing.timeScale;
-    kick = Math.max(0, kick - 0.48);
+    // The bank advances on the simulation delta so the cap cannot be gamed by
+    // a high refresh rate: 144 Hz regenerates half as fast per frame.
+    shake.tick(dt);
     const b = world.player,
       forward = b.velocity.x * Math.cos(b.angle) + b.velocity.y * Math.sin(b.angle);
     if (s.phase === 'playing' && Math.abs(forward) > 3) facing = Math.sign(forward);
     stain = Math.max(0, stain - 0.045);
     if (motion && s.phase === 'playing' && dt) {
       trail.push({ ...world.player.position });
-      if (trail.length > 14) trail.shift();
+      if (trail.length > MOTION.ribbon) trail.shift();
     }
     if (!motion) trail.length = 0;
     for (const list of [sparks, shards, imprints])
@@ -517,7 +520,9 @@ export function createRenderer(canvas) {
       c.restore();
     }
     c.save();
-    if (motion && kick > 0) c.translate(-Math.cos(bearing) * kick, -Math.sin(bearing) * kick);
+    const shakeAmount = motion ? shake.amount : 0;
+    if (shakeAmount > 0)
+      c.translate(-Math.cos(shake.bearing) * shakeAmount, -Math.sin(shake.bearing) * shakeAmount);
     c.scale(v.scale, v.scale);
     c.translate(-v.x, -v.y);
     if (inView(v, SPAWN, 140)) pad(c);
@@ -672,6 +677,11 @@ export function createRenderer(canvas) {
     for (const e of combat.enemies.values()) {
       if (!inView(v, e, 100)) continue;
       const q = pose(e, alpha);
+      // Sharpness is a guarantee, not a style choice: this is the one draw
+      // site for hostile shapes and it must never inherit an alpha or a filter
+      // left behind by a passing effect. See MOTION.enemyBlur.
+      c.globalAlpha = 1;
+      c.filter = 'none';
       foe(c, e.kind, q.x, q.y, e.r, q.angle, {
         hp: e.hp,
         paper: e.paper,
@@ -763,7 +773,7 @@ export function createRenderer(canvas) {
         const vx = world.player.velocity.x,
           vy = world.player.velocity.y,
           speed = Math.hypot(vx, vy),
-          e = elongate(speed);
+          e = stretchFor(speed);
         if (e.along > 1.001) {
           const along = Math.atan2(vy, vx);
           c.rotate(along);
@@ -786,6 +796,35 @@ export function createRenderer(canvas) {
         const toward =
           (nearest.x - p.x) * Math.cos(p.angle) + (nearest.y - p.y) * Math.sin(p.angle);
         facing = Math.sign(toward) || facing;
+      }
+      // Real motion blur, as a short smear of the cube's own silhouette
+      // dragged along its travel. This is the ONE thing in the frame that is
+      // allowed to blur: the player owns this motion, so it reads as their
+      // speed. Enemies below are never blurred (see MOTION.enemyBlur).
+      if (motion && !world.grounded) {
+        const vx = world.player.velocity.x,
+          vy = world.player.velocity.y,
+          speed = Math.hypot(vx, vy),
+          smear = stretchFor(speed).blur;
+        if (smear > 1) {
+          const along = Math.atan2(vy, vx),
+            steps = smear > 12 ? 3 : 2;
+          c.save();
+          c.rotate(along - p.angle);
+          for (let i = steps; i >= 1; i--) {
+            const u = i / (steps + 1);
+            c.globalAlpha = 0.3 * (1 - u * 0.6);
+            c.translate(-1, 0);
+            c.save();
+            c.translate(-smear * u, 0);
+            c.scale(1, 1 - 0.1 * u);
+            cube(c, 0, 0, R, 0, 0, facing);
+            c.restore();
+            c.globalAlpha = 1;
+            c.translate(1, 0);
+          }
+          c.restore();
+        }
       }
       cube(c, 0, 0, R, p.angle, motion ? time : 0, facing);
       c.restore();
@@ -911,6 +950,9 @@ export function createRenderer(canvas) {
     },
     get revision() {
       return revision;
+    },
+    get animationState() {
+      return anim;
     },
     dispose() {
       ro.disconnect();

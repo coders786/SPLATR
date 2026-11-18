@@ -115,12 +115,29 @@ export function panicTicksFor(state) {
 }
 
 /** The corridor and the tap-snap both widen with tempo. Steering help that
- *  shrank as speed rose would be exactly backwards. */
-export function assistRange(state, { focus = false } = {}) {
+ *  shrank as speed rose would be exactly backwards.
+ *
+ *  Steering help also grows with the DIFFICULTY OF THE MOMENT, not just with
+ *  progress:
+ *
+ *  - While the cube is in flight the player is committing and cannot re-aim
+ *    freely, so the corridor is widest there (`airborne`).
+ *  - A rookie (low tempo) gets a little more than a veteran at the same
+ *    moment: the person who needs help is exactly the person who has not
+ *    demonstrated they don't.
+ *
+ *  Everything here feeds the arc that is DRAWN, so the reticle can never
+ *  promise a bend the shot will not make.
+ */
+export function assistRange(state, { focus = false, airborne = false } = {}) {
   const t = tempoOf(state),
-    width = PACE.corridor + (PACE.corridorMax - PACE.corridor) * t,
-    snap = Math.round(PACE.snap + (PACE.snapMax - PACE.snap) * t);
-  return { corridor: focus ? width * 1.32 : width, snap };
+    rookie = 1 - t,
+    width =
+      (PACE.corridor + (PACE.corridorMax - PACE.corridor) * t) * (1 + 0.22 * rookie),
+    snap = Math.round(
+      (PACE.snap + (PACE.snapMax - PACE.snap) * t) * (1 + 0.3 * rookie) * (airborne ? 1.2 : 1),
+    );
+  return { corridor: focus ? width * 1.32 : airborne ? width * 1.18 : width, snap };
 }
 
 /** Document-level pacing for the camera. Zoom is pinned to 1: the old

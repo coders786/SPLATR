@@ -1,4 +1,5 @@
 import { clamp } from './levels.js';
+import { MOTION, dampedTarget, leanFor } from './motion.js';
 
 /** The framebuffer is only the size of the display. A virtual camera moves
  * through kilometres of world space; we never allocate a world-sized texture.
@@ -33,11 +34,13 @@ export function createCamera() {
     const inset = room ? 0.28 : 0.32;
     const ax = stationary ? (forward > 0 ? inset : 1 - inset) : 0.48;
     const ay = stationary ? (room ? 0.76 : portrait ? 0.69 : 0.78) : 0.56;
-    // A weaker lean into travel. The old values threw the whole frame a few
-    // dozen pixels on every launch, which reads as a lurch rather than speed.
+    // Lean ONLY above the committed speed threshold (see motion.js). Below it
+    // the lens is completely still, so a drifting or jittery thumb does not
+    // drag the whole world around the screen.
+    const lean = leanFor(vx, vy);
     return {
-      x: p.x - (width / (base * z)) * ax + vx * 2.1,
-      y: p.y - (height / (base * z)) * ay + vy * 1.7,
+      x: p.x - (width / (base * z)) * ax + lean.x,
+      y: p.y - (height / (base * z)) * ay + lean.y,
     };
   }
   function snap(p, stationary = false) {
@@ -95,8 +98,16 @@ export function createCamera() {
           (height / (base * zoom)) * 0.14,
         );
       }
-      x += (d.x - x) * 0.17;
-      y += (d.y - y) * 0.17;
+      // Dead zone first, then a damped follow. Chasing every pixel of player
+      // motion is what made the field feel like it was sliding underfoot.
+      const aim = dampedTarget(
+        d,
+        { x, y },
+        width / (base * zoom),
+        height / (base * zoom),
+      );
+      x += (aim.x - x) * MOTION.follow;
+      y += (aim.y - y) * MOTION.follow;
       // Never lose the player at the edge of a narrow screen on a sharp turn.
       const vw = width / (base * zoom),
         vh = height / (base * zoom);
@@ -136,7 +147,13 @@ export const inView = (view, p, margin = 100) =>
 // cube. This matters more on a narrow phone than another few pixels of zoom.
 export function frameRun(camera,run,motion=true){
   const s=run.state,p=run.world.player;
-  const looking=s.opening?s.opening.rest && s.phase!=='ready':s.phase==='playing' && (s.breath>0 || s.held || p.velocity.y>3);
+  // Look ahead ONLY when the cube is actually parked and choosing: a breath
+  // after a paid cut, or a held aim. While the cube is flying, the lens stays
+  // on the cube. Chasing the next target mid-flight is what made the field
+  // feel like it was sliding sideways under the player's thumb.
+  const looking=s.opening
+    ? s.opening.rest && s.phase!=='ready'
+    : s.phase==='playing' && (s.held || s.breath>0);
   // No widen flag: the lens holds one scale. Aiming, a panic grace and a
   // decision beat all used to pull the camera back, and that dolly is the
   // single most disorienting thing a fast game can do to a player.
