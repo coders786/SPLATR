@@ -8,11 +8,13 @@ import {
   MAX_SPEED,
   RELEASE_GRAVITY,
 } from './physics.js';
+import { panicWindow, panicScale } from './aim.js';
 import { SPAWN, PAD, createStream, bandAt, district, clamp } from './levels.js';
 import { createCombat } from './slasher.js';
 import { TYPES } from './shapes.js';
 import { createOpening } from './opening.js';
 import { beginStroke, printKill, impactFor, SHEAR } from './stroke.js';
+import { IMPACT } from './impact.js';
 
 export const MAX_EDGE = 3,
   CHAIN_TIME = 144,
@@ -37,7 +39,10 @@ export function createRun(
   // player leaves it). A strong launch gets one short decision beat after it
   // crosses empty sky. That is not a phantom hit: no score, freeze or refund.
   let solo = staged,
-    glideAt = Infinity;
+    glideAt = Infinity,
+    // Identity of the physics contact already shown, so one collision does
+    // not re-squash the pose on every substep of the same tick.
+    lastContact = null;
   const waiting = [];
   const world = createPhysics({ seed, spawn: SPAWN, pad: PAD }),
     origin = { ...SPAWN },
@@ -61,6 +66,15 @@ export function createRun(
     story:warmup,
     firstAir:false,
     warning:0,
+    panic:null,
+    panicTicks:0,
+    panicGrants:[],
+    panicWarm:0,
+    locked:false,
+    // Last real surface contact (see physics.noteContact) and how long ago,
+    // in ticks. Drives the contact squash and its shockwave ring.
+    impact:null,
+    impactAge:0,
     swingStart: 0,
     seed: seed >>> 0,
     hp: 3,
@@ -127,11 +141,12 @@ export function createRun(
   }
   function aimAt(q, assist = true) {
     let to = q,
-      best = 82;
+      best = 62; // a tap snaps only when it is actually on the shape
     if (assist)
       for (const e of combat.enemies.values()) {
-        const d = Math.hypot(e.x - q.x, e.y - q.y);
-        if (d < best) {
+        const d = Math.hypot(e.x - q.x, e.y - q.y),
+          reach = Math.min(best, e.r + 12); // tiny shapes don't get a wide snap
+        if (d < reach) {
           to = e;
           best = d;
         }
@@ -161,6 +176,11 @@ export function createRun(
     return best;
   }
   function focus(on) {
+    if (on && s.panicTicks > 0) {
+      s.panic = null;
+      s.panicTicks = 0;
+      s.panicWarm = 0;
+    }
     s.held =
       !!on &&
       !s.opening?.rest &&
@@ -187,11 +207,17 @@ export function createRun(
     s.breath = 0;
     s.firstAir = false;
     s.warning = 0;
+    s.panic = null;
+    s.panicTicks = 0;
+    s.panicWarm = 0;
+    s.panicGrants = [];
     glideAt = !s.opening && Math.hypot(v.x, v.y) > 22 ? world.clock + 13 : Infinity;
     s.parry = 10;
     if (!s.opening?.free) s.edge--;
     if (s.opening) lesson.launch();
-    s.reach = s.opening?.reach ?? (s.drive > 0 ? DRIVE_REACH : 1);
+    // A magnetised corridor makes THIS launch slightly wider, then forgets.
+    s.locked = Boolean(v.lock);
+    s.reach = s.opening?.reach ?? (s.drive > 0 ? DRIVE_REACH : 1) + (s.locked ? 0.12 : 0);
     s.swingStart = world.clock;
     s.blade = 16 + 15 * Math.min(1, Math.hypot(v.x, v.y) / MAX_SPEED);
     s.previousSlash = s.slashAngle = Math.atan2(v.y, v.x);
@@ -219,6 +245,8 @@ export function createRun(
     s.hp--;
     s.invul = 92;
     s.chain = s.chainTime = s.drive = s.blade = s.parry = s.breath = 0;
+    s.panic = null;
+    s.panicTicks = s.panicWarm = 0;
     s.edge = Math.max(1, s.edge);
     s.stop = Math.max(s.stop, 3);
     if (s.hp <= 0) end(cause);
@@ -270,6 +298,15 @@ export function createRun(
     s.blade = Math.min(38, s.blade + 7);
     const impact = impactFor(e.kind, e.small, release, e.paper);
     s.stop = Math.max(s.stop, impact.stop);
+    // A cut is a contact too: squash along the incoming travel, ring at the
+    // exact point the two silhouettes met.
+    {
+      const sp = Math.hypot(world.player.velocity.x, world.player.velocity.y) || 0,
+        ux = e.x - world.player.position.x,
+        uy = e.y - world.player.position.y,
+        n = Math.hypot(ux, uy) || 1;
+      noteImpact(e.x - (ux / n) * e.r, e.y - (uy / n) * e.r, ux / n, uy / n, Math.max(sp, 8));
+    }
     emit('cut', {
       x: e.x,
       y: e.y,
@@ -306,6 +343,14 @@ export function createRun(
       s.hp++;
       emit('repair', {});
     }
+  }
+  /** Record one contact: where, which way, how hard. `depth` is the closing
+   *  speed along the normal; IMPACT turns that into a bend and a ring. */
+  function noteImpact(x, y, nx, ny, depth) {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    if (!Number.isFinite(nx) || !Number.isFinite(ny) || (!nx && !ny)) return;
+    s.impact = { x, y, nx, ny, depth: Math.max(0, depth || 0), speed: world.player.speed };
+    s.impactAge = 0;
   }
   function freezePoses() {
     s.previousSlash = s.slashAngle;
@@ -372,7 +417,13 @@ export function createRun(
     if (s.stop > 0) {
       s.stop--;
       freezePoses();
+      // A frozen frame still holds its contact pose: the squash is drawn on
+      // the last resolved contact, not on a new one.
       return;
+    }
+    if (s.impact && ++s.impactAge > IMPACT.springTicks) {
+      s.impact = null;
+      s.impactAge = 0;
     }
     if (s.opening?.finishing) {
       freezePoses();
@@ -403,12 +454,35 @@ export function createRun(
     s.warning = s.opening
       ? 0
       : clamp((840 - gap) / 220, 0, 1) * clamp((world.player.velocity.y - 3) / 11, 0, 1);
-    const pace=Math.min(1-.64*s.warning, s.breath ? .24+.76*Math.max(0,1-s.breath/12) : 1);
+    // At most two forward panic beats per launch, half a second each. They
+    // never touch the focus meter: the grace is a pace limit, not a spend.
+    if (s.panicTicks > 0) {
+      s.panicWarm = Math.min(99, s.panicWarm + 1);
+      if (--s.panicTicks === 0) {
+        s.panic = null;
+        s.panicWarm = 0;
+      }
+    }
+    if (!s.panicTicks) panicWindow({ world, state: s, combat }, false, true);
+    const pace = Math.min(
+      1 - 0.64 * s.warning,
+      s.breath ? 0.24 + 0.76 * Math.max(0, 1 - s.breath / 12) : 1,
+      panicScale(s),
+    );
     if(s.breath) s.breath--;
     stepPhysics(world, (dt) => combat.move(dt, s.band),pace);
+    // One contact per tick, straight from Matter's resolved normal. A wall,
+    // a deck, a plate that stops the blade: the pose bends the same way.
+    const hitSurface = world.contact;
+    if (hitSurface && hitSurface !== lastContact && s.phase === 'playing') {
+      lastContact = hitSurface;
+      noteImpact(hitSurface.x, hitSurface.y, hitSurface.nx, hitSurface.ny, hitSurface.depth);
+    }
     const dt = world.engine.timing.timeScale;
     s.previousSlash = s.slashAngle;
-    if (!s.opening) s.reach = s.drive > 0 ? DRIVE_REACH : 1;
+    // Reach is a property of the launch, not of the frame: a magnetised
+    // corridor keeps its slightly wider blade until the next launch.
+    if (!s.opening) s.reach = (s.drive > 0 ? DRIVE_REACH : 1) + (s.locked ? 0.12 : 0);
     if (s.blade > 0) {
       s.slashAngle = Math.atan2(world.player.velocity.y, world.player.velocity.x);
       combat.sweepBlade(s.slashAngle, s.reach);
@@ -469,6 +543,8 @@ export function createRun(
       s.firstAir = false;
       glideAt = Infinity;
       s.warning = 0;
+      s.panic = null;
+      s.panicTicks = s.panicWarm = 0;
       emit('catch', {});
       return;
     }

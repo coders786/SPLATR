@@ -203,7 +203,21 @@ const input = createInput(canvas, {
     audio.unlock();
     audio.focus(false);
   },
+  lock: {
+    once: null,
+    at: -1e9,
+    tick() {
+      // One quiet chirp per acquisition; wiggling across shapes cannot
+      // machine-gun the sound.
+      const now = performance.now();
+      if (now - this.at < 140) return;
+      this.at = now;
+      audio.lock();
+    },
+  },
   commit(v) {
+    // A magnetised release really is a touch wider along that corridor. Only
+    // this launch; the next unassisted shot is ordinary reach again.
     const ok = run.dash(v);
     if (!ok && !run.state.opening && run.state.edge <= 0) say('Out of cuts.');
     return ok;
@@ -487,7 +501,7 @@ function frame(now) {
     const a = clock.frame(now, () => {
       if (dialog.open) return;
       input.tick();
-      run.tick();
+      run.tick(); // owns the panic ray, grace and every other tick rule
       audio.focus(run.state.phase === 'playing' && run.state.held && run.world.slow);
       audio.flush();
       renderer.tick(run, opts.motion);

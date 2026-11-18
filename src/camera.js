@@ -63,15 +63,20 @@ export function createCamera() {
       snap(p, true);
     },
     snap,
-    tick(p, v, stationary, motion = true, next = null) {
+    /** widen 0..1 pulls the lens back to a readable 0.75 while the player
+     *  holds a slow-motion aim, peeks for a panic escape, or studies the
+     *  field. Zoom is not a cheat: it changes what is VISIBLE, not reach. */
+    tick(p, v, stationary, motion = true, next = null, widen = 0) {
       prevX = x;
       prevY = y;
       prevZoom = zoom;
       last = { ...p };
       docked = stationary;
       const speed = Math.hypot(v.x, v.y);
-      const targetZoom = !stationary && motion ? 1 - Math.min(0.105, speed * 0.003) : 1;
-      zoom += (targetZoom - zoom) * 0.065;
+      const targetZoom =
+        (stationary || !motion ? 1 : 1 - Math.min(0.105, speed * 0.003)) *
+        (1 - 0.25 * clamp(widen, 0, 1));
+      zoom += (targetZoom - zoom) * (widen > 0 ? 0.11 : 0.065);
       const d = desired(p, stationary, motion ? v.x : 0, motion ? v.y : 0);
       if (next) {
         d.x += clamp(
@@ -127,5 +132,8 @@ export const inView = (view, p, margin = 100) =>
 export function frameRun(camera,run,motion=true){
   const s=run.state,p=run.world.player;
   const looking=s.opening?s.opening.rest && s.phase!=='ready':s.phase==='playing' && (s.breath>0 || s.held || p.velocity.y>3);
-  camera.tick(p.position,p.velocity,s.phase==='ready',motion,looking?run.nearest():null);
+  // Mid-air aim, or an automatic panic beat, opens the lens to 0.75. The
+  // player's own position and the next choice stay inside that wider view.
+  const widen=!s.opening && (s.held||s.panicTicks>0) ? 1 : 0;
+  camera.tick(p.position,p.velocity,s.phase==='ready',motion,looking?run.nearest():null,widen);
 }

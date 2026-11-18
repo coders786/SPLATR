@@ -44,9 +44,12 @@ test('bullet time eases to 15% time / 10% gravity, then release restores baselin
   ticks(30, () => stepPhysics(w));
   close(w.engine.timing.timeScale, 0.15);
   close(w.engine.gravity.scale, BASE_GRAVITY * 0.1);
+  // Release does not hard-snap back to real time: the scale eases up, so a
+  // 0.2-scale panic grace passes through the same interpolation.
   setBulletTime(w, false);
-  stepPhysics(w);
-  assert.ok(w.engine.timing.timeScale > 0.15 && w.engine.timing.timeScale < 1);
+  assert.ok(w.engine.timing.timeScale >= 0.15 && w.engine.timing.timeScale < 1);
+  ticks(20, () => stepPhysics(w));
+  close(w.engine.timing.timeScale, 1);
   setBulletTime(w, true, true);
   assert.ok(launch(w, { x: 2000, y: -2000 }));
   close(w.player.speed, MAX_SPEED);

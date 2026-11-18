@@ -4,6 +4,8 @@ import { arc, blade, cube, disk, foe, line, cutHalf, nick, shearInk, poly, trace
 import { INK, TYPES, TAU, CUBE, pose, bodyPose, bisect, mix } from './shapes.js';
 import { PAD, SPAWN, PLAYER_SIZE, clamp, randomSource, openingFacing } from './levels.js';
 import { sightPicture } from './guide.js';
+import { ARC, predictAim, speedRgb } from './aim.js';
+import { elongate, squashed, wave } from './impact.js';
 import {sceneFor,drawStory} from './storyboard.js';
 import { SHEAR, impactFor } from './stroke.js';
 import { rackInk, contactInk, drawSweep } from './cut-ink.js';
@@ -33,38 +35,133 @@ function pad(c) {
     ]);
   for(let i=0;i<3;i++)line(c, '#afbf76',2,x+w-40+i*9,y+15,x+w-36+i*9,y+10,x+w-32+i*9,y+15);
 }
-function drawGuide(c, run, p, v, alpha, scale, hint) {
-  const { path, pair } = sightPicture(
-    p,
-    v,
+// The real launch preview: dashes from cool cyan to crimson/white, a crisp
+// reticle where the arc first meets a surface, and a bracketed lock when the
+// magnetic corridor caught a shape. Only DRAWN here; input owns the vector.
+function drawArc(c, run, aim, alpha, scale, hint, time, view) {
+  // A vector that came through input already has its magnet answer. Re-bending
+  // it here would draw a promise different from the one that fires.
+  const a = predictAim(run, aim, { focus: true, magnetic: !('lock' in aim) });
+  if (!a) return null;
+  const rgb = speedRgb(a.power);
+  // Trim the drawn trail at the first REAL contact and at the edge of the
+  // view: a line that runs past the shape it will hit, or off-screen, is
+  // promising flight the launch will never make.
+  const end = a.end,
+    margin = 40,
+    inView = (q) =>
+      q.x >= view.x - margin &&
+      q.x <= view.x + view.w + margin &&
+      q.y >= view.y - margin &&
+      q.y <= view.y + view.h + margin,
+    // A contact the player can SEE is a promise and stays bright to the end.
+    // A tide crossing off-screen is not: the preview fades like a guess.
+    stop = end && a.hit && inView(end) ? end : null,
+    path = [];
+  for (const q of a.path) {
+    path.push(q);
+    if (!inView(q) || (stop && q.x === stop.x && q.y === stop.y)) break;
+  }
+  // A preview that runs a whole 190-tick parabola would read as a beam across
+  // the screen. When nothing stops the shot, show a readable stretch of the
+  // curve and let it dissolve, so the eye reads "lands out there".
+  const horizon = Math.round(Math.min(path.length, 20 + 8 * (1 - clamp(a.power, 0, 1))));
+  if (!stop) path.length = Math.min(path.length, horizon);
+  const last = Math.max(1, path.length - 1);
+  c.save();
+  // Elastic tension: the press point and the current pull. The tether is the
+  // chord the cube will be released along, not a decorative arrow.
+  if (aim.anchor) {
+    // aim.anchor is a WORLD point (the press, fixed in the scene while the
+    // lens widens under a held aim).
+    const o = aim.anchor,
+      tip = a.start;
+    // Neutral, dim ink on purpose: the tether says "this is where you grabbed",
+    // the arc says how fast. Painting both in the speed colour made the two
+    // lines one white smear at full pull.
+    c.save();
+    c.globalAlpha = 0.22 + 0.3 * a.power;
+    c.setLineDash([4 / scale, 4 / scale]);
+    line(c, INK.paper, 1.5 / scale, tip.x, tip.y, o.x, o.y);
+    c.setLineDash([]);
+    c.globalAlpha = 0.5 + 0.3 * a.power;
+    arc(c, INK.paper, 1.4 / scale, o.x, o.y, (4 + 2 * a.power) / scale, 0, TAU);
+    c.restore();
+  }
+  // Two layers: a translucent wide under-stroke, then crisp dashes whose
+  // length grows with speed. Gaps, not merged dots, make direction legible.
+  for (let i = 0; i < path.length; i++) {
+    const q = path[i],
+      prev = i ? path[i - 1] : a.start,
+      u = i / Math.max(1, last),
+      tail = {
+        x: q.x - (q.x - prev.x) * (0.42 + 0.34 * a.power),
+        y: q.y - (q.y - prev.y) * (0.42 + 0.34 * a.power),
+      };
+    // Both layers die at the far end when the shot is unpromised.
+    const fade = (hint ? 0.62 : 0.94) * (1 - u) ** (stop ? 0.55 : 1.5);
+    if (fade < 0.02) continue;
+    c.globalAlpha = fade * (hint ? 0.17 : 0.1);
+    line(c, `rgb(${rgb.join(',')})`, 6 / scale, prev.x, prev.y, q.x, q.y);
+    c.globalAlpha = fade;
+    line(c, `rgb(${rgb.join(',')})`, (2.9 - u * 1.3) / scale, tail.x, tail.y, q.x, q.y);
+  }
+  c.globalAlpha = 1;
+  // Reticle at the FIRST predicted surface, not at the end of the dotted
+  // trail. A lock snaps it to the shape's centre and prints brackets.
+  if (end && !hint) {
+    const at = end.kind === 'target' ? { x: end.x, y: end.y } : end,
+      r = (end.kind === 'target' ? (a.hit?.r ?? 20) : 6) + 10 / Math.max(0.35, scale);
+    c.save();
+    c.translate(at.x, at.y);
+    c.strokeStyle = a.lock ? INK.paper : `rgb(${rgb.join(',')})`;
+    c.lineWidth = 2.2 / scale;
+    c.rotate(time * 0.006);
+    for (let j = 0; j < 4; j++) {
+      c.beginPath();
+      c.arc(0, 0, r, j * Math.PI / 2 + 0.2, j * Math.PI / 2 + 0.82);
+      c.stroke();
+    }
+    if (a.lock) {
+      c.rotate(-time * 0.012);
+      c.strokeStyle = INK.acid;
+      for (let j = 0; j < 4; j++) {
+        const s = j * Math.PI / 2 + Math.PI / 4;
+        c.beginPath();
+        c.moveTo(Math.cos(s) * (r + 3 / scale), Math.sin(s) * (r + 3 / scale));
+        c.lineTo(Math.cos(s) * (r + 12 / scale), Math.sin(s) * (r + 12 / scale));
+        c.stroke();
+      }
+    }
+    c.restore();
+  } else if (!hint && path.length) {
+    // No surface inside the preview: a hollow tick at its far end says
+    // "your landing is out here", without ever pretending it hit something.
+    const q = path[path.length - 1];
+    c.save();
+    c.globalAlpha = 0.5;
+    c.strokeStyle = `rgb(${rgb.join(',')})`;
+    c.lineWidth = 1.6 / scale;
+    c.beginPath();
+    c.arc(q.x, q.y, 7 / scale, 0.35, 0.95);
+    c.arc(q.x, q.y, 7 / scale, 0.35 + Math.PI, 0.95 + Math.PI);
+    c.stroke();
+    c.restore();
+  }
+  // Pair notches still print over enemy centres for the Throughcut line.
+  const pair = sightPicture(
+    a.start,
+    a.velocity,
     run.world.geometry,
     run.combat.enemies.values(),
     run.state.drive > 0 ? 3 : 1,
-  );
-  c.save();
-  // Don't carry an idle guide past the second contact. In focus the full
-  // dotted parabola is useful for choosing an escape instead of the pair.
-  let count = hint
-    ? Math.min(
-        path.length,
-        pair.length ? Math.ceil(Math.hypot(pair[1].e.x - p.x, pair[1].e.y - p.y) / 20) : 10,
-      )
-    : path.length;
-  if(run.state.opening?.row===2){
-    const shell=run.nearest(),i=shell?path.findIndex(q=>Math.hypot(q.x-shell.x,q.y-shell.y)<shell.r+10):-1;
-    if(i>=0)count=Math.min(count,i);
-  }
-  for (let i = 0; i < count; i++) {
-    c.globalAlpha = (hint ? 0.65 : 0.92) * (1 - i / 62);
-    disk(c, INK.acid, path[i].x, path[i].y, 3.4 - i * 0.046);
-  }
-  c.globalAlpha = 1;
+  ).pair;
   pair.forEach(({ e, angle }, i) => {
     const q = pose(e, alpha);
     nick(c, q.x, q.y, e.r, angle, i + 1, scale);
   });
   c.restore();
-  return pair;
+  return a;
 }
 function warnings(c, e, p, time) {
   const col = TYPES[e.kind].color;
@@ -156,22 +253,29 @@ function tide(c, v, y, t) {
 }
 function streak(c, trail, p, live) {
   if (trail.length < 3) return;
-  const a = [],
-    b = [];
-  for (let i = 0; i < trail.length; i++) {
+  // A decaying ribbon of afterimages: each older sample is thinner, dimmer and
+  // shifted further toward the cold end of the speed ramp. A single flat
+  // polygon read as one solid smear at terminal speed.
+  for (let i = 1; i < trail.length; i++) {
     const q = i === trail.length - 1 ? p : trail[i],
-      prev = trail[Math.max(0, i - 1)],
+      prev = trail[i - 1],
       dx = q.x - prev.x,
       dy = q.y - prev.y,
       n = Math.hypot(dx, dy) || 1,
-      half = (live ? 14 : 6) * (i / (trail.length - 1)) ** 1.3;
-    a.push([q.x - (half * dy) / n, q.y + (half * dx) / n]);
-    b.push([q.x + (half * dy) / n, q.y - (half * dx) / n]);
+      u = i / (trail.length - 1),
+      half = (live ? 14 : 6) * u ** 1.3,
+      col = speedRgb(0.18 + 0.82 * u ** 1.6);
+    if (half < 0.7) continue;
+    c.save();
+    c.globalAlpha = (live ? 0.62 : 0.2) * u ** 1.4;
+    poly(c, `rgb(${col.join(',')})`, [
+      [prev.x - (half * 0.45 * dy) / n, prev.y + (half * 0.45 * dx) / n],
+      [q.x - (half * dy) / n, q.y + (half * dx) / n],
+      [q.x + (half * dy) / n, q.y - (half * dx) / n],
+      [prev.x + (half * 0.45 * dy) / n, prev.y - (half * 0.45 * dx) / n],
+    ]);
+    c.restore();
   }
-  c.save();
-  c.globalAlpha = live ? 0.75 : 0.28;
-  poly(c, live ? INK.acid : '#d0c6d6', [...a, ...b.reverse()]);
-  c.restore();
 }
 function pointer(c, v, p, e) {
   if (!e) return;
@@ -395,6 +499,18 @@ export function createRenderer(canvas) {
     syncScene(run,nearest);
     if (s.opening) back.bench(v);
     else back.world(v, s.seed, s.band);
+    // Slow-motion frame: darken the BACKDROP and its edges, never the things
+    // the player must read. Drawn before targets, arc and cube deliberately.
+    if (s.held || (s.panicTicks > 0 && s.phase === 'playing')) {
+      const g = c.createRadialGradient(w / 2, h * 0.52, Math.min(w, h) * 0.16, w / 2, h * 0.52, Math.max(w, h) * 0.7);
+      g.addColorStop(0, 'rgba(10,8,18,0)');
+      g.addColorStop(0.58, 'rgba(10,8,18,0.26)');
+      g.addColorStop(1, 'rgba(7,5,12,0.72)');
+      c.save();
+      c.fillStyle = g;
+      c.fillRect(0, 0, w, h);
+      c.restore();
+    }
     c.save();
     if (motion && kick > 0) c.translate(-Math.cos(bearing) * kick, -Math.sin(bearing) * kick);
     c.scale(v.scale, v.scale);
@@ -468,6 +584,19 @@ export function createRenderer(canvas) {
         }
     }
     if (motion && s.phase === 'playing') streak(c, trail, p, s.blade > 0);
+    // One expanding ring per contact, at the point the silhouettes met. A
+    // shockwave is the cheapest honest way to say "something stopped here".
+    if (motion && s.impact) {
+      const w = wave(s.impactAge);
+      if (w) {
+        c.save();
+        c.globalAlpha = w.alpha * 0.85;
+        arc(c, INK.paper, 2.6 / v.scale, s.impact.x, s.impact.y, w.r);
+        c.globalAlpha = w.alpha * 0.55;
+        arc(c, INK.rose, 1.4 / v.scale, s.impact.x, s.impact.y, w.r * 0.72);
+        c.restore();
+      }
+    }
     for (const e of combat.enemies.values())
       if (inView(v, e, 870)) warnings(c, e, { ...pose(e, alpha), r: e.r }, time);
     for (const l of combat.links) {
@@ -515,21 +644,21 @@ export function createRenderer(canvas) {
     // At the handoff, don't draw a green player sight right on top of the
     // first red charge tell. Pressing to aim still shows the actual shot.
     if (aim?.power || (s.story && s.opening?.rest && s.edge>0 && !s.opening.finishing)) {
-      const pair = drawGuide(
+      const shot = drawArc(
         c,
         run,
-        p,
         aim?.power ? aim : run.suggestion(),
         alpha,
         v.scale,
         !aim?.power,
+        time,
+        v,
       );
-      if (
-        aim?.target &&
-        !pair.some((n) => n.e.id === aim.target) &&
-        combat.enemies.has(aim.target)
-      ) {
-        const e = combat.enemies.get(aim.target),
+      // A tap aimed at a particular body, or a magnet catch, gets one bracket
+      // on that shape so the target is never ambiguous.
+      const marked = aim?.lock?.id || aim?.target;
+      if (marked && !shot?.lock && combat.enemies.has(marked)) {
+        const e = combat.enemies.get(marked),
           q = pose(e, alpha);
         for (let i = 0; i < 2; i++)
           arc(c, INK.acid, 2 / v.scale, q.x, q.y, e.r + 6, -0.44 + i * Math.PI, 0.44 + i * Math.PI);
@@ -607,11 +736,46 @@ export function createRenderer(canvas) {
       c.save();
       if (s.invul > 0 && motion) c.globalAlpha = 0.61 + 0.39 * Math.abs(Math.sin(s.invul * 0.18));
       c.translate(p.x, p.y);
+      // Elastic tension: the cube loads against its launch bearing while the
+      // player holds a pull. Pure pose; no collision or physics change.
+      if (aim?.power && aim.anchor && !aim.held) {
+        const a = Math.atan2(aim.y, aim.x) || 0,
+          load = clamp(aim.power, 0, 1) * 0.16;
+        c.rotate(a);
+        c.scale(1 - load * 0.5, 1 + load * 0.5);
+        c.rotate(-a);
+      }
       if (motion && s.blade > 0) {
         const snap = 0.105 * clamp(1 - (time - s.swingStart) / 6, 0, 1);
         c.rotate(s.slashAngle);
         c.scale(1 + snap, 1 - snap * 0.72);
         c.rotate(-s.slashAngle);
+      }
+      // Motion streaks, as geometry: a genuinely fast cube is pulled along its
+      // own travel and thinned across it, so the eye tracks a line instead of
+      // a flickering square. Airborne only — a resting cube gets no stretch.
+      if (motion && !world.grounded) {
+        const vx = world.player.velocity.x,
+          vy = world.player.velocity.y,
+          speed = Math.hypot(vx, vy),
+          e = elongate(speed);
+        if (e.along > 1.001) {
+          const along = Math.atan2(vy, vx);
+          c.rotate(along);
+          c.scale(e.along, e.across);
+          c.rotate(-along);
+        }
+      }
+      // Contact squash: compress along the surface normal, swell along the
+      // tangent, and ring back through a damped spring. Only a real contact
+      // recorded by the physics step can start one.
+      if (motion && s.impact) {
+        const q = squashed(s.impact.speed ?? 0, s.impact.nx, s.impact.ny, s.impactAge);
+        if (q) {
+          c.rotate(q.axis - p.angle);
+          c.scale(q.along, q.across);
+          c.rotate(p.angle - q.axis);
+        }
       }
       if (nearest && (s.phase === 'ready' || s.opening?.rest)) {
         const toward =
@@ -656,6 +820,59 @@ export function createRenderer(canvas) {
       c.save();c.globalAlpha=.32+s.warning*.58;
       const base=h-20,h0=4+s.warning*8;
       for(let x=-14;x<w;x+=28)poly(c,INK.rose,[[x,base],[x+8,base-h0],[x+21,base-h0],[x+13,base]]);
+      c.restore();
+    }
+    if (s.panic && s.panicTicks > 0 && s.phase === 'playing') {
+      // Red directional warning between the cube and the imminent surface,
+      // plus a contracting ring around it: press to aim away. World-space.
+      c.save();
+      c.translate(-v.x * v.scale, -v.y * v.scale);
+      c.scale(v.scale, v.scale);
+      // The grip opens fast and closes slow: urgent at the start of the
+      // half-second, still readable when it runs out.
+      const burn = clamp(s.panicTicks / ARC.slowTicks, 0, 1),
+        pulse = 0.72 + 0.28 * Math.abs(Math.sin(s.panicTicks * 0.42)),
+        dx = s.panic.x - p.x,
+        dy = s.panic.y - p.y,
+        far = Math.hypot(dx, dy) || 1,
+        ang = Math.atan2(dy, dx),
+        near = R * Math.SQRT2 + 20, // clear of the cube's three pip bars
+        span = Math.min(58 + 26 * (1 - burn), far - near); // never past the surface
+      if (span > 6) {
+        c.save();
+        c.translate(p.x + Math.cos(ang) * near, p.y + Math.sin(ang) * near);
+        c.rotate(ang);
+        c.globalAlpha = (0.5 + 0.45 * burn) * pulse;
+        const wide = 8 + 5 * burn,
+          tip = Math.max(0, span);
+        poly(c, INK.rose, [
+          [0, -wide],
+          [tip * 0.72, -wide * 0.56],
+          [tip, 0],
+          [tip * 0.72, wide * 0.56],
+          [0, wide],
+        ]);
+        // Two chevrons inside the wedge point the way out.
+        c.globalAlpha = 0.55 + 0.45 * burn;
+        for (let i = 0; i < 2; i++) {
+          const at = tip * (0.42 + 0.3 * i),
+            w = wide * (0.34 - 0.08 * i);
+          poly(c, INK.paper, [
+            [at - w, -w * 1.5],
+            [at + w, 0],
+            [at - w, w * 1.5],
+            [at - w * 0.35, 0],
+          ]);
+        }
+        c.restore();
+      }
+      // A ring that visibly closes on the cube, so the beat has a clock.
+      c.save();
+      c.globalAlpha = 0.32 + 0.5 * burn;
+      arc(c, INK.paper, 2.2 / v.scale, p.x, p.y, R + 10 + 30 * (1 - burn));
+      c.globalAlpha = 0.6 + 0.4 * burn;
+      arc(c, INK.rose, 1.6 / v.scale, p.x, p.y, R + 6 + 52 * (1 - burn) ** 1.6);
+      c.restore();
       c.restore();
     }
     if(scene) drawStory(c,{v,p,e:nearest&&{...pose(nearest,alpha),r:nearest.r},shot:run.suggestion(),scene,device,age:sceneTicks+alpha,motion,aim:!!aim?.power});

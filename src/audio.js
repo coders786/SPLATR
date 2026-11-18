@@ -181,6 +181,12 @@ export function createAudio() {
     zone() {
       [440, 660].forEach((f, i) => tone(f, f * 1.1, 0.18, 'triangle', 0.045, i * 0.1));
     },
+    lock() {
+      // A sharp, quiet two-step tick. It confirms a magnet catch without
+      // pretending the target is already cut.
+      tone(1560, 1560, 0.028, 'square', 0.019);
+      tone(2340, 2340, 0.021, 'sine', 0.014, 0.031);
+    },
     focus(active) {
       // Pointer-down alone is not a focus maneuver. Quick taps stay dry.
       if (!active) heldTicks = 0;

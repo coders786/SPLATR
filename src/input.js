@@ -1,10 +1,11 @@
 import { MAX_PULL, MAX_SPEED, dragVector } from './physics.js';
 import { clamp } from './levels.js';
+import { magnetize } from './aim.js';
 
 /** Exactly one captured primary pointer. A hold remembers what was under the
  * finger at press, so camera motion doesn't steal a target before release.
  * A pull is relative to that press in display pixels, independent of zoom. */
-export function createInput(canvas, { get, active, point, assist, engage, commit }) {
+export function createInput(canvas, { get, active, point, assist, engage, commit, lock }) {
   let pointer = null,
     keyboard = null,
     last = null,
@@ -23,13 +24,40 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
     cancel();
     if (active() && commit(v)) last = { x: v.x, y: v.y, power: v.power };
   }
+  function acquire(next) {
+    if (next?.lock?.id === lock.once) return;
+    lock.once = next?.lock?.id ?? null;
+    if (next?.lock) lock.tick();
+  }
+  // The magnet lives in the input so the vector that is DRAWN is the vector
+  // that is fired. It only bends the impulse; the blade still has to sweep
+  // the target, and the corridor still respects a nearer plate.
+  function magnetic(v, focus) {
+    const r = get();
+    if (!v?.power || !assist() || !r) return v;
+    const out = magnetize(r.world.player.position, v, r.combat, { focus });
+    acquire(out); // one tick per acquisition, not per pointermove
+    return out;
+  }
   function pointerAim() {
     const r = get(),
       p = pointer,
       v = dragVector({ x: 0, y: 0 }, { x: (p.toX - p.x) * p.gain, y: (p.toY - p.y) * p.gain });
-    if (v.power) return r.adjust(v, assist());
-    const e = r.combat.enemies.get(p.target);
-    return r.aimAt(e || p.world, !!e);
+    // While a finger or mouse is down the cube is in focus, which also
+    // widens the corridor a little: an intentional aim is a declared shot.
+    if (v.power) {
+      const shot = magnetic(r.adjust(v, assist()), true);
+      // The tether is pinned to the WORLD point that was under the press. A
+      // display-space anchor would drift off-screen as the lens widens during
+      // a held aim, drawing a tether to nowhere.
+      shot.anchor = { x: p.world.x, y: p.world.y };
+      return shot;
+    }
+    const e = r.combat.enemies.get(p.target),
+      aimed = r.aimAt(e || p.world, !!e);
+    acquire(magnetize(r.world.player.position, aimed, r.combat, { focus: true }));
+    aimed.anchor = { x: p.world.x, y: p.world.y };
+    return aimed;
   }
   canvas.addEventListener('pointerdown', (e) => {
     if (!active() || pointer || !e.isPrimary || e.button !== 0) return;
@@ -99,9 +127,9 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
     }
     const n = Math.hypot(x, y);
     if (n)
-      keyboard = get().adjust(
-        { x: (x / n) * MAX_SPEED, y: (y / n) * MAX_SPEED, power: 1 },
-        assist(),
+      keyboard = magnetic(
+        get().adjust({ x: (x / n) * MAX_SPEED, y: (y / n) * MAX_SPEED, power: 1 }, assist()),
+        !!shift,
       );
   }
   window.addEventListener('keydown', (e) => {
@@ -143,6 +171,12 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
     get aim() {
       return pointer ? pointerAim() : keyboard;
     },
+    /** The live magnet decision for a vector, without firing it. Exposed so
+     *  the renderer, camera and the headless tests can read the same answer. */
+    preview(v) {
+      const r = get();
+      return v?.power ? magnetic(v, true) : v;
+    },
     tick() {
       if (!shift || !keyboard || !active()) return;
       const turn =
@@ -156,6 +190,7 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
     cancel,
     reset() {
       last = null;
+      lock.once = null;
       cancel();
     },
   };

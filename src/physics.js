@@ -10,6 +10,7 @@ const GRAVITY_Y = 1.35;
 const MAX_SPIN = 0.18;
 const MAX_TRAVEL = 5; // maximum corner travel per collision sample
 const SLOW = 0.15;
+export const SLOW_MIN = 0.15;
 const DEAD_ZONE = 7;
 
 export function createPhysics(level) {
@@ -53,6 +54,9 @@ export function createPhysics(level) {
     previousClock: 0,
     clock: 0,
     substeps: 1,
+    // The last real surface contact, for the impact pose and its ring. Set by
+    // stepPhysics from an actual collision normal, never guessed from speed.
+    contact: null,
   };
 }
 
@@ -98,11 +102,13 @@ function advanceTiming(world, pace) {
   const target=world.slow?SLOW:1;
   world.focusScale+=(target-world.focusScale)*(world.slow?.32:.54);
   if(Math.abs(target-world.focusScale)<.002)world.focusScale=target;
-  // A cut buys reading time without changing the committed parabola. Only
-  // *held* focus lightens gravity and spends focus; the two never multiply.
+  // A cut, the Redline warning or an automatic hazard grace buys reading
+  // time without changing the committed parabola. Only *held* focus
+  // lightens gravity and spends focus; the two never multiply.
   world.engine.timing.timeScale=Math.min(world.focusScale,pace);
   world.engine.gravity.scale=BASE_GRAVITY*(1-.9*(1-world.focusScale)/(1-SLOW));
 }
+
 
 export function launch(world, velocity) {
   const length = Math.hypot(velocity.x, velocity.y);
@@ -147,7 +153,7 @@ export function sweptHit(x, y, dx, dy, r, inset = 0) {
 // Matter.js uses discrete SAT, not a magic "CCD enabled" flag. In addition to
 // bounded steps below, sweep an inscribed square through static geometry. It
 // fits the blade at EVERY angle; a crossing here is never just a proximity hit.
-function catchCrossing(world, startX, startY) {
+function catchCrossing(world, startX, startY, incoming = 0) {
   const p = world.player,
     dx = p.position.x - startX,
     dy = p.position.y - startY;
@@ -166,11 +172,38 @@ function catchCrossing(world, startX, startY) {
     y: startY + dy * first.t + first.ny * clearance,
   });
   const vn = p.velocity.x * first.nx + p.velocity.y * first.ny;
-  if (vn < 0)
+  if (vn < 0) {
+    // The impulse into the surface is exactly what the pose should squash by.
+    noteContact(world, startX + dx * first.t, startY + dy * first.t, first.nx, first.ny, Math.max(-vn, incoming));
     Body.setVelocity(p, {
       x: p.velocity.x - (1 + p.restitution) * vn * first.nx,
       y: p.velocity.y - (1 + p.restitution) * vn * first.ny,
     });
+  }
+}
+
+/** One contact per step, the hardest of the substeps. `depth` is the closing
+ *  speed along the surface normal, so a glancing slide is not a slam. A body
+ *  that keeps resolving against the same surface is RESTING, not hitting, so
+ *  repeats are dropped for `contactHold` ticks: otherwise the pose would buzz
+ *  every frame a cube sits on the pad. */
+function noteContact(world, x, y, nx, ny, depth) {
+  // A cube resting on the pad resolves a tiny impulse at the same point every
+  // tick. That is not a hit. A contact counts when it is a real closing speed
+  // AND either somewhere new or the first one after a clean frame. Depth is
+  // the closing rate, so a body merely leaning on a surface reads ~0.
+  if (!Number.isFinite(depth) || depth <= 1.4) return;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+  const prev = world.contact;
+  if (prev) {
+    // Same surface, same neighbourhood, and no real closing speed: the cube is
+    // sitting there resolving a lean, not arriving.
+    const samePlace = Math.hypot(x - prev.x, y - prev.y) < 26,
+      sameFace = prev.nx * nx + prev.ny * ny > 0.75;
+    if (samePlace && sameFace && depth < 9) return;
+    if (world.clock < prev.until && samePlace && sameFace) return;
+  }
+  world.contact = { x, y, nx, ny, depth, speed: world.player.speed, clock: world.clock, until: world.clock + 0.22 };
 }
 
 function snapshot(body) {
@@ -192,12 +225,16 @@ export function stepPhysics(world, beforeStep, pace=1) {
   const fastest = snapshot(world.player);
   const steps = Math.max(1, Math.ceil(((fastest + 0.5) * scale) / MAX_TRAVEL));
   world.substeps = steps;
+  // The speed the cube ARRIVES with. Matter resolves an impact inside
+  // Engine.update, so reading it afterwards would always see ~0 and every
+  // landing would look like a body at rest.
+  const incoming = world.player.speed;
   for (let i = 0; i < steps; i++) {
     const p = world.player,
       x = p.position.x,
       y = p.position.y;
     Engine.update(world.engine, STEP_MS / steps);
-    catchCrossing(world, x, y);
+    catchCrossing(world, x, y, incoming);
     capVelocity(p);
   }
   // A wall or the underside of a deck is NOT ground. Check the contact normal
@@ -209,6 +246,29 @@ export function stepPhysics(world, beforeStep, pace=1) {
     return ny < -0.55 && world.player.velocity.y > -1.3;
   });
   if (world.grounded && world.slow) setBulletTime(world, false);
+  for (const pair of world.engine.pairs.list) {
+    if (!pair.isActive || pair.isSensor) continue;
+    const collision = pair.collision,
+      { parentA, parentB, normal, depth: overlap } = collision;
+    const sign = parentA === world.player ? 1 : parentB === world.player ? -1 : 0;
+    if (!sign) continue;
+    const nx = normal.x * sign,
+      ny = normal.y * sign;
+    if (!(overlap >= 0) || incoming < 1.2) continue;
+    // Matter's support points are where the two silhouettes actually touched.
+    // Using the body centre would put a landing's shockwave inside the cube.
+    const supports = collision.supports;
+    let cx = world.player.position.x,
+      cy = world.player.position.y;
+    if (Array.isArray(supports) && supports.length) {
+      const raw = supports[0];
+      if (Number.isFinite(raw?.x) && Number.isFinite(raw?.y)) {
+        cx = raw.x;
+        cy = raw.y;
+      }
+    }
+    noteContact(world, cx, cy, -nx, -ny, incoming);
+  }
   world.previousClock = world.clock;
   world.clock += scale;
 }
