@@ -385,16 +385,27 @@ dd {
 .hull i.empty {
   background: #4c3449;
 }
-/* Speedometer. A half-dial that fills from the left as the cube accelerates,
-   with the number under it. Deliberately low-contrast until it matters: at
-   cruising speed it is almost furniture, and only the top band lights up. */
+/* Speedometer. A half-dial with a real needle, not just a filling arc: a
+   needle gives the eye an angle to read at a glance, while a bar of colour
+   only gives it a length. The number sits inside the dial because that is
+   where the eye already is; the band word underneath names the state for
+   anyone who cannot read the needle quickly.
+
+   Deliberately quiet until it matters: at cruising speed the whole thing is
+   near-furniture, and only SURGE and REDLINE earn colour. */
 #speedo {
   position: relative;
-  width: 96px;
-  height: 62px;
+  width: 124px;
+  height: 78px;
   display: grid;
   place-items: end center;
   filter: drop-shadow(1px 2px 0 #130e1a);
+  transition: transform 140ms cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+/* The whole dial kicks forward with the cube. This is the one HUD element
+   allowed to react to speed, because reacting is its entire job. */
+#speedo[data-band='REDLINE'] {
+  transform: scale(1.06);
 }
 .speedo-dial {
   position: absolute;
@@ -402,13 +413,12 @@ dd {
   width: 100%;
   height: 100%;
   overflow: visible;
-  transform: rotate(0deg);
 }
 .speedo-track,
 .speedo-fill {
   fill: none;
   stroke-linecap: round;
-  stroke-width: 7;
+  stroke-width: 6;
 }
 .speedo-track {
   stroke: #4a3448;
@@ -417,31 +427,75 @@ dd {
   stroke: var(--l);
   stroke-dasharray: 100;
   stroke-dashoffset: 100;
-  transition: stroke-dashoffset 120ms linear;
+  /* Matches the needle's own transition so the arc and the needle never
+     disagree about where "now" is. */
+  transition: stroke-dashoffset 90ms linear, stroke 220ms linear;
+}
+/* Fixed tick marks around the sweep. They are what makes a needle readable:
+   an angle next to a known scale, rather than an angle in isolation. */
+.speedo-ticks line {
+  stroke: #6d5568;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+.speedo-ticks line:first-child,
+.speedo-ticks line:last-child {
+  stroke: #9c7d95;
+}
+.speedo-needle line {
+  stroke: var(--w);
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  /* The needle is drawn from the hub upward; rotating about the hub is what
+     turns it into a gauge. `transform-box: fill-box` + `transform-origin:
+     bottom center` makes that rotation independent of the viewBox scale, which
+     a bare `transform-origin: 60px 62px` does not survive on every engine. */
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  transform: rotate(-90deg);
+  transition: transform 90ms linear, stroke 220ms linear;
+}
+.speedo-needle circle {
+  fill: var(--w);
+  transition: fill 220ms linear;
 }
 #speedo[data-band='SURGE'] .speedo-fill {
   stroke: #ffd166;
 }
+#speedo[data-band='SURGE'] .speedo-needle line {
+  stroke: #ffd166;
+}
+#speedo[data-band='SURGE'] .speedo-needle circle {
+  fill: #ffd166;
+}
 #speedo[data-band='REDLINE'] .speedo-fill {
   stroke: var(--hot);
 }
+#speedo[data-band='REDLINE'] .speedo-needle line {
+  stroke: var(--hot);
+}
+#speedo[data-band='REDLINE'] .speedo-needle circle {
+  fill: var(--hot);
+}
 #speedo-value {
   position: relative;
-  font: italic 800 25px/1 var(--type);
+  font: italic 800 27px/1 var(--type);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
   color: var(--w);
-  margin-bottom: 3px;
+  margin-bottom: 11px;
+  transition: color 220ms linear;
 }
 #speedo[data-band='REDLINE'] #speedo-value {
   color: var(--hot);
 }
 #speedo-band {
   position: absolute;
-  bottom: -2px;
+  bottom: 0;
   font: 8px/1 var(--mono);
   letter-spacing: 0.14em;
   color: #b39ab0;
+  transition: color 220ms linear;
 }
 #speedo[data-band='REDLINE'] #speedo-band {
   color: var(--hot);
@@ -966,4 +1020,78 @@ body:has(#panel[open]) #hud {
   font-size: 12px;
   line-height: 1.45;
   margin: 9px 0 2px;
+}
+
+/* ── reactive HUD ───────────────────────────────────────────────────────────
+ *
+ * A fixed HUD on a fast game reads as a layer of stickers over the action: the
+ * eye stops trusting it because it never acknowledges anything. These rules
+ * let the HUD answer the player, in the three places that matter:
+ *
+ *   hull   - losing one is the most important event in the run
+ *   chain  - the multiplier is the reason to keep flying
+ *   score  - the number that says the run is going well
+ *
+ * All of it is transform/opacity only, so it cannot affect layout or cost a
+ * reflow while the game is running. Everything is gated on `#hud` being live,
+ * and nothing here animates longer than a beat.
+ */
+
+@keyframes hull-break {
+  0% { transform: scale(1); filter: none; }
+  18% { transform: scale(1.42) rotate(-5deg); filter: brightness(2.2) saturate(0); }
+  46% { transform: scale(0.86) rotate(3deg); }
+  74% { transform: scale(1.1) rotate(-1deg); }
+  100% { transform: scale(1); filter: none; }
+}
+@keyframes score-kick {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.055); }
+  100% { transform: scale(1); }
+}
+@keyframes chain-flare {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* The hull row shakes when it loses a plate. `data-hit` is set for one frame,
+   then cleared; the animation runs on the attribute flip, so it needs no
+   timers and cannot stack up if the player is hit twice quickly. */
+.hull[data-hit] #hull {
+  animation: hull-break 380ms cubic-bezier(0.3, 1.5, 0.5, 1);
+  transform-origin: 50% 50%;
+}
+/* A plate that just went dark reads as a break rather than a fade. */
+.hull i {
+  transition: background 180ms linear, transform 180ms ease;
+}
+.hull i.empty {
+  transform: skewX(-14deg) scaleY(0.55);
+}
+
+/* Score answers a kill. The number is tabular so the glyphs cannot jitter the
+   layout while they tick up. */
+#score[data-kick] {
+  animation: score-kick 200ms ease-out;
+  transform-origin: 0 50%;
+}
+#chain[data-flare] {
+  animation: chain-flare 220ms cubic-bezier(0.3, 1.4, 0.5, 1);
+  transform-origin: 0 50%;
+}
+
+/* Reduced motion: acknowledge without moving. Colour and opacity only. */
+@media (prefers-reduced-motion: reduce) {
+  .hull[data-hit] #hull,
+  #score[data-kick],
+  #chain[data-flare] {
+    animation: none;
+  }
+  .hull[data-hit] #hull {
+    outline: 2px solid var(--hot);
+  }
+  #score[data-kick] {
+    color: var(--l);
+  }
 }

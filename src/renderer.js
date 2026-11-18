@@ -6,7 +6,7 @@ import { PAD, SPAWN, PLAYER_SIZE, clamp, randomSource, openingFacing } from './l
 import { sightPicture } from './guide.js';
 import { ARC, predictAim, speedRgb } from './aim.js';
 import { elongate, squashed, wave } from './impact.js';
-import { MOTION, createShake, stretchFor, animationState } from './motion.js';
+import { MOTION, createShake, stretchFor, animationState, fade, appear, ANIM } from './motion.js';
 import {sceneFor,drawStory} from './storyboard.js';
 import { SHEAR, impactFor } from './stroke.js';
 import { rackInk, contactInk, drawSweep } from './cut-ink.js';
@@ -566,7 +566,9 @@ export function createRenderer(canvas) {
       for (const e of shards) {
         const q = pose(e, alpha);
         c.save();
-        c.globalAlpha = clamp(e.life / 14, 0, 1);
+        // Debris fade, owned by the animation registry: the numerator is
+        // the row's life, so retiming a shard cannot desync its alpha.
+        c.globalAlpha = fade('shard', ANIM.shard.life - e.life);
         c.translate(q.x, q.y);
         c.rotate(q.angle);
         if (motion && e.opts.paper) {
@@ -582,7 +584,7 @@ export function createRenderer(canvas) {
       if (motion)
         for (const e of sparks) {
           c.save();
-          c.globalAlpha = clamp(e.life / 10, 0, 1);
+          c.globalAlpha = fade('spark', ANIM.spark.life - e.life);
           c.translate(mix(e.px, e.x, alpha), mix(e.py, e.y, alpha));
           c.rotate(e.angle);
           poly(c, e.col, [
@@ -628,8 +630,9 @@ export function createRenderer(canvas) {
     }
     for (const m of imprints) {
       c.save();
-      c.globalAlpha = clamp(m.life / 9, 0, 1);
-      if (m.type === 'cut' || m.type === 'armor') contactInk(c, m, clamp(m.life / 6, 0, 1), motion);
+      c.globalAlpha = fade('imprint', ANIM.imprint.life - m.life);
+      if (m.type === 'cut' || m.type === 'armor')
+        contactInk(c, m, fade('imprint', ANIM.imprint.life - m.life), motion);
       else if (m.type === 'shear') {
         shearInk(c, m.x, m.y, m.angle, Math.hypot(m.end.x - m.x, m.end.y - m.y), SHEAR.width);
       } else {
@@ -685,7 +688,12 @@ export function createRenderer(canvas) {
       foe(c, e.kind, q.x, q.y, e.r, q.angle, {
         hp: e.hp,
         paper: e.paper,
-        flash: e.flash > 13,
+        // Eased hit flash. `e.flash` counts DOWN from ANIM.flash.life, so the
+        // amount rises as it decays, which is exactly the attack the eye
+        // needs: instant white, then a quick settle back to the real colour.
+        // A hard boolean here used to pop the whole shape to flat white for
+        // two frames, which on a moving target reads as a stutter.
+        flash: e.flash > 0 ? fade('flash', ANIM.flash.life - e.flash) : 0,
         fault: e.fault,
         time,
       });
@@ -734,7 +742,10 @@ export function createRenderer(canvas) {
             bearing,
             R * s.reach,
             s.shots % 2 ? 1 : -1,
-            clamp(1 - (time - s.swingStart) / 8, 0, 1),
+            // Sweep strength, timed by the animation registry rather than a
+            // local divisor, so the blade and its snap cannot disagree about
+            // how long the cut is readable.
+            fade('blade', time - s.swingStart),
           );
         blade(c, p.x, p.y, bearing, R, 1, s.reach);
       } else if ((s.opening?.rest || (s.phase === 'ready' && s.drive > 0)) && nearest) {
@@ -761,7 +772,7 @@ export function createRenderer(canvas) {
         c.rotate(-a);
       }
       if (motion && s.blade > 0) {
-        const snap = 0.105 * clamp(1 - (time - s.swingStart) / 6, 0, 1);
+        const snap = 0.105 * fade('blade', (time - s.swingStart) * 1.4);
         c.rotate(s.slashAngle);
         c.scale(1 + snap, 1 - snap * 0.72);
         c.rotate(-s.slashAngle);

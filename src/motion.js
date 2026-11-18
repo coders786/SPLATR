@@ -46,7 +46,7 @@ export const MOTION = Object.freeze({
   // --- camera calm --------------------------------------------------------
   // Fraction of the gap to the target the camera closes per tick. Lower is
   // calmer. The old 0.17 made the whole world swim on every launch.
-  follow: 0.17,
+  follow: 0.11,
   // NOTE: the follow rate is NOT the calm. Measured in a real run, lowering
   // it let the cube outrun the lens and cost the player visible targets
   // (30 -> 27 kills at 0.105, 30 -> 22 at 0.062). The calm comes from the
@@ -149,6 +149,22 @@ export const CAMERA = Object.freeze({
    */
   follow: 0.11,
   maxStepPx: 20,
+  /**
+   * How far ahead of the cube the lens frames while it is flying, as a
+   * fraction of the viewport at terminal speed.
+   *
+   * This exists because a capped follow rate and an uncapped player cannot
+   * both be satisfied by centring: on a sustained climb the cube outruns the
+   * lens and the hard framing clamp parks it against the top edge. Measured
+   * before this existed, the cube spent 22-32% of a real run in the outer 12%
+   * of the screen, worst case touching y=0.02 -- it read as stuck, not fast.
+   *
+   * Keep it small. The lead only ever points along the cube's own velocity, so
+   * it buys room in front of the player, but a large value on a vertical climb
+   * would push the cube down toward the bottom of the screen and shrink the
+   * space for targets ahead.
+   */
+  lead: 0.12,
 });
 
 
@@ -254,4 +270,102 @@ export function speedReadout(speed, max = 35) {
  *  the guarantee rather than trusting a comment. */
 export function enemyIsSharp(motion) {
   return !motion || MOTION.enemyBlur === 0;
+}
+
+/* ── animation registry ─────────────────────────────────────────────────────
+ *
+ * Before this, every effect carried its own timing scattered through the
+ * renderer: `s.blade`, `s.drive`, `e.flash`, `m.life`, hard-coded divisors like
+ * `/9` and `/14`, and a fistful of magic constants next to each `globalAlpha`.
+ * The result was a system nobody could reason about as a whole: two effects
+ * that should feel related would decay at unrelated rates, and changing "how
+ * long a hit reads for" meant hunting through the draw code.
+ *
+ * So the timing now lives in one table. An effect asks for its curve by name:
+ *
+ *     progress('imprint', age)   -> 0..1 across the effect's life
+ *     fade('imprint', age)       -> 1..0, the alpha to draw at
+ *     scaleCurve('shard', age)   -> the pop/settle curve for a fresh shard
+ *
+ * and the renderer stops doing arithmetic on raw frame counts.
+ *
+ * The `ease` names map to the handful of curves that are genuinely different to
+ * the eye. They are written out rather than imported from a library because
+ * these four are the ones this game uses and a wrong curve here is very visible.
+ */
+const EASE = {
+  linear: (t) => t,
+  // Fast out, slow in: things that APPEAR (pops, stamps, sparks) arrive hard.
+  out: (t) => 1 - (1 - t) ** 3,
+  // Slow out, fast in: things that LEAVE (fades, drops) go away decisively.
+  in: (t) => t ** 2.2,
+  // Both ends soft. Used for anything that reads as a "breath".
+  smooth: (t) => t * t * (3 - 2 * t),
+  // Overshoot then settle. Only for impacts, where a little bounce sells weight.
+  snap: (t) => 1 - (1 - t) ** 2 * Math.cos(t * 2.6),
+};
+
+/** Every animated effect in the game, with its life in nominal 60 Hz ticks and
+ *  the curve it uses. `hold` is the fraction of life spent at full strength
+ *  before the fade begins, which is what separates a readable stamp from an
+ *  instant smear.
+ *
+ *  Keep these in ONE place. If an effect needs a new timing, add a row here
+ *  rather than a divisor in the renderer. */
+export const ANIM = Object.freeze({
+  // Contact ink stays long enough to read as a mark on the world, not a flash.
+  imprint: { life: 34, hold: 0.55, ease: 'smooth' },
+  // A cut shard is debris: it leaves quickly and must not linger to be read.
+  shard: { life: 32, hold: 0.1, ease: 'in' },
+  // A spark is a short punctuation mark, not an object.
+  spark: { life: 11, hold: 0, ease: 'in' },
+  // The hit flash on an enemy: two frames of white, then gone. Any longer and
+  // a fast target reads as a solid white blob sliding across the screen.
+  flash: { life: 16, hold: 0.18, ease: 'out' },
+  // The blade sweep is the single most important read in the game: it must be
+  // long enough to show the ARC of the cut, short enough to feel like a whip.
+  blade: { life: 31, hold: 0.0, ease: 'smooth' },
+  // A pop is the shape appearing. It overshoots slightly so the eye catches it.
+  pop: { life: 18, hold: 0.0, ease: 'snap' },
+  // The Overdrive ring is ambient, so it is the slowest thing here.
+  drive: { life: 60, hold: 0.3, ease: 'smooth' },
+});
+
+/** 0..1 through a named effect's life. Clamped, so a caller can pass an age
+ *  beyond the end without special-casing it. */
+export function progress(name, age) {
+  const a = ANIM[name];
+  if (!a) return 1;
+  return clamp(age / a.life, 0, 1);
+}
+
+/** The eased 0..1 curve for a named effect. */
+export function curve(name, age) {
+  const a = ANIM[name];
+  if (!a) return 1;
+  return EASE[a.ease](progress(name, age));
+}
+
+/** 1..0 alpha for a named effect: full strength for the `hold` portion of its
+ *  life, then fading to nothing. This is the shape almost every effect wants,
+ *  and having it here means no two effects can disagree about it. */
+export function fade(name, age) {
+  const a = ANIM[name];
+  if (!a) return 0;
+  const t = progress(name, age);
+  if (t >= 1) return 0;
+  if (t <= a.hold) return 1;
+  return 1 - EASE.smooth((t - a.hold) / (1 - a.hold || 1));
+}
+
+/** Is this effect still alive? A single call site for the "should I draw it"
+ *  question, so a dead effect can never be drawn at alpha 0 for 40 frames. */
+export function alive(name, age) {
+  return age >= 0 && age < ANIM[name].life;
+}
+
+/** Pop/settle scale for something appearing: starts small, overshoots a touch,
+ *  ends at 1. Used by spawned shapes and fresh ink. */
+export function appear(name, age) {
+  return 0.55 + 0.45 * curve(name, age);
 }

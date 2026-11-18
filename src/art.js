@@ -129,9 +129,24 @@ export function cube(c, x, y, r, angle = 0, flutter = 0, face = 1) {
 }
 // Tangential marks echo a class's ability instead of giving every polygon a
 // generic face: scope, oscillator, split seam, plate, blink star, or vortex.
+// Mix two #rrggbb colours. Used only for the enemy hit flash, where blending
+// is what turns a hard white pop into an eased impact.
+function blend(a, b, t) {
+  const pa = parseInt(a.slice(1), 16),
+    pb = parseInt(b.slice(1), 16);
+  const ch = (sh) => Math.round((((pa >> sh) & 255) * (1 - t) + ((pb >> sh) & 255) * t));
+  return `#${((1 << 24) | (ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).slice(1)}`;
+}
+
 export function foe(c, kind, x, y, r, angle = 0, opts = {}) {
   const t = TYPES[kind],
-    col = opts.flash ? W : t.color,
+    // `flash` may be a BOOLEAN (hit hard) or a 0..1 AMOUNT. An enemy that pops
+    // from its colour to solid white for two frames and back is the single
+    // most visually violent thing on the field: on a fast-moving target it
+    // reads as a stutter, not as a hit. Taking an amount lets the renderer
+    // ease it in and out so the flash reads as impact rather than as a glitch.
+    flash = typeof opts.flash === 'number' ? opts.flash : opts.flash ? 1 : 0,
+    col = flash > 0 ? blend(W, t.color, 1 - flash) : t.color,
     time = opts.time || 0;
   c.save();
   c.translate(x, y);

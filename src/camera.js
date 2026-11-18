@@ -29,6 +29,16 @@ export function createCamera() {
         ? width / 792
         : Math.min(width / 1330, height / 780);
   }
+  // How far ahead of the cube the lens frames, as a fraction of the viewport,
+  // at terminal speed. Small on purpose: enough that a sustained climb never
+  // pins the cube to the edge, not so much that the cube sits near the bottom
+  // of a rising screen.
+  const LEAD = CAMERA.lead;
+  let leadX = 0,
+    leadY = 0;
+  // Speed at which the lead is fully applied. Matches MAX_SPEED loosely; a
+  // fraction below terminal is enough because the lead saturates early.
+  const MAX_LEAD_V = 42;
   function desired(p, stationary, vx = 0, vy = 0, z = zoom) {
     const portrait = width < height * 0.85;
     const inset = room ? 0.28 : 0.32;
@@ -38,6 +48,33 @@ export function createCamera() {
     // the composition.
     const ax = stationary ? (forward > 0 ? inset : 1 - inset) : 0.48;
     const ay = stationary ? (room ? 0.76 : portrait ? 0.69 : 0.78) : 0.56;
+    // Frame AHEAD of the cube while it is flying.
+    //
+    // Following the cube's exact centre is what put it against the top edge:
+    // the follow rate is capped (deliberately -- an uncapped chase whips the
+    // frame), so on a sustained climb the cube outruns the lens and the hard
+    // framing clamp then parks it at the boundary. Measured before this
+    // change: the cube sat in the outer 12% of the screen on 22-32% of frames
+    // in a real run, and looked stuck rather than fast.
+    //
+    // So the lens leads the direction of travel by a fixed slice of the
+    // viewport. This is not a lookahead toward targets (that made the field
+    // slide sideways); it only ever leans along the cube's own velocity, so
+    // the extra screen space is always in front of the player, which is where
+    // a fast game needs to be readable anyway.
+    // Sign: `screenFraction = ax + lead`, so to leave room IN FRONT of the
+    // cube the lead has to be the NEGATIVE of its direction of travel. Climbing
+    // (vy < 0) must therefore produce a POSITIVE lead.y, which puts the cube
+    // lower on the screen and the empty space above it.
+    // Smooth the direction of travel before leading, so the lead cannot swing
+    // with every arc of the cube. A raw velocity lead doubled the worst view
+    // acceleration (22.5 -> 41.9 px/tick) because the framing target flipped
+    // side to side as the cube curved, and a framing target that changes its
+    // mind is exactly the lurch this camera exists to avoid. The lead now
+    // follows a slow average, so it only ever responds to SUSTAINED travel.
+    leadX += (clamp((-vx / MAX_LEAD_V) * LEAD, -LEAD, LEAD) - leadX) * (stationary ? 0.5 : 0.08);
+    leadY += (clamp((-vy / MAX_LEAD_V) * LEAD, -LEAD, LEAD) - leadY) * (stationary ? 0.5 : 0.08);
+    const lead = { x: leadX, y: leadY };
     const axMix = ax,
       ayMix = ay;
     // Lean ONLY above the committed speed threshold (see motion.js). Below it
@@ -45,8 +82,8 @@ export function createCamera() {
     // drag the whole world around the screen.
     const lean = leanFor(vx, vy);
     return {
-      x: p.x - (width / (base * z)) * axMix + lean.x,
-      y: p.y - (height / (base * z)) * ayMix + lean.y,
+      x: p.x - (width / (base * z)) * axMix + lean.x - lead.x * (width / (base * z)),
+      y: p.y - (height / (base * z)) * ayMix + lean.y - lead.y * (height / (base * z)),
     };
   }
   function snap(p, stationary = false) {

@@ -301,6 +301,12 @@ async function fullscreen() {
 }
 for (const b of document.querySelectorAll('.full')) b.onclick = fullscreen;
 document.addEventListener('fullscreenchange', syncSettings);
+let lastHp = null,
+  lastScore = null,
+  lastChain = null,
+  hitTimer = 0,
+  kickTimer = 0,
+  flareTimer = 0;
 function updateHUD() {
   if (!run) return;
   const s = run.state;
@@ -312,6 +318,38 @@ function updateHUD() {
   $('chain-meter').style.transform = `scaleX(${s.chainTime / CHAIN_TIME})`;
   Array.from($('hull').children).forEach((n, i) => n.classList.toggle('empty', i >= s.hp));
   $('hull').setAttribute('aria-label', `${s.hp} hull remaining`);
+  // Reactive HUD. Each of these is a one-frame attribute flip that a CSS
+  // animation hooks, so the feedback costs no timers and cannot queue up
+  // behind itself if the player is hit twice inside one animation.
+  // `lastHp`/`lastScore`/`lastChain` live outside this function so a paused or
+  // hidden tab resuming does not fire a false "you were hit".
+  if (lastHp !== null && s.hp < lastHp) {
+    const row = $('hull').closest('.hull');
+    row.removeAttribute('data-hit');
+    void row.offsetWidth; // force the animation to restart
+    row.setAttribute('data-hit', '');
+    clearTimeout(hitTimer);
+    hitTimer = setTimeout(() => row.removeAttribute('data-hit'), 420);
+  }
+  if (lastScore !== null && s.score > lastScore) {
+    const scoreEl = $('score');
+    scoreEl.removeAttribute('data-kick');
+    void scoreEl.offsetWidth;
+    scoreEl.setAttribute('data-kick', '');
+    clearTimeout(kickTimer);
+    kickTimer = setTimeout(() => scoreEl.removeAttribute('data-kick'), 220);
+  }
+  if (lastChain !== null && s.chain > lastChain && s.chain >= 2) {
+    const chainEl = $('chain');
+    chainEl.removeAttribute('data-flare');
+    void chainEl.offsetWidth;
+    chainEl.setAttribute('data-flare', '');
+    clearTimeout(flareTimer);
+    flareTimer = setTimeout(() => chainEl.removeAttribute('data-flare'), 240);
+  }
+  lastHp = s.hp;
+  lastScore = s.score;
+  lastChain = s.chain;
   setText('sector', s.opening ? 'Cutting room' : `Sector ${two(s.band)}`);
   setText('district', s.opening ? `Rack ${two(s.opening.row + 1)} / 03` : district(seed, s.band));
   // Speedometer: the cube's own velocity, not the world's tempo, so the
@@ -323,7 +361,16 @@ function updateHUD() {
   dial.setAttribute('aria-label', `Speed ${readout.kmh}, ${readout.band.toLowerCase()}`);
   setText('speedo-value', readout.kmh);
   setText('speedo-band', readout.band);
-  $('speedo').querySelector('.speedo-fill').style.strokeDashoffset = 100 - readout.kmh;
+  // The dial has two encodings of the same number on purpose: an arc (a
+  // length) and a needle (an angle). The needle is what a player actually
+  // reads mid-flight, because angle is legible at a glance while length is
+  // not. Both are mirrored from the same 0..100 so they cannot disagree.
+  dial.querySelector('.speedo-fill').style.strokeDashoffset = 100 - readout.kmh;
+  // -90deg is the needle at rest (pointing left across the dial); a full 0..100
+  // sweep is 180deg. Written as one expression so the geometry lives here
+  // rather than in two places that drift apart.
+  const needle = dial.querySelector('.speedo-needle');
+  if (needle) needle.style.transform = `rotate(${-90 + readout.kmh * 1.8}deg)`;
   $('drive').hidden = !!s.opening || s.drive <= 0;
   $('drive-meter').style.transform = `scaleX(${s.drive / 175})`;
   // Nonvisual equivalents only. The proof strip itself never draws words.
@@ -352,6 +399,11 @@ function start() {
   audio.unlock();
   audio.menu();
   lastBeat = -1;
+  // A fresh run must not react to the previous run's hull, score or chain.
+  lastHp = lastScore = lastChain = null;
+  clearTimeout(hitTimer);
+  clearTimeout(kickTimer);
+  clearTimeout(flareTimer);
   noticeTicks = receiptTicks = 0;
   $('imprint').hidden = true;
   $('callout').hidden = true;

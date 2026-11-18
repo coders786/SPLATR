@@ -4,7 +4,19 @@ import { speed } from './pace.js';
 
 const { Engine, Composite, Bodies, Body } = Matter;
 export const STEP_MS = 1000 / 60;
-export const MAX_SPEED = 35; // Matter velocity units: px / nominal 60 Hz step
+// Matter velocity units: px / nominal 60 Hz step.
+//
+// 35 -> 42 is the "more speed" pass. Two measurements made this safe rather
+// than a guess:
+//  - The renderer holds 1.39 ms/frame at DPR 2 with 29 live enemies (~720 fps
+//    of CPU headroom in this sandbox), so the extra speed is nowhere near the
+//    frame budget.
+//  - MAX_TRAVEL forces Matter to substep whenever the fastest corner moves
+//    more than 5 px, so raising the cap samples thin walls MORE often instead
+//    of letting the cube tunnel through them.
+// Everything downstream reads this one constant (aim, impact stretch, the
+// speedometer normalisation), so the whole game scales with it.
+export const MAX_SPEED = 42;
 export const MAX_PULL = 176; // world pixels, NOT CSS or backing-store pixels
 export const BASE_GRAVITY = 0.001;
 const GRAVITY_Y = 1.35;
