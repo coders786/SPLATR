@@ -191,6 +191,21 @@ function event(type, d) {
       audio.strike('drive');
       say('Overdrive.');
       break;
+    case 'bank': {
+      // ── THE SONIC BOOM ──────────────────────────────────────────────────
+      //
+      // A rail bounce at speed is the most satisfying thing a billiard game
+      // does, and it was silent. This turns the event the physics already
+      // produces into a moment: a ring at the contact point, a burst of
+      // tapered speed lines, a hard camera-free flash, and -- above all -- a
+      // NAMED, COUNTED rally. "BANK ×4" tells the player they are building
+      // something, which is the difference between a bounce and a run.
+      const hard = d.speed >= MAX_SPEED * 0.86;
+      audio.strike(hard ? 'drive' : 'parry');
+      if (d.combo) say(`BANK ×${d.banks}`);
+      else if (hard) say('BANK');
+      break;
+    }
     case 'tier':
       // Crossing into a new speed tier is the mastery moment this game was
       // missing: the player did something right, and until now the only reward

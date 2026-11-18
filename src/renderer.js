@@ -2,7 +2,7 @@ import { createCamera, frameRun, inView, toScreen } from './camera.js';
 import { createBackdrop } from './atmosphere.js';
 import { arc, blade, cube, disk, foe, line, cutHalf, nick, shearInk, poly, trace } from './art.js';
 import { INK, TYPES, TAU, CUBE, pose, bodyPose, bisect, mix } from './shapes.js';
-import { PAD, SPAWN, PLAYER_SIZE, clamp, randomSource, openingFacing } from './levels.js';
+import { PAD, SPAWN, PLAYER_SIZE, ARENA, clamp, randomSource, openingFacing } from './levels.js';
 import { MAX_SPEED } from './physics.js';
 import { sightPicture } from './guide.js';
 import { ARC, predictAim, speedRgb } from './aim.js';
@@ -17,7 +17,8 @@ import {
   ANIM,
   tierOf,
 } from './motion.js';
-import {sceneFor,drawStory} from './storyboard.js';
+import { sceneFor, drawStory } from './storyboard.js';
+import { createSmear, ghostFor, morphWedge } from './smear.js';
 import { SHEAR, impactFor } from './stroke.js';
 import { rackInk, contactInk, drawSweep } from './cut-ink.js';
 const R = PLAYER_SIZE / 2;
@@ -270,18 +271,39 @@ function tide(c, v, y, t) {
 function streak(c, trail, p, live) {
   if (trail.length < 3) return;
   // A decaying ribbon of afterimages: each older sample is thinner, dimmer and
-  // shifted further toward the cold end of the speed ramp. A single flat
-  // polygon read as one solid smear at terminal speed.
+  // shifted further toward the cold end of the speed ramp.
+  //
+  // THE BACK LINE BUG.
+  // This used to connect every consecutive pair of trail samples, including the
+  // ones recorded while the cube was sitting on the launch pad. The moment a
+  // dash started, those stale samples were all at the pad and the newest was
+  // the cube -- so the ribbon drew ONE long thin quad across the entire gap
+  // between them. That is the "back line" that looked wrong when dashing: not a
+  // speed ribbon at all, but a single straight stick joined to where the cube
+  // used to be. Two fixes, both below:
+  //
+  //  1. Segments are skipped when the sample step is too large to be a real
+  //     frame of travel. A genuine ribbon is built from many short steps; one
+  //     long step is a discontinuity and is not drawn.
+  //  2. The trail is cleared on a launch, so a dash starts a NEW ribbon at the
+  //     launch point instead of dragging the old resting one along.
+  //
+  // Width now also tracks speed rather than index alone, so the ribbon is a
+  // readout: a slow drift is a hairline, a redline dash is a body.
+  const total = trail.length - 1;
   for (let i = 1; i < trail.length; i++) {
     const q = i === trail.length - 1 ? p : trail[i],
       prev = trail[i - 1],
       dx = q.x - prev.x,
       dy = q.y - prev.y,
-      n = Math.hypot(dx, dy) || 1,
-      u = i / (trail.length - 1),
-      half = (live ? 14 : 6) * u ** 1.3,
+      step = Math.hypot(dx, dy),
+      n = step || 1,
+      u = i / total,
+      half = (live ? 13 : 5) * u ** 1.15,
       col = speedRgb(0.18 + 0.82 * u ** 1.6);
-    if (half < 0.7) continue;
+    // A discontinuity is not motion. 46 world units is comfortably above one
+    // frame of travel at MAX_SPEED and comfortably below a launch's teleport.
+    if (half < 0.7 || step > 46) continue;
     c.save();
     c.globalAlpha = (live ? 0.62 : 0.2) * u ** 1.4;
     poly(c, `rgb(${col.join(',')})`, [
@@ -333,6 +355,10 @@ export function createRenderer(canvas) {
     revision = 0,
     anim = 'rest',
     shake = createShake(),
+    ghosts = createSmear(10),
+    lastSwing = -1,
+    justLaunched = 0,
+    ghostClock = 0,
     stain = 0,
     facing = 1,
     rand = randomSource(1);
@@ -480,7 +506,23 @@ export function createRenderer(canvas) {
     if (s.phase === 'playing' && Math.abs(forward) > 3) facing = Math.sign(forward);
     stain = Math.max(0, stain - 0.045);
     if (motion && s.phase === 'playing' && dt) {
-      trail.push({ ...world.player.position });
+      // A launch is a discontinuity, and a ribbon must not span one. When the
+      // cube goes from resting-on-the-pad to travelling, the oldest samples are
+      // still back at the pad; joining them to the new position draws a single
+      // straight stick across the gap -- the "back line" that looked broken
+      // when dashing. Clearing here means a dash starts its ribbon AT THE POINT
+      // OF LAUNCH, so the ribbon is always a record of the current shot.
+      // `swingStart` is stamped on every launch, so comparing it to the last
+      // frame's value detects exactly the frames a new shot began on.
+      if (s.swingStart !== lastSwing) {
+        trail.length = 0;
+        lastSwing = s.swingStart;
+        justLaunched = 2; // skip the pad sample and the first in-flight one
+      }
+      // The launch frame's own position is still the PAD, so pushing it would
+      // re-create the straight stick one sample long.
+      if (justLaunched > 0) justLaunched--;
+      else trail.push({ ...world.player.position });
       if (trail.length > MOTION.ribbon) trail.shift();
     }
     if (!motion) trail.length = 0;
@@ -612,6 +654,131 @@ export function createRenderer(canvas) {
     c.restore();
   }
 
+  /** The minimap.
+   *
+   *  Placed in the bottom-right corner and sized as a fraction of the smaller
+   *  screen dimension so it is the same object on a phone and a desktop.
+   *
+   *  It answers exactly one question -- "where is everything I cannot see?" --
+   *  and it answers it PRECISELY: every live enemy is a dot at its true
+   *  position in the arena, the rails are drawn as the table, and the cube is
+   *  a bright wedge showing which way it is going. It is not decorative.
+   *
+   *  This is the direct fix for "enemies are completely out of sight": the
+   *  canvas is far larger than the view, and without a map the player is
+   *  steering blind toward things they cannot locate. A minimap that is
+   *  precisely scaled turns the whole arena into readable space.
+   *
+   *  Deliberately excluded: enemy kinds, health, or anything that would make
+   *  the player read the MAP instead of the field. It is a locator, not a HUD.
+   */
+  function minimap(c, world, combat, v) {
+    const A = ARENA;
+    if (!A) return;
+    // Reset to the screen transform explicitly.
+    //
+    // `speedField` runs immediately before this and calls setTransform itself.
+    // Relying on save/restore ordering across two functions that both touch the
+    // transform was the reason this map drew once during the title and then
+    // never appeared in play -- the geometry was right and the matrix was not.
+    // A screen-space layer should never inherit another layer's matrix.
+    c.setTransform(canvas.width / w, 0, 0, canvas.height / h, 0, 0);
+    // The map shows the PLAYED region, not the raw arena rectangle.
+    //
+    // The arena is deliberately enormous -- its floor is 16000px under the
+    // spawn and its ceiling is forty bands away, because those rails exist to
+    // catch an escape velocity shot and must never be met in normal play. Using
+    // that rectangle as the map's aspect ratio squashed the whole panel to a
+    // two-pixel-wide sliver in the corner.
+    //
+    // So the map frames the space the cube and the field actually occupy: a
+    // window centred on the player, wide enough to hold the visible view plus
+    // every nearby enemy. It scrolls with the player, which is also the only
+    // framing where "where is everything I cannot see" has a stable answer.
+    const VIEW_SPAN = 4200, // world units across the map, ~4 screens
+      side = Math.min(w, h),
+      pad = Math.max(10, side * 0.022),
+      box = Math.min(side * 0.26, 190),
+      half = VIEW_SPAN / 2,
+      cx = world.player.position.x,
+      cy = world.player.position.y,
+      scale = box / VIEW_SPAN,
+      mw = box,
+      mh = box,
+      x0 = w - mw - pad,
+      y0 = h - mh - pad,
+      mapX = cx - half,
+      mapY = cy - half;
+    const toMap = (x, y) => ({ x: x0 + (x - mapX) * scale, y: y0 + (y - mapY) * scale });
+
+    c.save();
+    // Backing plate. Dark and slightly inset so the map reads as a pane of
+    // glass over the world rather than a hole cut in it.
+    // The plate has to be VISIBLY different from the scene behind it.
+    // #0d0a14 at 0.82 alpha over a near-black world was invisible -- the map
+    // drew correctly and nobody could see it, which is worse than not drawing
+    // it at all because it looks like a bug in the effects rather than a panel.
+    c.globalAlpha = 0.9;
+    c.fillStyle = '#07050d';
+    c.fillRect(x0 - 4, y0 - 4, mw + 8, mh + 8);
+    c.globalAlpha = 1;
+    c.strokeStyle = '#2a1f33';
+    c.lineWidth = 1;
+    c.strokeRect(x0 - 4.5, y0 - 4.5, mw + 9, mh + 9);
+    // The table itself: rails as a bright border, because a bank angle is only
+    // useful if you can see where the rails are.
+    c.strokeStyle = '#5b4058';
+    c.lineWidth = 1.5;
+    c.strokeRect(x0, y0, mw, mh);
+    c.strokeStyle = '#ff507b';
+    c.lineWidth = 1;
+    c.globalAlpha = 0.5;
+    c.strokeRect(x0 + 0.75, y0 + 0.75, mw - 1.5, mh - 1.5);
+    c.globalAlpha = 1;
+
+    // The view window: what the player can actually see right now. This is the
+    // single most useful thing on the map, because it makes the difference
+    // between "the arena" and "my world" legible at a glance.
+    c.strokeStyle = '#fff8ec';
+    c.globalAlpha = 0.32;
+    c.lineWidth = 1;
+    c.strokeRect(
+      x0 + (v.x - mapX) * scale,
+      y0 + (v.y - mapY) * scale,
+      v.w * scale,
+      v.h * scale,
+    );
+    c.globalAlpha = 1;
+
+    // Every live enemy, at its true position. A dot, not an icon: at this size
+    // a shape would be unreadable and the only information that matters is
+    // "there is something there".
+    for (const e of combat.enemies.values()) {
+      const q = toMap(e.x, e.y);
+      if (q.x < x0 - 2 || q.x > x0 + mw + 2 || q.y < y0 - 2 || q.y > y0 + mh + 2) continue;
+      c.fillStyle = e.kind === 'crown' ? '#ffd166' : e.mode === 'idle' ? '#8c7590' : '#ff507b';
+      c.globalAlpha = e.mode === 'idle' ? 0.7 : 1;
+      c.beginPath();
+      c.arc(q.x, q.y, e.kind === 'crown' ? 2.6 : 1.7, 0, TAU);
+      c.fill();
+    }
+    c.globalAlpha = 1;
+
+    // The subject. A wedge, not a dot, so heading is readable -- on a billiard
+    // table which way you are pointing IS the information.
+    const p = world.player.position,
+      a = Math.atan2(world.player.velocity.y, world.player.velocity.x),
+      q = toMap(p.x, p.y);
+    c.fillStyle = '#deff52';
+    c.beginPath();
+    c.moveTo(q.x + Math.cos(a) * 5, q.y + Math.sin(a) * 5);
+    c.lineTo(q.x + Math.cos(a + 2.5) * 3.4, q.y + Math.sin(a + 2.5) * 3.4);
+    c.lineTo(q.x + Math.cos(a - 2.5) * 3.4, q.y + Math.sin(a - 2.5) * 3.4);
+    c.closePath();
+    c.fill();
+    c.restore();
+  }
+
   function draw(run, alpha, aim, motion, device='mouse') {
     transform();
     const { world, state: s, combat } = run,
@@ -725,6 +892,15 @@ export function createRenderer(canvas) {
     // All of it is drawn in screen space AFTER the world, and none of it
     // touches enemies: they are drawn before this layer, sharp, always.
     if (motion) speedField(c, world, v, time);
+    // Wrapped in save/restore: the minimap sets its own screen transform, and
+    // anything drawn after it (the cube) inherits whatever matrix is left
+    // behind. Without this the cube was drawn through the map's 0.045 scale
+    // matrix and effectively vanished -- 455 acid pixels became 13.
+    if (!s.opening) {
+      c.save();
+      minimap(c, world, combat, v);
+      c.restore();
+    }
     if (motion && s.phase === 'playing') streak(c, trail, p, s.blade > 0);
     // One expanding ring per contact, at the point the silhouettes met. A
     // shockwave is the cheapest honest way to say "something stopped here".
@@ -738,6 +914,62 @@ export function createRenderer(canvas) {
         arc(c, INK.rose, 1.4 / v.scale, s.impact.x, s.impact.y, w.r * 0.72);
         c.restore();
       }
+    }
+    // ── THE SONIC BOOM ───────────────────────────────────────────────────────
+    //
+    // A rail bank at speed is the billiard dopamine hit the brief asked for, so
+    // it gets its own effect rather than reusing the ordinary contact ring.
+    //
+    // What separates it from a normal impact:
+    //  * THREE concentric rings at different speeds, not one. A single ring
+    //    reads as "something touched"; a stack reads as a sound barrier.
+    //  * The rings are elongated along the rail's NORMAL, because that is the
+    //    direction the cube just reversed through -- a circular boom would be
+    //    directionless and therefore weightless.
+    //  * Tapered speed lines fan out ALONG the rail, which is where a real
+    //    shockwave would go as the energy travels the wall.
+    //  * Everything scales with the speed the cube arrived at, so a gentle
+    //    graze is quiet and a redline bank is enormous. If every bank looked
+    //    like this the effect would be noise.
+    if (motion && s.boom && s.boomAge < 26) {
+      const k = 1 - s.boomAge / 26,
+        power = clamp(s.boom.speed / MAX_SPEED, 0, 1.4),
+        bx = s.boom.x,
+        by = s.boom.y,
+        // The normal points INTO the table, so the boom travels back out of it.
+        a = Math.atan2(s.boom.ny, s.boom.nx);
+      c.save();
+      for (let i = 0; i < 3; i++) {
+        const t = (s.boomAge - i * 2.5) / 26;
+        if (t < 0 || t > 1) continue;
+        const r = (18 + 120 * power) * t * t,
+          al = (1 - t) * (1 - t) * 0.6 * (0.5 + power * 0.5);
+        c.globalAlpha = al;
+        c.save();
+        c.translate(bx, by);
+        c.rotate(a);
+        c.scale(1, 0.55); // squash across the normal: the ring hugs the rail
+        arc(c, INK.acid, 2.4 / v.scale, 0, 0, r);
+        c.restore();
+      }
+      // Tapered speed lines along the rail.
+      const tx = -Math.sin(a),
+        ty = Math.cos(a);
+      for (let i = 0; i < 7; i++) {
+        const side = i % 2 ? 1 : -1,
+          u = (i - 3) / 3,
+          len = (26 + 150 * power) * k,
+          sp = 0.3 + 0.7 * Math.abs(u);
+        c.globalAlpha = 0.5 * k;
+        c.strokeStyle = INK.acid;
+        c.lineWidth = (2.2 * k) / v.scale;
+        c.beginPath();
+        c.moveTo(bx + u * 26 * side, by + u * 26 * side);
+        c.lineTo(bx + tx * len * sp * side, by + ty * len * sp * side);
+        c.stroke();
+      }
+      c.globalAlpha = 1;
+      c.restore();
     }
     for (const e of combat.enemies.values())
       if (inView(v, e, 870)) warnings(c, e, { ...pose(e, alpha), r: e.r }, time);
@@ -938,6 +1170,72 @@ export function createRenderer(canvas) {
           (nearest.x - p.x) * Math.cos(p.angle) + (nearest.y - p.y) * Math.sin(p.angle);
         facing = Math.sign(toward) || facing;
       }
+      // ── ANIME GHOST IMAGING ──────────────────────────────────────────────
+      //
+      // Discrete copies of the cube stamped along its path. Not a blur: a blur
+      // averages the frames and reads as a camera artefact, while separate cels
+      // read as the object moving too fast to be drawn once. See smear.js for
+      // why that distinction is the whole effect.
+      //
+      // Fed only while the cube is genuinely fast, so the ghosts are a READOUT
+      // of speed. An effect that is always on stops carrying information.
+      {
+        const speed = Math.hypot(world.player.velocity.x, world.player.velocity.y),
+          g = ghostFor(speed, MAX_SPEED);
+        if (motion && g.count && !world.grounded) {
+          // Sample the trail every other frame. Sampling every frame makes the
+          // ghosts overlap into a smear; every other frame keeps them as
+          // distinct cels, which is the look.
+          ghostClock++;
+          if (ghostClock % 2 === 0) ghosts.push(p.x, p.y, p.angle, facing);
+        }
+        ghosts.tick(1 / 60);
+        if (motion && g.count) {
+          c.save();
+          let n = 0;
+          ghosts.each((gx, gy, ga, gf, age) => {
+            if (n >= g.count) return;
+            n++;
+            // Older ghosts are dimmer and thinner; the newest copy is nearly
+            // solid, so the eye connects the trail back to the real cube.
+            const k = 1 - (n - 1) / (g.count + 0.6);
+            c.globalAlpha = g.alpha * k;
+            // The context is already translated to the cube, so ghosts are
+            // placed RELATIVE to it. Translating by their world coords here
+            // put them thousands of pixels off screen and, worse, left the
+            // frame's transform in a state that dropped the cube itself.
+            c.save();
+            c.translate(gx - p.x, gy - p.y);
+            c.rotate(ga - p.angle);
+            cube(c, 0, 0, R * (0.86 + 0.14 * k), 0, 0, gf);
+            c.restore();
+          });
+          c.globalAlpha = 1;
+          c.restore();
+        }
+      }
+      // ── MORPH SMEAR ──────────────────────────────────────────────────────
+      // An impossible shape trailing the cube. Drawn before the cube so the
+      // solid form always sits on top of its own distortion.
+      {
+        const speed = Math.hypot(world.player.velocity.x, world.player.velocity.y),
+          m = morphWedge(c, speed, MAX_SPEED);
+        if (motion && m) {
+          const a = Math.atan2(world.player.velocity.y, world.player.velocity.x);
+          c.save();
+          c.rotate(a - p.angle);
+          c.globalAlpha = m.alpha;
+          c.fillStyle = INK.acid;
+          c.beginPath();
+          c.moveTo(-R * 0.4, -m.width * 0.5);
+          c.lineTo(-m.length, 0);
+          c.lineTo(-R * 0.4, m.width * 0.5);
+          c.closePath();
+          c.fill();
+          c.globalAlpha = 1;
+          c.restore();
+        }
+      }
       // Real motion blur, as a short smear of the cube's own silhouette
       // dragged along its travel. This is the ONE thing in the frame that is
       // allowed to blur: the player owns this motion, so it reads as their
@@ -982,11 +1280,23 @@ export function createRenderer(canvas) {
           -Math.PI * 0.94 + Math.PI * 0.88 * val,
         );
       }
-      const ux = 1 / v.scale;
+    }
+    // The edge pips are SCREEN-SPACE, drawn after the cube's frame is popped.
+    //
+    // They used to be emitted inside the cube's translate/rotate block, using
+    // p.x/p.y as if that were still screen space. Inside a rotated frame those
+    // coordinates are wrong twice over -- the pips swung around the cube and,
+    // when the cube was spinning from a slash or a bank, detached into a
+    // vertical dark bar beside it. That bar is the "back line" artefact that
+    // looked broken whenever the cube was dashing.
+    c.restore();
+    {
+      const ux = 1 / v.scale,
+        sp = toScreen(v, p);
       if (!s.opening?.free && s.phase !== 'ready')
         for (let i = 0; i < 3; i++) {
-          const x = p.x + (i - 1) * 9 * ux,
-            y = p.y + R * Math.SQRT2 + 9 * ux;
+          const x = sp.x + (i - 1) * 9 * ux,
+            y = sp.y + (R * Math.SQRT2 + 9) * ux;
           c.fillStyle = INK.black;
           c.fillRect(x - 4.6 * ux, y - ux, 9.2 * ux, 6 * ux);
           c.fillStyle = i < s.edge ? INK.acid : '#766978';
@@ -997,7 +1307,6 @@ export function createRenderer(canvas) {
           }
         }
     }
-    c.restore();
     if ((s.phase === 'playing' || s.caught) && !s.opening?.finishing) pointer(c, v, p, nearest);
     if(s.warning>0 && s.phase==='playing'){
       // The tide's own teeth, a fixed 20 px inside the bottom edge, so the

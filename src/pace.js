@@ -37,8 +37,20 @@ export const PACE = Object.freeze({
   // Aim assist widens as the game speeds up, and with a beginner's tempo.
   corridor: 19,
   corridorMax: 34,
-  snap: 62,
-  snapMax: 96,
+  // HEAVY AUTO-AIM.
+  //
+  // Snap is the radius within which a tap is pulled onto a shape instead of
+  // being taken literally. It was 62-96px, which on a field where the nearest
+  // enemy sits a median ~470px away meant a player had to put their thumb
+  // almost exactly on a target before the game helped at all.
+  //
+  // 150-260px is deliberately generous: the brief asked for HEAVY auto-aim, and
+  // the reason is engagement, not difficulty. A player who is aiming at a pack
+  // of shapes wants to be fighting the field, not their thumb; when the assist
+  // is too small every near-miss feels like the game's fault. Note this does
+  // NOT aim for you -- it snaps a tap you already made, within a wider gate.
+  snap: 150,
+  snapMax: 260,
   // Tempo itself: 0 at the first launch, 1 once a run is genuinely flying.
   tempoTicks: 2100, // ~35 s of clean flying to reach full tempo
   tempoKills: 70,

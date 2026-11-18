@@ -40,14 +40,49 @@ export function createPhysics(level) {
     velocityIterations: 5,
     enableSleeping: false,
   });
-  // No ceiling, recovery floor or invisible room walls. A small injected set of
-  // rectangles is useful for testing the same continuous-collision guard.
+  // THE ARENA WALLS.
+  //
+  // The field used to have no walls at all: the cube flew in one direction and
+  // the run was over. That is a steering game. With four walls it becomes a
+  // BILLIARDS game -- you bank off a rail, chain the cut through a pack of
+  // shapes, and carry the speed into the next shot. The walls are what make a
+  // chain possible at all, because they are the only thing that can redirect a
+  // committed parabola without spending an edge.
+  //
+  // They are placed against the visible view, not the world grid, and they live
+  // in world space at fixed coordinates so a run cannot outrun them. Bounce is
+  // high but not 1.0: a perfectly elastic wall feels weightless, and the cube
+  // should lose a little speed off each rail so a long rally is earned.
+  //
+  // `arena` is a ring of four rectangles well outside the starting pad. The
+  // cube starts close to the floor of it, and the recovery floor that used to
+  // end a run (the Redline) still exists BELOW the arena floor -- falling out
+  // is a miss, not an instant loss, and the arena walls make that miss rare.
+  // RAILS ARE CHECKED, NOT SIMULATED.
+  //
+  // The first cut built four Matter rectangles and dropped them into the same
+  // composite as the player. That works for a 2300px table and collapses for a
+  // big one: Matter's broadphase does not like 100,000-unit static bodies, and a
+  // tall arena perturbed collision for every other body in the world -- 13 tests
+  // that had nothing to do with rails started failing.
+  //
+  // A rail is a rectangle boundary. It does not need mass, it does not need a
+  // contact solver, and the cube is the only thing that ever touches it. So the
+  // rail is an analytic clamp applied to the player after the physics step:
+  // reflect the velocity on the axis that was crossed, set restitution, and
+  // report a contact exactly like a Matter contact so the rest of the game
+  // (bank reward, impact rings, surface tags) is unchanged.
+  const arena = level.arena || null;
+  // A small injected set of rectangles is useful for testing the same
+  // continuous-collision guard.
   const geometry = level.pad ? [level.pad] : level.solids || [];
   const solids = geometry.map((r) =>
     Bodies.rectangle(r.x + r.w / 2, r.y + r.h / 2, r.w, r.h, {
       isStatic: true,
-      label: 'solid',
       friction: 0.48,
+      // Rails bounce; the starting pad does not (you land on it, you do not
+      // ping off it). A rail at ~0.86 keeps a rally alive without ever
+      // out-speeding the launch that started it.
       restitution: 0.15,
     }),
   );
@@ -64,6 +99,13 @@ export function createPhysics(level) {
   Composite.add(engine.world, [...solids, player]);
   return {
     engine,
+    arena,
+    // The speed the cube is allowed to reach. Normally MAX_SPEED, but a rail
+    // bank raises it so that CHAINING is a way past the limit. Without this the
+    // boost was inert: capVelocity clamped the cube back to MAX_SPEED on the
+    // very next substep, so a 5-bank rally was worth nothing.
+    playerCeiling: MAX_SPEED,
+    ceilingDecay: 0,
     player,
     geometry,
     level,
@@ -118,8 +160,8 @@ export function dragVector(origin, pointer) {
   return { x: dx * k, y: dy * k, power };
 }
 
-function capVelocity(body) {
-  if (body.speed > MAX_SPEED) Body.setSpeed(body, MAX_SPEED);
+function capVelocity(body, ceiling = MAX_SPEED) {
+  if (body.speed > ceiling) Body.setSpeed(body, ceiling);
   if (body.angularSpeed > MAX_SPIN) Body.setAngularSpeed(body, MAX_SPIN);
 }
 
@@ -148,6 +190,28 @@ function advanceTiming(world, pace) {
   world.engine.gravity.scale=BASE_GRAVITY*(1-.9*(1-world.focusScale)/(1-floor));
 }
 
+
+/** Multiply the player's current velocity. Used by the rail-bank rule.
+ *
+ *  Deliberately separate from `launch`: a launch is a NEW commitment and
+ *  re-aims the cube, while a boost keeps whatever direction a bounce just gave
+ *  it. Calling launch here would silently re-aim a shot that a rail had already
+ *  decided, which is the opposite of billiards.
+ *
+ *  The cap is applied to the RESULT, not the factor, so repeated banks cannot
+ *  compound past it. `capVelocity` is not used because it clamps to MAX_SPEED,
+ *  and a banked rally is explicitly allowed to exceed the launch limit.
+ */
+export function boostPlayer(world, factor, ceiling) {
+  const v = world.player.velocity,
+    speed = Math.hypot(v.x, v.y);
+  if (!Number.isFinite(speed) || speed < 0.001) return 0;
+  const k = Math.min(factor, Math.max(1, ceiling / speed));
+  const nx = v.x * k,
+    ny = v.y * k;
+  Body.setVelocity(world.player, { x: nx, y: ny });
+  return Math.hypot(nx, ny) - speed;
+}
 
 export function launch(world, velocity) {
   const length = Math.hypot(velocity.x, velocity.y);
@@ -226,7 +290,7 @@ function catchCrossing(world, startX, startY, incoming = 0) {
  *  that keeps resolving against the same surface is RESTING, not hitting, so
  *  repeats are dropped for `contactHold` ticks: otherwise the pose would buzz
  *  every frame a cube sits on the pad. */
-function noteContact(world, x, y, nx, ny, depth) {
+function noteContact(world, x, y, nx, ny, depth, surface = null) {
   // A cube resting on the pad resolves a tiny impulse at the same point every
   // tick. That is not a hit. A contact counts when it is a real closing speed
   // AND either somewhere new or the first one after a clean frame. Depth is
@@ -242,7 +306,7 @@ function noteContact(world, x, y, nx, ny, depth) {
     if (samePlace && sameFace && depth < 9) return;
     if (world.clock < prev.until && samePlace && sameFace) return;
   }
-  world.contact = { x, y, nx, ny, depth, speed: world.player.speed, clock: world.clock, until: world.clock + 0.22 };
+  world.contact = { x, y, nx, ny, depth, surface, speed: world.player.speed, clock: world.clock, until: world.clock + 0.22 };
 }
 
 function snapshot(body) {
@@ -257,6 +321,77 @@ function snapshot(body) {
 /** Advance exactly ONE real-time 1/60s tick. Render/monitor refresh rate is
  * deliberately not a parameter. At maximum speed a thin wall is sampled many
  * times; resting worlds cost one Matter update. Budget angular tip travel too. */
+/** Reflect the cube off the arena rails.
+ *
+ *  Analytic, not simulated: the rail is a boundary, the cube is the only thing
+ *  that touches it, and both facts are already true. Reflecting a velocity is
+ *  exact, cheap, and cannot perturb anything else in the world -- which is the
+ *  whole reason this is not four Matter rectangles.
+ *
+ *  Returns nothing; a contact is published on `world.contact` in the SAME shape
+ *  Matter produces, so the bank reward, impact rings and surface tags all keep
+ *  working without knowing rails are handled differently.
+ */
+function railBounce(world) {
+  const a = world.arena;
+  if (!a) return;
+  const p = world.player.position,
+    v = world.player.velocity,
+    RESTITUTION = 0.9,
+    half = PLAYER_SIZE / 2;
+  const x0 = a.x + half,
+    x1 = a.x + a.w - half,
+    y0 = a.y + half,
+    y1 = a.y + a.h - half;
+  let side = null,
+    nx = 0,
+    ny = 0;
+  if (p.x < x0) {
+    p.x = x0;
+    if (v.x < 0) {
+      v.x = -v.x * RESTITUTION;
+      side = 'left';
+      nx = 1;
+    }
+  } else if (p.x > x1) {
+    p.x = x1;
+    if (v.x > 0) {
+      v.x = -v.x * RESTITUTION;
+      side = 'right';
+      nx = -1;
+    }
+  }
+  if (p.y < y0) {
+    p.y = y0;
+    if (v.y < 0) {
+      v.y = -v.y * RESTITUTION;
+      side = 'top';
+      ny = 1;
+    }
+  } else if (p.y > y1) {
+    p.y = y1;
+    if (v.y > 0) {
+      v.y = -v.y * RESTITUTION;
+      side = 'bottom';
+      ny = -1;
+    }
+  }
+  if (!side) return;
+  Body.setPosition(world.player, { x: p.x, y: p.y });
+  Body.setVelocity(world.player, { x: v.x, y: v.y });
+  // The rail is a bank, not a wall: publish the contact so the run can pay it.
+  world.contact = {
+    x: p.x,
+    y: p.y,
+    nx,
+    ny,
+    depth: 0,
+    surface: 'rail',
+    side,
+    speed: Math.hypot(v.x, v.y),
+  };
+}
+
 export function stepPhysics(world, beforeStep, pace=1) {
   advanceTiming(world,pace);
   const scale = world.engine.timing.timeScale;
@@ -274,7 +409,8 @@ export function stepPhysics(world, beforeStep, pace=1) {
       y = p.position.y;
     Engine.update(world.engine, STEP_MS / steps);
     catchCrossing(world, x, y, incoming);
-    capVelocity(p);
+    railBounce(world);
+    capVelocity(p, world.playerCeiling || MAX_SPEED);
   }
   // A wall or the underside of a deck is NOT ground. Check the contact normal
   // in the blade's frame rather than approximating airborne from vertical speed.
@@ -291,6 +427,9 @@ export function stepPhysics(world, beforeStep, pace=1) {
       { parentA, parentB, normal, depth: overlap } = collision;
     const sign = parentA === world.player ? 1 : parentB === world.player ? -1 : 0;
     if (!sign) continue;
+    // Which body did we actually hit? A rail bounce must be told apart from
+    // landing on a pad, because one is a billiard shot and the other is a stop.
+    const other = parentA === world.player ? parentB : parentA;
     const nx = normal.x * sign,
       ny = normal.y * sign;
     if (!(overlap >= 0) || incoming < 1.2) continue;
@@ -306,7 +445,7 @@ export function stepPhysics(world, beforeStep, pace=1) {
         cy = raw.y;
       }
     }
-    noteContact(world, cx, cy, -nx, -ny, incoming);
+    noteContact(world, cx, cy, -nx, -ny, incoming, other?.label === 'rail' ? 'rail' : 'solid');
   }
   world.previousClock = world.clock;
   world.clock += scale;

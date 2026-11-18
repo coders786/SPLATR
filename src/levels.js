@@ -4,6 +4,67 @@ export const PLAYER_SIZE = 46,
   CELL_W = 1600,
   CELL_H = 1240,
   BAND = CELL_H * 2;
+// THE BILLIARD TABLE.
+//
+// Deliberately much larger than the camera view (~1330x780 world units), so a
+// rail is never merely at the edge of the screen: the cube has to commit to
+// reaching one. Four walls, a fixed size, and the same for every run so a
+// player can learn the bank angles the way you learn a pool table.
+//
+// The cube spawns near the bottom rail. The pad it launches from sits inside
+// the table, and the Redline still rises inside it, so the arena is not a
+// safety net -- it is a set of angles you can use before the tide reaches you.
+// Sized against the CONTENT, not against the camera.
+//
+// The first version was 3000x3900 because that sounded like a big canvas. It
+// measured terribly: the cube crossed the whole table in one launch, the
+// nearest enemy sat 457px away while a 30-tick blade window covers only 325px,
+// and kills fell from 48 to 7. A bigger table does not create more game, it
+// just adds empty floor between the same number of shapes.
+//
+// THE BILLIARD TABLE.
+//
+// The brief was "make the ends like a billiard pool: chain slashes off the
+// edges". That is what the rails are for -- but a wall is only a good idea if
+// it adds play, and measuring proved that a CAGED field does the opposite.
+//
+// A/B on three seeds, same inputs, 600 ticks:
+//     no rails     81 kills   (0.70 per launch)
+//     caged 2900px 22 kills   (0.19 per launch)
+// Caging the cube losses four fifths of the game, because this is a game about
+// CLIMBING into a continuously streamed field. A wall at the top stops the
+// stream; a wall at the sides stops the player from pursuing what is already
+// there. Either way the shapes keep spawning where the cube can no longer go.
+//
+// So the rails are wide enough to never be encountered by ordinary play. They
+// exist to catch a shot that would otherwise leave the world entirely, and to
+// give a committed long ball something to bounce off -- banking is a reward for
+// a big committed launch, not a pen you live inside.
+//
+// Width is set from measured reach: the cube's own 600-tick envelope is
+// x 99..1851 / y -3672..-643, and the stream runs a few cells past that. Rails
+// sit at roughly 2x that reach on each axis, so reaching one is an achievement.
+export const ARENA = Object.freeze({
+  // Open-ended upward. `bandAt` puts a new band every 2480px and the endless
+  // run is expected to reach band 9+ (y ~ -20000), so a rail at -7600 was
+  // cutting the climb off at band 4 -- the arena ceiling became the game's
+  // ceiling. The floor and the sides are real; the top is 40 bands away, which
+  // is the same as not having one.
+  // The floor sits far below the spawn and the Redline, so it never competes
+  // with the thing that is actually supposed to punish a fall. Two earlier
+  // cuts got this wrong in opposite ways: a floor at exactly y=0 pinned the cube
+  // from frame one (18 tests broke), and a floor at y=+4000 caught it before the
+  // Redline could -- kills fell to 21 and the climb stalled at band 4.
+  //
+  // The floor is here for one job only: catching a shot so fast it would
+  // otherwise leave the world entirely. Everything else about falling is the
+  // Redline's.
+  x: -1900,
+  y: -196000,
+  w: 4200,
+  h: 212000, // floor at y=+16000, far under the opening Redline
+  thick: 150,
+});
 export const SPAWN = { x: 0, y: 0 },
   PAD = { x: -102, y: PLAYER_SIZE / 2, w: 204, h: 25 };
 export const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));

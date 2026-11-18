@@ -7,9 +7,10 @@ import {
   destroyPhysics,
   MAX_SPEED,
   RELEASE_GRAVITY,
+  boostPlayer,
 } from './physics.js';
 import { panicWindow, panicScale } from './aim.js';
-import { SPAWN, PAD, createStream, bandAt, district, clamp } from './levels.js';
+import { SPAWN, PAD, ARENA, createStream, bandAt, district, clamp } from './levels.js';
 import { createCombat } from './slasher.js';
 import { TYPES } from './shapes.js';
 import { createOpening } from './opening.js';
@@ -46,7 +47,7 @@ export function createRun(
     // not re-squash the pose on every substep of the same tick.
     lastContact = null;
   const waiting = [];
-  const world = createPhysics({ seed, spawn: SPAWN, pad: PAD }),
+  const world = createPhysics({ seed, spawn: SPAWN, pad: PAD, arena: ARENA }),
     origin = { ...SPAWN },
     combat = createCombat(world, (e) => emit('tell', e)),
     place = (spec) => combat.add({ ...spec, x: spec.x + origin.x, y: spec.y + origin.y }),
@@ -77,6 +78,12 @@ export function createRun(
     // in ticks. Drives the contact squash and its shockwave ring.
     impact:null,
     impactAge:0,
+    // Rail-bank shockwave. Separate from `impact` because it is a different
+    // event with a different feeling: `impact` says "you touched something",
+    // `boom` says "you bounced off a wall at speed". The renderer draws it big
+    // and directional; see the sonic-boom block in renderer.js.
+    boom:null,
+    boomAge:0,
     swingStart: 0,
     seed: seed >>> 0,
     hp: 3,
@@ -484,6 +491,10 @@ export function createRun(
       s.impact = null;
       s.impactAge = 0;
     }
+    if (s.boom && ++s.boomAge > 30) {
+      s.boom = null;
+      s.boomAge = 0;
+    }
     if (s.opening?.finishing) {
       freezePoses();
       if (!--s.opening.finishing) enterField(true);
@@ -545,6 +556,72 @@ export function createRun(
     if (hitSurface && hitSurface !== lastContact && s.phase === 'playing') {
       lastContact = hitSurface;
       noteImpact(hitSurface.x, hitSurface.y, hitSurface.nx, hitSurface.ny, hitSurface.depth);
+    }
+    // ── RAIL BANK ────────────────────────────────────────────────────────────
+    //
+    // A rail is not a wall you hit, it is a shot you play. Bouncing off a rail
+    // refunds an edge and kicks the cube faster than it arrived.
+    //
+    // Without this rule the walls were pure cost. Measured: the cube hit the
+    // top rail around t=75 and then rattled around the arena for 200 ticks with
+    // 0 edges, unable to launch, while enemies sat 400-600px away. Kills fell
+    // from 48 to 7. A wall that only takes is worse than no wall.
+    //
+    // Keyed on its own cooldown rather than on `hitSurface !== lastContact`:
+    // that test is right for drawing an impact ring but wrong for a reward,
+    // because Matter resolves one rail contact across several ticks and reuses
+    // the same contact object. Measuring banks that way saw exactly ONE in 300
+    // ticks while the cube was visibly sitting on the rail.
+    if (hitSurface?.surface === 'rail' && s.phase === 'playing' && !(s.bankCool > 0)) {
+      const v = world.player.velocity,
+        speed = Math.hypot(v.x, v.y),
+        BOOST = 1.14, // per-bank gain: a 5-bank rally is ~2x the launch speed
+        CEIL = MAX_SPEED * 2.1;
+      s.bankCool = 8; // long enough to debounce, short enough to chain
+      // Raise the CEILING as well as the velocity.
+      //
+      // This is the rule that makes "chain slashes to a speed beyond the limit"
+      // true. `capVelocity` runs on every physics substep and clamps the cube
+      // to MAX_SPEED, so a pure velocity boost was erased before it could be
+      // seen -- the boost functions were being called and doing nothing.
+      // Each bank in a rally lifts the ceiling a little further, so the run's
+      // top speed is a function of how well the rally is going, not of a
+      // constant. It decays back so the limit is only ever beaten MOMENTARILY.
+      world.playerCeiling = Math.min(CEIL, (world.playerCeiling || MAX_SPEED) + 1.6);
+      s.ceiling = world.playerCeiling;
+      if (speed > 4 && speed < CEIL) boostPlayer(world, BOOST, CEIL);
+      s.edge = Math.min(MAX_EDGE, s.edge + 1);
+      s.banks = (s.banks || 0) + 1;
+      s.blade = Math.max(s.blade, 14);
+      // Publish the shockwave for the renderer. Only worth drawing at speed:
+      // a slow graze should not produce a sonic boom.
+      if (speed > MAX_SPEED * 0.45) {
+        s.boom = {
+          x: hitSurface.x,
+          y: hitSurface.y,
+          nx: hitSurface.nx,
+          ny: hitSurface.ny,
+          speed,
+        };
+        s.boomAge = 0;
+      }
+      emit('bank', {
+        x: hitSurface.x,
+        y: hitSurface.y,
+        nx: hitSurface.nx,
+        ny: hitSurface.ny,
+        speed: Math.round(speed),
+        banks: s.banks,
+        combo: s.banks >= 3,
+      });
+    }
+    if (s.bankCool > 0) s.bankCool--;
+    // Bleed the rally ceiling back down to the normal limit. A shot is faster
+    // than MAX_SPEED for a second or two after a bank and then the world
+    // reasserts itself, so the over-speed is a burst the player created.
+    if (world.playerCeiling > MAX_SPEED) {
+      world.playerCeiling = Math.max(MAX_SPEED, world.playerCeiling - 0.22);
+      s.ceiling = world.playerCeiling;
     }
     const dt = world.engine.timing.timeScale;
     s.previousSlash = s.slashAngle;
