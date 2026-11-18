@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#14101e" />
+    <meta
+      name="description"
+      content="SPLATR: Shape Riot. One cube against an endless field of hostile shapes. Cut a chain and beat your score."
+    />
+    <title>SPLATR: Shape Riot</title>
+    <link rel="stylesheet" href="./src/style.css" />
+    <!-- Keep dead controls out of sight even if the game entry fails to load.
+         visibility preserves the canvas dimensions during initialization. -->
+    <style>
+      #game[inert] {
+        visibility: hidden;
+      }
+      #boot {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: #14101e;
+        color: #fff8ec;
+        font:
+          16px/1.5 system-ui,
+          sans-serif;
+      }
+      #boot strong,
+      #boot a {
+        color: #deff52;
+      }
+      #boot p {
+        max-width: 34em;
+        margin: 0.5em 0;
+      }
+    </style>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23fff8ec' d='M0 0h32v32H0z'/%3E%3Cpath fill='%2316111e' d='M0 8l32 2v11L0 18z'/%3E%3Cpath fill='%23deff52' d='m4 10 10 5v2L4 15zm15 4 10-3-2 6-8 1z'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <aside id="boot" role="status">
+      <div>
+        <strong>SPLATR: Shape Riot</strong>
+        <p>Loading the arena…</p>
+        <p>
+          If the title doesn’t appear, <a href="">reload the preview</a> or open the standalone game
+          file (<code>dist/index.html</code>).
+        </p>
+        <noscript>JavaScript must be enabled to play.</noscript>
+      </div>
+    </aside>
+    <svg class="defs" width="0" height="0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+      <symbol id="i-sound" viewBox="0 0 24 24">
+        <path d="m11 5-5 4H3v6h3l5 4zM15 8a5 5 0 0 1 0 8m3-11a9 9 0 0 1 0 14" />
+      </symbol>
+      <symbol id="i-mute" viewBox="0 0 24 24">
+        <path d="m11 5-5 4H3v6h3l5 4zM16 9l6 6m0-6-6 6" />
+      </symbol>
+      <symbol id="i-full" viewBox="0 0 24 24">
+        <path d="M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5" />
+      </symbol>
+      <symbol id="i-trophy" viewBox="0 0 24 24">
+        <path d="M6 3h12l-1 8a5 5 0 0 1-10 0zM6 5H2l1 4 4 2m11-6h4l-1 4-4 2M12 16v4m-4 1h8" />
+      </symbol>
+      <symbol id="i-guide" viewBox="0 0 24 24">
+        <path d="M12 6v14M3 4l9 2 9-2v14l-9 2-9-2z" />
+      </symbol>
+      <symbol id="i-options" viewBox="0 0 24 24">
+        <path d="M3 6h10m4 0h4M3 12h3m4 0h11M3 18h11m4 0h3" />
+        <path d="M13 3v6M7 9v6m8 0v6" stroke-width="3" />
+      </symbol>
+      <symbol id="i-pause" viewBox="0 0 24 24">
+        <path d="M8 5v14m8-14v14" stroke-width="4" />
+      </symbol>
+      <symbol id="i-play" viewBox="0 0 24 24">
+        <path d="m6 3 14 9L6 21z" fill="currentColor" stroke="none" />
+      </symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M3 12h17m-6-7 7 7-7 7" /></symbol>
+    </svg>
+    <main id="game" data-screen="title" inert>
+      <canvas
+        id="arena"
+        tabindex="-1"
+        aria-describedby="story-alt"
+        aria-label="Shape Riot arena. Tap a shape or pull backward and release to slash. Hold airborne to focus. Arrows or WASD aim, Space slashes, Escape pauses."
+      ></canvas>
+      <section id="title-screen" aria-labelledby="brand-title">
+        <div class="title-stack">
+          <div class="eyebrow"><i class="slashes"></i> Endless score attack</div>
+          <h1 id="brand-title" aria-label="SPLATR: Shape Riot">
+            <svg id="wordmark" aria-hidden="true" viewBox="0 0 507 120">
+              <defs>
+                <g id="letters" fill-rule="evenodd">
+                  <path d="M16 0h65v25H29v13h34l16 16v39l-16 16H0V83h52V68H17L1 51V16z" />
+                  <path
+                    transform="translate(85)"
+                    d="M0 0h62l17 17v38L63 72H28v37H0zm28 24v24h25V24z"
+                  />
+                  <path transform="translate(169)" d="M0 0h28v82h42v27H0z" />
+                  <path
+                    transform="translate(242)"
+                    d="M18 0h48l17 109H55l-3-21H29l-4 21H-3zm21 25-7 40h17l-5-40z"
+                  />
+                  <path transform="translate(315)" d="M0 0h85v26H57v83H29V26H0z" />
+                  <path
+                    transform="translate(404)"
+                    d="M0 0h62l17 17v38L65 68l20 41H54L36 71h-8v38H0zm28 24v24h25V24z"
+                  />
+                </g>
+              </defs>
+              <g transform="translate(19 2) skewX(-9)">
+                <use href="#letters" fill="#ed466e" transform="translate(2 5)" />
+                <use href="#letters" fill="#fff8ec" />
+              </g></svg
+            ><span class="subtitle"><b>//</b> Shape Riot</span>
+          </h1>
+          <nav id="main-nav" aria-label="Main menu">
+            <button id="start-btn" class="choice primary">
+              <svg class="icon"><use href="#i-play" /></svg><span>Start run</span
+              ><kbd>↵</kbd></button
+            ><button id="manual-btn" class="choice quiet">
+              <svg class="icon"><use href="#i-guide" /></svg>Field manual</button
+            ><button id="options-btn" class="choice quiet">
+              <svg class="icon"><use href="#i-options" /></svg>Options
+            </button>
+          </nav>
+        </div>
+        <div class="title-best">
+          <svg class="icon"><use href="#i-trophy" /></svg
+          ><span>Personal best<strong id="title-best">000000</strong></span>
+        </div>
+        <div class="title-tools">
+          <button class="tool sound" aria-label="Mute audio" title="Audio (M)">
+            <svg class="icon"><use href="#i-sound" /></svg></button
+          ><button class="tool full" aria-label="Toggle fullscreen" title="Fullscreen (F)">
+            <svg class="icon"><use href="#i-full" /></svg>
+          </button>
+        </div>
+      </section>
+      <section id="hud" aria-label="Run HUD" hidden>
+        <div class="score-lock">
+          <span class="small"><i class="slashes"></i> Score</span><strong id="score">000000</strong>
+          <div id="chain" hidden>
+            <span id="chain-text"></span> <b id="multiplier"></b><i id="chain-meter"></i>
+          </div>
+          <div id="drive" hidden>Overdrive<i id="drive-meter"></i></div>
+          <div id="imprint" hidden>
+            <span id="stroke-name">Throughcut</span> <b id="stroke-award"></b>
+          </div>
+        </div>
+        <div class="top-right">
+          <div class="hull">
+            <small>Hull</small
+            ><span id="hull" role="img" aria-label="3 hull remaining"><i></i><i></i><i></i></span>
+          </div>
+          <button id="pause-btn" class="tool" aria-label="Pause run">
+            <svg class="icon"><use href="#i-pause" /></svg>
+          </button>
+          <div id="callout" hidden></div>
+        </div>
+        <div class="district">
+          <span class="small" id="sector">Sector 01</span><strong id="district">Undercut</strong>
+        </div>
+        <span id="story-alt" class="sr" role="status"></span>
+      </section>
+    </main>
+    <dialog id="panel" aria-labelledby="panel-heading">
+      <div class="panel-inner">
+        <span class="small panel-brand"><i class="slashes"></i> SPLATR / Shape Riot</span>
+        <h2 id="panel-heading">Paused</h2>
+        <section id="pause-page" hidden>
+          <p id="pause-info"></p>
+          <button id="resume-btn" class="choice primary">Resume run <kbd>↵</kbd></button
+          ><button class="choice quiet" id="skip-room" hidden>Skip the racks</button
+          ><button class="choice quiet" id="pause-manual">Field manual</button
+          ><button class="choice quiet" id="pause-options">Options</button
+          ><button class="choice quiet" id="end-btn">End run</button>
+        </section>
+        <section id="options-page" hidden>
+          <div class="option-list">
+            <button id="audio-opt">Sound <b>On</b></button
+            ><button id="music-opt">Beat track <b>On</b></button
+            ><button id="assist-opt">Aim assist <b>On</b></button
+            ><button id="motion-opt">Motion effects <b>On</b></button
+            ><button id="opening-opt" aria-describedby="opening-note">
+              Enemy mix <b>Gradual</b></button
+            ><button id="full-opt" class="full">Fullscreen <b>Toggle</b></button>
+          </div>
+          <p id="opening-note"></p>
+          <button class="back">← Back</button>
+        </section>
+        <section id="manual-page" hidden>
+          <div class="manual-intro">
+            <p class="briefing">
+              <b>Tap a shape</b> or pull back and release. Hold in flight to slow time. Kills refill
+              the cuts under your cube. Stay above the striped Redline.
+            </p>
+            <p class="move-rule">
+              <b>Throughcut</b> Split two full-size shapes in one dash: +300 and a forward cut
+              through two plates. Aim along the nick marks. Six chained kills across any number of
+              dashes trigger Overdrive.
+            </p>
+            <p class="keys">
+              Arrows / WASD aim · Space slash · Shift + ←/→ fine aim in focus · P pause
+            </p>
+          </div>
+          <article class="entry" aria-labelledby="foe-name">
+            <div class="specimen">
+              <button id="prev-foe" aria-label="Previous enemy">‹</button
+              ><canvas width="312" height="166" id="specimen" aria-hidden="true"></canvas
+              ><button id="next-foe" aria-label="Next enemy">›</button>
+            </div>
+            <div class="species-name">
+              <h3 id="foe-name" aria-live="polite"></h3>
+              <span id="foe-index" class="small"></span>
+            </div>
+            <p id="foe-tell"></p>
+            <p id="foe-counter"></p>
+          </article>
+          <button class="back">← Back</button>
+        </section>
+        <section id="result-page" hidden>
+          <div class="recap">
+            <span id="verdict" class="small"></span><strong id="result-score"></strong>
+            <figure id="best-print" hidden>
+              <figcaption><span>Best stroke</span><b id="print-points"></b></figcaption>
+              <canvas
+                width="680"
+                height="108"
+                id="stroke-map"
+                role="img"
+                aria-label="Best stroke contact print"
+              ></canvas>
+              <div class="print-foot"><b id="print-type"></b><span id="print-shot"></span></div>
+            </figure>
+            <p id="cause"></p>
+            <p id="debrief"></p>
+          </div>
+          <div class="bank">
+            <dl class="result-stats">
+              <div>
+                <dt>Slashed</dt>
+                <dd id="result-kills"></dd>
+              </div>
+              <div>
+                <dt>Best chain</dt>
+                <dd id="result-chain"></dd>
+              </div>
+              <div>
+                <dt>Sector</dt>
+                <dd id="result-sector"></dd>
+              </div>
+            </dl>
+            <p id="run-record" class="keys"></p>
+            <button id="retry-btn" class="choice primary">New run <kbd>↵</kbd></button
+            ><button id="home-btn" class="choice quiet">Main menu</button>
+          </div>
+        </section>
+      </div>
+    </dialog>
+    <div class="sr" id="announcement" role="status" aria-live="polite"></div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
