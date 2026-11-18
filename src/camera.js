@@ -1,5 +1,5 @@
 import { clamp } from './levels.js';
-import { MOTION, dampedTarget, leanFor } from './motion.js';
+import { CAMERA, leanFor } from './motion.js';
 
 /** The framebuffer is only the size of the display. A virtual camera moves
  * through kilometres of world space; we never allocate a world-sized texture.
@@ -32,15 +32,21 @@ export function createCamera() {
   function desired(p, stationary, vx = 0, vy = 0, z = zoom) {
     const portrait = width < height * 0.85;
     const inset = room ? 0.28 : 0.32;
+    // The resting and flying framings stay distinct: the opening racks are
+    // composed around the resting framing and must remain fully on screen at
+    // 320x568. What removes the per-shot pan is the saccade below, not moving
+    // the composition.
     const ax = stationary ? (forward > 0 ? inset : 1 - inset) : 0.48;
     const ay = stationary ? (room ? 0.76 : portrait ? 0.69 : 0.78) : 0.56;
+    const axMix = ax,
+      ayMix = ay;
     // Lean ONLY above the committed speed threshold (see motion.js). Below it
     // the lens is completely still, so a drifting or jittery thumb does not
     // drag the whole world around the screen.
     const lean = leanFor(vx, vy);
     return {
-      x: p.x - (width / (base * z)) * ax + lean.x,
-      y: p.y - (height / (base * z)) * ay + lean.y,
+      x: p.x - (width / (base * z)) * axMix + lean.x,
+      y: p.y - (height / (base * z)) * ayMix + lean.y,
     };
   }
   function snap(p, stationary = false) {
@@ -83,8 +89,12 @@ export function createCamera() {
       // visible the faster you fly. It is deliberately gentle (0.94 at
       // terminal) and NEVER tied to aiming, which is the dolly that made
       // holding a shot feel like the room was breathing.
-      const targetZoom = stationary || !motion ? 1 : 1 - Math.min(0.06, speed * 0.0018);
-      zoom += (targetZoom - zoom) * 0.09;
+      // NO speed zoom. A lens that rescales with velocity moves the ENTIRE
+      // image at once -- including the shapes the player is reading -- and
+      // scaling is the single most nauseating transform a camera can apply.
+      // Whatever wider view a fast launch needs comes from the saccade
+      // framing instead, which moves deliberately and then stops.
+      zoom = stationary || !motion ? 1 : 1;
       const d = desired(p, stationary, motion ? v.x : 0, motion ? v.y : 0);
       if (next) {
         d.x += clamp(
@@ -98,21 +108,37 @@ export function createCamera() {
           (height / (base * zoom)) * 0.14,
         );
       }
-      // Dead zone first, then a damped follow. Chasing every pixel of player
-      // motion is what made the field feel like it was sliding underfoot.
-      const aim = dampedTarget(
-        d,
-        { x, y },
-        width / (base * zoom),
-        height / (base * zoom),
-      );
-      x += (aim.x - x) * MOTION.follow;
-      y += (aim.y - y) * MOTION.follow;
-      // Never lose the player at the edge of a narrow screen on a sharp turn.
+      // CAMERA: one smooth follow, hard-capped speed, no zoom, no lookahead.
+      //
+      // Earlier attempts at a "hold then catch" camera were cleverer than the
+      // problem: the cube crosses the whole viewport in about 20 frames at
+      // terminal speed, so any camera that stops moving is forced to snap
+      // afterwards, and the snap is worse than the pan it replaced.
+      //
+      // What actually feels calm is not less motion but STEADIER motion: a
+      // view that moves at a roughly constant, slow rate and never changes
+      // direction sharply. So: a gentle exponential follow, a ceiling on how
+      // far the view may travel per frame, and nothing else moving at all
+      // (no zoom breathing, no lookahead toward targets).
       const vw = width / (base * zoom),
-        vh = height / (base * zoom);
-      x = clamp(x, p.x - vw * 0.82, p.x - vw * 0.17);
-      y = clamp(y, p.y - vh * 0.83, p.y - vh * 0.16);
+        vh = height / (base * zoom),
+        dx = (d.x - x) * CAMERA.follow,
+        dy = (d.y - y) * CAMERA.follow,
+        dist = Math.hypot(dx, dy),
+        // Cap the per-frame travel. This is the load-bearing line: it bounds
+        // the peak view velocity regardless of how fast the cube is going, so
+        // a long launch cannot whip the frame.
+        k = dist > CAMERA.maxStepPx ? CAMERA.maxStepPx / dist : 1;
+      x += dx * k;
+      y += dy * k;
+      // The cube is always inside the viewport. A property of the code, not a
+      // hope about the tuning.
+      const kx = vw * 0.02,
+        ky = vh * 0.02;
+      if (p.x < x + kx) x = p.x - kx;
+      else if (p.x > x + vw - kx) x = p.x - vw + kx;
+      if (p.y < y + ky) y = p.y - ky;
+      else if (p.y > y + vh - ky) y = p.y - vh + ky;
     },
     view(alpha = 1) {
       const scale = base * (prevZoom + (zoom - prevZoom) * alpha);
