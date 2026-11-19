@@ -596,6 +596,19 @@ export function createRenderer(canvas) {
     rand = randomSource(1);
   const trail = [],
     shards = [],
+    // ── WORLD-SPACE SCORE POPUPS ─────────────────────────────────────────
+    //
+    // A cut already announces itself three ways: the shape splits, the blade
+    // smears, and the HUD score ticks up in the corner. None of those tell you
+    // WHAT the cut was worth AT THE PLACE IT HAPPENED, so the player has to
+    // look away from the action to find out -- and in a game where the next
+    // shape is already leaving the screen, looking away is the expensive part.
+    //
+    // These are deliberately short-lived and small. A popup that lingers
+    // becomes scenery; one that lives ~40 ticks and drifts up is a receipt you
+    // read without moving your eyes.
+    pops = [],
+    beams = [],
     imprints = [],
     sparks = [];
   // Dash dust and braking sparks. World-space, unlike `sparks` above which are
@@ -638,6 +651,42 @@ export function createRenderer(canvas) {
   }
   function event(type, d, motion) {
     if (type === 'armor' && motion) shake.ask(2.1, d.cut, 0.8);
+    // One receipt per cut, at the cut, with the points it actually paid. Chips
+    // are excluded: a 45-point chip is noise, and the chain SFX already marks
+    // it. This is for the hits worth naming.
+    // ── THE BEAM ─────────────────────────────────────────────────────────
+    //
+    // The sweep arc says "the blade passed through here". It does not say "the
+    // cut went THAT WAY and through THAT". A beam does: one straight line along
+    // the slash angle, drawn in world space through the point of contact, so
+    // the player can read the geometry of what they just did.
+    //
+    // It is a line, not a wedge, because a wedge is a hitbox indication and the
+    // hitbox is already gone by the time this draws. This is a record.
+    if (type === 'cut' && !d.small) {
+      beams.push({
+        x: d.x,
+        y: d.y,
+        angle: d.cut ?? d.angle ?? 0,
+        reach: (d.r || 20) * 2.4 + 30,
+        life: 12,
+        through: !!d.throughcut,
+      });
+      if (beams.length > MOTION.maxImprints) beams.shift();
+    }
+    if (type === 'cut' && !d.small && d.points > 0) {
+      pops.push({
+        x: d.x,
+        y: d.y - (d.r || 20) * 0.6,
+        text: `+${d.points}`,
+        // `chain` decides the weight, so a 24-point chip and a 900-point
+        // throughcut do not print at the same size.
+        big: d.points >= 400 || d.throughcut,
+        life: 40,
+        age: 0,
+      });
+      if (pops.length > MOTION.maxImprints) pops.shift();
+    }
     if (type === 'armor' || (type === 'cut' && !d.small && !d.fromShear)) {
       imprints.push({ ...d, type, life: type === 'armor' ? 16 : 9 });
       if (imprints.length > MOTION.maxImprints) imprints.shift();
@@ -797,7 +846,7 @@ export function createRenderer(canvas) {
       if (trail.length > MOTION.ribbon) trail.shift();
     }
     if (!motion) trail.length = 0;
-    for (const list of [sparks, shards, imprints])
+    for (const list of [sparks, shards, imprints, pops, beams])
       for (let i = list.length - 1; i >= 0; i--) {
         const e = list[i];
         e.life -= dt;
@@ -805,7 +854,7 @@ export function createRenderer(canvas) {
           list.splice(i, 1);
           continue;
         }
-        if (list === imprints) continue;
+        if (list === imprints || list === pops || list === beams) continue;
         e.px = e.x;
         e.py = e.y;
         e.pa = e.angle;
@@ -1502,6 +1551,56 @@ export function createRenderer(canvas) {
         line(c, INK.rose, 9, a.x, a.y, b.x, b.y);
         line(c, '#ffe4ea', 3, a.x, a.y, b.x, b.y);
       }
+      c.restore();
+    }
+    // ── THE CUT BEAM ──────────────────────────────────────────────────────
+    // Interior first: the core of the line is white and thin, the halo is acid
+    // and wide, so it reads as a hot filament rather than as a drawn stroke.
+    for (const m of beams) {
+      const u = 1 - m.life / 12,
+        grow = 0.55 + u * 0.45,
+        fadeOut = Math.min(1, m.life / 5),
+        dx = Math.cos(m.angle),
+        dy = Math.sin(m.angle),
+        h = m.reach * grow;
+      c.save();
+      c.globalAlpha = fadeOut;
+      c.lineCap = 'round';
+      c.strokeStyle = m.through ? INK.acid : INK.paper;
+      c.lineWidth = (m.through ? 7 : 4.5) / v.scale;
+      c.beginPath();
+      c.moveTo(m.x - dx * h, m.y - dy * h);
+      c.lineTo(m.x + dx * h, m.y + dy * h);
+      c.stroke();
+      c.globalAlpha = fadeOut * 0.92;
+      c.strokeStyle = INK.paper;
+      c.lineWidth = 1.8 / v.scale;
+      c.stroke();
+      c.restore();
+    }
+    // ── THE RECEIPTS ──────────────────────────────────────────────────────
+    //
+    // Drawn in WORLD space, at the cut, so the number and the thing it came
+    // from are in the same place at the same time. The font size is divided by
+    // the camera scale, so a popup is the same physical size whether the player
+    // is at 1x or zoomed out on a hyper run -- it is a receipt, not scenery,
+    // and it must stay readable when the world shrinks.
+    for (const m of pops) {
+      const u = 1 - m.life / 40,
+        rise = motion ? u * 26 : 0;
+      c.save();
+      c.globalAlpha = (m.life / 40) * (m.life < 8 ? m.life / 8 : 1);
+      c.translate(m.x, m.y - rise);
+      c.scale(1 / v.scale, 1 / v.scale);
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.font = `800 ${m.big ? 26 : 17}px/1 var(--type, sans-serif)`;
+      c.lineWidth = 4;
+      c.strokeStyle = INK.black;
+      c.lineJoin = 'round';
+      c.strokeText(m.text, 0, 0);
+      c.fillStyle = m.big ? INK.acid : INK.paper;
+      c.fillText(m.text, 0, 0);
       c.restore();
     }
     for (const m of imprints) {

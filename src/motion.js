@@ -350,14 +350,32 @@ export function createShake() {
     get bearing() {
       return bearing;
     },
-    /** Ask for shake. Returns how much was actually granted. */
+    /** Ask for shake. Returns how much was actually granted.
+     *
+     *  ── TRAUMA SQUARED ────────────────────────────────────────────────
+     *
+     *  The displacement is the SQUARE of the stored trauma, not the trauma
+     *  itself. That is the whole trick behind a shake that feels authored
+     *  rather than mechanical: a linear decay spends most of its life at a
+     *  visible amplitude, so every impact looks roughly the same size and the
+     *  screen is always trembling a little. Squaring makes small hits almost
+     *  invisible and big ones enormous, and the decay becomes an audible
+     *  "shutting down" instead of a fade.
+     *
+     *  The budget is unchanged -- it still caps how much can be asked for in a
+     *  burst -- so squaring changes the SHAPE of a response, never how much of
+     *  it is affordable.
+     */
     ask(force, angle, scale = 1) {
+      // Store the trauma that would produce this displacement, so the curve is
+      // continuous: amount == trauma^2 and `ask` still reasons in pixels.
       const granted = Math.min(force, budget);
-      if (granted <= amount) return 0;
-      amount = granted;
+      const trauma = Math.min(1, granted / MOTION.shakeBudget);
+      if (trauma * trauma * MOTION.shakeBudget <= amount) return 0;
+      amount = trauma * trauma * MOTION.shakeBudget;
       bearing = angle;
       budget = Math.max(0, budget - granted * 0.6 * scale);
-      return granted;
+      return amount;
     },
     /** Advance one tick. `dt` is the frame's simulation delta, in nominal
      *  60 Hz steps. Both terms are linear in `dt` on purpose: a high refresh

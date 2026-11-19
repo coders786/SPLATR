@@ -760,7 +760,11 @@ function frame(now) {
   } else if (!dialog.open) {
     const a = clock.frame(now, () => {
       if (dialog.open) return;
-      input.tick();
+      // A refused shot gets one more chance before the tick consumes the frame.
+      // Retried here rather than on the input event because the reason the shot
+      // was refused is almost always a GAME state (recovery, hitstop) that only
+      // changes on a tick.
+      input.retry();
       run.tick(); // owns the panic ray, grace and every other tick rule
       audio.focus(run.state.phase === 'playing' && run.state.held && run.world.slow);
       audio.flush();

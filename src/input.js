@@ -20,9 +20,49 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
     get()?.focus(false);
     canvas.style.cursor = '';
   }
+  /**
+   * The last shot the player asked for that the game refused.
+   *
+   * A dash is rejected for reasons the player cannot see: the blade is still in
+   * its recovery window, a hitstop is running, the edge has not come back yet.
+   * From the player's side that is a dropped input -- they pressed, nothing
+   * happened, and by the time the game would have accepted it their thumb is
+   * somewhere else.
+   *
+   * So a refused shot is REMEMBERED for a short window and retried the moment
+   * the game will take it. It is not queued beyond that: buffering everything
+   * turns the game into a rhythm game that plays itself, and a shot aimed at a
+   * shape that has since moved is worse than no shot.
+   *
+   * The window is wall-clock milliseconds, not ticks, because it is a statement
+   * about HUMAN reaction time and must not stretch when the game slows down.
+   */
+  const BUFFER_MS = 140; // inside the 120-150ms the brief asks for
+  let buffered = null;
   function fire(v) {
     cancel();
-    if (active() && commit(v)) last = { x: v.x, y: v.y, power: v.power };
+    if (!active()) return;
+    if (commit(v)) {
+      last = { x: v.x, y: v.y, power: v.power };
+      buffered = null;
+      return;
+    }
+    buffered = { v: { x: v.x, y: v.y, power: v.power }, at: performance.now() };
+  }
+  /** Called once per frame by the run loop. Fires a buffered shot the moment it
+   *  becomes legal, and drops it once the window has passed. */
+  function retry() {
+    if (!buffered) return;
+    if (performance.now() - buffered.at > BUFFER_MS) {
+      buffered = null;
+      return;
+    }
+    if (!active()) return void (buffered = null);
+    const v = buffered.v;
+    if (commit(v)) {
+      buffered = null;
+      last = { x: v.x, y: v.y, power: v.power };
+    }
   }
   function acquire(next) {
     if (next?.lock?.id === lock.once) return;
@@ -196,8 +236,15 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
     reset() {
       last = null;
       lock.once = null;
+      // A buffered shot must not survive into a new run or a new pause: it was
+      // aimed at a field that no longer exists.
+      buffered = null;
       cancel();
     },
+    /** Called once per frame. See BUFFER_MS. */
+    retry,
+    /** Exposed for tests: the same entry point a release uses. */
+    fire,
   };
 }
 
