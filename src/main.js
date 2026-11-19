@@ -1,4 +1,4 @@
-import { createRun, CHAIN_TIME } from './run.js';
+import { createRun, CHAIN_TIME, HYPER } from './run.js';
 import { readForm, formLabel, GRADE_AT, GRADE_MARK } from './form.js';
 import { firstStart } from './opening.js';
 import { createClock } from './clock.js';
@@ -218,6 +218,23 @@ function event(type, d) {
       audio.strike('drive');
       say('Overdrive.');
       break;
+    case 'hyper': {
+      // ── HYPER ────────────────────────────────────────────────────────────
+      // The promotion is the single biggest moment the game can offer: the
+      // speed limit is gone, the blade is permanent, the walls throw you back
+      // harder. It gets the loudest cue in the game -- and then gets out of the
+      // way, because the state itself is the reward.
+      audio.strike('drive');
+      audio.strike('armor');
+      say(`HYPER  ·  ${d.speed}`);
+      break;
+    }
+    case 'hyperEnd': {
+      // Stated once, quietly. Losing hyper should feel like a wave receding,
+      // not like a buzzer.
+      if (d.peak > MAX_SPEED * 2) say(`Hyper spent  ·  ${d.peak}`);
+      break;
+    }
     case 'bank': {
       // ── THE SONIC BOOM ──────────────────────────────────────────────────
       //
@@ -456,8 +473,12 @@ function updateHUD() {
   setText('district', s.opening ? `Rack ${two(s.opening.row + 1)} / 03` : district(seed, s.band));
   // Speedometer: the cube's own velocity, not the world's tempo, so the
   // number is about the player's flying rather than the game's difficulty.
+  // The ceiling only lifts while hyper is live. Passing HYPER.speed always
+  // would make ordinary top-speed flight read as DRIFT and strip its stretch --
+  // the effect must know the difference between "fast" and "off the scale".
   const vel = run.world.player.velocity,
-    readout = speedReadout(Math.hypot(vel.x, vel.y), MAX_SPEED),
+    hyperCeiling = s.hyper ? HYPER.speed : MAX_SPEED,
+    readout = speedReadout(Math.hypot(vel.x, vel.y), MAX_SPEED, hyperCeiling),
     dial = $('speedo');
   dial.dataset.band = readout.band;
   dial.setAttribute('aria-label', `Speed ${readout.kmh}, ${readout.band.toLowerCase()}`);
@@ -467,12 +488,17 @@ function updateHUD() {
   // length) and a needle (an angle). The needle is what a player actually
   // reads mid-flight, because angle is legible at a glance while length is
   // not. Both are mirrored from the same 0..100 so they cannot disagree.
-  dial.querySelector('.speedo-fill').style.strokeDashoffset = 100 - readout.kmh;
+  // `kmh` is allowed past 100 so the NUMBER says "off the scale", but the arc
+  // and the needle are physical dials and must stop at their own end -- without
+  // this clamp a 667 km/h hyper shot drove strokeDashoffset to -567 and spun the
+  // needle twenty full turns.
+  const dialShare = Math.min(1, readout.kmh / 100);
+  dial.querySelector('.speedo-fill').style.strokeDashoffset = 100 - dialShare * 100;
   // -90deg is the needle at rest (pointing left across the dial); a full 0..100
   // sweep is 180deg. Written as one expression so the geometry lives here
   // rather than in two places that drift apart.
   const needle = dial.querySelector('.speedo-needle');
-  if (needle) needle.style.transform = `rotate(${-90 + readout.kmh * 1.8}deg)`;
+  if (needle) needle.style.transform = `rotate(${-90 + dialShare * 180}deg)`;
   // Speed tier pips. `readout.band` is already the tier name, so the pips and
   // the word under the dial can never disagree -- one source, two encodings.
   const tier = TIERS.find((t) => t.label === readout.band) || TIERS[0],

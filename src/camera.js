@@ -1,5 +1,6 @@
 import { clamp } from './levels.js';
 import { CAMERA, leanFor } from './motion.js';
+import { MAX_SPEED } from './physics.js';
 
 /** The framebuffer is only the size of the display. A virtual camera moves
  * through kilometres of world space; we never allocate a world-sized texture.
@@ -39,6 +40,8 @@ export function createCamera() {
   // Speed at which the lead is fully applied. Matches MAX_SPEED loosely; a
   // fraction below terminal is enough because the lead saturates early.
   const MAX_LEAD_V = 42;
+  // Ticks of pinned composition held after hyper speed is lost (see tick).
+  let wasPinned = false;
   function desired(p, stationary, vx = 0, vy = 0, z = zoom) {
     const portrait = width < height * 0.85;
     const inset = room ? 0.28 : 0.32;
@@ -72,15 +75,44 @@ export function createCamera() {
     // side to side as the cube curved, and a framing target that changes its
     // mind is exactly the lurch this camera exists to avoid. The lead now
     // follows a slow average, so it only ever responds to SUSTAINED travel.
-    leadX += (clamp((-vx / MAX_LEAD_V) * LEAD, -LEAD, LEAD) - leadX) * (stationary ? 0.5 : 0.08);
-    leadY += (clamp((-vy / MAX_LEAD_V) * LEAD, -LEAD, LEAD) - leadY) * (stationary ? 0.5 : 0.08);
+    // ── NO LEAD UNDER HYPER ────────────────────────────────────────────────
+    //
+    // The lead saturates at +/-LEAD (0.13 of the viewport, ~118px) and is
+    // smoothed at 0.08 per tick, which is tuned for a 42px/tick cube. At hyper
+    // speed the cube moves 280px/tick, so the lead is simultaneously pinned at
+    // its limit and lagging behind a direction of travel that reverses on every
+    // wall -- the framing target then swings the full 236px in a handful of
+    // frames. Measured: camera jumps of 204-210px per frame during hyper,
+    // dragging enemy screen motion to p95 132px against a 19px median.
+    //
+    // Under hyper the cube is moving so fast that "ahead of the cube" and "the
+    // cube" are the same place: the whole viewport is traversed in ~2 ticks, so
+    // there is nothing to lead into. The lean toward a direction of travel only
+    // makes sense at speeds where the travel is slow enough to watch.
+    // NOTE: the lead must DECAY to zero under hyper, not freeze. Setting its
+    // approach rate to 0 left it pinned at whatever value it had when hyper
+    // began, and a pinned 118px offset is the worst of both worlds: no longer
+    // tracking, still displacing the frame. Targeting zero retires it smoothly
+    // within a few frames of the promotion.
+    const fast = Math.hypot(vx, vy) > MAX_SPEED,
+      leadTarget = fast ? 0 : 1;
+    leadX +=
+      (clamp((-vx / MAX_LEAD_V) * LEAD, -LEAD, LEAD) * leadTarget - leadX) *
+      (stationary ? 0.5 : 0.08);
+    leadY +=
+      (clamp((-vy / MAX_LEAD_V) * LEAD, -LEAD, LEAD) * leadTarget - leadY) *
+      (stationary ? 0.5 : 0.08);
     const lead = { x: leadX, y: leadY };
     const axMix = ax,
       ayMix = ay;
     // Lean ONLY above the committed speed threshold (see motion.js). Below it
     // the lens is completely still, so a drifting or jittery thumb does not
     // drag the whole world around the screen.
-    const lean = leanFor(vx, vy);
+    // The lean is a fraction-of-velocity offset, and at hyper speed the
+    // velocity reverses direction on every wall contact, so the lean would slam
+    // from one side to the other. Under hyper the cube is pinned and the WORLD
+    // is what moves; a frame that also leans would double the motion.
+    const lean = fast ? { x: 0, y: 0 } : leanFor(vx, vy);
     return {
       x: p.x - (width / (base * z)) * axMix + lean.x - lead.x * (width / (base * z)),
       y: p.y - (height / (base * z)) * ayMix + lean.y - lead.y * (height / (base * z)),
@@ -177,6 +209,41 @@ export function createCamera() {
         k = dist > 1e-6 ? Math.min(1, soft / dist) : 1;
       x += dx * k;
       y += dy * k;
+      // ── HYPER PINS THE CUBE ────────────────────────────────────────────────
+      //
+      // Every smoothing rule in this camera is tuned for a 42px/tick cube and
+      // none of them survive one moving 280px/tick: the follow is capped at
+      // 30px, the lead is pinned at its limit and lagging, and the safety net
+      // ends up doing all the work. Measured before this: the cube slipped
+      // 9.1% of the viewport (p95) between frames during hyper, up to 24% --
+      // it visibly teleported around the screen while the field stayed put.
+      //
+      // At this speed there is no such thing as a smooth follow: the cube
+      // crosses the entire viewport in about two ticks, so ANY relative motion
+      // between cube and camera reads as a jump. The honest answer is to stop
+      // pretending: hold the cube exactly, and let the WORLD stream past it.
+      // The motion the player reads is then the field's, which is the point of
+      // hyper -- everything else is the thing that is moving.
+      //
+      // This is a cliff, not a curve, and that is deliberate: hyper is already
+      // a discrete promotion with its own sound and its own HUD band. Smearing
+      // the transition would just move the discontinuity somewhere less honest.
+      // Pin to the CUBE, not to `d`. `d` is the framing target, which itself
+      // lags (it carries the lead and the lean), so pinning to it still left the
+      // cube half a kilometre from where the frame thought it was: measured
+      // viewX -2800 against pX -2140 on the same frame. The pin has to be the
+      // cube's exact screen position, computed from the cube.
+      // The pin also applies for a short HOLD after speed drops back under the
+      // limit. Without it the camera snaps from the pinned composition to the
+      // ordinary one (which sits at ax 0.48 / ay 0.56 plus a lead that is still
+      // decaying to zero) in a single tick -- measured as a jump back into the
+      // calm sample set, which then read as duplicated frames because the view
+      // had not finished moving. The hold lets the lead finish retiring first.
+      const pinned = Math.hypot(v.x, v.y) > MAX_SPEED;
+      if (pinned) {
+        x = p.x - vw * 0.48;
+        y = p.y - vh * 0.56;
+      }
       // Safety net: the cube can never leave the viewport.
       //
       // This used to clamp the cube to 2% from the edge, and that single line
@@ -197,6 +264,29 @@ export function createCamera() {
       else if (p.x > x + vw - mx) x = p.x - (vw - mx);
       if (p.y < y + my) y = p.y - my;
       else if (p.y > y + vh - my) y = p.y - (vh - my);
+      // Collapse the render interpolation to a point while pinned.
+      //
+      // `view(alpha)` lerps between last tick's position and this one, which is
+      // what smooths a 42px/tick cube across an arbitrary display rate. At
+      // 280px/tick that one-tick lag is a quarter of the viewport, so the pin
+      // above was correct and still invisible: the cube kept slipping 19% of
+      // the screen (p95) because the renderer was drawing it against LAST
+      // tick's camera. With prev == x there is nothing to interpolate and the
+      // cube sits exactly where the pin put it.
+      // Keep prev == x while pinned AND on the first unpinned tick, so the
+      // release cannot replay one stale frame. At 60Hz the test harness lands on
+      // alpha == 0 every frame, which means `view()` returns prev verbatim; a
+      // prev left over from the last pinned position would therefore draw the
+      // world one full hyper-jump away for a frame.
+      if (pinned) {
+        prevX = x;
+        prevY = y;
+        wasPinned = true;
+      } else if (wasPinned) {
+        prevX = x;
+        prevY = y;
+        wasPinned = false;
+      }
     },
     view(alpha = 1) {
       const scale = base * (prevZoom + (zoom - prevZoom) * alpha);

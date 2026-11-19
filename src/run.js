@@ -3,6 +3,7 @@ import {
   stopPlayer,
   stepPhysics,
   launch,
+  holdSpeed,
   setBulletTime,
   destroyPhysics,
   MAX_SPEED,
@@ -25,6 +26,47 @@ export const MAX_EDGE = 3,
   // should get the maximum, not a stale literal.
   CHAIN_TIME = 96,
   DRIVE_REACH = 1.38;
+
+/** ── HYPER ────────────────────────────────────────────────────────────────
+ *
+ *  The tier that breaks the speed limit. Everything here is DERIVED (see
+ *  docs/hyper.md); the derivations are kept beside the numbers so a balance
+ *  change can be re-run rather than guessed at again.
+ *
+ *  SPEED = 280. A wall at -78,000px needs a minimum of 242 -- bisected against
+ *  the real integrator, not a formula, because the integrator has substeps,
+ *  drag and several clamps. 242 would be reachable ONLY from a perfect vertical
+ *  launch that touches nothing; 280 leaves 34,000px of margin, which is what
+ *  pays for slashing shapes on the way up. Every kill and every bank costs
+ *  energy, and the margin absorbs that cost.
+ *
+ *  ENTRY = 7 consecutive within 14 dashes. Measured: a 7-chain lands on dash
+ *  10-17 across eight seeds (median 11). A budget of 10 -- the original spec --
+ *  fires on zero runs. 14 sits between the median and the worst case, so it
+ *  still demands a genuinely fast opening without being impossible.
+ *
+ *  There is no duration timer. Radius of the state is speed: gravity bleeds
+ *  280 back through the normal cap in about 9.2 seconds (measured), so hyper
+ *  ENDS when you run out of speed exactly as the brief describes. Slashing
+ *  accelerates the decay, because a cut spends forward velocity to make chaos,
+ *  so the player who slashes hardest burns hyper fastest. That tension is free.
+ */
+export const HYPER = Object.freeze({
+  speed: 280,
+  chain: 7,
+  dashes: 14,
+  // A bounce gained per unit of impact speed, so the rebound behind the wall is
+  // proportional to how fast you arrived. See the bounce rule in the rail block.
+  bankGain: 0.6,
+  // Hard cap on a hyper rebound: 1.35x arrival. Enough for a chain of bounces to
+  // compound into spectacle, bounded so the integrator is never handed a number
+  // it cannot step.
+  reboundCap: 1.35,
+  // Per-tick velocity bleed while hyper is live. 0.5% a tick is ~5.6s of
+  // survival from full hyper with no input: long enough to be a state, short
+  // enough that it visibly ends.
+  drag: 0.005,
+});
 
 /** How long the chain survives after a kill, as a function of chain length.
  *
@@ -139,6 +181,25 @@ export function createRun(
     stroke: null,
     bestStroke: null,
     throughcuts: 0,
+    // ── HYPER ──────────────────────────────────────────────────────────────
+    // `hyper` is the live state; `hyperLevel` is 0..1 for the rendered
+    // intensity (it rises on entry and falls with speed), so the effect can
+    // be drawn as a fade rather than a switch.
+    hyper: false,
+    hyperLevel: 0,
+    hyperCount: 0, // how many times hyper was entered this run
+    // fastest speed reached WHILE hyper was live
+    hyperPeak: 0,
+    // The chain length already spent on a promotion. Hyper is earned by a
+    // streak that has not been used yet, so exiting and immediately re-entering
+    // off the same chain is not possible.
+    hyperChain: 0,
+    // True until the first wall contact of a hyper, which is the one bounce
+    // allowed to throw the cube back harder than it arrived.
+    hyperBoom: false,
+    // The dash count at which the current chain began. Hyper's 14-dash budget
+    // is measured from here, not from the start of the run.
+    chainFrom: 0,
   };
   if (!lesson) stream.sync(SPAWN, s.line);
   function nearest() {
@@ -265,6 +326,34 @@ export function createRun(
     s.tier = tierOf(speedBeforeLaunch, MAX_SPEED).index;
     s.swingStart = world.clock;
     s.blade = 16 + 15 * Math.min(1, Math.hypot(v.x, v.y) / MAX_SPEED);
+    // ── A DASH MUST NOT ERASE HYPER ────────────────────────────────────────
+    //
+    // `launch()` clamps its input to MAX_SPEED (physics.js line ~219), which is
+    // right for an ordinary launch and catastrophic here: dashing mid-hyper
+    // reset the cube from 279 to 31 in a single tick and dropped the state on
+    // the next one. Measured: hyper ended on a launch tick 1 tick after it
+    // began, over and over. The dash is how a hyper player STEERS -- it must
+    // redirect the speed, never spend it.
+    //
+    // So the launch sets the heading and hyper restores the magnitude along it.
+    // The speed is re-asserted against the CURRENT heading rather than the
+    // aim's, because the aim vector is already scaled by launch()'s clamp.
+    // PRESERVE, never refill.
+    //
+    // Two failures bracket this line and it sits between them:
+    //   refill to HYPER.speed  -> hyper is INFINITE (measured 1650 ticks, 27s,
+    //                             never ends, because each dash repaired
+    //                             everything gravity took)
+    //   holdSpeed(world) alone -> hyper is 14 TICKS (measured), because
+    //                             launch() above has ALREADY clamped velocity to
+    //                             MAX_SPEED, so "preserve" preserved the damage
+    //
+    // So the speed is taken from BEFORE the launch (already captured as
+    // speedBeforeLaunch) and re-applied along the NEW heading. The dash still
+    // owns direction; the state owns magnitude; and nothing is repaired, so
+    // gravity and drag remain the only drains.
+    if (s.hyper)
+      holdSpeed(world, Math.min(speedBeforeLaunch, world.playerCeiling || HYPER.speed));
     s.previousSlash = s.slashAngle = Math.atan2(v.y, v.x);
     s.stroke = beginStroke(world.player.position, s.slashAngle, s.shots);
     emit('dash', {
@@ -274,6 +363,89 @@ export function createRun(
     });
     return true;
   }
+  /** ── HYPER ENTRY AND EXIT ────────────────────────────────────────────────
+   *
+   *  Entering is a performance check; staying in is a physics consequence.
+   *  There is deliberately NO TIMER: hyper lives exactly as long as the cube
+   *  is still moving faster than the normal limit, which is 9.2 seconds of
+   *  gravity from 280 (measured). The player who stops slashing gets it taken
+   *  away by gravity, not by a bar running out -- and a cut spends forward
+   *  velocity, so slashing hard BURNS it. That is the whole tension.
+   *
+   *  Called once per tick, after kills are resolved, so a kill that completes
+   *  the seventh link can promote in the same tick it happened.
+   */
+  function hyperStep() {
+    // ENTRY: seven links, and a fast enough opening. `s.shots` is the dash
+    // count, so this is "seven in a row, before the fourteenth launch".
+    //
+    // `hyperChain` is what makes this a RISING EDGE rather than a level check.
+    // Without it a state that ended at speed 41 with a chain of 9 still on the
+    // board re-promoted on the very next tick -- measured 4 entries in 65 ticks,
+    // all off one chain. The chain that earned hyper is CONSUMED by it: to get
+    // hyper again you have to build a NEW run of seven. That is also what the
+    // brief means by "fast nail 7 consecutive chains" -- consecutive means a
+    // fresh streak, not a lingering one.
+    if (
+      !s.hyper &&
+      s.chain >= HYPER.chain &&
+      s.shots - (s.chainFrom ?? s.shots) <= HYPER.dashes &&
+      s.chain > s.hyperChain
+    ) {
+      s.hyper = true;
+      s.hyperCount++;
+      s.hyperChain = s.chain;
+      // The wall owes you exactly one violent throw.
+      s.hyperBoom = true;
+      // The ceiling is raised FIRST so the impulse is not immediately clamped
+      // away -- capVelocity runs on every substep and would otherwise erase it.
+      world.playerCeiling = HYPER.speed;
+      s.ceiling = HYPER.speed;
+      // The push. boostPlayer scales the CURRENT velocity up to the ceiling
+      // rather than setting an absolute speed, so the direction the player was
+      // already travelling is preserved. Hyper is a promotion, not a reset: you
+      // leave at speed, along the line you chose.
+      boostPlayer(world, HYPER.speed, HYPER.speed);
+      // An edge back, so entering hyper does not strand you with nothing to
+      // spend. This is feedback, not power -- the same refund a bank gives.
+      s.edge = Math.min(MAX_EDGE, s.edge + 1);
+      emit('hyper', {
+        ...world.player.position,
+        speed: Math.round(Math.hypot(world.player.velocity.x, world.player.velocity.y)),
+        count: s.hyperCount,
+        chain: s.chain,
+        shots: s.shots,
+      });
+    }
+    if (s.hyper) {
+      // FRICTION. Gravity alone is a weak drain on a state that can last
+      // twenty-seven seconds, and on a wall bounce it gives speed back. This is
+      // a small constant bleed that shortens a quiet hyper without touching the
+      // part the player is actively earning: measured 5.6s from full hyper to
+      // the normal limit, with gravity and bounces fighting over the middle.
+      const v = world.player.velocity,
+        sp = Math.hypot(v.x, v.y);
+      if (sp > MAX_SPEED) {
+        const k = Math.max(MAX_SPEED, sp * (1 - HYPER.drag));
+        world.player.velocity.x = (v.x / sp) * k;
+        world.player.velocity.y = (v.y / sp) * k;
+      }
+      const speed = Math.hypot(world.player.velocity.x, world.player.velocity.y);
+      s.hyperPeak = Math.max(s.hyperPeak, speed);
+      // EXIT: purely physical. Once gravity (and whatever the player spent) has
+      // taken the cube back under the normal limit, the state ends. No clock, no
+      // counter, nothing to monitor.
+      if (speed <= MAX_SPEED) {
+        s.hyper = false;
+        emit('hyperEnd', { peak: Math.round(s.hyperPeak), count: s.hyperCount });
+      } else {
+        // Intensity for the renderer: 0 at the threshold, 1 at full hyper.
+        s.hyperLevel = Math.min(1, (speed - MAX_SPEED) / (HYPER.speed - MAX_SPEED));
+      }
+    }
+    if (!s.hyper) s.hyperLevel = 0;
+  }
+
   function end(cause) {
     if (s.phase !== 'playing') return;
     s.cause = cause;
@@ -300,7 +472,7 @@ export function createRun(
     // into fewer frames, so the window is stretched to keep the player's
     // actual recovery time unchanged.
     s.invul = PACE.invulTicks;
-    s.chain = s.chainTime = s.drive = s.blade = s.parry = s.breath = 0;
+    s.chain = s.chainTime = s.drive = s.blade = s.parry = s.breath = s.hyperChain = 0;
     s.chainMax = CHAIN_TIME;
     s.panic = null;
     s.panicTicks = s.panicWarm = 0;
@@ -329,6 +501,12 @@ export function createRun(
     combat.remove(e);
     stream.mark(e);
     s.kills++;
+    // A streak that starts now begins its own dash budget. Hyper's gate is
+    // "seven links within fourteen dashes", and that budget belongs to the
+    // STREAK, not to the run: measuring against the run-wide dash counter meant
+    // the gate closed permanently after launch 14 of a 128-dash run, so the
+    // feature was unreachable for the other 90% of play.
+    if (!(s.chainTime > 0)) s.chainFrom = s.shots;
     s.chain = s.chainTime > 0 ? s.chain + 1 : 1;
     s.maxChain = Math.max(s.maxChain, s.chain);
     s.chainTime = chainWindow(s.chain);
@@ -606,8 +784,44 @@ export function createRun(
     if (hitSurface?.surface === 'rail' && s.phase === 'playing' && !(s.bankCool > 0)) {
       const v = world.player.velocity,
         speed = Math.hypot(v.x, v.y),
-        BOOST = 1.14, // per-bank gain: a 5-bank rally is ~2x the launch speed
-        CEIL = MAX_SPEED * 2.1;
+        // ── THE BOUNCE, AND THE NEAR-WALL BONUS ────────────────────────────
+        //
+        // Under hyper the gain SCALES WITH IMPACT SPEED rather than being a
+        // constant. That is the brief's "if you are already near the wall when
+        // you earn this speed, bouncing gives you a more sonic boom speed" --
+        // and it falls out of the physics instead of needing a special case for
+        // being close to a wall. A player who enters hyper near a rail arrives
+        // fast and rebounds harder; one who enters far away spends the margin
+        // travelling. Same rule, different outcome, no branching.
+        //
+        //   impact  42 (normal)  -> gain 1.09, an ordinary billiard bounce
+        //   impact 280 (full)    -> gain 1.60, the wall throws you back harder
+        //
+        // Clamped to HYPER.reboundCap so a chain of bounces compounds into
+        // spectacle rather than into a number the integrator cannot step.
+        // ── THE SONIC BOOM IS ONE BOUNCE, NOT A MOTOR ─────────────────────
+        //
+        // A pure multiplier here pumps forever: measured with a bot bouncing
+        // every 8 ticks, each rail contact returned +35% and hyper never ended
+        // (1650 ticks, 27s, no exit). A bounce that always gives back more than
+        // it took is not a payoff, it is a perpetual motion machine.
+        //
+        // The brief is narrower than that: "if you are ALREADY NEAR THE WALL
+        // when you earn this speed, bouncing gives you a greater sonic-boom
+        // speed". That is one violent throw, the reward for arriving fast, and
+        // then the state decays as designed. So the boom is armed on entry and
+        // spent by the first rail contact; later bounces are ordinary.
+        boom = s.hyper && s.hyperBoom,
+        BOOST = boom
+          ? Math.min(HYPER.reboundCap, 1 + (speed / HYPER.speed) * HYPER.bankGain)
+          : s.hyper
+            ? // NOT a small boost. Even 1.06 per bounce is a net MOTOR: a bot
+              // touching a rail every 8 ticks gains 4.8% while drag takes
+              // 3.9%, so hyper ran 1440+ ticks and never ended. A wall during
+              // hyper is a turn, not a reward -- the one reward is the boom.
+              1
+            : 1.14,
+        CEIL = boom ? HYPER.speed * HYPER.reboundCap : s.hyper ? HYPER.speed : MAX_SPEED * 2.1;
       s.bankCool = 8; // long enough to debounce, short enough to chain
       // Raise the CEILING as well as the velocity.
       //
@@ -618,8 +832,15 @@ export function createRun(
       // Each bank in a rally lifts the ceiling a little further, so the run's
       // top speed is a function of how well the rally is going, not of a
       // constant. It decays back so the limit is only ever beaten MOMENTARILY.
-      world.playerCeiling = Math.min(CEIL, (world.playerCeiling || MAX_SPEED) + 1.6);
+      world.playerCeiling = boom
+        ? HYPER.speed * HYPER.reboundCap
+        : s.hyper
+          ? HYPER.speed
+          : Math.min(CEIL, (world.playerCeiling || MAX_SPEED) + 1.6);
+      if (boom) s.hyperBoom = false;
       s.ceiling = world.playerCeiling;
+      // A hyper bounce can GAIN speed (BOOST > 1 up to the cap); a normal bounce
+      // is a modest kick. Both go through the same guarded boost.
       if (speed > 4 && speed < CEIL) boostPlayer(world, BOOST, CEIL);
       s.edge = Math.min(MAX_EDGE, s.edge + 1);
       s.banks = (s.banks || 0) + 1;
@@ -642,6 +863,8 @@ export function createRun(
         nx: hitSurface.nx,
         ny: hitSurface.ny,
         speed: Math.round(speed),
+        after: Math.round(Math.hypot(world.player.velocity.x, world.player.velocity.y)),
+        hyper: s.hyper,
         banks: s.banks,
         combo: s.banks >= 3,
       });
@@ -650,7 +873,18 @@ export function createRun(
     // Bleed the rally ceiling back down to the normal limit. A shot is faster
     // than MAX_SPEED for a second or two after a bank and then the world
     // reasserts itself, so the over-speed is a burst the player created.
-    if (world.playerCeiling > MAX_SPEED) {
+    if (s.hyper) {
+      // During hyper the FLOOR of the ceiling is HYPER.speed -- but a bounce is
+      // allowed to raise it to HYPER.speed * reboundCap and that headroom must
+      // survive the next tick or the rebound is clamped away the instant it
+      // happens. (Measured before this fix: every bounce peaked at 354 for one
+      // tick and was cut to 280 on the next, so the wall-throw never landed.)
+      // Bleed the extra headroom back at the same rate the normal rally does.
+      const floor = HYPER.speed;
+      if (!(world.playerCeiling > floor)) world.playerCeiling = floor;
+      else world.playerCeiling = Math.max(floor, world.playerCeiling - 0.6);
+      s.ceiling = world.playerCeiling;
+    } else if (world.playerCeiling > MAX_SPEED) {
       world.playerCeiling = Math.max(MAX_SPEED, world.playerCeiling - 0.22);
       s.ceiling = world.playerCeiling;
     }
@@ -679,7 +913,14 @@ export function createRun(
       if (s.parry <= 0) hurt('Prism link');
     });
     if (s.phase !== 'playing') return;
-    s.blade = Math.max(0, s.blade - dt);
+    // HYPER HOLDS THE BLADE ON.
+    //
+    // This one line is the whole "continuously in slashing mode" behaviour. The
+    // contact loop already chooses cut() over hurt() when s.blade > 0, so
+    // keeping the blade alive converts every shape the cube touches into chaos
+    // instead of damage. No new collision code, no special case in the fight --
+    // hyper just refuses to let the blade expire.
+    s.blade = s.hyper ? Math.max(s.blade, 1) : Math.max(0, s.blade - dt);
     s.parry = Math.max(0, s.parry - dt);
     s.invul = Math.max(0, s.invul - dt);
     s.drive = Math.max(0, s.drive - dt);
@@ -700,6 +941,7 @@ export function createRun(
     }
     s.chainTime = Math.max(0, s.chainTime - dt);
     if (!s.chainTime) s.chain = 0;
+    hyperStep();
     const p = world.player.position;
     s.peak = Math.max(s.peak, origin.y - p.y);
     s.oldLine = s.line;

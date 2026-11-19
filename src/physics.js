@@ -213,6 +213,26 @@ export function boostPlayer(world, factor, ceiling) {
   return Math.hypot(nx, ny) - speed;
 }
 
+/** Set the player's speed to `speed` along the CURRENT heading, or leave it
+ *  alone if it is already faster.
+ *
+ *  This is the counterpart to `launch()` for states where the speed limit is
+ *  lifted. `launch()` deliberately clamps its input to MAX_SPEED, so a dash
+ *  during hyper reset 279 to 31 in one tick and destroyed the state on the
+ *  next. A dash is how a hyper player STEERS: it owns the heading, the state
+ *  owns the magnitude. Returns the speed actually set.
+ */
+export function holdSpeed(world, speed = 0) {
+  const v = world.player.velocity,
+    len = Math.hypot(v.x, v.y);
+  if (!Number.isFinite(len) || len < 0.001) return 0;
+  // `speed` 0 means PRESERVE: keep whatever survived the launch clamp. A
+  // positive speed is a floor, never a ceiling, so this cannot slow the cube.
+  const keep = Math.max(len, speed);
+  Body.setVelocity(world.player, { x: (v.x / len) * keep, y: (v.y / len) * keep });
+  return keep;
+}
+
 export function launch(world, velocity) {
   const length = Math.hypot(velocity.x, velocity.y);
   if (!Number.isFinite(length) || length < 0.001) return false;

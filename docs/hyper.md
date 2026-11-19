@@ -188,3 +188,19 @@ to solve a problem that does not exist.
    and currently reachable; making them semi-visible changes ordinary play.
 3. **The bottom.** At 16,000px the floor is now inside reachable hyper range — a hyper shot
    *downward* would hit it. Is that intended, or should the floor be pushed below 78,000?
+
+---
+
+## Decisions (settled) and what shipped
+
+The open questions in this document were answered: walls at **78,000**, a
+**14**-dash budget (`HYPER.dashes`), and hyper ends through **friction and
+gravity** rather than a timer. The bottom wall replaced the Redline; no wall
+damages the player; no ghost rails are drawn. The implementation, its four
+measured bugs and the full verification table are in `docs/hyper-build.md` §8.
+
+The one thing in this document that was **wrong** is worth flagging here because
+it was load-bearing: §5's effect-curve design (`t = speed / ceiling`) does not
+work. Normalising by the ceiling rescales the normal range and makes 42 and 280
+render identically. The shipped curve adds a hyper term above the limit instead,
+leaving ordinary flight byte-identical. Numbers in `docs/hyper-build.md` §8.6.

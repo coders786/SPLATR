@@ -407,6 +407,29 @@ dd {
 #speedo[data-band='REDLINE'] {
   transform: scale(1.06);
 }
+/* HYPER is the one state that is not a reading but an event, so the dial is
+   allowed to overshoot itself: a heavier lift than REDLINE, and a glow that
+   pulses. Everything else in the HUD is steady on purpose -- a readout that
+   animates all the time is noise, and this only animates when the state is
+   actually live. */
+#speedo[data-band='HYPER'] {
+  transform: scale(1.14);
+  animation: speedo-hyper 620ms ease-in-out infinite alternate;
+}
+@keyframes speedo-hyper {
+  from {
+    filter: drop-shadow(1px 2px 0 #130e1a) drop-shadow(0 0 6px #9bf6ff88);
+  }
+  to {
+    filter: drop-shadow(1px 2px 0 #130e1a) drop-shadow(0 0 15px #9bf6ff);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #speedo[data-band='HYPER'] {
+    animation: none;
+    filter: drop-shadow(1px 2px 0 #130e1a) drop-shadow(0 0 12px #9bf6ff);
+  }
+}
 .speedo-dial {
   position: absolute;
   inset: 0;
@@ -488,6 +511,19 @@ dd {
 }
 #speedo[data-band='REDLINE'] #speedo-value {
   color: var(--hot);
+}
+#speedo[data-band='HYPER'] .speedo-fill {
+  stroke: #9bf6ff;
+}
+#speedo[data-band='HYPER'] .speedo-needle line {
+  stroke: #9bf6ff;
+}
+#speedo[data-band='HYPER'] .speedo-needle circle {
+  fill: #9bf6ff;
+}
+#speedo[data-band='HYPER'] #speedo-value,
+#speedo[data-band='HYPER'] #speedo-band {
+  color: #9bf6ff;
 }
 #speedo-band {
   position: absolute;

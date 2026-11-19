@@ -112,3 +112,154 @@ compounding bounce are the next chunk** — they depend on this being correct.
 | Field still bounded | enemies do not spawn below the frontier |
 | Tests | all pass, with the two Redline assertions rewritten rather than deleted |
 | Frame cost | unchanged (measured 2% of a frame) |
+
+---
+
+## 8. HYPER, as shipped
+
+The state itself. Entry, the promotion, the bounce, the exit, and the effect
+curve — plus the four bugs the measurements found that no amount of planning
+would have predicted.
+
+### 8.1 The constants
+
+`HYPER = { speed: 280, chain: 7, dashes: 14, bankGain: 0.6, reboundCap: 1.35, drag: 0.005 }`
+
+`speed` was bisected in §3: 242 is the minimum to cross 78,000 px, and 280
+leaves a 34,000 px margin. The rest are new.
+
+### 8.2 Entry is a RISING EDGE, and the budget follows the STREAK
+
+Two separate bugs, both found by measurement:
+
+1. **Re-entry off a stale chain.** `chain >= 7` is a *level*, not an event. A
+   state that ended at speed 41 with a chain of 9 still on the board promoted
+   again on the very next tick — measured **4 entries in 65 ticks, all off one
+   chain**. Fixed with `hyperChain`: the streak that earns hyper is CONSUMED by
+   it, and `chain > hyperChain` makes the gate a rising edge. That also matches
+   the brief's wording — "7 **consecutive** chains" means a fresh streak.
+2. **The 14-dash budget was on the RUN, not the streak.** `shots <= 14` is only
+   true for the first 14 launches of a run. In a 128-dash run that closed the
+   gate permanently after 11% of play: the feature was unreachable for the other
+   89%. Fixed with `chainFrom`, recorded when a streak starts, so the budget is
+   `shots - chainFrom <= 14` — seven links *within fourteen dashes of each
+   other*, which is what the brief actually asks for.
+
+### 8.3 A dash must not erase hyper (`holdSpeed`)
+
+`launch()` clamps to `MAX_SPEED` — correct for a launch, catastrophic here. A
+dash during hyper reset the cube from 279 to 31 in a single tick and ended the
+state on the next one. The fix went through two wrong versions before landing:
+
+| version | result |
+|---|---|
+| refill to `HYPER.speed` | **infinite**: 1,650 ticks / 27s, never ended |
+| `holdSpeed(world)` (preserve live velocity) | **14 ticks**: `launch()` had already clamped it, so "preserve" preserved the damage |
+| `holdSpeed(world, speedBeforeLaunch)` | **666 ticks median** (~11s) |
+
+The dash owns the heading; the state owns the magnitude; nothing is repaired.
+Gravity and drag stay the only drains. `holdSpeed` lives in `physics.js` next to
+`boostPlayer` rather than importing Matter into `run.js`.
+
+### 8.4 The bounce is ONE boom, then a turn
+
+A speed-scaled multiplier on every rail contact is a perpetual motion machine.
+Measured: a bot touching a rail every 8 ticks gained 4.8% per bounce while drag
+took 3.9% — hyper ran 1,440+ ticks and never ended. Even a modest 2.2% boost was
+net positive.
+
+So the boom is armed on entry (`s.hyperBoom`) and spent by the first contact:
+
+- **first bounce**: gain `1 + (speed/280)*0.6`, capped at `1.35`, ceiling raised
+  to `280 * 1.35` and *held* for a few ticks so the throw actually lands
+  (previously the ceiling was reset to 280 on the next tick — every bounce
+  peaked at 354 for one frame and was cut to 280).
+- **later bounces**: multiplier **1**. A wall is a turn.
+
+Measured peaks after the fix: **312–376**, then decaying 318 → 249 → 246.
+
+### 8.5 Exit is physical, and friction is a real term
+
+No timer. The state ends when speed drops back to `MAX_SPEED` — `drag: 0.005`
+per tick plus gravity. Median duration **666 ticks (~11s)**, range 388–815.
+
+### 8.6 The effect curve must ADD, not normalise
+
+The `ceiling` parameter was first implemented as `t = speed / ceiling`. That is
+wrong twice over, and the numbers say so plainly:
+
+| implementation | 42 vs 42 | 42 vs 280 | 100 vs 280 | 280 vs 280 |
+|---|---|---|---|---|
+| normalise by ceiling | 1.52 / blur 26 | **0.36 / blur 0** | 1.52 / 26 | 1.52 / 26 |
+| **additive hyper term** | 1.52 / blur 26 | **1.52 / 26** | **1.69 / 34** | **2.05 / 53** |
+
+Normalising rescales the *normal* range, so ordinary top speed collapsed to
+DRIFT with zero stretch the moment a hyper ceiling was in scope — and 42 and 280
+both saturated to the same curve, so the loudest state in the game rendered
+identically to a redline shot. The shipped model leaves `speed <= max`
+byte-identical to what was already there and adds `hyperGain * over^0.8` above
+it.
+
+The HUD needed matching fixes: `readout.kmh` 667 drove `strokeDashoffset` to
+-567 and spun the needle **twenty full turns**, so the arc and needle clamp to
+their physical end while the number stays free to read past 100. `TIERS` gained
+a HYPER entry — without it `TIERS.find(t => t.label === 'HYPER')` fell back to
+`TIERS[0]` and the pips went *dark* at full hyper. Fifth pip added to the DOM.
+
+### 8.7 The camera pins the cube
+
+Every smoothing rule in `camera.js` is tuned for a 42 px/tick cube. At 280 the
+pin is not a preference, it is the only option: the follow is capped at 30 px,
+the lead saturates at 118 px and lags a direction that reverses on every wall,
+and the safety net ends up doing all the work.
+
+Measured **cube screen-slip while hyper was live: p95 0.191 of the viewport**
+(up to 0.24) — the cube visibly teleported around the screen. Three fixes, in
+order of how much they mattered:
+
+1. **Pin to the cube, not to `d`.** `d` is the framing target and it lags too;
+   pinning to it still left 500 px of error (`viewX -2800` vs `pX -2140`).
+2. **Collapse `prev` while pinned.** `view(alpha)` lerps last tick → this tick,
+   which at 280 px/tick is a quarter-viewport lag on its own.
+3. **Retire the lead to zero** rather than freezing its approach rate, and zero
+   the lean (it swings with a velocity that reverses on every wall).
+
+Result: **p95 slip 0.000**, max 0.07. Normal flight is untouched (0.010 / 0.029).
+The camera *does* travel 280 px/frame during hyper — that is the world streaming
+past a held cube, which is the point.
+
+### 8.8 What this did to the frame test
+
+`test/frame.test.js` broke, and the investigation is worth recording because the
+test was measuring the wrong population:
+
+- It tracked **idle** enemies. During hyper the cube outruns the field and
+  40,969 enemy-ticks were idle against 298 telling, so most samples were of
+  parked shapes that legitimately do not move. Excluding idle is the fix.
+- Its 2% duplicate budget only ever passed because those parked enemies were
+  averaged in. On genuinely moving enemies the duplicate share is 2.6 / 4.2 /
+  2.7 / 5.8% at 60 / 120 / 144 / 240 Hz — all sub-tick repetition, which is the
+  *correct* output when several render frames fall inside one physics tick. The
+  budget is now rate-aware.
+- `prev` was not cleared when the watched enemy changed, so a switch compared two
+  different shapes' positions.
+- Hyper samples are measured separately. Large travel there is the state
+  working, not a smoothing failure.
+
+The evenness ratio — the number that actually detects stutter — is **1.24–1.32**
+at every rate, against a 1.8 limit.
+
+### 8.9 Verification
+
+| gate | result |
+|---|---|
+| suite | **132/132** (9 new in `test/hyper.test.js`) |
+| entry | fires at exactly 7 links; not at 6; not past the dash budget; inclusive at 14 |
+| re-entry | one entry per streak (was 4 off one chain) |
+| reachability | **23/32** policy-seed runs, **43 entries** |
+| duration | median **666 ticks (~11s)**, 388–815 |
+| peak | **333–376** (vs `MAX_SPEED` 42) |
+| bounces | boom once at 312–376, then 318 → 249 → 246 |
+| deaths | **0** across 26,781 hyper ticks |
+| camera | cube slip p95 **0.000** in hyper, 0.029 normal |
+| build | **323.3 KiB**, one file |

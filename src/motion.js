@@ -35,6 +35,10 @@ export const MOTION = Object.freeze({
   blurFrom: 0.35,
   // Maximum blur length in px at terminal speed, along the travel axis.
   blurMax: 26,
+  // How much extra ramp full hyper adds on top of the normal curve. Keeping
+  // this separate from blurMax is what lets hyper overshoot the shipped
+  // ceiling without changing how ordinary flight looks.
+  hyperGain: 0.85,
   // Trail samples kept for the player's speed ribbon.
   ribbon: 16,
   // Effect population caps. Every one of these is a hard ceiling so a long
@@ -79,26 +83,53 @@ export const MOTION = Object.freeze({
 });
 
 /** 0..1 speed ramp. `speed` is px per nominal 60 Hz step, as Matter uses. */
-export function speedRamp(speed, max = MAX_SPEED) {
-  const t = clamp(speed / max, 0, 1);
-  return clamp((t - MOTION.blurFrom) / (1 - MOTION.blurFrom), 0, 1);
+/** The speed at which hyper effects reach full strength.
+ *
+ *  Deliberately a plain constant here rather than an import from run.js: the
+ *  renderer must not import the run, because run.js already reaches into
+ *  motion.js for tiers and it would close a cycle. The number is the same 280
+ *  derived in run.js's HYPER block (docs/hyper.md explains the bisection); the
+ *  two are asserted equal by a test so they cannot drift apart silently.
+ */
+export const HYPER_SPEED = 280;
+
+export function speedRamp(speed, max = MAX_SPEED, ceiling = max) {
+  // WHAT NOT TO DO: normalising by `ceiling` (t = speed / ceiling) looks right
+  // and is wrong twice over. It rescales the NORMAL range, so an ordinary
+  // top-speed shot read against a hyper ceiling collapsed to 0.36 and rendered
+  // WEAKER than a slow one; and both 42 and 280 saturate to the same curve, so
+  // hyper -- the loudest state in the game -- looked exactly like a redline
+  // shot. Supersaturating the curve is the only model where "faster than the
+  // limit" is visible as such.
+  //
+  // So: the normal curve is untouched below `max`, and above it a hyper term
+  // is ADDED. Ordinary flight therefore renders byte-identically to what
+  // shipped, and hyper keeps climbing past full instead of pinning at it.
+  const t = clamp(speed / max, 0, 1),
+    base = clamp((t - MOTION.blurFrom) / (1 - MOTION.blurFrom), 0, 1);
+  if (speed <= max || ceiling <= max) return base;
+  // How far into the lifted ceiling: 0 at the normal limit, 1 at the ceiling.
+  const over = clamp((speed - max) / (ceiling - max), 0, 1);
+  return 1 + MOTION.hyperGain * over ** 0.8;
 }
 
 /** Blur/stretch along the travel axis, from one speed number.
  *  Returns { along, across, blur } where `along` is the length multiplier,
  *  `across` the width multiplier and `blur` the smear length in px. */
-export function stretchFor(speed, max = MAX_SPEED) {
-  const t = speedRamp(speed, max);
+export function stretchFor(speed, max = MAX_SPEED, ceiling = max) {
+  const t = speedRamp(speed, max, ceiling);
   // The cube's silhouette is the player's own speed made visible, so this is
   // where the "it stretches more the faster you go" promise is kept. The
   // curve is superlinear (t^1.15) so the last stretch of speed, where the
   // player is actually pushing, visibly changes the shape; a linear ramp
   // reads as "same cube, sliding scale" and wastes the top end.
+  // `t` can exceed 1 under hyper; `across` is floored so the cube thins but
+  // never disappears into a line at the far end of the lifted scale.
   const k = t ** 1.15;
   return {
     along: 1 + 0.52 * k,
-    across: 1 - 0.26 * k,
-    blur: MOTION.blurMax * t ** 1.25,
+    across: Math.max(0.42, 1 - 0.26 * k),
+    blur: MOTION.blurMax * k,
   };
 }
 
@@ -135,6 +166,10 @@ export const TIERS = Object.freeze([
   { id: 'cruise', at: 0.55, label: 'CRUISE', tint: '#ffd166' },
   { id: 'surge', at: 0.78, label: 'SURGE', tint: '#deff52' },
   { id: 'redline', at: 0.9, label: 'REDLINE', tint: '#ff507b' },
+  // The only tier that is not a position on the 0..100 dial: it means "past the
+  // limit", and the HUD reaches it through `speedReadout`'s band rather than
+  // through `tierOf`. It lives here so pips, tint and label have one source.
+  { id: 'hyper', at: 1, label: 'HYPER', tint: '#9bf6ff' },
 ]);
 
 export function tierOf(speed, max = MAX_SPEED) {
@@ -315,13 +350,22 @@ export function hitStopFor(kind, pinned = false) {
  *  "km/h" style units and names the band, so the HUD can show a number that
  *  rises as the game speeds up. Deliberately non-linear at the top so the
  *  last few units feel earned. */
-export function speedReadout(speed, max = MAX_SPEED) {
-  const t = clamp(speed / max, 0, 1);
-  const kmh = Math.round(100 * Math.pow(t, 0.82));
+export function speedReadout(speed, max = MAX_SPEED, ceiling = max) {
+  // Same rule as speedRamp: the normal reading is untouched, and going over the
+  // limit ADDS to it. `dial` stays inside 0..100 for the arc and needle, while
+  // `kmh` is free to read past 100 so the number itself says "off the scale".
+  const t = clamp(speed / max, 0, 1),
+    over = speed > max,
+    normal = Math.round(100 * Math.pow(t, 0.82)),
+    // How far into the lifted ceiling, as a 0..1 dial position.
+    dial = over && ceiling > max ? 1 + clamp((speed - max) / (ceiling - max), 0, 1) : t,
+    // 42 of 280 is 667, and that number is the whole point of the state.
+    kmh = over ? Math.max(normal, Math.round(100 * (speed / max))) : normal;
   return {
     kmh,
-    t,
-    band: kmh > 92 ? 'REDLINE' : kmh > 74 ? 'SURGE' : kmh > 46 ? 'CRUISE' : 'DRIFT',
+    t: dial,
+    over,
+    band: over ? 'HYPER' : kmh > 92 ? 'REDLINE' : kmh > 74 ? 'SURGE' : kmh > 46 ? 'CRUISE' : 'DRIFT',
   };
 }
 

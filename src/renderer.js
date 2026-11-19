@@ -16,6 +16,7 @@ import {
   appear,
   ANIM,
   tierOf,
+  HYPER_SPEED,
 } from './motion.js';
 import { sceneFor, drawStory } from './storyboard.js';
 import { createSmear, ghostFor, morphWedge } from './smear.js';
@@ -945,6 +946,44 @@ export function createRenderer(canvas) {
     //  * Everything scales with the speed the cube arrived at, so a gentle
     //    graze is quiet and a redline bank is enormous. If every bank looked
     //    like this the effect would be noise.
+    // ── HYPER AURA ─────────────────────────────────────────────────────────
+    //
+    // A ring of tapered speed lines around the cube while hyper is live, and
+    // only while it is live. Intensity is `hyperLevel` (0 at the normal limit,
+    // 1 at full hyper), so the effect FADES as gravity takes the state back --
+    // the player can literally see hyper running out.
+    //
+    // Deliberately NOT a screen effect. The brief's standing constraint is no
+    // camera zoom/roll/shake, and a full-screen flash at this speed is
+    // nauseating. The aura is attached to the cube, which the eye is already
+    // tracking, so it reads as the cube heating up rather than the room moving.
+    if (motion && s.hyperLevel > 0.02) {
+      const k = s.hyperLevel,
+        n = 9,
+        spin = time * 6.5;
+      c.save();
+      c.translate(p.x, p.y);
+      for (let i = 0; i < n; i++) {
+        const a = spin + (i / n) * TAU,
+          len = (R * 1.5 + R * 1.9 * k) * (0.7 + 0.3 * Math.sin(spin * 2 + i)),
+          w = 2.4 / v.scale;
+        c.globalAlpha = 0.16 + 0.44 * k;
+        c.strokeStyle = i % 2 ? INK.acid : INK.paper;
+        c.lineWidth = w;
+        c.beginPath();
+        c.moveTo(Math.cos(a) * R * 1.15, Math.sin(a) * R * 1.15);
+        c.lineTo(Math.cos(a) * len, Math.sin(a) * len);
+        c.stroke();
+      }
+      // The core ring that only appears at full hyper: one clean bright circle
+      // says "this is a state", where the lines alone read as decoration.
+      if (k > 0.78) {
+        c.globalAlpha = (k - 0.78) / 0.22 * 0.5;
+        arc(c, INK.acid, 1.8 / v.scale, 0, 0, R * 2.15 + Math.sin(time * 9) * 1.6);
+      }
+      c.globalAlpha = 1;
+      c.restore();
+    }
     if (motion && s.boom && s.boomAge < 26) {
       const k = 1 - s.boomAge / 26,
         power = clamp(s.boom.speed / MAX_SPEED, 0, 1.4),
@@ -1160,7 +1199,8 @@ export function createRenderer(canvas) {
         const vx = world.player.velocity.x,
           vy = world.player.velocity.y,
           speed = Math.hypot(vx, vy),
-          e = stretchFor(speed);
+          // Only stretch past the normal curve while hyper is actually live.
+          e = stretchFor(speed, MAX_SPEED, s.hyper ? HYPER_SPEED : MAX_SPEED);
         if (e.along > 1.001) {
           const along = Math.atan2(vy, vx);
           c.rotate(along);
@@ -1258,7 +1298,7 @@ export function createRenderer(canvas) {
         const vx = world.player.velocity.x,
           vy = world.player.velocity.y,
           speed = Math.hypot(vx, vy),
-          smear = stretchFor(speed).blur;
+          smear = stretchFor(speed, MAX_SPEED, s.hyper ? HYPER_SPEED : MAX_SPEED).blur;
         if (smear > 1) {
           const along = Math.atan2(vy, vx),
             steps = smear > 12 ? 3 : 2;
