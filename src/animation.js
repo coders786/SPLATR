@@ -564,3 +564,355 @@ export function cubePose({ vx = 0, vy = 0, age = 0, slashAge = -1, fallAge = -1,
     heading: Math.atan2(vy, vx),
   };
 }
+
+/* ── 8. THE DASH, ROTATION LOCKED AT ZERO ─────────────────────────────────── */
+
+/** Which of the eight SCREEN directions a velocity points at.
+ *
+ *  Index 0 = East, 1 = South-East, 2 = South, 3 = South-West, ... i.e. it runs
+ *  CLOCKWISE on screen, because screen Y grows DOWNWARD.
+ *
+ *  This is deliberately NOT the `DIRS` index. `DIRS` runs counter-clockwise in
+ *  math convention (Y up) while being named for screen directions, so its
+ *  index 2 is called 'N' and fires when the cube moves DOWN. That mismatch is
+ *  a real bug in the movement poses; it is not repeated here, where a wrong
+ *  index would light the wrong wall on every diagonal dash.
+ */
+export const OCTANT_NAMES = Object.freeze(['E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE']);
+
+export function octant(vx, vy) {
+  if (!vx && !vy) return 0;
+  const t = Math.atan2(vy, vx);
+  return ((Math.round((t / TAU) * 8) % 8) + 8) % 8;
+}
+
+export const DASH = Object.freeze({
+  /** Anticipation. Two ticks: enough to read as a coil, short enough that the
+   *  dash still answers the input. */
+  windup: 2,
+  /** The dashes state. Five ticks, matching the brief's frames 3-7. */
+  active: 5,
+  /** Braking and the elastic settle. Eight ticks, not five: at five the settle
+   *  moved 0.175 of the body's own length per tick, which is a pop, not a
+   *  spring. The brief's 3 frames were a starting point; this is what actually
+   *  reads as elastic. */
+  recover: 8,
+  /** Sum of the three. Written out because the object is frozen. */
+  total: 15,
+});
+
+/** The dash's own channels, for one tick of its life.
+ *
+ *  Driven from the SAME tick counter as the blade (`slashAge`), never from a
+ *  second clock: two timers drift, and a dash that disagrees with its own cut
+ *  is worse than no dash at all.
+ *
+ *  Every channel here is axis-aligned by construction. `along`/`across` are
+ *  scales on X and Y, `core` is a translation of the inner core only, and
+ *  `lead`/`trail` name which walls to light or dissolve. Nothing rotates.
+ */
+export function dashFor(slashAge, vx, vy) {
+  if (!(slashAge >= 0) || slashAge > DASH.total) return null;
+  const dir = octant(vx, vy);
+  const speed = Math.hypot(vx, vy);
+  // How hard the dash is, 0..1. A tap does not deform like a full-power launch.
+  const power = clamp01(speed / 42);
+  // The direction, snapped to the octant so a near-axis diagonal cannot produce
+  // a half-lit wall. `dx`/`dy` are SCREEN signs: +x is right, +y is DOWN, which
+  // is why this reads straight off the velocity rather than off cos/sin of an
+  // index -- the first version derived it from cos/sin and lit the wrong wall on
+  // every diagonal.
+  const a = (dir / 8) * TAU;
+  const dx = Math.sign(Math.round(Math.cos(a) * 1e6) / 1e6),
+    dy = Math.sign(Math.round(Math.sin(a) * 1e6) / 1e6);
+  // A wall leads when it is on the side travel is heading toward.
+  const lead = { x: dx, y: dy };
+  const trail = { x: -dx, y: -dy };
+
+  if (slashAge < DASH.windup) {
+    // ── ANTICIPATION ──────────────────────────────────────────────────────
+    // Compress BACKWARD along the dash axis: taller and thinner for a
+    // horizontal dash. The core pulls right back to the trailing wall.
+    const t = (slashAge + 1) / DASH.windup;
+    const k = 0.16 * power * t;
+    return withAxes({
+      phase: 'windup',
+      dir,
+      t,
+      along: 1 - k,
+      across: 1 + k * 0.62,
+      core: { x: -dx * 0.42 * t, y: -dy * 0.42 * t },
+      lead,
+      trail,
+      // The leading wall flashes DURING the wind-up: the telegraph.
+      leadGlow: 0.35 + 0.5 * t,
+      trailBreak: 0,
+      ghost: 0,
+    }, dx, dy);
+  }
+  if (slashAge < DASH.windup + DASH.active) {
+    // ── THE DASHES STATE ──────────────────────────────────────────────────
+    // Stretched ALONG the axis of travel, core slammed against the leading
+    // wall, trailing wall breaking into dashes.
+    const t = (slashAge - DASH.windup) / (DASH.active - 1);
+    const ease = 1 - Math.pow(1 - t, 2);
+    return withAxes({
+      phase: 'active',
+      dir,
+      t,
+      along: 1 + (0.3 * power + 0.08) * (0.35 + 0.65 * ease),
+      across: 1 - (0.16 * power + 0.04) * (0.35 + 0.65 * ease),
+      core: { x: dx * 0.34, y: dy * 0.34 },
+      lead,
+      trail,
+      leadGlow: 1,
+      // Ramps in and STAYS: the back of the body is dematerialised for the whole
+      // dash, not just at the start of it.
+      trailBreak: 0.35 + 0.65 * Math.min(1, t * 2.2),
+      ghost: 1,
+    }, dx, dy);
+  }
+  // ── RECOVERY ─────────────────────────────────────────────────────────────
+  // The leading edge stops first and the back catches up, so the body overshoots
+  // the other way before it settles.
+  const t = (slashAge - DASH.windup - DASH.active) / DASH.recover;
+  // Start from where the dash ENDED and decay toward rest, oscillating through
+  // it ONCE. The first version used `cos(t * 1.5pi) * exp(-t*3.2)` on its own,
+  // which starts at 1.0 and snaps the body from 1.380 straight to 0.910 in one
+  // tick -- a visible pop exactly where the animation is meant to feel elastic.
+  const peak = 0.3 * power + 0.08;
+  // A HALF cosine, not 1.5 pi: over five ticks a 1.5-pi oscillation is 80
+  // degrees of turn per tick, which measured as two hard pops (0.262 and 0.150
+  // in one tick) right where the animation is supposed to feel elastic. A half
+  // wave brings the body down through rest once and eases out of it.
+  const settle = Math.cos(t * Math.PI) * Math.pow(1 - t, 1.4);
+  return withAxes({
+    phase: 'recover',
+    dir,
+    t,
+    along: 1 + peak * settle,
+    across: 1 - peak * 0.55 * settle,
+    core: { x: dx * 0.34 * (1 - t), y: dy * 0.34 * (1 - t) },
+    lead,
+    trail,
+    leadGlow: 0.6 * (1 - t),
+    trailBreak: 0.9 * Math.pow(1 - t, 1.6),
+    ghost: 1 - t,
+  }, dx, dy);
+}
+
+/** Resolve `along`/`across` into SCREEN-AXIS scales `sx`/`sy`.
+ *
+ *  This is where "no rotation" is actually enforced, so it is worth being
+ *  explicit about what it means. A cardinal dash stretches along its own
+ *  direction, which for E is the X axis and for S is the Y axis -- no rotation
+ *  needed, the axis of travel IS a screen axis.
+ *
+ *  A DIAGONAL has no such luck. Its axis of travel lies at 45 degrees, and the
+ *  only ways to stretch along it are to rotate the body or to shear it. Both
+ *  are forbidden. The first version of this code quietly stretched X and thinned
+ *  Y for every direction, so a south-east dash came out WIDE AND SHORT -- which
+ *  is the silhouette of an EASTWARD dash, and read as the cube moving east
+ *  while its trail went south-east. That is worse than no deformation at all.
+ *
+ *  So a diagonal gets a mild UNIFORM scale instead: bigger along both axes while
+ *  dashing, smaller along both while loading. A uniform scale cannot imply a
+ *  direction, which is exactly right -- past 45 degrees the direction is carried
+ *  by the lit walls, the corner-wedged core, and the diagonal speed lines, and
+ *  the body's job is to look braced, not to point.
+ */
+function withAxes(dash, dx, dy) {
+  const diagonal = dx !== 0 && dy !== 0;
+  const sx = diagonal ? 1 + (dash.along - 1) * 0.55 : dx ? dash.along : dash.across;
+  const sy = diagonal ? 1 + (dash.along - 1) * 0.55 : dy ? dash.along : dash.across;
+  return { ...dash, sx, sy };
+}
+
+/* ── 9. THE DASH'S VFX, AS PURE FUNCTIONS ─────────────────────────────────── */
+
+/** The ghost after-images left behind during the dash.
+ *
+ *  Three silhouettes, spaced back along the axis of travel, each one older,
+ *  smaller and fainter than the last. They are the AFTER-IMAGES of where the
+ *  body was, so they are laid down along `-lead`: an eastward dash leaves them
+ *  strung out to the west.
+ *
+ *  They do not rotate. An after-image of a square must be a square, or the
+ *  trail reads as the body spinning, which is the one thing this animation is
+ *  forbidden to suggest.
+ *
+ *  Returned as `{x, y, scale, alpha, age}` in BODY-LOCAL units (the caller
+ *  multiplies by `R`), because the renderer applies them inside the body's own
+ *  transform where the on-screen scale is already correct.
+ */
+export const GHOSTS = Object.freeze({
+  count: 3,
+  /**
+   * Gap between after-images, in body half-widths. It was 0.62, which put the
+   * three ghosts 3-7px apart against a 46px-wide body: they landed on top of
+   * each other and read as ONE solid slab of acid behind the cube rather than
+   * as three fading echoes. Measured at the glass: -72, -76, -79 px.
+   */
+  spread: 1.05,
+  fade: 0.4,
+});
+
+export function ghostsFor(dash) {
+  if (!dash || !(dash.ghost > 0.02) || dash.phase === 'windup') return [];
+  const out = [];
+  for (let i = 0; i < GHOSTS.count; i++) {
+    // u runs 0 (nearest the body) to 1 (oldest). The NEAREST ghost is the
+    // brightest because it is the most recent one.
+    const u = (i + 1) / (GHOSTS.count + 1);
+    // Distance grows with u and with how much of the dash is still live: the
+    // trail elongates as the dash accelerates and collapses as it recovers.
+    //
+    // It starts at 1.0 -- the body's OWN trailing wall in these units -- and
+    // goes outward from there. The first version started at 0, so every ghost
+    // was drawn inside the 1.48-long stretched body and read as three vertical
+    // stripes across the cube instead of as after-images behind it. Measured:
+    // ghosts at -1.2..-2.6px against a body half-width of 34px.
+    const back = 1 + u * GHOSTS.spread * dash.ghost * (1 + dash.t);
+    // `lead` is a SIGN PAIR, so on a diagonal `(-1,-1)` it is sqrt(2) long. Using
+    // it raw put the diagonal ghosts 1.41x further out than the cardinal ones
+    // and they detached from the body into free-floating plates. Normalising it
+    // makes the trail the same length in all eight directions.
+    const ln = Math.hypot(dash.lead.x, dash.lead.y) || 1;
+    out.push({
+      // Along the trailing direction, in body units.
+      x: (-dash.lead.x / ln) * back,
+      y: (-dash.lead.y / ln) * back,
+      // Each ghost is a little smaller: the body was slightly less stretched
+      // when it occupied that position, and a receding silhouette gives the
+      // trail its depth. Shrinking is axis-aligned.
+      scale: (1 - u * 0.3) * (1 - 0.1 * (1 - dash.ghost)),
+      alpha: dash.ghost * GHOSTS.fade * (1 - u * 0.72),
+      age: u,
+    });
+  }
+  return out;
+}
+
+/** Where the launch dust goes, and where the braking sparks go.
+ *
+ *  Two different events with two different reads:
+ *    - LAUNCH (start of `active`): the trailing wall kicks dust BACKWARD,
+ *      along the axis of travel, splayed evenly either side of it. It is the
+ *      ground being shoved away.
+ *    - BRAKE (start of `recover`): sparks fly FORWARD, from the leading wall
+ *      that has just stopped dead. It is friction, so they spark ahead and
+ *      outward, and they are brighter and shorter-lived than dust.
+ *
+ *  Both return unit-direction vectors plus a speed factor, so the renderer
+ *  owns all the drawing and this function owns only the choreography.
+ */
+export const DUST = Object.freeze({ count: 6, splay: 0.62, speed: 3.1 });
+export const SPARKS = Object.freeze({ count: 7, splay: 0.9, speed: 4.4 });
+
+export function dashBurst(dash, kind) {
+  if (!dash) return [];
+  const spec = kind === 'brake' ? SPARKS : DUST;
+  // The burst fires on ONE tick, not every tick of the phase, so the caller
+  // tells us the age. A burst that repeats is a plume, not an impact.
+  const dx = dash.trail.x,
+    dy = dash.trail.y;
+  // The two axes perpendicular to the dash direction, in screen space.
+  const px = -dy,
+    py = dx;
+  const out = [];
+  for (let i = 0; i < spec.count; i++) {
+    // Spread the fan evenly across [-1, 1] and alternate sides so the cloud is
+    // symmetric about the dash axis.
+    const u = spec.count === 1 ? 0 : (i / (spec.count - 1)) * 2 - 1;
+    // Braking sparks aim FORWARD (the wall stopped the front of the body);
+    // launch dust aims BACKWARD. Both splay off the axis.
+    const ax = kind === 'brake' ? -dx : dx,
+      ay = kind === 'brake' ? -dy : dy;
+    const splay = u * spec.splay;
+    out.push({
+      // Unit-ish direction, not normalised: a wider splay is a wider fan.
+      dx: ax + px * splay,
+      dy: ay + py * splay,
+      // Middle particles fly furthest; the edges of the fan are slower.
+      speed: spec.speed * (1 - Math.abs(u) * 0.45),
+      // Alternating two-tone so the burst is not one flat colour.
+      hot: i % 2 === 0,
+    });
+  }
+  return out;
+}
+
+/* ── 10. THE WALL SPLAT ───────────────────────────────────────────────────── */
+
+/** The pancake, then the daze.
+ *
+ *  A dash that hits a wall is INTERRUPTED: the body flattens against the
+ *  surface it hit, holds for a beat, then peels off and wobbles. All of it
+ *  axis-aligned -- a wall is a screen edge here, so flattening against one is
+ *  a pure X or Y scale, never a rotation.
+ *
+ *  `normal` is the direction pointing AWAY from the wall (the way the body is
+ *  pushed), in screen signs. A ceiling hit gives `{x:0,y:1}`: the body
+ *  flattens vertically and bulges horizontally, which is what a pancake on a
+ *  ceiling actually looks like.
+ *
+ *  Returns null when there is no splat, so callers can `if (splat)`.
+ */
+export const SPLAT = Object.freeze({
+  /** Ticks compressed against the wall. */
+  hold: 3,
+  /** Ticks peeling off and wobbling back to rest. */
+  daze: 11,
+  total: 14,
+  /** How flat the body gets at worst. */
+  flat: 0.34,
+  /** How much it bulges along the wall while flat. */
+  bulge: 0.5,
+});
+
+export function splatFor(age, normal) {
+  if (!(age >= 0) || age >= SPLAT.total) return null;
+  const nx = Math.sign(normal?.x ?? 0),
+    ny = Math.sign(normal?.y ?? 0);
+  // A normal needs at least one axis; a zero normal is not a contact.
+  if (!nx && !ny) return null;
+  // How much of the flatten is applied on each axis: the axis ALONG the normal
+  // is the one that compresses.
+  const onX = Math.abs(nx),
+    onY = Math.abs(ny);
+  if (age < SPLAT.hold) {
+    // ── PANCAKE ───────────────────────────────────────────────────────────
+    // Snaps flat on contact, holds. The core is pinned against the wall too,
+    // so the face is pressed into it rather than floating in a flat body.
+    const t = age / SPLAT.hold;
+    const k = SPLAT.flat + (1 - SPLAT.flat) * 0.28 * t;
+    const b = SPLAT.bulge * (1 - 0.15 * t);
+    return {
+      phase: 'pancake',
+      t,
+      sx: 1 - (1 - k) * onX + b * onY,
+      sy: 1 - (1 - k) * onY + b * onX,
+      core: { x: -nx * 0.62, y: -ny * 0.62 },
+      // The contact ring: how hard the wall is being hit, for debris.
+      hit: 1 - t * 0.4,
+      daze: 0,
+    };
+  }
+  // ── DAZE ────────────────────────────────────────────────────────────────
+  // Peel off the wall with a damped wobble. Two oscillations, gone by the end.
+  const t = (age - SPLAT.hold) / SPLAT.daze;
+  const wob = Math.cos(t * Math.PI * 2) * Math.pow(1 - t, 1.6);
+  const k = SPLAT.flat + (1 - SPLAT.flat) * Math.min(1, t * 2.6);
+  const b = SPLAT.bulge * (1 - t) * 0.5;
+  return {
+    phase: 'daze',
+    t,
+    sx: 1 - (1 - k) * onX + (b + wob * 0.16) * onY,
+    sy: 1 - (1 - k) * onY + (b + wob * 0.16) * onX,
+    // The core peels away from the wall and floats back to centre.
+    core: { x: -nx * 0.62 * (1 - t), y: -ny * 0.62 * (1 - t) },
+    hit: 0,
+    // Dizzy eyes: the caller feeds this to the face so the cube looks stunned.
+    daze: Math.pow(1 - t, 1.3),
+  };
+}

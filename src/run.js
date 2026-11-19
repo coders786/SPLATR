@@ -11,6 +11,7 @@ import {
   boostPlayer,
 } from './physics.js';
 import { panicWindow, panicScale } from './aim.js';
+import { DASH, SPLAT } from './animation.js';
 import { SPAWN, PAD, ARENA, createStream, bandAt, district, clamp } from './levels.js';
 import { createCombat } from './slasher.js';
 import { TYPES } from './shapes.js';
@@ -227,6 +228,15 @@ export function createRun(
     slashAge: -1,
     landAge: -1,
     fallAge: -1,
+    // ── THE WALL SPLAT ───────────────────────────────────────────────────
+    //
+    // Set when a DASH is interrupted by a rail: `{age, nx, ny}` where the
+    // normal points AWAY from the wall. The dash itself is not cancelled --
+    // `slashAge` keeps running, because the blade is already thrown -- but the
+    // body stops reading as a dash and reads as a pancake for SPLAT.total
+    // ticks. A later, non-dash contact never starts one: this is specifically
+    // "you dashed into a wall", not "you touched something".
+    splat: null,
     swingStart: 0,
     seed: seed >>> 0,
     hp: 3,
@@ -828,6 +838,10 @@ export function createRun(
     // 144Hz the renderer sees the same tick twice with different alpha and
     // draws the in-between frame itself.
     if (s.slashAge >= 0) s.slashAge++;
+    // The splat runs on its own clock, because it is the BODY's reaction and
+    // the dash's clock keeps running. It ends and clears itself, so nothing
+    // downstream has to remember to reset it.
+    if (s.splat && ++s.splat.age >= SPLAT.total) s.splat = null;
     // Cap it: landFor() stops returning a pose past FALL.land anyway, so an
     // unbounded counter was harmless here -- but it is a number that would
     // eventually lose float precision over a long run, and a counter that
@@ -944,6 +958,18 @@ export function createRun(
     if (hitSurface && hitSurface !== lastContact && s.phase === 'playing') {
       lastContact = hitSurface;
       noteImpact(hitSurface.x, hitSurface.y, hitSurface.nx, hitSurface.ny, hitSurface.depth);
+      // ── A DASH INTO A WALL ──────────────────────────────────────────────
+      //
+      // `surface === 'rail'` is the arena boundary (physics.js publishes that
+      // for all four sides). Hitting one MID-DASH is the case the brief calls
+      // Wall_Impact_[Direction]: the dash is interrupted and the body splats.
+      //
+      // The window is the dash's own active phase -- a dash that has already
+      // spent itself braking against nothing cannot be "interrupted", and a
+      // wall touched while walking is just a wall.
+      if (hitSurface.surface === 'rail' && s.slashAge >= 0 && s.slashAge < DASH.windup + DASH.active) {
+        s.splat = { age: 0, nx: hitSurface.nx, ny: hitSurface.ny };
+      }
     }
     // ── RAIL BANK ────────────────────────────────────────────────────────────
     //

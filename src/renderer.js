@@ -21,7 +21,18 @@ import {
 } from './motion.js';
 import { sceneFor, drawStory } from './storyboard.js';
 import { createSmear, ghostFor, morphWedge } from './smear.js';
-import { cubePose, slashFor, landFor, SLASH, DIRS } from './animation.js';
+import {
+  cubePose,
+  slashFor,
+  landFor,
+  SLASH,
+  DIRS,
+  dashFor,
+  DASH,
+  ghostsFor,
+  dashBurst,
+  splatFor,
+} from './animation.js';
 import { SLASH_TABLE, LAND_TABLE, SLASH_ROW, LAND_ROW, FALL_TABLE, FALL_ROW, FALL_SAMPLES } from './bake.js';
 
 /** Ticks the hyper entry burst runs for. Short enough to be an event, long
@@ -587,6 +598,13 @@ export function createRenderer(canvas) {
     shards = [],
     imprints = [],
     sparks = [];
+  // Dash dust and braking sparks. World-space, unlike `sparks` above which are
+  // debris from a kill: these belong to the player's own movement, so they must
+  // outlive a single dash and keep drifting while it recovers.
+  const dashDust = [];
+  // The dash tick a burst last fired on, so both bursts fire ONCE per dash
+  // instead of on every tick their phase happens to be current.
+  let dashBurstAt = -1;
   function resize() {
     const box = canvas.getBoundingClientRect();
     w = Math.max(1, box.width);
@@ -615,6 +633,8 @@ export function createRenderer(canvas) {
     shake.reset();
     stain = 0;
     trail.length = shards.length = imprints.length = sparks.length = 0;
+    dashDust.length = 0;
+    dashBurstAt = -1;
   }
   function event(type, d, motion) {
     if (type === 'armor' && motion) shake.ask(2.1, d.cut, 0.8);
@@ -1111,6 +1131,18 @@ export function createRenderer(canvas) {
       p = bodyPose(world.player, alpha),
       nearest = run.nearest(),
       time = mix(world.previousClock, world.clock, alpha);
+    // ── THE DASH, READ ONCE ──────────────────────────────────────────────
+    //
+    // Declared HERE, at the top of the frame, because three separate passes
+    // need it: the world-space particle burst, the body's own deformation, and
+    // the wall glow inside the body transform. It was first written next to the
+    // body scale where it reads best, which put a `const` below its first use --
+    // `const` is not hoisted, and the renderer threw
+    // "Cannot access 'dash' before initialization" on any frame with a dash.
+    //
+    // It is driven from `s.slashAge`, the blade's own counter, so the
+    // animation can never disagree with the cut it is drawing.
+    const dash = dashFor(s.slashAge, world.player.velocity.x, world.player.velocity.y);
     // The cube is the object every camera rule is written around, so the draw
     // trace records it alongside the hostiles. Without it a test cannot tell a
     // pinned cube from a cube that merely happens to be near the middle.
@@ -1613,6 +1645,77 @@ export function createRenderer(canvas) {
           s.opening?.reach ?? s.reach,
         );
       }
+      // ── DASH PARTICLES: DUST ON LAUNCH, SPARKS ON BRAKE ─────────────────
+      //
+      // World space, so they stay where they were thrown while the cube runs
+      // away from them -- that separation IS the read. Each burst fires on
+      // exactly ONE tick and is then animated by the tick clock, so a burst is
+      // an event rather than a continuous plume.
+      //
+      // Triggers come from `slashAge`, the dash's own counter: the launch is
+      // the first active tick, the brake is the first recovery tick. Recording
+      // the tick a burst fired on is what makes it fire ONCE, rather than on
+      // every frame the phase happens to still be current.
+      if (motion && dash && s.slashAge !== dashBurstAt) {
+        const launch = s.slashAge === DASH.windup,
+          brake = s.slashAge === DASH.windup + DASH.active;
+        if (launch || brake) {
+          dashBurstAt = s.slashAge;
+          // Dust comes off the wall the body is LEAVING; sparks come off the
+          // wall it has just SLAMMED into. Both are the trailing/leading wall
+          // of the octant, so a diagonal throws its burst out of a corner.
+          const src = brake ? dash.lead : dash.trail;
+          for (const b of dashBurst(dash, brake ? 'brake' : 'launch')) {
+            const n = Math.hypot(b.dx, b.dy) || 1;
+            dashDust.push({
+              brake,
+              x: p.x + src.x * R * 0.92,
+              y: p.y + src.y * R * 0.92,
+              vx: (b.dx / n) * b.speed,
+              vy: (b.dy / n) * b.speed,
+              // Sparks die fast and shoot far; dust hangs and drifts.
+              life: brake ? 9 + rand() * 5 : 15 + rand() * 8,
+              age: 0,
+              // Streak length as a fraction of R. Sparks are long, dust is grit.
+              len: brake ? 0.22 + rand() * 0.3 : 0.07 + rand() * 0.1,
+              hot: b.hot,
+            });
+          }
+          // Bounded, so a long run cannot accumulate an unbounded list.
+          if (dashDust.length > 90) dashDust.splice(0, dashDust.length - 90);
+        }
+      }
+      if (dashDust.length) {
+        if (motion)
+          for (let i = dashDust.length - 1; i >= 0; i--) {
+            const d = dashDust[i];
+            d.age++;
+            d.x += d.vx;
+            d.y += d.vy;
+            // Air drag. Sparks lose it faster than dust, which is what makes a
+            // brake snap and a launch billow.
+            const drag = d.brake ? 0.84 : 0.92;
+            d.vx *= drag;
+            d.vy *= drag;
+            if (d.age >= d.life) dashDust.splice(i, 1);
+          }
+        for (const d of dashDust) {
+          const u = d.age / d.life,
+            a = (1 - u) * (1 - u);
+          if (a < 0.02) continue;
+          c.globalAlpha = a * 0.95;
+          c.fillStyle = d.hot ? INK.acid : INK.paper;
+          // A short streak along the particle's own velocity. Axis-aligned
+          // boxes only: a rotated streak would imply the body is turning.
+          const sp = Math.hypot(d.vx, d.vy) || 1,
+            ux = Math.abs(d.vx / sp) > 0.5,
+            len = d.len * R * (d.brake ? 1 - u * 0.5 : 1 + u * 0.8),
+            thick = len * (d.brake ? 0.3 : 0.75);
+          if (ux) c.fillRect(d.x - len, d.y - thick * 0.5, len * 2, thick);
+          else c.fillRect(d.x - thick * 0.5, d.y - len, thick, len * 2);
+        }
+        c.globalAlpha = 1;
+      }
       c.save();
       if (s.invul > 0 && motion) c.globalAlpha = 0.61 + 0.39 * Math.abs(Math.sin(s.invul * 0.18));
       c.translate(p.x, p.y);
@@ -1621,15 +1724,22 @@ export function createRenderer(canvas) {
       if (aim?.power && aim.anchor && !aim.held) {
         const a = Math.atan2(aim.y, aim.x) || 0,
           load = clamp(aim.power, 0, 1) * 0.16;
-        c.rotate(a);
-        c.scale(1 - load * 0.5, 1 + load * 0.5);
-        c.rotate(-a);
+        // Same trick as the blade snap: the load gathers the body against the
+        // aim line, resolved onto the two screen axes so the outline stays
+        // on-axis. A diagonal aim compresses both axes, which reads as the cube
+        // compacting before release -- the tension still shows, without a tilt.
+        const nx = Math.abs(Math.cos(a)),
+          ny = Math.abs(Math.sin(a));
+        c.scale(1 - load * 0.5 * nx, 1 - load * 0.5 * ny);
       }
       if (motion && s.blade > 0) {
         const snap = 0.105 * fade('blade', (time - s.swingStart) * 1.4);
-        c.rotate(s.slashAngle);
-        c.scale(1 + snap, 1 - snap * 0.72);
-        c.rotate(-s.slashAngle);
+        // Axis-aligned form of the same snap: the swing's own normal decides
+        // which screen axis compresses, instead of rotating the frame to do it.
+        const nx = Math.abs(Math.cos(s.slashAngle)),
+          ny = Math.abs(Math.sin(s.slashAngle));
+        c.scale(1 + snap * nx, 1 + snap * ny);
+        c.scale(1 - snap * 0.72 * ny, 1 - snap * 0.72 * nx);
       }
       // ── THE ANIMATED POSE ────────────────────────────────────────────────
       //
@@ -1651,14 +1761,58 @@ export function createRenderer(canvas) {
         facing,
       });
       if (poseAnim.move.moving) holdDir = poseAnim.move.index;
-      if (poseAnim.counter) c.rotate(poseAnim.counter);
+      // ── NO COUNTER-ROTATION ─────────────────────────────────────────────
+      //
+      // `poseAnim.counter` is the swing's body lean, up to ~18 degrees. It was
+      // `c.rotate(counter)` here, and it is not allowed: a rotated square is
+      // still a square, so the lean bought almost no information while making
+      // the outline disagree with the screen axes on every swing. The swing is
+      // already communicated by the blade, the snap scale below, and the core
+      // gaze; the lean is dropped rather than faked with a shear. `counter` is
+      // still returned by the pose so the squash amplitude can track it.
       // `wide`/`tall` are direct multipliers on the body: landFor says
       // `wide: 1 + 0.42*q` and documents ">1 = wider than tall", so it must be
       // multiplied in as-is. Inverting it here made every pose read backwards --
       // a landing stretched upward like a pulled spring instead of splatting
       // wide, and a northward lean grew broader instead of taller.
-      if (poseAnim.tall !== 1 || poseAnim.wide !== 1)
-        c.scale(poseAnim.wide, poseAnim.tall);
+      // ── THE DASH ────────────────────────────────────────────────────────
+      //
+      // Driven from `s.slashAge` -- the SAME counter the blade uses -- so the
+      // animation can never disagree with the cut it is drawing. See
+      // `dashFor` in animation.js for the timeline.
+      //
+      // Computed HERE, above the pose, because the pose's own squash and the
+      // dash's stretch are composed into one axis-aligned scale below. Declared
+      // later it is a temporal-dead-zone error, which is how this first broke.
+      // ── AXIS-ALIGNED DEFORMATION ONLY ───────────────────────────────────
+      //
+      // `along`/`across` are the dash's stretch, and they are SCREEN-AXIS
+      // scales: a horizontal dash widens X and thins Y, a vertical dash does the
+      // opposite, and a diagonal dash does both at once. No rotation and no
+      // shear is ever applied to the body, so it stays a rectangle on screen.
+      // ── THE WALL SPLAT OVERRIDES THE DASH ──────────────────────────────
+      //
+      // A dash interrupted by a rail is no longer a dash: it is a body
+      // flattened against a wall. The splat's axis scales REPLACE the dash's
+      // rather than composing -- composing two contradictory deformations
+      // multiplies them, and the result is a body that is neither flat nor
+      // stretched, which reads as a rendering fault rather than an impact.
+      // The pose's own squash stays underneath, so the splat sits on the
+      // character instead of floating over it.
+      //
+      // `splatFor` is a pure function of (age, normal); it does not rotate,
+      // because a wall is a screen edge and flattening against one is a pure X
+      // or Y scale.
+      // `splatFor` takes a normal in the `{x, y}` form every other vector in
+      // the renderer uses, but `run` stores it as `{nx, ny}` from the physics
+      // contact. Passing the contact object straight through made both signs
+      // zero, `splatFor` (correctly) refused to splat, and the wall impact drew
+      // nothing at all -- measured: a frame with `splat={age:1,nx:0,ny:1}`
+      // rendered an undeformed square.
+      const splat = splatFor(s.splat ? s.splat.age : -1, s.splat && { x: s.splat.nx, y: s.splat.ny });
+      const dWide = (poseAnim.wide ?? 1) * (splat ? splat.sx : dash ? dash.sx : 1);
+      const dTall = (poseAnim.tall ?? 1) * (splat ? splat.sy : dash ? dash.sy : 1);
+      if (dWide !== 1 || dTall !== 1) c.scale(dWide, dTall);
       // ── SKEW: the body being DRAGGED, not turned ──────────────────────
       //
       // This was `c.rotate(poseAnim.twist)`, a ±28 degree body rotation. A
@@ -1675,12 +1829,21 @@ export function createRenderer(canvas) {
       // `transform(1, 0, k, 1, 0, 0)` skews X by Y: points further along the
       // body's local Y are pushed along X, which is the trailing/leading axis
       // once the frame is aligned to travel.
-      if (Math.abs(poseAnim.skew) > 0.002) {
-        const h = poseAnim.heading - p.angle;
-        c.rotate(h);
-        c.transform(1, 0, poseAnim.skew, 1, 0, 0);
-        c.rotate(-h);
-      }
+      // ── THE SKEW IS GONE: IT WAS A ROTATION IN DISGUISE ─────────────────
+      //
+      // Last round this replaced `twist` with a shear, on the reasoning that a
+      // sheared square reads as "being dragged" rather than "turning". That
+      // reasoning was wrong in a way that is easy to miss: a shear makes the
+      // body a PARALLELOGRAM, so its vertical edges stop being vertical and its
+      // horizontal edges stop being horizontal. To the eye that is a rotation.
+      //
+      // Measured on the drawn frame before this change: a diagonal dash drew 6
+      // distinct X values and 6 distinct Y values -- the body was tilted.
+      //
+      // The requirement is that the body is a RECTANGLE in screen space at all
+      // times. The drag that the skew was trying to express is now carried by
+      // the directional dash below, which squashes and stretches the axis-
+      // aligned box instead of tilting it.
       // ── STRETCH ALONG TRAVEL ──────────────────────────────────────────
       //
       // Applied in the heading's own frame: a cube thrown east gets LONGER east
@@ -1689,15 +1852,23 @@ export function createRenderer(canvas) {
       // only fires airborne) -- this one is the pose system's own answer to
       // "how hard am I being thrown", and it works on the ground too.
       if (poseAnim.stretch > 0.004) {
-        // `p.angle`, NOT `bodyAngle`: this block runs before the `lean`
-        // rotation below, so the frame here is still only the body's own
-        // angle. Using `bodyAngle` here would subtract a rotation that has not
-        // been applied yet, and would tilt the stretch by `-lean` -- a bug this
-        // file already had once while this comment was being written.
+        // ── AXIS-ALIGNED, NOT ROTATED ──────────────────────────────────────
+        //
+        // This was `rotate(h) · scale · rotate(-h)`: a stretch along the
+        // direction of travel. It is a perfectly good idea for a body that may
+        // rotate, and a violation for one that may not -- rotating the scale
+        // makes the body a parallelogram on every diagonal.
+        //
+        // The direction is now carried by WHICH axis stretches, taken from the
+        // sign of travel: an eastward cube widens X, a southward one widens Y,
+        // a diagonal does both. Same information, no tilt.
         const k = poseAnim.stretch;
-        c.rotate(poseAnim.heading - p.angle);
-        c.scale(1 + k * 0.34, 1 - k * 0.2);
-        c.rotate(-(poseAnim.heading - p.angle));
+        const sx = Math.sign(world.player.velocity.x) || 0,
+          sy = Math.sign(world.player.velocity.y) || 0;
+        // A purely diagonal travel splits the stretch between both axes.
+        const wx = sx ? (sy ? 0.6 : 1) : 0,
+          wy = sy ? (sx ? 0.6 : 1) : 0;
+        c.scale(1 + k * 0.34 * wx - k * 0.2 * wy, 1 + k * 0.34 * wy - k * 0.2 * wx);
       }
       // ── THE BODY FRAME IS ROTATED BY `lean`, NOT BY `p.angle` ──────────
       //
@@ -1785,10 +1956,12 @@ export function createRenderer(canvas) {
           // Only stretch past the normal curve while hyper is actually live.
           e = stretchFor(speed, MAX_SPEED, s.hyper ? HYPER_SPEED : MAX_SPEED);
         if (e.along > 1.001) {
-          const along = Math.atan2(vy, vx);
-          c.rotate(along - bodyAngle);
-          c.scale(e.along, e.across);
-          c.rotate(-(along - bodyAngle));
+          // Axis-aligned: the same rule as the pose stretch above. `along` goes
+          // on whichever screen axis actually contributes to the travel.
+          const ax = Math.abs(vx) / (speed || 1),
+            ay = Math.abs(vy) / (speed || 1);
+          c.scale(1 + (e.along - 1) * ax - (1 - e.across) * ay,
+                  1 + (e.along - 1) * ay - (1 - e.across) * ax);
         }
       }
       // ── SUPERSONIC ─────────────────────────────────────────────────────
@@ -1849,9 +2022,14 @@ export function createRenderer(canvas) {
       if (motion && s.impact) {
         const q = squashed(s.impact.speed ?? 0, s.impact.nx, s.impact.ny, s.impactAge);
         if (q) {
-          c.rotate(q.axis - bodyAngle);
-          c.scale(q.along, q.across);
-          c.rotate(bodyAngle - q.axis);
+          // The contact squash compresses ALONG THE SURFACE NORMAL. Rotating by
+          // the normal would tilt the body, so the squash is resolved into the
+          // two screen axes instead: a floor hit flattens Y and widens X, a
+          // side hit does the reverse.
+          const nxA = Math.abs(Math.cos(q.axis)),
+            nyA = Math.abs(Math.sin(q.axis));
+          c.scale(1 + (q.across - 1) * nxA + (q.along - 1) * nyA,
+                  1 + (q.across - 1) * nyA + (q.along - 1) * nxA);
         }
       }
       if (nearest && (s.phase === 'ready' || s.opening?.rest)) {
@@ -1983,8 +2161,9 @@ export function createRenderer(canvas) {
       const field = jelly.field(
         grip,
         // `lean` is the cell-animation lead: the leading corner dips. Positive
-        // lean means moving toward +x, so the corner at -x lags.
-        -poseAnim.lean * 1.6,
+        // lean means moving toward +x, so the corner at -x lags. Under a dash
+        // the dash's own stretch dominates, so the dip is damped out.
+        -poseAnim.lean * 1.6 * (dash ? 0.35 : 1),
         // The fall leans the body back, so the dip runs the other way.
         poseAnim.fall ? -poseAnim.fall.lean * 1.2 : 0,
       );
@@ -2006,7 +2185,15 @@ export function createRenderer(canvas) {
       const breathe = atRest ? Math.sin(time * 0.045) : 0;
       // Gaze toward the nearest hostile, in the body's own frame.
       let look = null;
-      if (nearest) {
+      // Under a dash the core is SLAMMED against the leading inner wall by
+      // G-force, which overrides looking at anything. The brief's "inner core
+      // wedges into the corner" and the gaze channel are the same mechanism, so
+      // they must not both drive it -- the dash wins.
+      if (dash) look = [dash.core.x, dash.core.y];
+      // The splat pins the core too: a pancake against a wall has its face
+      // pressed into that wall, which is the entire point of the pose.
+      if (splat) look = [splat.core.x, splat.core.y];
+      else if (nearest) {
         const dx = nearest.x - p.x,
           dy = nearest.y - p.y,
           d = Math.hypot(dx, dy) || 1;
@@ -2020,6 +2207,157 @@ export function createRenderer(canvas) {
             Math.max(-1, Math.min(1, (dx * sa + dy * ca) / d)),
           ];
         }
+      }
+      // ── DASH VFX: THE LEADING WALL AND THE DISSOLVING TRAIL ─────────────
+      //
+      // The two halves of the brief's "dashes state":
+      //
+      //   * the LEADING wall goes hyper-solid and glows -- it is the wall
+      //     pushing through the air;
+      //   * the TRAILING wall breaks into dashed lines, so the back of the body
+      //     reads as dematerialising while the front stays solid.
+      //
+      // Drawn BEFORE `cube()` so the body's own dark rim stays crisp on top; a
+      // glow painted over the face would read as a lens artefact.
+      // ── GHOST TRAILS ────────────────────────────────────────────────────
+      //
+      // Three after-images, strung back along the axis of travel. They are
+      // SILHOUETTES -- the body's own outline at its current deformation, in
+      // flat acid, no face -- because a ghost you can read the expression of
+      // stops being an after-image and becomes a second character.
+      //
+      // Squares stay squares: the ghost is emitted under an axis-aligned scale
+      // only, exactly like the body it echoes.
+      if (dash) {
+        for (const g of ghostsFor(dash)) {
+          c.save();
+          c.translate(g.x * R, g.y * R);
+          c.scale(g.scale, g.scale);
+          c.globalAlpha = g.alpha;
+          // PAPER, not acid. The scarf is acid, and an acid after-image behind
+          // an acid scarf merged into one olive slab -- the trail stopped being
+          // readable exactly where the character is most legible. White
+          // silhouettes separate from both the scarf and the dark sky.
+          c.fillStyle = INK.paper;
+          // The body's own bevel, so a ghost is recognisable as THIS cube.
+          // No rim: an outlined ghost reads as a second solid body standing
+          // behind the first, which is the opposite of an after-image. A flat
+          // fill that fades is what the eye reads as "it was there".
+          c.beginPath();
+          c.moveTo(-R * 0.96, -R);
+          c.lineTo(R * 0.86, -R);
+          c.lineTo(R, -R * 0.86);
+          c.lineTo(R, R);
+          c.lineTo(-R * 0.9, R);
+          c.lineTo(-R * 0.96, R * 0.88);
+          c.closePath();
+          c.fill();
+          c.restore();
+        }
+        c.globalAlpha = 1;
+      }
+      if (dash && (dash.leadGlow > 0.02 || dash.trailBreak > 0.02)) {
+        const half = R * 0.98 * (dash.phase === 'active' ? 1.04 : 1);
+        // The leading wall(s): a thick bright bar pinned to the edge travel is
+        // heading into. A diagonal lights two of them, which is exactly how a
+        // square faces a corner without turning.
+        if (dash.leadGlow > 0.02) {
+          c.globalAlpha = Math.min(1, dash.leadGlow);
+          c.strokeStyle = INK.acid;
+          c.lineWidth = (2.2 + 3.4 * dash.leadGlow) / v.scale;
+          c.beginPath();
+          if (dash.lead.x) {
+            c.moveTo(dash.lead.x * half, -half);
+            c.lineTo(dash.lead.x * half, half);
+          }
+          if (dash.lead.y) {
+            c.moveTo(-half, dash.lead.y * half);
+            c.lineTo(half, dash.lead.y * half);
+          }
+          c.stroke();
+          // A second, wider pass at low alpha: the "hyper-solid" bloom.
+          c.globalAlpha = Math.min(1, dash.leadGlow) * 0.3;
+          c.lineWidth = (6 + 8 * dash.leadGlow) / v.scale;
+          c.stroke();
+        }
+        // ── THE TRAILING EDGE BREAKING APART ────────────────────────────
+        //
+        // The brief asks for two different things here, and the first version
+        // only did one of them:
+        //
+        //   cardinal  one trailing WALL breaks into dashed lines parallel to
+        //             itself -- horizontal dashes off a vertical wall;
+        //   diagonal  TWO trailing walls dissolve into DIAGONAL speed-lines,
+        //             which is what "running into a corner" actually looks like.
+        //
+        // Drawing both combs on a diagonal produced a grid, not a streak. So the
+        // diagonal path is its own branch, and its strokes run along the mid
+        // diagonal of the corner the body is leaving -- the same bearing as
+        // travel, which is the one thing about a diagonal the eye should read.
+        if (dash.trailBreak > 0.02) {
+          const diagonal = dash.trail.x !== 0 && dash.trail.y !== 0;
+          const n = diagonal ? 6 : 5;
+          for (let i = 0; i < n; i++) {
+            const u = i / (n - 1);
+            // Push outward from the trailing wall, further as it breaks more.
+            const push = half + u * R * (diagonal ? 1.5 : 1.1) * dash.trailBreak;
+            const fade = (1 - u * 0.75) * dash.trailBreak;
+            c.globalAlpha = Math.min(1, fade) * 0.85;
+            const ink = i % 2 ? INK.paper : INK.acid;
+            c.strokeStyle = ink;
+            c.lineWidth = Math.max(0.7, (2.6 - u * 1.6) / v.scale);
+            c.beginPath();
+            if (diagonal) {
+              // A diagonal trail: straight speed-lines along the axis of
+              // travel, fanning across the corner. Each one is broken into
+              // three dashes so it dematerialises like the cardinal walls do.
+              const tx = dash.trail.x / Math.SQRT2,
+                ty = dash.trail.y / Math.SQRT2;
+              // Across-the-fan offset, perpendicular to travel.
+              const off = (u - 0.5) * R * 1.5;
+              const ox = tx * push - ty * off,
+                oy = ty * push + tx * off;
+              const len = R * (0.6 + 0.5 * dash.trailBreak) * (1 - Math.abs(u - 0.5));
+              for (let g = 0; g < 3; g++) {
+                const a0 = g / 3 + 0.04,
+                  a1 = (g + 1) / 3 - 0.04;
+                line(
+                  c,
+                  ink,
+                  Math.max(0.7, (2.6 - u * 1.6) / v.scale),
+                  ox + tx * len * a0,
+                  oy + ty * len * a0,
+                  ox + tx * len * a1,
+                  oy + ty * len * a1,
+                );
+              }
+            } else if (dash.trail.x) {
+              // A vertical wall trails, so the dashes are HORIZONTAL.
+              const y0 = -half * 0.86,
+                y1 = half * 0.86,
+                seg = (y1 - y0) / 3;
+              for (let g = 0; g < 3; g++) {
+                const a0 = y0 + g * seg + seg * 0.18,
+                  a1 = y0 + (g + 1) * seg - seg * 0.18;
+                c.moveTo(dash.trail.x * push, a0);
+                c.lineTo(dash.trail.x * push, a1);
+              }
+            } else {
+              // A horizontal wall trails, so the dashes are VERTICAL.
+              const x0 = -half * 0.86,
+                x1 = half * 0.86,
+                seg = (x1 - x0) / 3;
+              for (let g = 0; g < 3; g++) {
+                const a0 = x0 + g * seg + seg * 0.18,
+                  a1 = x0 + (g + 1) * seg - seg * 0.18;
+                c.moveTo(a0, dash.trail.y * push);
+                c.lineTo(a1, dash.trail.y * push);
+              }
+            }
+            c.stroke();
+          }
+        }
+        c.globalAlpha = 1;
       }
       cube(c, 0, 0, R, p.angle, motion ? time : 0, facing, {
         // The two expression channels the pose system computes. `lift` is the

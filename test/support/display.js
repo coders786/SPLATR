@@ -81,6 +81,13 @@ export function createRecordingContext(width, height) {
       paint: String(kind === 'stroke' ? state.strokeStyle : state.fillStyle),
       alpha: r(state.globalAlpha),
       pts: points.map(([x, y]) => [r(x), r(y)]),
+      // The transform in force when the pixels were emitted, rounded to the
+      // resolution a float comparison actually needs. `pts` alone cannot answer
+      // "was this shape rotated": device points describe WHERE a shape landed,
+      // not how the frame was oriented when it was laid down. The off-diagonal
+      // terms `m[1]`/`m[2]` are exactly the rotation/shear, so an
+      // axis-alignment invariant reads them and nothing else.
+      m: m.slice(),
       ...extra,
     });
   };
