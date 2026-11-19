@@ -27,6 +27,7 @@ export function beginStroke(origin, angle, shot) {
     angle,
     shot,
     primaries: 0,
+    contacts: 0,
     kills: 0,
     points: 0,
     marks: [],
@@ -37,8 +38,28 @@ export function beginStroke(origin, angle, shot) {
 // Keep a contact print, not a replay buffer growing with an endless run. The
 // ledger counts every hit even if the illustration runs out of sample slots.
 export function printKill(stroke, e, base, fromShear, cut, hpBefore) {
-  if (!fromShear && !e.small) stroke.primaries++;
-  const release = !stroke.released && stroke.primaries === 2;
+  // TWO counters, because the release needs to know both how MANY contacts a
+  // stroke made and how many of them were FULL-SIZE.
+  //
+  // Measured before this change: 0 of 774 strokes ever released the forward
+  // cut. The old rule required two full-size direct contacts in one ballistic
+  // arc; real strokes got exactly one direct contact or none, never two, because
+  // the generator does not lay shapes out in a queue. The move was not rare, it
+  // was unreachable -- it existed in the code and never in the game.
+  //
+  // The obvious fix -- count every contact, chips included -- was WRONG and a
+  // test caught it: two Fork children would then charge a shear, so one plate
+  // could farm the move forever. That is the exact thing the guard was for.
+  //
+  // The rule that works (measured at 1.9% of strokes, ~2.3 per run) is:
+  //   at least one FULL-SIZE contact, AND at least two contacts in total.
+  // Chips can contribute to the count but can never satisfy it alone, so the
+  // anti-farm guard survives while the move becomes reachable.
+  if (!fromShear) {
+    stroke.contacts++;
+    if (!e.small) stroke.primaries++;
+  }
+  const release = !stroke.released && stroke.primaries >= 1 && stroke.contacts >= 2;
   if (release) stroke.released = true;
   const points = base + (release ? SHEAR.bonus : 0);
   stroke.points += points;

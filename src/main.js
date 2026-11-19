@@ -339,7 +339,10 @@ function updateHUD() {
   $('chain').hidden = !!s.opening || s.chain < 2;
   setText('chain-text', `${s.chain} HIT CHAIN`);
   setText('multiplier', `×${Math.min(8, s.chain) * (s.drive > 0 ? 2 : 1)}`);
-  $('chain-meter').style.transform = `scaleX(${s.chainTime / CHAIN_TIME})`;
+  // Divide by the window THIS chain was given, not by a constant. The window
+  // shrinks as the chain grows (run.js: chainWindow), so a constant divisor
+  // would draw a full bar when only a third of the window remained.
+  $('chain-meter').style.transform = `scaleX(${s.chainTime / (s.chainMax || CHAIN_TIME)})`;
   Array.from($('hull').children).forEach((n, i) => n.classList.toggle('empty', i >= s.hp));
   $('hull').setAttribute('aria-label', `${s.hp} hull remaining`);
   // Reactive HUD. Each of these is a one-frame attribute flip that a CSS

@@ -175,21 +175,41 @@ test('the shear hits forward sensor shapes, not a radius blast; it damages two p
   assert.equal(events.filter((e) => e.type === 'armor').length, 1);
 });
 
-test('charging requires two full-size direct kills, not two chips, armor cracks, or wave victims', () => {
+test('charging needs one full-size contact plus a second of any kind; chips alone can never charge it, and a wave never charges itself', () => {
   const stroke = beginStroke({ x: 9, y: 2 }, -0.67, 1),
     e = { kind: 'fang', small: true, x: 1, y: 2, r: 19, angle: 0 };
+  // THE GUARD: chips alone can never charge the shear, however many you cut.
+  // A Fork's two children must not farm the move for one plate.
   for (let i = 0; i < 3; i++) assert.equal(printKill(stroke, e, 45, false, -0.4, 1).release, false);
+  // A wave victim never counts toward charging a wave.
   e.small = false;
-  assert.equal(printKill(stroke, e, 100, false, -0.4, 1).release, false);
   assert.equal(printKill(stroke, e, 100, true, -0.4, 1).release, false);
+  // One full-size contact is not enough on its own -- it needs a second contact.
   assert.equal(printKill(stroke, e, 100, false, -0.4, 1).release, true);
+  // ...which the three chips above supplied, so this fires ONCE and never again:
+  // the latch is one release per stroke.
   for (let i = 0; i < 40; i++)
     assert.equal(printKill(stroke, e, 100, false, -0.4, 1).release, false);
-  assert.equal(stroke.points, 3 * 45 + 43 * 100 + SHEAR.bonus);
+  // 3 chips (135) + 42 full-size (4200) + one release bonus (300) = 4635.
+  // The old rule released on the 43rd full-size kill; this one releases on the
+  // 42nd because the chips contribute to the contact count. Kills are 45 either
+  // way (42 full + 3 chips, with the wave victim scoring separately).
+  assert.equal(stroke.points, 3 * 45 + 42 * 100 + SHEAR.bonus);
   assert.equal(stroke.marks.length, 8);
-  assert.equal(stroke.kills, 46);
+  assert.equal(stroke.kills, 45);
   e.x = 10000;
   assert.equal(stroke.marks[0].x, 1, 'print samples are values, not live actor refs');
+});
+
+test('the shear stays unreachable if a stroke never lands a full-size contact', () => {
+  // The other half of the guard: no amount of chip-cutting can substitute for
+  // a real hit. This is what stops one plate farming the move.
+  const stroke = beginStroke({ x: 0, y: 0 }, 0, 1),
+    e = { kind: 'fang', small: true, x: 1, y: 2, r: 19, angle: 0 };
+  for (let i = 0; i < 50; i++) assert.equal(printKill(stroke, e, 45, false, 0, 1).release, false);
+  assert.equal(stroke.released, false);
+  assert.equal(stroke.contacts, 50);
+  assert.equal(stroke.primaries, 0);
 });
 
 test('a wave can split a Fork but does not immediately shear its children or create a second wave', (t) => {

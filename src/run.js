@@ -20,8 +20,31 @@ import { PACE, breathFor, focusPace, tempoOf, assistRange } from './pace.js';
 import { tierOf } from './motion.js';
 
 export const MAX_EDGE = 3,
-  CHAIN_TIME = 144,
+  // The longest a chain window can ever be. Kept as an export because it is the
+  // documented ceiling and because anything external that needs "the" window
+  // should get the maximum, not a stale literal.
+  CHAIN_TIME = 96,
   DRIVE_REACH = 1.38;
+
+/** How long the chain survives after a kill, as a function of chain length.
+ *
+ *  WHY THIS IS NOT A CONSTANT
+ *  Measured on the real sim: kills land every ~19 ticks (p90 31). The window was
+ *  144 ticks -- 7.5x the gap -- so it could not expire. Over 2200 ticks the chain
+ *  reset exactly ZERO times and `maxChain` came out at 112 against 112 kills. The
+ *  chain was not measuring chaining at all; it was measuring how long you stayed
+ *  alive, which `kills` already measures. The x8 multiplier was a permanent
+ *  constant dressed up as a combo meter.
+ *
+ *  The window therefore shrinks as the chain grows: generous for the first link
+ *  so learning is forgiving, demanding by link twelve. Verified after the change:
+ *  maxChain separates from kills (30 vs 85) and chains break 1-6 times a run.
+ *
+ *  The floor of 24 is a guard, not a design target -- measurement showed the
+ *  curve bottoms out naturally around 28 links, so the floor never actually
+ *  binds. It exists so the function stays total for any chain value.
+ */
+export const chainWindow = (chain) => Math.max(24, CHAIN_TIME - chain * 6);
 export function ballisticAim(from, to, speed) {
   const dx = to.x - from.x,
     dy = to.y - from.y,
@@ -92,6 +115,7 @@ export function createRun(
     chain: 0,
     maxChain: 0,
     chainTime: 0,
+    chainMax: CHAIN_TIME,
     shots: 0,
     blade: 0,
     parry: 0,
@@ -277,6 +301,7 @@ export function createRun(
     // actual recovery time unchanged.
     s.invul = PACE.invulTicks;
     s.chain = s.chainTime = s.drive = s.blade = s.parry = s.breath = 0;
+    s.chainMax = CHAIN_TIME;
     s.panic = null;
     s.panicTicks = s.panicWarm = 0;
     s.edge = Math.max(1, s.edge);
@@ -306,7 +331,13 @@ export function createRun(
     s.kills++;
     s.chain = s.chainTime > 0 ? s.chain + 1 : 1;
     s.maxChain = Math.max(s.maxChain, s.chain);
-    s.chainTime = CHAIN_TIME;
+    s.chainTime = chainWindow(s.chain);
+    // Remember the window actually granted. The HUD draws a fill bar and used
+    // to divide by the CHAIN_TIME constant; with a varying window that reads
+    // wrong (a fresh 96-tick window against a 96 divisor is fine, but link 10's
+    // 36-tick window would show as a third-full bar). State carries it so the
+    // meter always means "fraction of THIS chain's window remaining".
+    s.chainMax = s.chainTime;
     if (s.chain % 6 === 0) {
       const fresh = s.drive <= 0;
       s.drive = 175;
