@@ -616,6 +616,18 @@ test('the arena walls are semi-visible: hidden in open space, drawn when approac
     ['floor', nearFloor],
   ])
     assert.ok(n > open, `the ${name} wall was not drawn when the cube came within 500px of it`);
+  // ALL FOUR MUST BE THE SAME WALL.
+  //
+  // "add wall to bottom just like above" -- so the floor is not allowed to be
+  // a lesser decoration than the ceiling. Identical op counts is the cheapest
+  // honest check that one hairline+comb edge is drawn on each of the four
+  // sides, and it fails the moment a side is special-cased again.
+  const edges = [nearRight, nearLeft, nearTop, nearFloor];
+  assert.equal(
+    new Set(edges).size,
+    1,
+    `the four walls are drawn differently (${edges.join(', ')}) -- they must be the same edge`,
+  );
 
   // And the arena must be genuinely large in every direction: a wall reached
   // within a couple of seconds of spawn is not "far away in a massive canvas".

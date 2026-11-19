@@ -183,7 +183,7 @@ export const TIERS = Object.freeze([
   // field, not on the map, not in the readout. The tier survives as the top of
   // the ordinary dial, wearing a name that describes what it feels like rather
   // than a boundary that no longer exists.
-  { id: 'edge', at: 0.9, label: 'EDGE', tint: '#ff507b' },
+  { id: 'edge', at: 0.9, label: 'EDGE', tint: '#ffb347' },
   // The only tier that is not a position on the 0..100 dial: it means "past the
   // limit", and the HUD reaches it through `speedReadout`'s band rather than
   // through `tierOf`. It lives here so pips, tint and label have one source.

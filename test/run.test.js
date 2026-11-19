@@ -93,25 +93,43 @@ test('coasting after a single dash no longer loses to the Redline; it costs spee
   g.dispose();
 });
 
-test('the bottom wall is a dead cushion: it catches you and eats most of your speed', () => {
+test('the bottom wall banks like the top wall: all four sides are the same edge', () => {
+  // "add wall to bottom just like above" -- so the floor is no longer a dead
+  // cushion that eats 55% of your speed. It is the fourth edge of the table and
+  // it returns you like the other three.
+  //
+  // This test previously asserted the opposite (cost.after < arrival * 0.6).
+  // That was correct for the build it was written for and is wrong for this one.
   const g = createRun(5543, () => {});
   const w = g.world;
-  // Launch first: physics does not run while the cube is parked on the pad in
-  // `ready`, so a body moved before a launch simply sits there.
-  g.dash({ x: 0, y: 1, power: 0.3 });
-  // Then drop it onto the floor, far below the field. Body.setPosition, not a
-  // direct write: Matter caches bounds and a raw .position.y does not move it.
-  Body.setPosition(w.player, { x: 0, y: 11500 });
-  Body.setVelocity(w.player, { x: 0, y: 60 });
-  let cost = null;
-  for (let i = 0; i < 200 && !cost; i++) {
+  // Physics does not run while the cube is parked on the pad in `ready`, so a
+  // body moved before a launch simply sits there.
+  g.dash({ x: 0, y: 1 });
+  for (let i = 0; i < 20; i++) g.tick();
+  // Throw it at the floor. Body.setPosition, not a direct write: Matter caches
+  // bounds and a raw .position.y does not move the body.
+  const floorLine = w.arena.y + w.arena.h;
+  // Start ABOVE the floor and let gravity + a downward throw carry it in. The
+  // previous version pinned the body 400px above the line, which is inside the
+  // launch pad's footprint, so the pad caught it and the wall never saw it.
+  Body.setPosition(w.player, { x: 0, y: floorLine - 1400 });
+  Body.setVelocity(w.player, { x: 0, y: 34 });
+  let contact = null;
+  for (let i = 0; i < 300 && !contact; i++) {
     g.tick();
-    if (w.floorCost) cost = w.floorCost;
+    if (w.contact?.side === 'bottom') contact = w.contact;
   }
-  assert.ok(cost, 'the floor must produce a contact');
-  assert.ok(cost.after < cost.arrival * 0.6, `expected a heavy loss, got ${cost.after}/${cost.arrival}`);
+  assert.ok(contact, 'the bottom wall must produce a contact');
+  // And it must REBOUND, not absorb: the vertical velocity has to flip upward.
+  const vy = [];
+  for (let i = 0; i < 8; i++) {
+    g.tick();
+    vy.push(w.player.velocity.y);
+  }
+  assert.ok(vy[0] < 0, `the floor did not bounce the cube upward (vy ${vy[0].toFixed(1)})`);
+  // Four walls, one rule: no side may be the one that hurts.
   assert.ok(!['over', 'dying'].includes(g.state.phase), 'the floor never ends a run');
-  assert.ok(w.player.position.y <= 12000, 'and it never lets you through');
+  assert.ok(w.player.position.y <= floorLine, 'and it never lets you through');
   g.dispose();
 });
 test('retiring banks once; a new run has no old health, combo, hazards or cleared cells', () => {

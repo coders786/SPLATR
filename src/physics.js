@@ -56,7 +56,7 @@ export function createPhysics(level) {
   //
   // `arena` is a ring of four boundaries. None of them damage the player: the
   // top and sides are banks that return speed, and the floor is a dead cushion
-  // that costs most of it (see FLOOR_CUSHION below). Nothing here can end a
+  // that banks like the others. Nothing here can end a
   // run -- falling is a setback, and only enemy contact takes hull.
   // RAILS ARE CHECKED, NOT SIMULATED.
   //
@@ -366,7 +366,6 @@ function railBounce(world) {
   const p = world.player.position,
     v = world.player.velocity,
     RESTITUTION = 0.9,
-    FLOOR_CUSHION = 0.45,
     half = PLAYER_SIZE / 2;
   const x0 = a.x + half,
     x1 = a.x + a.w - half,
@@ -400,23 +399,26 @@ function railBounce(world) {
   } else if (p.y > y1) {
     p.y = y1;
     if (v.y > 0) {
-      const arrival = Math.hypot(v.x, v.y);
       v.y = -v.y * RESTITUTION;
-      // THE FLOOR IS A DEAD CUSHION.
+      // ── THE FLOOR IS A WALL, NOT A CUSHION ───────────────────────────────
       //
-      // Every other rail is a bank you play, so it returns speed. The floor is
-      // the one wall you are NOT supposed to be at: falling costs you most of
-      // your energy. Without the penalty a fall is a free reset and there is no
-      // reason to stay up -- the climb is the game.
+      // It used to be a "dead cushion": 45% of your speed, gone, and the run
+      // treats arriving there as a setback. That was written when the floor sat
+      // 12,000px below the spawn while the top wall sat 78,000 above -- the
+      // bottom was a trap door in a shaft, not a fourth side of a table.
       //
-      // 0.45 keeps roughly a fifth of the kinetic energy and leaves the player
-      // genuinely set back but alive. That is the difference between a bounce
-      // and a setback, which is what "lossy" has to mean to be felt.
-      v.x *= FLOOR_CUSHION;
-      v.y *= FLOOR_CUSHION;
+      // The measured consequence was that it was never reached at all: across a
+      // 2,400-tick run the cube's deepest point was y = -28, i.e. it never went
+      // BELOW THE SPAWN, while it hit the top wall four times. A wall nobody
+      // ever touches and nobody can see is not a wall.
+      //
+      // So the arena is now symmetric (top -78,000, floor +78,000) and the
+      // floor banks like every other rail. The user's words: "add wall to
+      // bottom just like above". There is no reason for one of four sides to
+      // behave differently in a game about banking off four sides.
+
       side = 'bottom';
       ny = -1;
-      world.floorCost = { arrival, after: Math.hypot(v.x, v.y) };
     }
   }
   if (!side) return;

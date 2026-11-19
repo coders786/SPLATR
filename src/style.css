@@ -31,7 +31,11 @@
   --k: #16111e;
   --w: #fff8ec;
   --l: #deff52;
-  --hot: #ff507b;
+  /* Was #ff507b, the rose that used to mean "past the red line". There is no
+     red line any more, and a rose readout was the last thing on screen still
+     saying there was one. Amber still reads as HEAT -- it is the top of the
+     ordinary dial, one step under hyper's cyan -- without meaning danger. */
+  --hot: #ffb347;
   --dim: #c0b4c8;
   --mono: Mono, monospace;
   --type: Riot, Impact, sans-serif;
