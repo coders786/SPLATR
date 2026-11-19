@@ -855,3 +855,189 @@ test('the panic beat is not painted as a danger signal', async () => {
   run.dispose();
   dom.uninstall();
 });
+
+/* ── HYPER IS AN EVENT, AND SONIC IS ITS OWN THING ──────────────────────── */
+
+test('hyper entry draws a burst that stops', async () => {
+  // Hyper is the biggest state the game offers and its arrival used to be a line
+  // of HUD text. It now has a drawn burst -- which must be ONE-SHOT, because an
+  // effect that repeats is a texture rather than an event.
+  const { installDom, createDisplay } = await import('./support/display.js');
+  const { createRenderer } = await import('../src/renderer.js');
+  const { createRun } = await import('../src/run.js');
+  const dom = installDom();
+  const { canvas, ctx } = createDisplay(1560, 866);
+  const renderer = createRenderer(canvas);
+  const run = createRun(19, () => {}, { staged: true });
+  run.skipOpening?.();
+  run.state.phase = 'playing';
+  for (let i = 0; i < 30; i++) run.tick();
+  const body = run.world.player,
+    s = run.state;
+  const ops = (age) => {
+    body.velocity.x = 280;
+    body.velocity.y = 0;
+    s.hyper = true;
+    s.hyperLevel = 1;
+    s.hyperAge = age;
+    s.landAge = -1;
+    s.slashAge = -1;
+    s.boom = null;
+    ctx.__reset();
+    renderer.draw(run, 1, null, true, 'mouse');
+    return ctx.__ops.length;
+  };
+  const during = ops(6),
+    after = ops(40);
+  assert.ok(during > after + 6, `the entry burst drew only ${during - after} extra ops`);
+  // It must be over later: the same state without the burst.
+  assert.ok(ops(20) <= after + 1, 'the entry burst never ends');
+
+  // The sustained aura must escalate with hyperLevel, or the player cannot see
+  // hyper draining as gravity takes it back.
+  const aura = (level) => {
+    body.velocity.x = 280;
+    body.velocity.y = 0;
+    s.hyper = true;
+    s.hyperLevel = level;
+    s.hyperAge = 40;
+    s.landAge = -1;
+    s.slashAge = -1;
+    s.boom = null;
+    ctx.__reset();
+    renderer.draw(run, 1, null, true, 'mouse');
+    return ctx.__ops.length;
+  };
+  assert.ok(aura(1) > aura(0.1), 'the hyper aura does not escalate with hyperLevel');
+  run.dispose();
+  dom.uninstall();
+});
+
+test('a sonic rebound is drawn differently from hyper speed', async () => {
+  // THE BUG THIS PINS: measured, hyper at 280 and a sonic rebound at 378
+  // rendered BYTE-IDENTICALLY. The most rewarding thing the physics does had no
+  // look of its own.
+  const { installDom, createDisplay } = await import('./support/display.js');
+  const { createRenderer } = await import('../src/renderer.js');
+  const { createRun } = await import('../src/run.js');
+  const dom = installDom();
+  const { canvas, ctx } = createDisplay(1560, 866);
+  const renderer = createRenderer(canvas);
+  const run = createRun(19, () => {}, { staged: true });
+  run.skipOpening?.();
+  run.state.phase = 'playing';
+  for (let i = 0; i < 30; i++) run.tick();
+  const body = run.world.player,
+    s = run.state;
+  const sig = (speed) => {
+    body.velocity.x = speed;
+    body.velocity.y = 0;
+    s.hyper = true;
+    s.hyperLevel = 1;
+    s.hyperAge = 40;
+    s.landAge = -1;
+    s.slashAge = -1;
+    s.boom = null;
+    ctx.__reset();
+    renderer.draw(run, 1, null, true, 'mouse');
+    return ctx.__ops
+      .map((o) => (o.pts || []).map((p) => p.map((n) => n.toFixed(1)).join(',')).join(';'))
+      .join('|');
+  };
+  assert.notEqual(sig(280), sig(378), 'a sonic rebound still looks like ordinary hyper');
+  run.dispose();
+  dom.uninstall();
+});
+
+/* ── DIRECTIONAL EFFECTS POINT WHERE THE CUBE IS GOING ──────────────────── */
+
+test('directional effects land on the travel bearing, not near it', async () => {
+  // MEASURED BUG, and it shipped: the body block rotates by `lean` before the
+  // speed effects run, but each effect rotated by `(a - p.angle)` as if the
+  // frame had only been rotated by the body's own angle. Flying EAST `lean` is
+  // +19.5 degrees, so the wake and the smear were drawn 19.5 degrees off the
+  // cube's path, and on a diagonal it was worse because the cube is rotated too.
+  //
+  // The invariant, stated the way the code actually works: each directional
+  // effect applies TWO rotations back to back -- `+lean`, immediately followed
+  // by `travel - bodyAngle` where `bodyAngle` is `p.angle + lean`. They cancel,
+  // and the frame lands exactly on travel. If the code still used `p.angle` in
+  // the second rotation, `lean` would survive and the frame would land `lean`
+  // degrees off travel -- which is precisely the bug.
+  //
+  // So: find the consecutive pair, run it, and require the result to be travel.
+  const { installDom, createDisplay } = await import('./support/display.js');
+  const { createRenderer } = await import('../src/renderer.js');
+  const { createRun } = await import('../src/run.js');
+  const { cubePose } = await import('../src/animation.js');
+  const dom = installDom();
+  const { canvas, ctx } = createDisplay(1560, 866);
+  const renderer = createRenderer(canvas);
+  const run = createRun(19, () => {}, { staged: true });
+  run.skipOpening?.();
+  run.state.phase = 'playing';
+  for (let i = 0; i < 30; i++) run.tick();
+  const body = run.world.player,
+    s = run.state;
+
+  const deg = (r) => (r * 180) / Math.PI;
+  const gap = (a, b) => {
+    const d = Math.abs((((a - b) % 360) + 360) % 360);
+    return d > 180 ? 360 - d : d;
+  };
+
+  const dirs = {
+    E: [120, 0], W: [-120, 0], N: [0, -120], S: [0, 120],
+    NE: [85, -85], SW: [-85, 85], NW: [-85, -85], SE: [85, 85],
+  };
+  for (const [dir, [vx, vy]] of Object.entries(dirs)) {
+    body.velocity.x = vx;
+    body.velocity.y = vy;
+    s.hyper = true;
+    s.hyperLevel = 1;
+    s.hyperAge = 40;
+    s.landAge = -1;
+    s.slashAge = -1;
+    s.boom = null;
+
+    const poseAnim = cubePose({
+      vx, vy, slashAge: -1, fallAge: -1, landAge: -1, hold: 0, facing: 1,
+    });
+    const lean = deg(poseAnim.lean);
+    const travel = deg(Math.atan2(vy, vx));
+
+    const deltas = [];
+    const originalRotate = ctx.rotate;
+    ctx.rotate = (a) => {
+      deltas.push(deg(a));
+      return originalRotate(a);
+    };
+    ctx.__reset();
+    renderer.draw(run, 1, null, true, 'mouse');
+    ctx.rotate = originalRotate;
+
+    // The lean rotation, followed by the effect that cancels it back to travel.
+    // North and South have `lean` exactly 0, so "the pair whose first half is
+    // lean" would match any zero-degree rotation; those directions are checked
+    // by the single-rotation path instead.
+    let landed = null;
+    if (Math.abs(lean) < 0.35) {
+      // No lean to cancel: an effect must rotate straight to travel.
+      for (const d of deltas) {
+        if (gap(d, travel) <= 6) { landed = d; break; }
+      }
+    } else {
+      for (let k = 0; k + 1 < deltas.length; k++) {
+        if (Math.abs(deltas[k] - lean) > 0.35) continue;
+        const total = deltas[k] + deltas[k + 1];
+        if (gap(total, travel) <= 6) { landed = total; break; }
+      }
+    }
+    assert.ok(
+      landed !== null,
+      `${dir}: no effect ends on the travel bearing (lean ${lean.toFixed(1)}deg, travel ${travel.toFixed(1)}deg). Deltas: ${deltas.map((d) => d.toFixed(1)).join(',')}`,
+    );
+  }
+  run.dispose();
+  dom.uninstall();
+});

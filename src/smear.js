@@ -108,9 +108,19 @@ export function ghostFor(speed, MAX_SPEED) {
  *  A tapered wedge that starts at the cube and trails away for a distance
  *  proportional to speed. It is drawn ONCE per frame, underneath everything,
  *  and it is the effect that reads as "the cube is tearing". */
-export function morphWedge(c, speed, MAX_SPEED) {
+export function morphWedge(c, speed, MAX_SPEED, roar = 0) {
   const t = Math.max(0, Math.min(1.5, speed / MAX_SPEED));
+  // Ordinary speed: unchanged. The 1.5 clamp above means everything past
+  // 1.5*MAX_SPEED -- which is where hyper and sonic both live -- used to render
+  // the SAME wedge, so the most extreme speeds in the game had a wake identical
+  // to one another. `roar` (hyper level, or the sonic curve) extends it past
+  // that ceiling instead of adding a second, competing shape behind the cube.
+  const grow = Math.max(0, Math.min(1, roar));
   if (t < 0.62) return null;
   const k = Math.min(1, (t - 0.62) / 0.5);
-  return { length: 22 + 78 * k, width: 15 + 9 * k, alpha: 0.1 + 0.2 * k };
+  return {
+    length: 22 + 78 * k + 120 * grow,
+    width: 15 + 9 * k + 10 * grow,
+    alpha: 0.1 + 0.2 * k + 0.1 * grow,
+  };
 }

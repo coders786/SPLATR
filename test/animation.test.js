@@ -11,6 +11,7 @@ import {
   FALL,
   lerp,
   spike,
+  HYPER_CEILING,
 } from '../src/animation.js';
 
 /* ── 1. THE SLASH ───────────────────────────────────────────────────────── */
@@ -502,4 +503,87 @@ test('the drawn fall escalates with speed instead of plateauing', async () => {
   assert.ok(fast > slow, `a dive draws ${fast} ops against ${slow} for a plunge`);
   run.dispose();
   dom.uninstall();
+});
+
+/* ── 9. SKEW REPLACES THE ROTATION ──────────────────────────────────────── */
+
+test('the body is sheared along travel, not rotated', () => {
+  // `twist` was applied as `c.rotate(twist)` -- the whole body turned up to 28
+  // degrees on a diagonal. A rotated square is ambiguous: it reads as spinning,
+  // as sliding, as mis-drawn, or as the camera rolling. A shear can only read as
+  // being dragged.
+  const NE = cubePose({ vx: 30, vy: -30 });
+  const NW = cubePose({ vx: -30, vy: -30 });
+  const N = cubePose({ vx: 0, vy: -30 });
+  // A diagonal shears...
+  assert.ok(Math.abs(NE.skew) > 0.02, 'a diagonal is not sheared at all');
+  // ...and the two corners shear OPPOSITE ways, which is what makes them
+  // legible as different decisions rather than as variants of north.
+  assert.ok(
+    Math.sign(NE.skew) === -Math.sign(NW.skew),
+    `NE and NW shear the same way: ${NE.skew} vs ${NW.skew}`,
+  );
+  // A purely vertical move has no sideways drag to shear.
+  assert.ok(Math.abs(N.skew) < 0.01, `north is sheared ${N.skew}`);
+  // At rest the body is square.
+  const rest = cubePose({ vx: 0, vy: 0, hold: 2 });
+  // `assert.equal` is strict here and `-0 !== 0`, which is how a rest pose that
+  // is numerically zero failed an equality check. Compare magnitudes.
+  assert.ok(Math.abs(rest.skew) < 1e-12, `a resting body is sheared ${rest.skew}`);
+});
+
+test('the skew is bounded and scales with speed', () => {
+  // It must never approach a shear that would fold the body flat.
+  let worst = 0;
+  for (let sp = 0; sp <= 400; sp += 5)
+    for (let a = 0; a < 8; a++) {
+      const t = (a / 8) * Math.PI * 2;
+      const p = cubePose({ vx: Math.cos(t) * sp, vy: Math.sin(t) * sp });
+      worst = Math.max(worst, Math.abs(p.skew));
+    }
+  assert.ok(worst < 0.25, `the body shears past recognition: ${worst}`);
+  // And it must actually grow with speed, or a slow cube would read as dragged.
+  const slow = Math.abs(cubePose({ vx: 6, vy: -6 }).skew);
+  const fast = Math.abs(cubePose({ vx: 40, vy: -40 }).skew);
+  assert.ok(fast > slow, `speed does not increase the shear: ${slow} -> ${fast}`);
+});
+
+/* ── 10. SONIC SPEED HAS ITS OWN LOOK ───────────────────────────────────── */
+
+test('sonic speed is a separate axis from hyper', () => {
+  // THE BUG THIS PINS: measured, hyper at 280 and a sonic rebound at 378
+  // rendered BYTE-IDENTICALLY. The wall throwing you back harder than you
+  // arrived -- the most rewarding thing the physics does -- had no own look.
+  const hyper = cubePose({ vx: HYPER_CEILING, vy: 0 });
+  const sonic = cubePose({ vx: HYPER_CEILING * 1.35, vy: 0 });
+  assert.equal(hyper.sonic, 0, 'hyper speed must not already be supersonic');
+  assert.ok(sonic.sonic > 0.9, `a full rebound is barely sonic: ${sonic.sonic}`);
+  // Monotone between them: the supersonic look has to arrive, not snap on.
+  //
+  // GAP, not merely monotone. A step function (`speed > ceiling ? 1 : 0`) is
+  // monotone and passes a `k >= prev` loop, so the first version of this test
+  // stayed green with the gradient deleted. What actually matters is that a
+  // HALF-way rebound looks different from both ends, so the curve has to be
+  // sampled strictly between them.
+  let prev = -1;
+  const mids = [];
+  for (let sp = HYPER_CEILING; sp <= HYPER_CEILING * 1.35; sp += 6) {
+    const k = cubePose({ vx: sp, vy: 0 }).sonic;
+    assert.ok(k >= prev, `sonic fell at ${sp}`);
+    if (k > 0.02 && k < 0.98) mids.push(k);
+    prev = k;
+  }
+  assert.ok(
+    mids.length >= 3,
+    `the supersonic look snaps on instead of arriving: ${mids.length} intermediate samples`,
+  );
+  // Ordinary flight is never supersonic, however it is reached.
+  for (const sp of [0, 42, 120]) assert.equal(cubePose({ vx: sp, vy: 0 }).sonic, 0);
+});
+
+test('the supersonic constant matches the run module', async () => {
+  // animation.js cannot import motion.js (cycle), so the number is restated
+  // there. This is the assertion that keeps the two from drifting.
+  const { HYPER_SPEED } = await import('../src/motion.js');
+  assert.equal(HYPER_CEILING, HYPER_SPEED);
 });

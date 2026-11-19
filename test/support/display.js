@@ -74,7 +74,11 @@ export function createRecordingContext(width, height) {
     const r = (n) => Math.round(n * 100) / 100;
     ops.push({
       kind,
-      paint: kind === 'rect' ? state.fillStyle : null,
+      // The paint that actually filled/stroked this path. Only `fillRect` used
+      // to record it, so a `fill()` path -- which is how most of the drawn
+      // line-work is painted -- came back as `null` and a test (or a render
+      // replay) had no colour to reason about.
+      paint: String(kind === 'stroke' ? state.strokeStyle : state.fillStyle),
       alpha: r(state.globalAlpha),
       pts: points.map(([x, y]) => [r(x), r(y)]),
       ...extra,

@@ -22,6 +22,10 @@ import { sceneFor, drawStory } from './storyboard.js';
 import { createSmear, ghostFor, morphWedge } from './smear.js';
 import { cubePose, slashFor, landFor, SLASH, DIRS } from './animation.js';
 import { SLASH_TABLE, LAND_TABLE, SLASH_ROW, LAND_ROW, FALL_TABLE, FALL_ROW, FALL_SAMPLES } from './bake.js';
+
+/** Ticks the hyper entry burst runs for. Short enough to be an event, long
+ *  enough to read on a 60Hz display (18 ticks = 0.3s). */
+const HYPER_BURST = 18;
 import { SHEAR, impactFor } from './stroke.js';
 import { rackInk, contactInk, drawSweep } from './cut-ink.js';
 const R = PLAYER_SIZE / 2;
@@ -1281,19 +1285,98 @@ export function createRenderer(canvas) {
       // six lines instead of nine, at half the opacity, and the pulsing ring
       // is gone. What remains is a static halo that says "hyper is live" and
       // then holds still -- the cube itself is already moving enough.
-      const k = s.hyperLevel,
-        n = 6;
+      const k = s.hyperLevel;
+      // ── THE ENTRY BURST ────────────────────────────────────────────────
+      //
+      // Hyper is the biggest state the game offers and its arrival was a line of
+      // HUD text. Every other major event has a drawn mark; this one now has the
+      // loudest. A single expanding ring plus one radial volley, both one-shot
+      // over 18 ticks, so it can never become the background.
+      //
+      // One-shot is the whole design: a burst that repeats stops being an event.
+      const burst = s.hyperAge >= 0 && s.hyperAge < HYPER_BURST ? s.hyperAge / HYPER_BURST : -1;
+      if (burst >= 0) {
+        const t = burst,
+          ease = 1 - Math.pow(1 - t, 3);
+        c.save();
+        c.translate(p.x, p.y);
+        // The ring: fast out, fading. Drawn as an ellipse along the cube's own
+        // bearing so it reads as a shockwave thrown off the direction of travel.
+        c.globalAlpha = (1 - t) * 0.85;
+        c.strokeStyle = INK.acid;
+        c.lineWidth = Math.max(1, (7 - 5 * t) / v.scale);
+        c.beginPath();
+        c.arc(0, 0, R * (1.4 + 7.5 * ease), 0, TAU);
+        c.stroke();
+        // A second, tighter ring a beat behind it: the double-ring is what makes
+        // an anime impact read as an IMPACT rather than a glow.
+        if (t > 0.12) {
+          const t2 = (t - 0.12) / 0.88;
+          c.globalAlpha = (1 - t2) * 0.5;
+          c.lineWidth = Math.max(0.8, 3 * (1 - t2) / v.scale);
+          c.beginPath();
+          c.arc(0, 0, R * (1.2 + 5.2 * (1 - Math.pow(1 - t2, 3))), 0, TAU);
+          c.stroke();
+        }
+        // The volley: 14 tapered rays, launched together, receding outward.
+        c.globalAlpha = (1 - t) * 0.9;
+        c.strokeStyle = INK.paper;
+        for (let i = 0; i < 14; i++) {
+          const a = (i / 14) * TAU + 0.19,
+            r0 = R * (1.5 + 6.5 * ease),
+            r1 = r0 + R * (1.9 + 2.2 * (1 - t));
+          c.lineWidth = Math.max(0.6, (2.6 - 1.8 * t) / v.scale);
+          c.beginPath();
+          c.moveTo(Math.cos(a) * r0, Math.sin(a) * r0);
+          c.lineTo(Math.cos(a) * r1, Math.sin(a) * r1);
+          c.stroke();
+        }
+        c.globalAlpha = 1;
+        c.restore();
+      }
+      // ── THE SUSTAINED AURA, NOW ESCALATING ─────────────────────────────
+      //
+      // The old version was six static lines at 0.1-0.3 alpha. It was quieted
+      // after a "too much sensory load" report -- but that report was about
+      // hyper ON TOP of everything else firing at once, and the response made
+      // hyper itself nearly invisible. The state you spend seven consecutive
+      // links earning should not be the state you can miss.
+      //
+      // It escalates on `hyperLevel` in three channels at once -- COUNT (6 to
+      // 12), LENGTH, and OPACITY -- so the player watches hyper drain as gravity
+      // takes the state back. Still no spin and no flicker: those are what made
+      // the first version tiring, and neither is needed to read intensity.
+      const n = 6 + Math.round(6 * k);
       c.save();
       c.translate(p.x, p.y);
       for (let i = 0; i < n; i++) {
         const a = (i / n) * TAU + 0.26,
-          len = R * 1.35 + R * 0.75 * k;
-        c.globalAlpha = 0.1 + 0.2 * k;
-        c.strokeStyle = INK.acid;
-        c.lineWidth = 1.6 / v.scale;
+          len = R * (1.3 + 1.15 * k);
+        c.globalAlpha = 0.12 + 0.42 * k;
+        c.strokeStyle = i % 2 ? INK.acid : INK.paper;
+        c.lineWidth = (1.3 + 1.5 * k) / v.scale;
         c.beginPath();
-        c.moveTo(Math.cos(a) * R * 1.12, Math.sin(a) * R * 1.12);
+        c.moveTo(Math.cos(a) * R * 1.1, Math.sin(a) * R * 1.1);
         c.lineTo(Math.cos(a) * len, Math.sin(a) * len);
+        c.stroke();
+      }
+      // The body's own outline, heated. Without this only the arena decor knows
+      // hyper is live; the cube the player is actually watching stays ordinary.
+      //
+      // This was a `strokeRect` around an axis-aligned box, and the body is not
+      // an axis-aligned box: `cube()` draws a tapered quadrilateral that at rest
+      // is wider at the bottom than the top. Measured on the glass, the outline
+      // hung visibly off the silhouette on every edge, worst along the base. A
+      // halo that does not follow the shape it is haloing reads as a UI bug, so
+      // this is now a soft glow BURST behind the body -- drawn before `cube()`,
+      // so the shape's own dark rim separates it from the body instead of
+      // slicing across the face.
+      if (k > 0.15) {
+        c.globalAlpha = 0.22 + 0.34 * k;
+        c.strokeStyle = INK.acid;
+        c.lineWidth = (5 + 9 * k) / v.scale;
+        c.beginPath();
+        c.arc(0, 0, R * 1.02, 0, TAU);
         c.stroke();
       }
       c.globalAlpha = 1;
@@ -1557,13 +1640,28 @@ export function createRenderer(canvas) {
       // wide, and a northward lean grew broader instead of taller.
       if (poseAnim.tall !== 1 || poseAnim.wide !== 1)
         c.scale(poseAnim.wide, poseAnim.tall);
-      // ── TWIST: the body turning INTO its direction ────────────────────
+      // ── SKEW: the body being DRAGGED, not turned ──────────────────────
       //
-      // Without this a diagonal is just "north, slightly tilted" -- both corners
-      // read as variants of the same pose. The twist rotates the body about its
-      // own facing, so NE and NW are visibly turning a different way, which is
-      // what makes all eight directions legible as eight decisions.
-      if (poseAnim.twist) c.rotate(poseAnim.twist);
+      // This was `c.rotate(poseAnim.twist)`, a ±28 degree body rotation. A
+      // rotated square is ambiguous -- it reads equally well as spinning, as
+      // sliding, as mis-drawn, or as the camera rolling -- and it fights the
+      // player's read of direction, because a rotated square and a square
+      // travelling diagonally look alike.
+      //
+      // A shear cannot be misread. Sheared along the direction of travel, the
+      // leading edge leads and the trailing edge lags, and the body stays
+      // upright so nothing suggests rotation. Applied in the heading's frame:
+      // shear along the axis the player is actually moving on.
+      //
+      // `transform(1, 0, k, 1, 0, 0)` skews X by Y: points further along the
+      // body's local Y are pushed along X, which is the trailing/leading axis
+      // once the frame is aligned to travel.
+      if (Math.abs(poseAnim.skew) > 0.002) {
+        const h = poseAnim.heading - p.angle;
+        c.rotate(h);
+        c.transform(1, 0, poseAnim.skew, 1, 0, 0);
+        c.rotate(-h);
+      }
       // ── STRETCH ALONG TRAVEL ──────────────────────────────────────────
       //
       // Applied in the heading's own frame: a cube thrown east gets LONGER east
@@ -1572,13 +1670,39 @@ export function createRenderer(canvas) {
       // only fires airborne) -- this one is the pose system's own answer to
       // "how hard am I being thrown", and it works on the ground too.
       if (poseAnim.stretch > 0.004) {
+        // `p.angle`, NOT `bodyAngle`: this block runs before the `lean`
+        // rotation below, so the frame here is still only the body's own
+        // angle. Using `bodyAngle` here would subtract a rotation that has not
+        // been applied yet, and would tilt the stretch by `-lean` -- a bug this
+        // file already had once while this comment was being written.
         const k = poseAnim.stretch;
         c.rotate(poseAnim.heading - p.angle);
         c.scale(1 + k * 0.34, 1 - k * 0.2);
         c.rotate(-(poseAnim.heading - p.angle));
       }
       if (poseAnim.lean) c.rotate(poseAnim.lean);
-
+      // ── THE BODY FRAME IS ROTATED BY `lean`, NOT BY `p.angle` ──────────
+      //
+      // MEASURED BUG, and it predates this round. Everything below derives a
+      // direction from travel and rotates by `(a - p.angle)`, which assumed the
+      // frame had been rotated by `p.angle`. It had not: the line above adds
+      // `lean` on top. So the motion blur, the ghost trail, the morph wedge, the
+      // impact squash and the supersonic cone were all off-axis by `lean`.
+      //
+      // Flying EAST `lean` is +19.5 degrees, so a 22px smear was dragged 19.5
+      // degrees off the cube's own path -- plainly visible, and it reads as the
+      // cube sliding sideways. On a diagonal it is worse: the cube is rotated 45
+      // degrees as well, so `a - p.angle` came out as the atan2 of a rotated
+      // vector and the effect landed at an arbitrary angle.
+      //
+      // Declared HERE, after the rotation, and not higher up: a declaration
+      // only computes the number, so placing it above `lean` left every reader
+      // below using a frame that had not been rotated yet.
+      //
+      // The stretch block above is deliberately on `p.angle`: it runs before
+      // this rotation. `cube()` re-rotates by `p.angle` internally, so the body
+      // itself was never tilted -- only its effects were.
+      const bodyAngle = p.angle + poseAnim.lean;
       // ── MOVEMENT SPEED LINES ──────────────────────────────────────────
       //
       // The direction poses now deform the body by up to 15.6px, but a shape
@@ -1592,7 +1716,9 @@ export function createRenderer(canvas) {
       // a full launch gets a wake. Nothing here fires at rest.
       if (poseAnim.stretch > 0.02) {
         const k = Math.min(1, poseAnim.stretch / 0.2),
-          back = poseAnim.heading + Math.PI,
+          // Local, not world: this frame is rotated by `bodyAngle`, so a raw
+          // world bearing would throw the whole wake off by `lean`.
+          back = poseAnim.heading - bodyAngle + Math.PI,
           n = 2 + Math.round(k * 4);
         c.save();
         for (let i = 0; i < n; i++) {
@@ -1628,10 +1754,62 @@ export function createRenderer(canvas) {
           e = stretchFor(speed, MAX_SPEED, s.hyper ? HYPER_SPEED : MAX_SPEED);
         if (e.along > 1.001) {
           const along = Math.atan2(vy, vx);
-          c.rotate(along);
+          c.rotate(along - bodyAngle);
           c.scale(e.along, e.across);
-          c.rotate(-along);
+          c.rotate(-(along - bodyAngle));
         }
+      }
+      // ── SUPERSONIC ─────────────────────────────────────────────────────
+      //
+      // Everything below fires only past hyper's ceiling, which ordinary play
+      // cannot reach: it takes a wall rebound at full hyper. That rarity is the
+      // point -- a sonic boom you can see every ten seconds is a texture, not a
+      // moment.
+      if (poseAnim.sonic > 0.02) {
+        const k = poseAnim.sonic,
+          h = poseAnim.heading;
+        // 1. THE SILHOUETTE is applied to the body itself, further down, where
+        //    `cube()` is actually emitted -- see `sonicSquash`. Scaling inside
+        //    a save/restore here changed a matrix that was thrown away
+        //    immediately: measured, deleting it did not alter a single pixel.
+        // 2. THE PRESSURE CONE. Two lines ahead of travel, converging to a point
+        //    in front of the body. Nothing else in the game uses this shape, so
+        //    it reads as supersonic immediately. Drawn in world space around the
+        //    cube's own position, before the body is emitted.
+        c.save();
+        c.rotate(h - bodyAngle);
+        c.globalAlpha = 0.45 + 0.5 * k;
+        c.strokeStyle = INK.paper;
+        c.lineWidth = Math.max(0.8, 2.2 / v.scale);
+        const nose = R * (2.1 + 1.5 * k),
+          mouth = R * 1.05;
+        for (let i = -1; i <= 1; i += 2) {
+          c.beginPath();
+          c.moveTo(mouth, i * R * (0.85 + 0.25 * k));
+          c.lineTo(nose, i * R * 0.1);
+          c.stroke();
+        }
+        // A short cross-mark at the throat of the cone: the shock plane.
+        c.globalAlpha = 0.3 + 0.4 * k;
+        c.lineWidth = Math.max(0.6, 1.4 / v.scale);
+        c.beginPath();
+        c.moveTo(mouth, -R * 0.95);
+        c.lineTo(mouth, R * 0.95);
+        c.stroke();
+        c.restore();
+        // 3. THE DETACHED LEADING EDGE. A bright arc ahead of the body, the
+        //    classic "the ship is already there" cel: the edge has outrun the
+        //    thing making it.
+        c.save();
+        c.rotate(h - bodyAngle);
+        c.globalAlpha = 0.5 + 0.5 * k;
+        c.strokeStyle = INK.acid;
+        c.lineWidth = Math.max(0.9, (2.6 + 1.8 * k) / v.scale);
+        c.beginPath();
+        c.arc(R * (0.55 + 0.5 * k), 0, R * 0.82, -Math.PI * 0.62, Math.PI * 0.62);
+        c.stroke();
+        c.restore();
+        c.globalAlpha = 1;
       }
       // Contact squash: compress along the surface normal, swell along the
       // tangent, and ring back through a damped spring. Only a real contact
@@ -1639,9 +1817,9 @@ export function createRenderer(canvas) {
       if (motion && s.impact) {
         const q = squashed(s.impact.speed ?? 0, s.impact.nx, s.impact.ny, s.impactAge);
         if (q) {
-          c.rotate(q.axis - p.angle);
+          c.rotate(q.axis - bodyAngle);
           c.scale(q.along, q.across);
-          c.rotate(p.angle - q.axis);
+          c.rotate(bodyAngle - q.axis);
         }
       }
       if (nearest && (s.phase === 'ready' || s.opening?.rest)) {
@@ -1685,7 +1863,7 @@ export function createRenderer(canvas) {
             // frame's transform in a state that dropped the cube itself.
             c.save();
             c.translate(gx - p.x, gy - p.y);
-            c.rotate(ga - p.angle);
+            c.rotate(ga - bodyAngle);
             cube(c, 0, 0, R * (0.86 + 0.14 * k), 0, 0, gf);
             c.restore();
           });
@@ -1698,11 +1876,14 @@ export function createRenderer(canvas) {
       // solid form always sits on top of its own distortion.
       {
         const speed = Math.hypot(world.player.velocity.x, world.player.velocity.y),
-          m = morphWedge(c, speed, MAX_SPEED);
+          // `roar` is how far past ordinary speed the cube actually is, so the
+          // wake keeps growing through hyper and sonic instead of hitting the
+          // same ceiling as a 60 px/tick cruise.
+          m = morphWedge(c, speed, MAX_SPEED, Math.max(s.hyper ? s.hyperLevel : 0, poseAnim.sonic));
         if (motion && m) {
           const a = Math.atan2(world.player.velocity.y, world.player.velocity.x);
           c.save();
-          c.rotate(a - p.angle);
+          c.rotate(a - bodyAngle);
           c.globalAlpha = m.alpha;
           c.fillStyle = INK.acid;
           c.beginPath();
@@ -1728,7 +1909,7 @@ export function createRenderer(canvas) {
           const along = Math.atan2(vy, vx),
             steps = smear > 12 ? 3 : 2;
           c.save();
-          c.rotate(along - p.angle);
+          c.rotate(along - bodyAngle);
           for (let i = steps; i >= 1; i--) {
             const u = i / (steps + 1);
             c.globalAlpha = 0.3 * (1 - u * 0.6);
@@ -1744,6 +1925,16 @@ export function createRenderer(canvas) {
           c.restore();
         }
       }
+      // The supersonic silhouette LIVES HERE, on the body, because this is the
+      // only place the body is drawn. Longer and thinner than hyper's own
+      // curve allows, so the shape itself says "past the ceiling".
+      if (poseAnim.sonic > 0.02) {
+        const k = poseAnim.sonic;
+        c.save();
+        c.rotate(poseAnim.heading - bodyAngle);
+        c.scale(1 + 0.3 * k, 1 - 0.16 * k);
+        c.rotate(-(poseAnim.heading - bodyAngle));
+      }
       cube(c, 0, 0, R, p.angle, motion ? time : 0, facing, {
         // The two expression channels the pose system computes. `lift` is the
         // falling scarf plus a little air-speed, so the character reads as
@@ -1751,6 +1942,7 @@ export function createRenderer(canvas) {
         eyes: poseAnim.eyes,
         lift: (poseAnim.fall?.scarfLift ?? 0) + Math.min(0.5, poseAnim.move.speed / MAX_SPEED) * 0.5,
       });
+      if (poseAnim.sonic > 0.02) c.restore();
       c.restore();
       // ── THE FALL TRAIL ──────────────────────────────────────────────────
       //

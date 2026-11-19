@@ -28,7 +28,17 @@ test('the player stretches and blurs with speed, monotonically and capped', () =
   for (let s = 0; s <= MAX_SPEED * 1.5; s += 1) {
     const e = stretchFor(s);
     assert.ok(e.blur >= prevBlur, `blur fell at speed ${s}`);
-    assert.ok(e.blur <= MOTION.blurMax + 1e-9, `blur over cap at ${s}`);
+    // ── THE CAP IS NOT `blurMax` ────────────────────────────────────────────
+    //
+    // This used to assert `blur <= MOTION.blurMax`, and that assertion was
+    // ENCODING THE BUG rather than a limit: before this change everything above
+    // 42px/tick sat on exactly 19, so 42 and 120 blurred identically. The cap
+    // now lives where it belongs -- a bounded extension past the normal limit,
+    // because motion smear is the one channel where more really is nauseating.
+    assert.ok(
+      e.blur <= MOTION.blurMax * 1.8,
+      `blur past its hard ceiling at ${s}: ${e.blur}`,
+    );
     // The ceiling rose with the "more juice at higher speed" pass: the cube
     // now reaches 1.52 along at REDLINE instead of 1.34, so the last stretch
     // of speed is visible rather than a rounded-off constant. `across` narrows
@@ -132,11 +142,31 @@ test('the speedometer is monotonic, in range and names a band', () => {
   // at p50 42.0 / p90 42.0 / p99 42.0 against MAX_SPEED 42, so the needle was
   // pegged for the whole game and "HYPER" was the only thing left to say. The
   // dial now spans the speed the game can actually reach.
+  // An ordinary top-speed launch fills the first ~70% of the sweep: enough that
+  // the needle MOVES through normal play (v2 of this dial left it at -20deg,
+  // inert for the whole game), and still short of the top so hyper has room.
+  const ordinaryFill = speedReadout(MAX_SPEED).kmh;
   assert.ok(
-    speedReadout(MAX_SPEED).kmh < 55,
-    `an ordinary top-speed launch fills ${speedReadout(MAX_SPEED).kmh}% of the dial`,
+    ordinaryFill >= 60 && ordinaryFill <= 78,
+    `an ordinary top-speed launch fills ${ordinaryFill}% of the dial`,
   );
-  assert.equal(speedReadout(HYPER_SPEED).kmh, 100);
+  // And every speed past the limit must read HIGHER than the limit, not equal.
+  let cruise = ordinaryFill;
+  for (const sp of [60, 100, 180, 280, 378]) {
+    const now = speedReadout(sp, MAX_SPEED, HYPER_SPEED, true).kmh;
+    assert.ok(now >= cruise, `the dial went backwards at ${sp}: ${cruise} -> ${now}`);
+    cruise = now;
+  }
+  assert.ok(cruise > ordinaryFill + 20, 'hyper barely moves the dial past ordinary speed');
+  // 280 is hyper's CEILING, but the physics can go past it -- a wall rebound at
+  // full hyper returns up to 1.35x, which is 378. The dial's last 7 points
+  // belong to that supersonic range, so hyper's ceiling reads 93 and only a full
+  // sonic rebound fills the gauge.
+  assert.ok(
+    speedReadout(HYPER_SPEED).kmh >= 90 && speedReadout(HYPER_SPEED).kmh < 100,
+    `hyper's ceiling should nearly fill the dial, got ${speedReadout(HYPER_SPEED).kmh}`,
+  );
+  assert.equal(speedReadout(HYPER_SPEED * 1.35, MAX_SPEED, HYPER_SPEED, true).kmh, 100);
   // The bands still climb in order, which is the property that matters.
   const ladder = [0, MAX_SPEED * 0.6, MAX_SPEED * 1.3, MAX_SPEED * 2.2].map(
     (v) => speedReadout(v).kmh,

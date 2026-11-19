@@ -176,6 +176,14 @@ export function slashFor(age, dir = 0) {
 
 /* ── 2. THE FALL ─────────────────────────────────────────────────────────── */
 
+/** The speed above which the body is supersonic. Hyper's own ceiling.
+ *
+ *  Restated here rather than imported: motion.js imports animation.js, so
+ *  importing back would close a cycle. `test/animation.test.js` asserts this
+ *  equals HYPER_SPEED, which is what keeps the two from drifting.
+ */
+export const HYPER_CEILING = 280;
+
 export const FALL = Object.freeze({
   /** Below this downward speed the cube is drifting, not falling. */
   drift: 8,
@@ -447,6 +455,37 @@ export function cubePose({ vx = 0, vy = 0, age = 0, slashAge = -1, fallAge = -1,
     tall *= 1 + 0.1 * fall.rush;
     wide *= 1 - 0.08 * fall.rush;
   }
+  // ── SKEW REPLACES THE ROTATION ─────────────────────────────────────────
+  //
+  // `twist` used to be applied as `c.rotate(twist)` -- the whole body turned up
+  // to 28 degrees on a diagonal. A rotated square is ambiguous: it reads just as
+  // well as spinning, sliding sideways, being mis-drawn, or the camera rolling.
+  // It is also the one channel that fights the player's read of which way they
+  // are going, because a rotated square and a square travelling diagonally look
+  // alike.
+  //
+  // A SHEAR has none of that ambiguity. A sheared square can only read as being
+  // dragged: the leading edge leads, the trailing edge lags, and the shape stays
+  // upright so the eye never has to decide whether it turned. The pose data
+  // keeps `twist` (eight poses and their tests unchanged); this is where it is
+  // reinterpreted as a shear, in the same units it always had.
+  //
+  // Scaled by the same `clamp01(speed / 18)` the twist used, so a resting cube
+  // is square and a full launch is visibly dragged.
+  const skew = -twist * 0.62;
+  // ── SONIC ──────────────────────────────────────────────────────────────
+  //
+  // Measured bug: hyper 280 and sonic 378 rendered BYTE-IDENTICALLY. A sonic
+  // rebound -- the wall throwing you back harder than you arrived, which is the
+  // most rewarding thing the physics does -- had no look of its own after the
+  // single frame of its boom.
+  //
+  // `sonic` is 0 until the body is past hyper's ceiling and 1 at the physical
+  // top (a full `reboundCap` bounce). It is derived from SPEED, not from the
+  // hyper state, because a sonic rebound is a thing that happens to the cube
+  // whether or not the state is still live.
+  const speedNow = Math.hypot(vx, vy);
+  const sonic = clamp01((speedNow - HYPER_CEILING) / (HYPER_CEILING * 0.35));
   // `stretch` is applied to the body along its own heading, not to `tall`,
   // because a cube thrown east should get LONGER east, not taller. The renderer
   // rotates by the heading to apply it.
@@ -457,7 +496,13 @@ export function cubePose({ vx = 0, vy = 0, age = 0, slashAge = -1, fallAge = -1,
     eyes,
     scarf,
     twist,
+    /** Shear along travel, radians-equivalent: takes the place of the rotation.
+     *  Positive shears the leading edge over the trailing one. */
+    skew,
     stretch,
+    /** 0 below hyper's ceiling, 1 at the physical top speed. Drives the
+     *  supersonic silhouette, the pressure cone and the ribbon. */
+    sonic,
     counter,
     slash,
     fall,

@@ -118,10 +118,39 @@ export function speedRamp(speed, max = MAX_SPEED, ceiling = max) {
   // shipped, and hyper keeps climbing past full instead of pinning at it.
   const t = clamp(speed / max, 0, 1),
     base = clamp((t - MOTION.blurFrom) / (1 - MOTION.blurFrom), 0, 1);
-  if (speed <= max || ceiling <= max) return base;
-  // How far into the lifted ceiling: 0 at the normal limit, 1 at the ceiling.
-  const over = clamp((speed - max) / (ceiling - max), 0, 1);
-  return 1 + MOTION.hyperGain * over ** 0.8;
+  // ── SPEED PAST THE LIMIT IS NEVER SILENT ────────────────────────────────
+  //
+  // This used to be `if (speed <= max || ceiling <= max) return base`, so with
+  // no hyper state in scope EVERYTHING above 42 collapsed to exactly the same
+  // value as 42. Measured: 42px/tick and 120px/tick rendered identically apart
+  // from a transform one pixel wide. A player bouncing along at nearly three
+  // times the limit got the same silhouette as one cruising, because "hyper" is
+  // a STATE they had not earned -- so the game said "you are as fast as you can
+  // be" right up until it suddenly said everything had changed.
+  //
+  // The fix separates two things that were conflated:
+  //
+  //   overspeed  speed ABOVE `max`, however it was reached. Always visible.
+  //   hyper      the earned state, which lifts the ceiling and adds a bonus.
+  //
+  // `ceil` is now at least the speed itself, so the overspeed term keeps
+  // climbing instead of pinning. Ordinary flight below `max` is untouched --
+  // `base` is byte-identical to what shipped -- and a hyper ceiling still adds
+  // its own term on top.
+  if (speed <= max) return base;
+  // The reference for "how overspeed" is the FASTEST THE GAME CAN REACH, not the
+  // current ceiling. Using the ceiling was the original bug in disguise: without
+  // hyper in scope the ceiling IS `max`, so the span collapsed and every speed
+  // sat at the same value. `TOP_SPEED` is the physical maximum -- hyper's
+  // ceiling times the rebound cap -- so 0 is "just over the limit" and 1 is
+  // "a full sonic rebound", and every speed in between gets its own number
+  // whether or not the hyper state happens to be live.
+  const TOP_SPEED = HYPER_SPEED * 1.35,
+    span = Math.max(TOP_SPEED, ceiling),
+    over = clamp((speed - max) / (span - max), 0, 1);
+  // The earned state still adds its own term on top of the physical one.
+  const bonus = ceiling > max ? MOTION.hyperGain : 0;
+  return 1 + (MOTION.hyperGain + bonus) * over ** 0.8;
 }
 
 /** Blur/stretch along the travel axis, from one speed number.
@@ -141,9 +170,22 @@ export function stretchFor(speed, max = MAX_SPEED, ceiling = max) {
     // 0.52 -> 0.36: at k=1 this is 1.36x rather than 1.52x. The silhouette
     // still visibly lengthens with speed; it stops turning the cube into a
     // streak that is hard to track with the eye.
+    //
+    // `along` is NOT capped at k=1 any more: overspeed carries it to 1.55 at
+    // terminal, because a cube at three times the limit should not have the
+    // same silhouette as one at the limit. It is bounded by the physics
+    // (TOP_SPEED), so it cannot run away.
     along: 1 + 0.36 * k,
     across: Math.max(0.55, 1 - 0.19 * k),
-    blur: MOTION.blurMax * k,
+    // Blur IS capped, and at its own number rather than at `blurMax`.
+    //
+    // `blurMax` (19) is the smear an ORDINARY full-speed shot earns -- it was
+    // never a perceptual ceiling, and before this change everything above 42
+    // px/tick sat on exactly 19, which was the bug: 42 and 120 blurred the same.
+    // Motion smear is the one channel where more really does become
+    // nauseating, so it gets a bounded extension instead of the unbounded one
+    // the silhouette gets: 19 at the limit, 26 at terminal, linear in k.
+    blur: speed <= max ? MOTION.blurMax * k : MOTION.blurMax * k * 0.72 + MOTION.blurMax * 0.65,
   };
 }
 
@@ -368,56 +410,50 @@ export function hitStopFor(kind, pinned = false) {
  *  "km/h" style units and names the band, so the HUD can show a number that
  *  rises as the game speeds up. Deliberately non-linear at the top so the
  *  last few units feel earned. */
+/** The speed the dial reserves its top for: hyper's ceiling times the rebound
+ *  cap, i.e. the fastest the physics can ever deliver. Restated locally because
+ *  motion.js owns HYPER_SPEED but the rebound cap lives in run.js, and a cycle
+ *  is worse than one number with a test on it. */
+const HIGH_SPEED = HYPER_SPEED * 1.35;
+
 export function speedReadout(speed, max = MAX_SPEED, ceiling = HYPER_SPEED, hyperLive = null) {
-  // ── WHY THIS IS NOT `speed / max` ANY MORE ──────────────────────────────
+  // ── THE DIAL: TWO REGIMES, BOTH WITH ROOM ────────────────────────────────
   //
-  // It was, and it was wrong in a way that read as a design bug rather than a
-  // display bug. Measured over five casual runs (aim at the nearest shape, fire
-  // when you can): ordinary flight sat at p50 42.0, p90 42.0, p99 42.0 against a
-  // MAX_SPEED of 42. The dial was pegged at full through essentially ALL normal
-  // play, and the only thing left for it to say was "HYPER" -- which it did at
-  // 44 px/tick, a 5% overspeed from a single wall bounce. 27% of every HYPER
-  // label in a real run was false, and the fastest speed it mislabelled was
-  // 106 px/tick against a true hyper of 280.
+  // This function has been wrong twice, in opposite directions, and the reasons
+  // are worth keeping because they are the whole design problem.
   //
-  // A gauge whose needle is against the stop for most of the game cannot
-  // communicate anything. So the scale now runs to the REAL ceiling, and the
-  // tiers sit on their measured positions in that range:
+  // v1 was `speed / max`. Measured over five casual runs, ordinary flight sits
+  // at 42px/tick at the p50, p90 AND p99 -- so the needle was pegged for the
+  // entire game and the only thing left for it to say was "HYPER", which it said
+  // at 44. 27% of every HYPER label in a real run was false.
   //
-  //   p50 ordinary 42.0   p99 ordinary 42.0   max ordinary 108.8
-  //   p50 hyper   151.4   p90 hyper   247.2   p99 hyper    274.0
+  // v2 scaled the dial to the true 0-280 range so the LABEL would stop lying.
+  // The label became honest and the NEEDLE became inert: full normal speed sat
+  // at -20 degrees, barely off rest, and 90% of the sweep happened between 108
+  // and 280 -- a range ordinary play never visits.
   //
-  // `ceiling` is the speed that reads 100. Below the lift that is HYPER_SPEED,
-  // so a normal flight sits around 15% and a bank-driven overspeed reaches
-  // ~39% -- the dial finally has somewhere to travel. The bands are placed at
-  // the real distribution's shoulders rather than as fractions of a number the
-  // cube can barely exceed.
-  const span = Math.max(max, ceiling, 1),
-    t = clamp(speed / span, 0, 1),
-    // `over` used to be `speed > max`, i.e. "past 42". That is not what "over"
-    // means to a player -- it means the game's hyper state is live, which is a
-    // reward for seven consecutive links. Speed past the normal limit is
-    // simply a fast launch and belongs on the ordinary scale.
-    over = hyperLive === null ? speed > max * 2 : hyperLive,
-    // Square-rooted, because ordinary play occupies the first 15% of the range
-    // and would otherwise be a dead needle for the entire game.
-    normal = Math.round(100 * Math.pow(t, 0.5)),
-    dial = t,
-    kmh = normal;
-  // The bands, against the measured distribution:
-  //   42  = p50 AND p99 of ordinary flight, so it is not a "fast" threshold --
-  //         it is where normal flight lives. Everything up to it is one band.
-  //   108 = the fastest an ordinary (non-hyper) run reached across five seeds.
-  //   280 = true hyper, which is a STATE, not a speed the physics can reach on
-  //         its own; see `over`.
+  // v3 is a split sweep, the way a real gauge with a redline region does it:
   //
-  // `hyperLive` is the game's actual HYPER state (seven consecutive links), and
-  // it -- not the speed number -- decides whether the HUD may say the word.
-  // Speed alone was the old rule and it is why the label felt cheap: any bounce
-  // that carried the cube past 42 earned the banner. When the caller does not
-  // pass the flag (pure-speed callers, tests) the speed rule stands.
-  const live = hyperLive === null ? over : hyperLive;
-  const band = live
+  //   0 .. max      ->  0 .. 70 of the dial   (where the player actually lives)
+  //   max .. TOP    -> 70 .. 100              (the earned state)
+  //
+  // Ordinary full speed lands at 70 with the needle past two-thirds, so the
+  // gauge MOVES through the whole of normal play. The top 30 is reserved for
+  // hyper, so the state that breaks the limit still has somewhere to go.
+  // The sqrt on the ordinary half keeps the low end from crowding at rest.
+  const TOP = HIGH_SPEED,
+    ordinary = Math.pow(clamp(speed / max, 0, 1), 0.5) * 0.7,
+    extra = speed <= max ? 0 : 0.3 * Math.pow(clamp((speed - max) / (TOP - max), 0, 1), 0.75),
+    t = clamp(ordinary + extra, 0, 1),
+    kmh = Math.round(100 * t),
+    // `over` is the earned state, not a speed threshold: the word HYPER is a
+    // reward for seven consecutive links, not for a wall bounce that happens to
+    // carry the cube past 42. When a caller passes no flag, speed decides.
+    over = hyperLive === null ? speed > max * 2 : hyperLive;
+  // The bands, on the same two-regime scale as the needle:
+  //   42  = p50 AND p99 of ordinary flight, so it is mid-ladder, not "fast".
+  //   108 = fastest an ordinary (non-hyper) run reached across five seeds.
+  const band = over
     ? 'HYPER'
     : speed > max * 1.9
       ? 'EDGE'
@@ -426,7 +462,7 @@ export function speedReadout(speed, max = MAX_SPEED, ceiling = HYPER_SPEED, hype
         : speed > max * 0.5
           ? 'CRUISE'
           : 'DRIFT';
-  return { kmh, t: dial, over, live, band };
+  return { kmh, t, over, live: over, band };
 }
 
 /** Blur is never applied to a hostile shape. Exported so a test can assert
