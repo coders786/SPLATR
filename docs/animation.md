@@ -115,3 +115,44 @@ looking:
   swing symmetric → the asymmetry test fails; skip the land squash → fails.
 - Existing guards that must not regress: cube pin p95 < 0.02px, calm p95 < 0.25,
   transform balance, 145 existing tests.
+
+## What the second measurement changed
+
+The first pass shipped with 13 green tests and one claim I never checked: that
+the pose I computed was the pose on screen. It was not. `landFor` documents
+`wide: 1 + 0.42*q` as ">1 = wider than tall", and the renderer applied
+`c.scale(1 / wide, 1 / tall)` — the reciprocal. **Every one of the eight
+directions and every landing was drawn backwards.** The landing stretched tall
+and thin like a pulled spring instead of splatting wide; the northward lean grew
+broader instead of taller; the plunge flattened into a pancake instead of
+stretching into a needle.
+
+It survived because of how I checked it. I instrumented `ctx.scale`, saw
+`(0.704, 1.515)` on a landing frame instead of `(1, 1)`, and called the squash
+"proven". The probe confirmed *an effect existed*; it never asked whether the
+effect pointed the right way. Proving the mechanism is not proving the result.
+
+The fix is one line, and the test that catches it compares `sx` to `sy` rather
+than merely checking they differ:
+
+```js
+assert.ok(aniso.some(([sx, sy]) => sx / sy > 1.05),
+  'the squash must make the body WIDER than tall, not narrower');
+```
+
+Sampling also had to move. My first attempt hooked `save()`, which reads the
+matrix *before* the character's scale is applied — the view transform, always
+uniform, passing no matter what the body did. Hooking `scale()` directly is what
+makes the assertion mean anything.
+
+Two other things were computed and thrown away: the eyes and the scarf. Both now
+reach the canvas. `cube()` takes a `pose` argument — `eyes` closes each lid
+toward its own centre line so it reads as a squint and not a vanished face, and
+`lift` pulls the scarf tips back and up. `pose = null` reproduces the old drawing
+exactly, so the title screen and the score slip are untouched. The fall trail is
+drawn now too, upward and behind the body, and it scales with how hard the cube
+is actually falling.
+
+The lesson worth keeping: **a test that calls a pure function proves the curve,
+not the frame.** Every animation test that only imported `animation.js` would
+have passed with the character rendering inside-out.

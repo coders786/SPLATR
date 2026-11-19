@@ -828,7 +828,11 @@ export function createRun(
     // 144Hz the renderer sees the same tick twice with different alpha and
     // draws the in-between frame itself.
     if (s.slashAge >= 0) s.slashAge++;
-    if (s.landAge >= 0) s.landAge++;
+    // Cap it: landFor() stops returning a pose past FALL.land anyway, so an
+    // unbounded counter was harmless here -- but it is a number that would
+    // eventually lose float precision over a long run, and a counter that
+    // measures nothing should not grow forever.
+    if (s.landAge >= 0 && s.landAge <= 64) s.landAge++;
     if (world.player.velocity.y > 0) s.fallAge = (s.fallAge >= 0 ? s.fallAge : 0) + 1;
     else s.fallAge = -1;
     // ── LANDING ──────────────────────────────────────────────────────────

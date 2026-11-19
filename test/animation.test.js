@@ -261,3 +261,110 @@ test('all three animation systems fire during a real run, not just in unit tests
   assert.ok(squashes > 10, `only ${squashes} impact squashes fired -- the landing is dead code`);
   assert.ok(fallTicks > 100, `only ${fallTicks} falling ticks -- the fall language never plays`);
 });
+
+/* ── 7. THE POSE REACHES THE GLASS ──────────────────────────────────────── */
+
+test('the pose is actually rendered: squash, eyes and fall trail all change the frame', async () => {
+  // The first version of this system computed `eyes` and `scarf` every frame
+  // and threw them away, and the landing squash applied a scale nobody could
+  // measure. Every unit test passed. So this test asserts the DRAWING changes,
+  // which is the only claim that matters.
+  const { installDom, createDisplay } = await import('./support/display.js');
+  const { createRenderer } = await import('../src/renderer.js');
+  const { createRun } = await import('../src/run.js');
+  const dom = installDom();
+  const { canvas, ctx } = createDisplay(1560, 866);
+  const renderer = createRenderer(canvas);
+  const run = createRun(19, () => {}, { staged: true });
+  for (let i = 0; i < 30; i++) run.tick();
+  const body = run.world.player;
+  const sig = (mut) => {
+    body.velocity.x = 0;
+    body.velocity.y = 0;
+    run.state.landAge = -1;
+    mut?.();
+    ctx.__reset();
+    renderer.draw(run, 1, null, false, 'mouse');
+    return ctx.__ops
+      .map((o) => (o.pts || []).map((p) => p.map((n) => n.toFixed(2)).join(',')).join(';'))
+      .join('|');
+  };
+  const rest = sig();
+  const landing = sig(() => {
+    run.state.landAge = 0;
+  });
+  assert.notEqual(rest, landing, 'the landing squash does not reach the canvas');
+
+  // The squash must be ANISOTROPIC: a uniform scale is a size change, not a
+  // squash, and a uniform scale is exactly the bug this replaced.
+  // Sample `ctx.scale` directly. Sampling at `save()` reads the matrix BEFORE
+  // the scale is applied -- that is the view transform, which is always uniform,
+  // and it silently passes no matter what the character does.
+  const seen = [];
+  const origScale = ctx.scale.bind(ctx);
+  ctx.scale = (sx, sy) => {
+    seen.push([sx, sy]);
+    return origScale(sx, sy);
+  };
+  sig(() => {
+    run.state.landAge = 0;
+  });
+  ctx.scale = origScale;
+  const aniso = seen.filter(
+    ([sx, sy]) => sy !== 0 && Math.abs(Math.abs(sx / sy) - 1) > 0.05,
+  );
+  assert.ok(aniso.length >= 1, 'the landing squash applied no anisotropic scale');
+  assert.ok(
+    aniso.some(([sx, sy]) => sx / sy > 1.05),
+    'the squash must make the body WIDER than tall, not narrower',
+  );
+
+  // Eyes and the fall trail are driven by downward speed, and they are two
+  // separate drawings -- assert each one independently so a failure says which.
+  const level = sig();
+  const plunge = sig(() => {
+    body.velocity.y = 30;
+  });
+  assert.notEqual(level, plunge, 'falling does not change the drawn character');
+  // ...but "something changed" is too weak a claim: with the eyes moving, the
+  // frame differs even if the trail is never drawn. Freeze the face so the only
+  // remaining variable is the trail itself.
+  const noEyes = (vy) => {
+    const saved = body.velocity.y;
+    body.velocity.y = vy;
+    ctx.__reset();
+    renderer.draw(run, 1, null, false, 'mouse');
+    body.velocity.y = saved;
+    return ctx.__ops.length;
+  };
+  const flat = noEyes(0),
+    falling = noEyes(30);
+  assert.ok(
+    falling > flat,
+    `the fall trail is not drawn: ${flat} ops level vs ${falling} ops plunging`,
+  );
+  // Prove the EYES specifically, not just "something changed": the trail is a
+  // separate drawing that a frame comparison cannot tell apart from the face.
+  // A closed eye is a flatter polygon, so compare the character's own eye
+  // shapes with the trail switched off by checking the eye art directly.
+  const { cube } = await import('../src/art.js');
+  const eyeHeight = (eyes) => {
+    ctx.__reset();
+    cube(ctx, 0, 0, 1, 0, 0, 1, { eyes, lift: 0 });
+    // The eye polygons are the small light shapes in the upper-left of the face.
+    const shapes = ctx.__ops
+      .filter((o) => (o.pts || []).length === 4)
+      .map((o) => {
+        const ys = o.pts.map((q) => q[1]);
+        return Math.max(...ys) - Math.min(...ys);
+      })
+      .filter((h) => h > 0);
+    return shapes.reduce((a, b) => a + b, 0);
+  };
+  const open = eyeHeight(1),
+    shut = eyeHeight(0);
+  assert.ok(open > shut * 1.5, `closed eyes are not flatter than open ones (${open.toFixed(1)} vs ${shut.toFixed(1)})`);
+
+  run.dispose();
+  dom.uninstall();
+});

@@ -1483,8 +1483,13 @@ export function createRenderer(canvas) {
       });
       if (poseAnim.move.moving) holdDir = poseAnim.move.index;
       if (poseAnim.counter) c.rotate(poseAnim.counter);
+      // `wide`/`tall` are direct multipliers on the body: landFor says
+      // `wide: 1 + 0.42*q` and documents ">1 = wider than tall", so it must be
+      // multiplied in as-is. Inverting it here made every pose read backwards --
+      // a landing stretched upward like a pulled spring instead of splatting
+      // wide, and a northward lean grew broader instead of taller.
       if (poseAnim.tall !== 1 || poseAnim.wide !== 1)
-        c.scale(1 / poseAnim.wide, 1 / poseAnim.tall);
+        c.scale(poseAnim.wide, poseAnim.tall);
       if (poseAnim.lean) c.rotate(poseAnim.lean);
       // Motion streaks, as geometry: a genuinely fast cube is pulled along its
       // own travel and thinned across it, so the eye tracks a line instead of
@@ -1613,8 +1618,45 @@ export function createRenderer(canvas) {
           c.restore();
         }
       }
-      cube(c, 0, 0, R, p.angle, motion ? time : 0, facing);
+      cube(c, 0, 0, R, p.angle, motion ? time : 0, facing, {
+        // The two expression channels the pose system computes. `lift` is the
+        // falling scarf plus a little air-speed, so the character reads as
+        // being pushed by the world it is moving through.
+        eyes: poseAnim.eyes,
+        lift: (poseAnim.fall?.scarfLift ?? 0) + Math.min(0.5, poseAnim.move.speed / MAX_SPEED) * 0.5,
+      });
       c.restore();
+      // ── THE FALL TRAIL ──────────────────────────────────────────────────
+      //
+      // The air the cube is falling THROUGH, which stays behind it. Drawn
+      // before the body so it never covers the face, and pointed UPWARD --
+      // opposite the travel -- because a trail that follows the object is a
+      // motion blur, while a trail left in the air behind it is a plume.
+      //
+      // Only while genuinely plunging: fallFor() returns null below the drift
+      // threshold, so a gentle drop gets nothing and the effect stays a readout.
+      if (motion && poseAnim.fall && poseAnim.fall.trail > 0.05) {
+        const k = poseAnim.fall.trail,
+          up = Math.PI / 2;
+        c.save();
+        c.translate(p.x, p.y);
+        for (let i = 0; i < 3; i++) {
+          const len = R * (1.6 + 2.4 * k) * (1 - i * 0.22),
+            spread = R * 0.9 * (i - 1);
+          c.globalAlpha = 0.16 * k * (1 - i * 0.22);
+          line(
+            c,
+            INK.acid,
+            Math.max(0.8, (2.4 - i * 0.6) / v.scale),
+            spread,
+            -R * 0.9,
+            spread * 1.5,
+            -R * 0.9 - len,
+          );
+        }
+        c.globalAlpha = 1;
+        c.restore();
+      }
       // THE SWING. Drawn after the cube's own frame is popped, in world space,
       // so the arc is not clipped by the body rotation -- it is what the cube
       // is DOING, not part of the cube.

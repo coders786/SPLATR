@@ -41,13 +41,30 @@ const K = INK.black,
   L = INK.acid;
 // One screen-printed character, from the enormous title frame down to a
 // thumb-sized combatant. Scarf tails and eye cuts identify the direction.
-export function cube(c, x, y, r, angle = 0, flutter = 0, face = 1) {
+export function cube(c, x, y, r, angle = 0, flutter = 0, face = 1, pose = null) {
   c.save();
   c.translate(x, y);
   c.rotate(angle);
   c.scale(r * face, r);
   c.lineJoin = 'miter';
-  const wave = Math.sin(flutter * 0.09) * 0.13;
+  // ── THE ANIMATED EXPRESSIONS ────────────────────────────────────────────
+  //
+  // `pose` carries the two channels animation.js computes and the character
+  // needs: how open the eyes are, and how hard the scarf is lifting. Before
+  // this they were calculated every frame and then thrown away -- the pose
+  // maths existed but the character never showed any of it.
+  //
+  // Both are 0..1+ multipliers centred on the resting value, so `pose=null`
+  // reproduces the original drawing exactly and every existing caller (the
+  // title screen, the score slip, every cut half) keeps its old look.
+  //
+  //   eyes: 1 = open, 0 = closed to two flat lines. Anime shorthand for a
+  //         committed plunge or a hard impact.
+  //   lift: 0 = hanging, 1 = streaming. Driven by the fall and by speed.
+  const eyes = pose ? Math.max(0, Math.min(1, pose.eyes ?? 1)) : 1;
+  const lift = pose ? Math.max(0, Math.min(1.6, pose.lift ?? 0)) : 0;
+  // The scarf's own wave, plus the lift pulling the tips further back and up.
+  const wave = Math.sin(flutter * 0.09) * 0.13 + lift * 0.2;
   poly(
     c,
     L,
@@ -106,18 +123,37 @@ export function cube(c, x, y, r, angle = 0, flutter = 0, face = 1) {
     [-0.83, 0.09],
     [-1, -0.03],
   ]);
-  poly(c, L, [
-    [-0.56, -0.31],
-    [0.1, -0.12],
-    [0.05, 0.03],
-    [-0.54, -0.05],
-  ]);
-  poly(c, L, [
-    [0.36, -0.1],
-    [0.86, -0.29],
-    [0.79, 0.03],
-    [0.38, 0.055],
-  ]);
+  // Eyes. As `eyes` closes, each lid collapses toward its own centre line, so
+  // the shape becomes a flat slash rather than shrinking to a dot -- which is
+  // the difference between "squinting" and "the face vanished".
+  {
+    const e = eyes;
+    const eye = (q) => {
+      // q = four corners, top-left, top-right, bottom-right, bottom-left.
+      const cy = (q[0][1] + q[2][1]) / 2;
+      return q.map(([px, py]) => [px, cy + (py - cy) * e]);
+    };
+    poly(
+      c,
+      L,
+      eye([
+        [-0.56, -0.31],
+        [0.1, -0.12],
+        [0.05, 0.03],
+        [-0.54, -0.05],
+      ]),
+    );
+    poly(
+      c,
+      L,
+      eye([
+        [0.36, -0.1],
+        [0.86, -0.29],
+        [0.79, 0.03],
+        [0.38, 0.055],
+      ]),
+    );
+  }
   poly(c, K, [
     [-0.91, 0.63],
     [-0.52, 0.7],
