@@ -282,6 +282,38 @@ export function foe(c, kind, x, y, r, angle = 0, opts = {}) {
     return;
   }
   poly(c, col, t.outline, K, 0.115);
+  // ── HAZARD BORDER ────────────────────────────────────────────────────────
+  //
+  // Well and Prism were SEVEN RGB units apart, which is not a distinction, it
+  // is a smear. Well now carries a crimson body, and this draws a ring of
+  // spikes around it on top -- so the shape still reads as dangerous in
+  // greyscale, under a colour-blindness filter, or on a bad phone screen at
+  // 30% brightness, none of which colour alone survives.
+  //
+  // Drawn INSIDE the radius so the hazard never changes the collision silhouette:
+  // what you see is what you hit.
+  if (t.hazard) {
+    const teeth = 11;
+    c.save();
+    c.beginPath();
+    for (let i = 0; i < teeth * 2; i++) {
+      const a = (i / (teeth * 2)) * Math.PI * 2 - Math.PI / 2,
+        rad = i % 2 ? 0.72 : 1.02;
+      const px = Math.cos(a) * rad,
+        py = Math.sin(a) * rad;
+      if (i) c.lineTo(px, py);
+      else c.moveTo(px, py);
+    }
+    c.closePath();
+    c.strokeStyle = K;
+    c.lineWidth = 0.085;
+    c.lineJoin = 'miter';
+    c.stroke();
+    c.strokeStyle = blend(W, '#ff2f6b', 0.55);
+    c.lineWidth = 0.038;
+    c.stroke();
+    c.restore();
+  }
   switch (kind) {
     case 'fang':
       poly(c, K, [

@@ -396,7 +396,21 @@ dd {
    Deliberately quiet until it matters: at cruising speed the whole thing is
    near-furniture, and only SURGE and EDGE earn colour. */
 #speedo {
-  position: relative;
+  /* ── IT WAS SITTING ON THE SCORE ────────────────────────────────────────
+     `position: relative` with no offsets means "wherever normal flow puts me",
+     and every other child of `#hud` is absolutely positioned -- so flow started
+     at the HUD's own top-left corner and the dial landed on top of
+     `.score-lock` (which is `left: gutter; top: top`). Two readouts, one place.
+
+     The dial belongs on the right, under the hull: it is the speed reading and
+     the hull is the health reading, so they read as a column. `pointer-events`
+     is off for the whole HUD, so nothing here needs to be reachable. */
+  position: absolute;
+  right: var(--right);
+  /* Below `.top-right` (which is at `--top` and ~34px tall including its
+     padding) with room to breathe. The 78px dial then ends well clear of the
+     hull row instead of sitting under it. */
+  top: calc(var(--top) + 66px);
   width: 124px;
   height: 78px;
   display: grid;

@@ -104,12 +104,24 @@ export const TYPES = {
   well: species(
     'Well',
     'Pentagon',
-    '#b99bff',
+    // ── WELL IS NOT A PRISM ────────────────────────────────────────────────
+    //
+    // This was '#b99bff', SEVEN RGB units from Prism's '#c69aff' -- the same
+    // lilac in the same family, on two shapes that want opposite reactions. A
+    // player cannot treat a friend and a hazard the same colour.
+    //
+    // Prism keeps '#c69aff'. Well moves to crimson, which is the language this
+    // game already uses for the things that hurt you (Crown is '#ff426b'), and
+    // gets a jagged hazard border on top so the difference survives colour
+    // blindness. The rule about red was about the RED LINE, a red boundary that
+    // used to kill you; it was never a ban on danger dressing.
+    '#d61b57',
     regular(5),
     36,
     260,
     'Pulls the cube inward inside its field.',
     'Spend a slash to escape or cut the core.',
+    { hazard: true },
   ),
   crown: species(
     'Crown',
