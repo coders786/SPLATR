@@ -248,6 +248,71 @@ function warnings(c, e, p, time) {
   } else arc(c, col, 3, p.x, p.y, e.r + 19 - 12 * f, -Math.PI / 2, -Math.PI / 2 + TAU * f);
   c.restore();
 }
+/** The arena's four edges, drawn SEMI-VISIBLE in world space.
+ *
+ *  This reverses the earlier "no ghost rails" decision, on the user's word:
+ *  "the boundaries of wall must be semi visible and far, not close, and all 4
+ *  directions have a semi wall, tangible wall but far away in this massive
+ *  canvas". They were invisible entirely, which meant a player could only learn
+ *  where the table ended by hitting it -- and with the sides now 28,000 units
+ *  apart, the edge has to be readable in advance or the whole point of the
+ *  space is lost.
+ *
+ *  "Semi-visible" is taken literally and is the design constraint:
+ *   - the line is drawn at low alpha, so it is a hint, not a border;
+ *   - it only fades IN as the cube approaches (nothing is drawn while the edge
+ *     is off screen, and the alpha ramps over the last screen-height), so the
+ *     enormous canvas still reads as unbounded during normal play;
+ *   - it is a single hairline plus a short inward comb, NOT a filled slab, so
+ *     it can never be mistaken for a lethal zone.
+ *
+ *  This is a world-space layer: it is drawn inside the camera transform, so it
+ *  moves correctly and costs nothing when off screen.
+ */
+function walls(c, v, p) {
+  const A = ARENA;
+  if (!A) return;
+  const half = PLAYER_SIZE / 2,
+    x0 = A.x + half, x1 = A.x + A.w - half,
+    y0 = A.y + half, y1 = A.y + A.h - half;
+  // How present the edge should be, from distance. Full strength within one
+  // screen of it, gone by three screens away.
+  const near = (d) => Math.max(0, Math.min(1, 1 - d / (Math.max(v.w, v.h) * 1.1)));
+  const edges = [
+    { d: Math.abs(p.x - x0), draw: (a) => wallLine(c, v, x0, y0, x0, y1, a, 1, 0) },
+    { d: Math.abs(p.x - x1), draw: (a) => wallLine(c, v, x1, y0, x1, y1, a, -1, 0) },
+    { d: Math.abs(p.y - y0), draw: (a) => wallLine(c, v, x0, y0, x1, y0, a, 0, 1) },
+    { d: Math.abs(p.y - y1), draw: (a) => wallLine(c, v, x0, y1, x1, y1, a, 0, -1) },
+  ];
+  c.save();
+  for (const e of edges) {
+    const a = near(e.d);
+    if (a <= 0.01) continue;
+    e.draw(a);
+  }
+  c.restore();
+}
+
+/** One edge of the arena: a hairline plus a comb that points INTO the field.
+ *  `nx`/`ny` is the inward normal, so the comb always sits on the playable
+ *  side and the wall itself is never hidden behind its own decoration. */
+function wallLine(c, v, x0, y0, x1, y1, a, nx, ny) {
+  const t = 1 / v.scale;
+  c.globalAlpha = 0.12 * a;
+  line(c, INK.paper, 1.4 * t, x0, y0, x1, y1);
+  // Comb ticks: short, sparse, and pointing inward. They give the edge a
+  // texture at a glance without becoming a pattern the eye tracks.
+  const len = 26 * t, step = 140 * t;
+  const dx = x1 - x0, dy = y1 - y0, span = Math.hypot(dx, dy);
+  if (span < 1) return;
+  const ux = dx / span, uy = dy / span, n = Math.min(40, Math.max(1, Math.floor(span / step)));
+  c.globalAlpha = 0.09 * a;
+  for (let i = 0; i <= n; i++) {
+    const k = i / n, px = x0 + dx * k, py = y0 + dy * k;
+    line(c, INK.paper, 1 * t, px, py, px + nx * len, py + ny * len);
+  }
+}
+
 function tide(c, v, y, t) {
   if (y > v.y + v.h + 60) return;
   // THE TIDE IS NO LONGER LETHAL, SO IT MUST NOT LOOK LETHAL.
@@ -894,6 +959,7 @@ export function createRenderer(canvas) {
         c.restore();
       }
     } else {
+      walls(c, v, p);
       tide(c, v, mix(s.oldLine, s.line, alpha), time);
       if (s.net || s.caught) {
         const y = s.caught
@@ -1019,28 +1085,34 @@ export function createRenderer(canvas) {
     // nauseating. The aura is attached to the cube, which the eye is already
     // tracking, so it reads as the cube heating up rather than the room moving.
     if (motion && s.hyperLevel > 0.02) {
+      // ── DELIBERATELY QUIETER THAN IT WAS ─────────────────────────────────
+      //
+      // First version: nine lines spinning at 6.5 rad/s, flickering their
+      // length with sin(), plus a pulsing ring. On its own that is a nice
+      // flourish; on top of a cube already stretched, a screen-space speed
+      // field, a pulsing speedometer and a permanent blade, it was the straw
+      // that made the state unreadable. The complaint was precise -- "more
+      // sensory load than before... my brain can't keep up".
+      //
+      // So: no spin (a rotating element at the edge of vision is the most
+      // fatiguing thing on the screen), no flicker (length is fixed per step),
+      // six lines instead of nine, at half the opacity, and the pulsing ring
+      // is gone. What remains is a static halo that says "hyper is live" and
+      // then holds still -- the cube itself is already moving enough.
       const k = s.hyperLevel,
-        n = 9,
-        spin = time * 6.5;
+        n = 6;
       c.save();
       c.translate(p.x, p.y);
       for (let i = 0; i < n; i++) {
-        const a = spin + (i / n) * TAU,
-          len = (R * 1.5 + R * 1.9 * k) * (0.7 + 0.3 * Math.sin(spin * 2 + i)),
-          w = 2.4 / v.scale;
-        c.globalAlpha = 0.16 + 0.44 * k;
-        c.strokeStyle = i % 2 ? INK.acid : INK.paper;
-        c.lineWidth = w;
+        const a = (i / n) * TAU + 0.26,
+          len = R * 1.35 + R * 0.75 * k;
+        c.globalAlpha = 0.1 + 0.2 * k;
+        c.strokeStyle = INK.acid;
+        c.lineWidth = 1.6 / v.scale;
         c.beginPath();
-        c.moveTo(Math.cos(a) * R * 1.15, Math.sin(a) * R * 1.15);
+        c.moveTo(Math.cos(a) * R * 1.12, Math.sin(a) * R * 1.12);
         c.lineTo(Math.cos(a) * len, Math.sin(a) * len);
         c.stroke();
-      }
-      // The core ring that only appears at full hyper: one clean bright circle
-      // says "this is a state", where the lines alone read as decoration.
-      if (k > 0.78) {
-        c.globalAlpha = (k - 0.78) / 0.22 * 0.5;
-        arc(c, INK.acid, 1.8 / v.scale, 0, 0, R * 2.15 + Math.sin(time * 9) * 1.6);
       }
       c.globalAlpha = 1;
       c.restore();

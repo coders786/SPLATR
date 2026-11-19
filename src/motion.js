@@ -33,12 +33,23 @@ export const MOTION = Object.freeze({
   // --- player readability -------------------------------------------------
   // Above this speed the cube starts to blur and stretch.
   blurFrom: 0.35,
-  // Maximum blur length in px at terminal speed, along the travel axis.
-  blurMax: 26,
-  // How much extra ramp full hyper adds on top of the normal curve. Keeping
-  // this separate from blurMax is what lets hyper overshoot the shipped
-  // ceiling without changing how ordinary flight looks.
-  hyperGain: 0.85,
+  // ── SENSORY BUDGET ───────────────────────────────────────────────────────
+  //
+  // Measured complaint: "it's more sensory load than before... my brain can't
+  // keep up". The numbers agreed. At ordinary full speed the cube was already
+  // stretched 1.52x with a 26px smear, and hyper doubled it to 2.05x / 53px --
+  // on top of a screen that is simultaneously streaming the world past at 280
+  // units a tick, pulsing the speedo, and holding a permanent blade.
+  //
+  // So both ends come down. Normal flight keeps a visible stretch (it is the
+  // speed feedback the game is built on) but stops at 1.36x / 19px, and hyper
+  // tops out at 1.60x / 32px instead of doubling. Hyper still reads as the
+  // extreme state -- it is 18% wider, 68% more smear, and a different colour --
+  // it just no longer tries to describe 280 units a tick with a bigger number
+  // than the eye can process.
+  blurMax: 19,
+  // How much extra ramp full hyper adds on top of the normal curve.
+  hyperGain: 0.45,
   // Trail samples kept for the player's speed ribbon.
   ribbon: 16,
   // Effect population caps. Every one of these is a hard ceiling so a long
@@ -127,8 +138,11 @@ export function stretchFor(speed, max = MAX_SPEED, ceiling = max) {
   // never disappears into a line at the far end of the lifted scale.
   const k = t ** 1.15;
   return {
-    along: 1 + 0.52 * k,
-    across: Math.max(0.42, 1 - 0.26 * k),
+    // 0.52 -> 0.36: at k=1 this is 1.36x rather than 1.52x. The silhouette
+    // still visibly lengthens with speed; it stops turning the cube into a
+    // streak that is hard to track with the eye.
+    along: 1 + 0.36 * k,
+    across: Math.max(0.55, 1 - 0.19 * k),
     blur: MOTION.blurMax * k,
   };
 }

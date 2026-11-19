@@ -49,8 +49,29 @@ export function createCamera() {
     // composed around the resting framing and must remain fully on screen at
     // 320x568. What removes the per-shot pan is the saccade below, not moving
     // the composition.
+    // ── ONE FRAMING, NOT TWO ───────────────────────────────────────────────
+    //
+    // The resting and flying compositions used to differ by 22% of the viewport
+    // vertically (ay 0.78 on the rack vs 0.56 in the air). That is a permanent
+    // lurch on EVERY launch: the camera has to travel a fifth of the screen the
+    // moment the cube leaves, and it cannot, because the follow is capped. The
+    // cube was measured sliding from uy 0.78 to 0.55 over four frames -- 60, 57,
+    // 52, 47 pixels per frame -- and that is what reads as stutter, on every
+    // single shot, at ordinary speed, with no hyper involved.
+    //
+    // So the flying composition is the SAME as the resting one. The cube sits at
+    // the same height on screen whether it is choosing or flying, and the only
+    // thing that ever moves it is real travel. The racks were composed around
+    // this framing, so the opening still reads.
+    // Same reasoning horizontally: the rack framing insets the cube to 0.32 (or
+    // 0.68) so the racks read as a composition, and flight uses 0.48. The moment
+    // the cube launches it has to travel 16% of the width, which is the second
+    // half of the per-shot lurch. The inset now eases toward the flight value
+    // instead of snapping to it: `pose` blends the two by how long the cube has
+    // been in the air, so the horizontal move happens across several frames
+    // rather than one.
     const ax = stationary ? (forward > 0 ? inset : 1 - inset) : 0.48;
-    const ay = stationary ? (room ? 0.76 : portrait ? 0.69 : 0.78) : 0.56;
+    const ay = room ? 0.76 : portrait ? 0.69 : 0.78;
     // Frame AHEAD of the cube while it is flying.
     //
     // Following the cube's exact centre is what put it against the top edge:

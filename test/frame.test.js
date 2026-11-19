@@ -5,6 +5,7 @@ import { createClock } from '../src/clock.js';
 import { createRenderer, traceDraws } from '../src/renderer.js';
 import { MAX_SPEED, STEP_MS } from '../src/physics.js';
 import { installDom, createDisplay, frameSignature } from './support/display.js';
+import * as arenaModule from '../src/levels.js';
 
 /** What the player actually sees.
  *
@@ -575,5 +576,55 @@ test('the card / title path leaves the context usable for the next frame', () =>
     const m = ctx.__matrix();
     assert.ok(m.every(Number.isFinite), `title frame ${i}: non-finite transform`);
   }
+  dom.uninstall();
+});
+
+test('the arena walls are semi-visible: hidden in open space, drawn when approached', () => {
+  // The walls were invisible entirely, and the sides were 2,300px from spawn --
+  // reached within three seconds of every run. Both were wrong, and both were
+  // reported by the player: "the boundaries of wall must be semi visible and
+  // far, not close, and all 4 directions have a semi wall". A test that cannot
+  // see the wall cannot protect either property.
+  const dom = installDom();
+  const { canvas, ctx } = createDisplay(1560, 866);
+  const renderer = createRenderer(canvas);
+  const run = createRun(19, () => {}, { staged: true });
+  const { ARENA } = arenaModule;
+  const p = run.world.player;
+  const place = (x, y) => {
+    p.position.x = x;
+    p.position.y = y;
+    if (p.plugin?.previous) {
+      p.plugin.previous.x = x;
+      p.plugin.previous.y = y;
+    }
+    ctx.__reset();
+    renderer.draw(run, 1, null, true, 'mouse');
+    return ctx.__ops.length;
+  };
+  const mid = { x: 0, y: ARENA.y / 2 };
+  const open = place(mid.x, mid.y);
+  // Each of the four edges must become visible when the cube gets close.
+  const nearRight = place(ARENA.x + ARENA.w - 500, mid.y);
+  const nearLeft = place(ARENA.x + 500, mid.y);
+  const nearTop = place(mid.x, ARENA.y + 500);
+  const nearFloor = place(mid.x, ARENA.y + ARENA.h - 500);
+  for (const [name, n] of [
+    ['right', nearRight],
+    ['left', nearLeft],
+    ['top', nearTop],
+    ['floor', nearFloor],
+  ])
+    assert.ok(n > open, `the ${name} wall was not drawn when the cube came within 500px of it`);
+
+  // And the arena must be genuinely large in every direction: a wall reached
+  // within a couple of seconds of spawn is not "far away in a massive canvas".
+  const travel = (span) => span / 42 / 60;
+  assert.ok(
+    travel(ARENA.w) > 8,
+    `the arena is only ${travel(ARENA.w).toFixed(1)}s wide at full speed -- the side walls are close`,
+  );
+  assert.ok(travel(ARENA.h) > 8, `the arena is only ${travel(ARENA.h).toFixed(1)}s tall at full speed`);
+  run.dispose();
   dom.uninstall();
 });

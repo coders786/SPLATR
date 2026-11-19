@@ -60,11 +60,23 @@ export const ARENA = Object.freeze({
   // space on every drop, which is not a lossy cushion, it is a dead screen.
   // 12,000 keeps the bottom wall a real, costly landmark without the wait.
   //
-  // Sides at +-2,300, unchanged: these are already reachable in a normal launch
-  // and are what makes the game feel like billiards at ordinary speed.
-  x: -2300,
+  // ── SIDES AT +-14,000 ────────────────────────────────────────────────────
+  //
+  // These were +-2,300, kept deliberately close so the field would "feel like
+  // billiards at ordinary speed". That was the wrong call and it was measured:
+  // at 42px/tick a 4,600px arena is CROSSED IN 1.8 SECONDS, so the first side
+  // contact landed at tick 195-273 of EVERY run -- three to four seconds in,
+  // before the player had done anything. Four walls that close also meant the
+  // field was a corridor, and the camera lived permanently near a boundary.
+  //
+  // The brief was "semi-visible walls, far away, in all four directions, on a
+  // massive canvas". So the sides are now 28,000px apart: 6x wider, ~11s of
+  // flight at full speed, and the field reads as open in every direction
+  // instead of as a tube. The stream generates cells by x-band, so width costs
+  // nothing at runtime -- no extra bodies, no extra work.
+  x: -14000,
   y: -78000,
-  w: 4600,
+  w: 28000,
   h: 90000, // floor at y = +12,000
   thick: 150,
 });

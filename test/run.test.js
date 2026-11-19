@@ -176,8 +176,25 @@ test('long score runs cross multiple biomes, meet all eight species and trigger 
     assert.ok(r.score > 50000 && r.kills > 50 && r.band > 8);
     assert.equal(r.kinds, SPECIES.length);
     assert.equal(r.maxCells, 9);
-    assert.ok(r.drive);
   }
+  // OVERDRIVE IS EARNED, NOT INCIDENTAL.
+  //
+  // This used to assert both seeds logged 'drive'. It passed because the chain
+  // never broke on a miss -- it only decayed on a timeout -- so a bot that
+  // dashes on a timer accumulated a chain of six eventually no matter how badly
+  // it aimed. Now that a dash crossing empty space resets the streak (which is
+  // what "consecutive cuts" has to mean, and what stops hyper promoting itself
+  // from passive play), this particular bot reaches chain 6 on one seed and not
+  // the other. Both are correct runs: the fixture is a fixed, imperfect policy,
+  // not a player.
+  //
+  // So the assertion is that Overdrive is REACHABLE by this bot at all, which is
+  // the property the test is really about, plus a direct check of the rule
+  // itself against a competent policy (measured: 22/24 runs).
+  assert.ok(
+    a.drive || b.drive,
+    'a 2,400-tick run pair never reached a chain of six -- Overdrive is unreachable',
+  );
   assert.notEqual(a.score, b.score);
 });
 test('an identical input trace at 30, 60 and 144 render Hz produces the same simulated run', () => {

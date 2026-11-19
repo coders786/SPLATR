@@ -199,7 +199,10 @@ test('the effect curve only reads hyper when hyper is actually live', () => {
 
   // On its own scale, normal top speed is at FULL effect -- that must not change.
   assert.equal(flat.blur, MOTION.blurMax, 'normal top speed lost its own smear');
-  assert.equal(flat.along, 1.52);
+  // 1.36, not 1.52: the whole stretch curve was pulled down after the sensory
+  // report (see MOTION.blurMax in motion.js). Normal flight still visibly
+  // lengthens the cube; it stops turning it into a streak.
+  assert.equal(+flat.along.toFixed(2), 1.36);
   // Hyper OVERSHOOTS the shipped curve rather than pinning at it -- that is the
   // difference between "the loudest state in the game" and "a redline shot".
   assert.ok(stretched.blur > MOTION.blurMax, 'hyper pinned at the normal maximum blur');

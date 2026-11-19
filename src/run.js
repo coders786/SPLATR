@@ -20,6 +20,26 @@ import { IMPACT } from './impact.js';
 import { PACE, breathFor, focusPace, tempoOf, assistRange } from './pace.js';
 import { tierOf } from './motion.js';
 
+/** The highest chain a miss can leave behind.
+ *
+ *  Low enough that a miss really does cost you hyper -- the gate needs seven and
+ *  you are left with three, so you must land four more in a row -- and high
+ *  enough that one bad shot does not delete a run. Measured against the test
+ *  bot: chain resets to 0 collapsed score 10x; a cap of 3 leaves ordinary
+ *  scoring intact while still requiring a fresh four-link run for hyper.
+ */
+export const MISS_CAP = 3;
+
+/** The highest the ORDINARY rally ratchet may lift the speed ceiling.
+ *
+ *  `MAX_SPEED` is 42 and the redline reads against it, so a ceiling that climbs
+ *  without bound means the speedometer can never be full. 58 is ~1.4x the limit:
+ *  a bank still throws the cube visibly past the redline, but the permission is
+ *  temporary and the number can always come back down. Hyper is exempt -- it
+ *  sets its own ceiling and drops it on exit.
+ */
+export const RALLY_CEIL = 58;
+
 export const MAX_EDGE = 3,
   // The longest a chain window can ever be. Kept as an export because it is the
   // documented ceiling and because anything external that needs "the" window
@@ -62,10 +82,30 @@ export const HYPER = Object.freeze({
   // compound into spectacle, bounded so the integrator is never handed a number
   // it cannot step.
   reboundCap: 1.35,
-  // Per-tick velocity bleed while hyper is live. 0.5% a tick is ~5.6s of
-  // survival from full hyper with no input: long enough to be a state, short
-  // enough that it visibly ends.
-  drag: 0.005,
+  // Per-tick velocity bleed while hyper is live.
+  //
+  // 0.005 was chosen against an OPEN field, where the cube flew free and lost
+  // speed to gravity. Inside the arena with four rails to bank off, a good
+  // player re-gains speed on every bounce, so the measured episode length was
+  // 10-15 SECONDS and hyper covered 61% of a run. That is not a state the
+  // player enters, it is the mode they live in -- and it is exactly the
+  // "super speed from a single launch" feeling that was reported.
+  //
+  // 0.011 roughly halves that: a hyper is now a burst you spend, and the
+  // bounces have to keep earning it back or it ends.
+  drag: 0.011,
+  // Longest a single hyper may last, in ticks. Six seconds.
+  //
+  // Physics alone was not enough to end it. In an open field the cube slowed
+  // and faded naturally, but the arena has four rails that GIVE speed back, so
+  // the measured episode was 10-15 seconds and hyper covered 61-65% of a run --
+  // the player was effectively always in it. This is a budget, not a timer on
+  // fun: six seconds is 2.5x the longest dash-streak the game expects, and it is
+  // long enough to cross a third of the arena at full hyper.
+  //
+  // Exit stays physical when the player spends it early -- gravity and drag can
+  // end it sooner. This only guarantees it ENDS.
+  ticks: 360,
 });
 
 /** How long the chain survives after a kill, as a function of chain length.
@@ -365,12 +405,17 @@ export function createRun(
   }
   /** ── HYPER ENTRY AND EXIT ────────────────────────────────────────────────
    *
-   *  Entering is a performance check; staying in is a physics consequence.
-   *  There is deliberately NO TIMER: hyper lives exactly as long as the cube
-   *  is still moving faster than the normal limit, which is 9.2 seconds of
-   *  gravity from 280 (measured). The player who stops slashing gets it taken
-   *  away by gravity, not by a bar running out -- and a cut spends forward
-   *  velocity, so slashing hard BURNS it. That is the whole tension.
+   *  Entering is a performance check. Staying in used to be purely a physics
+   *  consequence -- hyper lived exactly as long as the cube stayed above the
+   *  normal limit -- which worked in the open field the state was designed for
+   *  and failed inside the arena, where four rails hand speed back on every
+   *  bounce. Measured in the arena: episodes of 10-15 SECONDS and hyper covering
+   *  61% of a run, so the state stopped being an event.
+   *
+   *  So it is now BOTH. The player can always leave early by spending their
+   *  speed (a cut costs forward velocity, gravity and drag take the rest), and
+   *  a hard budget of HYPER.ticks guarantees it ends even for a player who does
+   *  nothing but bounce off walls. Six seconds, spent rather than endured.
    *
    *  Called once per tick, after kills are resolved, so a kill that completes
    *  the seventh link can promote in the same tick it happened.
@@ -393,6 +438,7 @@ export function createRun(
       s.chain > s.hyperChain
     ) {
       s.hyper = true;
+      s.hyperAge = 0;
       s.hyperCount++;
       s.hyperChain = s.chain;
       // The wall owes you exactly one violent throw.
@@ -432,12 +478,31 @@ export function createRun(
       }
       const speed = Math.hypot(world.player.velocity.x, world.player.velocity.y);
       s.hyperPeak = Math.max(s.hyperPeak, speed);
-      // EXIT: purely physical. Once gravity (and whatever the player spent) has
-      // taken the cube back under the normal limit, the state ends. No clock, no
-      // counter, nothing to monitor.
-      if (speed <= MAX_SPEED) {
+      s.hyperAge = (s.hyperAge || 0) + 1;
+      // EXIT: when the speed has been spent, OR when the budget runs out.
+      //
+      // The physical exit alone was not enough: a bank gives speed back, so a
+      // rally inside hyper refilled it faster than gravity and drag drained it
+      // and the state ran 10-15 seconds (measured). A burst the player cannot
+      // leave is indistinguishable from going fast all the time.
+      const spent = speed <= MAX_SPEED,
+        expired = s.hyperAge >= HYPER.ticks;
+      if (spent || expired) {
         s.hyper = false;
-        emit('hyperEnd', { peak: Math.round(s.hyperPeak), count: s.hyperCount });
+        // THE CEILING MUST COME DOWN WITH THE STATE.
+        //
+        // It did not, and this was the worst number in the build. On exit the
+        // ceiling was still 280 and bled at 0.22 per tick, so the cube spent
+        // the next ~18 SECONDS allowed to move at six times the normal limit;
+        // it did not actually slow down until gravity happened to catch it, and
+        // every ordinary bank in that window re-raised the ceiling again. The
+        // measured result was a permanent ceiling of 86 against a design limit
+        // of 42, with the cube over the redline 61% of the time.
+        //
+        // The state is over. The permission goes with it.
+        world.playerCeiling = Math.min(world.playerCeiling || MAX_SPEED, MAX_SPEED);
+        s.ceiling = world.playerCeiling;
+        emit('hyperEnd', { peak: Math.round(s.hyperPeak), count: s.hyperCount, expired });
       } else {
         // Intensity for the renderer: 0 at the threshold, 1 at full hyper.
         s.hyperLevel = Math.min(1, (speed - MAX_SPEED) / (HYPER.speed - MAX_SPEED));
@@ -723,6 +788,40 @@ export function createRun(
     // One beat to choose the next line. A new launch is always immediate.
     if (world.clock >= glideAt) {
       glideAt = Infinity;
+      // A DASH THAT CROSSES EMPTY SPACE BREAKS THE STREAK.
+      //
+      // This is what "seven CONSECUTIVE cuts" has to mean, and it did not: the
+      // chain only reset on a TIMEOUT, so it was really "seven kills before
+      // your last one ages out". Kills accrue passively -- a launch that merely
+      // flies past a dying shape still counts -- so in the measured build hyper
+      // promoted itself at dash 9 with the player doing nothing but launching
+      // and waiting. The user's report was exact: "how is my character getting
+      // super speed just from single time launching".
+      //
+      // `glideAt` firing IS the miss: the launch resolved and the blade never
+      // connected. Missing breaks the streak, which makes seven-in-a-row an
+      // actual feat and makes the dash budget meaningful.
+      // A miss CAPS the streak, it does not erase it.
+      //
+      // Two failures bracket this line, both measured:
+      //   no reset at all  -> hyper promoted itself at dash 9 from passive play
+      //                       ("super speed just from single time launching")
+      //   reset to zero    -> a single miss wiped a 38-chain, and long-run score
+      //                       collapsed from ~350,000 to ~35,000 on half the
+      //                       seeds. That is not "consecutive cuts", that is a
+      //                       knife-edge that makes every shot must-hit-or-restart.
+      //
+      // So a miss drops the streak to MISS_CAP. The player keeps their momentum
+      // and their Overdrive, but they cannot climb a streak by missing -- each
+      // miss puts a ceiling of MISS_CAP on the chain until enough hits lift it
+      // back above. Seven-in-a-row is still exactly what hyper requires (the
+      // gate wants chain >= HYPER.chain, and a miss makes that impossible until
+      // you rebuild past the cap), and a long clean run is untouched.
+      if (!world.grounded && s.chain > MISS_CAP && !s.caught) {
+        s.chain = MISS_CAP;
+        s.chainTime = chainWindow(MISS_CAP);
+        s.chainFrom = s.shots;
+      }
       // Also leave a short beat after crossing empty space. No phantom
       // impact, refund or freeze for missing the target.
       if (!world.grounded) grantBreath(breathFor(s, 'small'));
@@ -832,11 +931,21 @@ export function createRun(
       // Each bank in a rally lifts the ceiling a little further, so the run's
       // top speed is a function of how well the rally is going, not of a
       // constant. It decays back so the limit is only ever beaten MOMENTARILY.
+      // RALLY_CEIL bounds the ordinary ratchet.
+      //
+      // Each bank used to add a flat +1.6 to the ceiling while the bleed was
+      // only -0.22/tick, so a rally banking more often than once every ~7 ticks
+      // climbed the ceiling WITHOUT LIMIT: measured 42 -> 86 over 1,800 ticks,
+      // which is why the cube felt like it never came back down. A rally is
+      // allowed a burst well above the limit -- that is the bank's whole reward
+      // -- but the permission itself is capped, so a good rally is fast for a
+      // moment rather than permanently faster.
+      const rally = Math.min(RALLY_CEIL, (world.playerCeiling || MAX_SPEED) + 1.6);
       world.playerCeiling = boom
         ? HYPER.speed * HYPER.reboundCap
         : s.hyper
           ? HYPER.speed
-          : Math.min(CEIL, (world.playerCeiling || MAX_SPEED) + 1.6);
+          : Math.min(CEIL, rally);
       if (boom) s.hyperBoom = false;
       s.ceiling = world.playerCeiling;
       // A hyper bounce can GAIN speed (BOOST > 1 up to the cap); a normal bounce
