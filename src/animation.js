@@ -244,23 +244,49 @@ export function landFor(age) {
  * motion smooth. Doing it with 8 fixed sprites would pop; doing it with a pure
  * continuous formula gives mush with no personality at any angle.
  */
+/**
+ * ── HOW FAR THESE POSES MOVE, AND WHY THEY MOVED FURTHER ────────────────
+ *
+ * The first set read as almost nothing. Measured: the whole eight-direction
+ * range covered 6.0px of travel on a 46px body (tall 0.95..1.08), 22.9 degrees
+ * of lean, and eyes that only ever half-closed. On screen that is a square
+ * twitching, not a character moving.
+ *
+ * The numbers are now sized against the BODY, not against what felt tasteful in
+ * a table. The body is 46px, so:
+ *
+ *   tall 0.86..1.20  = 15.6px of vertical travel -- visible at a glance
+ *   lean 0.34 rad    = 39 degrees, the unmistakable forward lean of a drive
+ *   twist            = the body's own rotation about its angle, so a diagonal
+ *                      reads as a body TURNING into the corner
+ *   scarf            = phase offset, so the same cloth animates differently
+ *                      depending on which way you are going
+ *
+ * `twist` is new. It is the channel that makes a diagonal legible: without it
+ * NE and NW are just "up, slightly tilted", and the corner poses read as
+ * variants of north rather than as their own decisions.
+ *
+ * `stretch` is new too: how much the body is dragged along its own travel by
+ * speed alone. It is the difference between a cube that MOVES and a cube that
+ * is BEING THROWN.
+ */
 export const DIRS = Object.freeze([
-  // E
-  { name: 'E', lean: 0.2, tall: 1, wide: 1, scarf: 0, eyes: 1 },
-  // NE
-  { name: 'NE', lean: 0.13, tall: 1.05, wide: 0.98, scarf: 0.7, eyes: 1 },
-  // N
-  { name: 'N', lean: 0, tall: 1.08, wide: 0.96, scarf: 1.4, eyes: 1 },
-  // NW
-  { name: 'NW', lean: -0.13, tall: 1.05, wide: 0.98, scarf: 2.1, eyes: 1 },
-  // W
-  { name: 'W', lean: -0.2, tall: 1, wide: 1, scarf: 2.8, eyes: 1 },
-  // SW
-  { name: 'SW', lean: -0.11, tall: 0.97, wide: 1.05, scarf: 3.5, eyes: 0.75 },
-  // S
-  { name: 'S', lean: 0, tall: 0.95, wide: 1.08, scarf: 4.2, eyes: 0.5 },
-  // SE
-  { name: 'SE', lean: 0.11, tall: 0.97, wide: 1.05, scarf: 4.9, eyes: 0.75 },
+  // E — driving right: leading with the edge, leaning hard into it.
+  { name: 'E', lean: 0.34, tall: 0.99, wide: 1.03, scarf: 0, eyes: 1, twist: 0.1, stretch: 0.16 },
+  // NE — the corner pose: taller, twisted, chin up.
+  { name: 'NE', lean: 0.22, tall: 1.1, wide: 0.93, scarf: 0.7, eyes: 1, twist: 0.24, stretch: 0.13 },
+  // N — full climb: stretched long and thin, the classic rising silhouette.
+  { name: 'N', lean: 0, tall: 1.2, wide: 0.88, scarf: 1.4, eyes: 1, twist: 0, stretch: 0.1 },
+  // NW — corner, mirrored: the twist goes the other way.
+  { name: 'NW', lean: -0.22, tall: 1.1, wide: 0.93, scarf: 2.1, eyes: 1, twist: -0.24, stretch: 0.13 },
+  // W — driving left, mirrored.
+  { name: 'W', lean: -0.34, tall: 0.99, wide: 1.03, scarf: 2.8, eyes: 1, twist: -0.1, stretch: 0.16 },
+  // SW — falling left: heavy, wider, eyes narrowing against the wind.
+  { name: 'SW', lean: -0.18, tall: 0.9, wide: 1.12, scarf: 3.5, eyes: 0.6, twist: -0.14, stretch: 0.18 },
+  // S — full drop: the widest, shortest, most compressed pose. Eyes shut.
+  { name: 'S', lean: 0, tall: 0.86, wide: 1.18, scarf: 4.2, eyes: 0.3, twist: 0, stretch: 0.2 },
+  // SE — falling right.
+  { name: 'SE', lean: 0.18, tall: 0.9, wide: 1.12, scarf: 4.9, eyes: 0.6, twist: 0.14, stretch: 0.18 },
 ]);
 
 /**
@@ -273,8 +299,24 @@ export const DIRS = Object.freeze([
 export function moveFor(vx, vy, hold = 0) {
   const speed = Math.hypot(vx, vy);
   if (speed < 0.6) {
+    // Resting: every channel relaxes toward neutral. A stopped cube must not
+    // keep the full driving lean of the direction it arrived from -- that reads
+    // as a pose frozen mid-stride. The eyes stay as they were, because a
+    // resting cube is awake.
     const d = DIRS[hold & 7];
-    return { ...d, index: hold & 7, mix: 0, speed, moving: false, lean: d.lean * 0.25 };
+    return {
+      ...d,
+      index: hold & 7,
+      mix: 0,
+      speed,
+      moving: false,
+      lean: d.lean * 0.25,
+      tall: lerp(d.tall, 1, 0.72),
+      wide: lerp(d.wide, 1, 0.72),
+      twist: d.twist * 0.3,
+      stress: 0,
+      stretch: d.stretch * 0.3,
+    };
   }
   // Octant index, continuous. `u` is how far between i and i+1.
   const t = Math.atan2(vy, vx);
@@ -287,6 +329,10 @@ export function moveFor(vx, vy, hold = 0) {
   // discontinuity, so both halves are blended as offsets from their own pose.
   const lean = lerp(a.lean, b.lean, u);
   const scarf = lerp(a.scarf, b.scarf, u);
+  // How hard the cube is being thrown, 0..1 against its own limit. This scales
+  // the stretch only -- it never changes which pose was chosen, so direction
+  // and speed stay independent readings.
+  const stress = clamp01((speed - 12) / 26);
   return {
     name: u < 0.5 ? a.name : b.name,
     index: i,
@@ -298,6 +344,11 @@ export function moveFor(vx, vy, hold = 0) {
     wide: lerp(a.wide, b.wide, u),
     scarf,
     eyes: lerp(a.eyes, b.eyes, u),
+    // The two channels that make a diagonal read as a turn and a fast cube read
+    // as thrown rather than moved. Both are blended, so neither can pop.
+    twist: lerp(a.twist, b.twist, u) * clamp01(speed / 18),
+    stretch: lerp(a.stretch, b.stretch, u) * stress,
+    stress,
   };
 }
 
@@ -324,6 +375,8 @@ export function cubePose({ vx = 0, vy = 0, age = 0, slashAge = -1, fallAge = -1,
     wide = move.wide,
     eyes = move.eyes,
     scarf = move.scarf,
+    twist = move.twist,
+    stretch = move.stretch,
     counter = 0,
     slash = null,
     fall = null,
@@ -348,6 +401,8 @@ export function cubePose({ vx = 0, vy = 0, age = 0, slashAge = -1, fallAge = -1,
       // stretch. This is also what keeps the arc readable.
       tall = lerp(tall, 1, 0.5);
       wide = lerp(wide, 1, 0.5);
+      twist = lerp(twist, 0, 0.5);
+      stretch = lerp(stretch, 0, 0.6);
     }
   }
 
@@ -357,7 +412,30 @@ export function cubePose({ vx = 0, vy = 0, age = 0, slashAge = -1, fallAge = -1,
     tall *= land.tall;
     wide *= land.wide;
     lean *= 1 - land.t * 0.6;
+    // A squash flattens the twist too -- the body is being compressed, not
+    // turned, and letting the two coexist made the landing look like a spin.
+    twist *= 1 - land.t * 0.8;
+    stretch *= 1 - land.t * 0.8;
   }
 
-  return { lean, tall, wide, eyes, scarf, counter, slash, fall, land, move, facing };
+  // `stretch` is applied to the body along its own heading, not to `tall`,
+  // because a cube thrown east should get LONGER east, not taller. The renderer
+  // rotates by the heading to apply it.
+  return {
+    lean,
+    tall,
+    wide,
+    eyes,
+    scarf,
+    twist,
+    stretch,
+    counter,
+    slash,
+    fall,
+    land,
+    move,
+    facing,
+    /** The world-space bearing the body is being dragged along. */
+    heading: Math.atan2(vy, vx),
+  };
 }

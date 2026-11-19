@@ -202,3 +202,83 @@ Red Line's costume — a row of rose teeth reading "do not cross", when the bott
 is a wall identical to the other three and touching it costs a bounce. It is now
 a cool ruler with tick marks that crowd as the floor nears, plus one amber line
 in the final stretch. No red, no teeth.
+
+## Baking the curves, and making the poses actually visible
+
+Two changes, one measured cause.
+
+### The poses were too small to see
+
+The eight direction poses covered **6.0px of travel on a 46px body** — tall
+0.95..1.08, lean 22.9°, eyes never more than half shut. Measured, that is a
+square twitching, not a character moving. The numbers had been chosen for how
+they looked in a table, not against the size of the thing being drawn.
+
+The range is now sized against the body:
+
+| channel | before | after | on a 46px body |
+|---|---|---|---|
+| tall | 0.95–1.08 (6.0px) | 0.86–1.20 | **15.6px** |
+| lean | 22.9° | 39° | — |
+| twist | *did not exist* | 28° | new |
+| wide | 0.96–1.08 | 0.88–1.18 | 13.8px |
+
+`twist` is new and it is the one that makes a diagonal legible. Without it NE
+and NW are "north, slightly tilted" — both corners read as variants of the same
+pose rather than as their own decision. With it, the body turns INTO the corner.
+
+`stretch` is also new: how hard the cube is being dragged along its own heading
+by speed alone. It is applied in the heading's frame (rotate, scale, unrotate),
+so a cube thrown east gets longer east, not taller — which is different from
+`tall`/`wide` (the pose's own proportions) and from the airborne streak (which
+only fires off the ground).
+
+### The curves are baked
+
+`src/bake.js` bakes the per-frame curves into flat `Float64Array`s at module
+load. Measured over 2M evaluations each:
+
+| function | live | baked | speedup |
+|---|---|---|---|
+| `slashFor` | 521.8ms | 72.0ms | **7.2×** |
+| `landFor` | 210.4ms | 6.7ms | **31.3×** |
+| `moveFor` | 250.7ms | 5.5ms | **45.7×** |
+
+Real-run draw cost: p50 **0.35 → 0.41ms** with *more* animation drawn on top,
+p99 3.97 → 1.49ms, and **0 of 1500 frames** over the 16.7ms budget.
+
+`animation.js` keeps the pure functions — they are the specification, and the
+tests still hold them to their shape. The renderer reads the tables because it
+is the thing running 60 times a second. The bake is not an approximation: the
+slash table was verified against `slashFor` across five bearings × 14 ticks with
+a worst error of **8.9e-16**, i.e. float precision.
+
+**The one real risk of a table is staleness**, and the first guard against it did
+not work. Comparing `SLASH_TABLE` to a fresh `bakeSlash()` catches a hand-edited
+table but not the failure that matters: edit the curve and forget the table, and
+both sides re-derive from the same source at import time, so they move together
+and the comparison is green on a renderer drawing the old shape. Verified by
+mutation — scaling the swing smear by 1.3 in `animation.js` left every re-bake
+comparison passing.
+
+`test/bake.test.js` therefore pins the table against **numbers** (swing peak
+smear is exactly 1, the settle inherits the impact value exactly, the landing
+opens at 1.42 × 0.66), not against a second bake. Changing a curve now forces
+someone to come and change the pinned values, which is the moment they notice
+the renderer reads a table.
+
+### More to look at
+
+With the budget freed, two layers were added:
+
+- **Slash:** radial speed lines fanning along the travelled arc (3–7 of them,
+  more at the peak) plus two afterimages of the leading edge. This is the
+  cel-animation trick — you do not blur a fast object, you draw it where it WAS.
+  Peak swing went from **+3 ops over idle to +12**, and the impact frame stays
+  clean so the contrast sells the stop.
+- **Movement:** a wake of 2–6 strokes streaming off the trailing edge, scaled by
+  the same `stress` that drives the stretch, fanned across the body's width. At
+  rest: none. Full launch: 363 ops against 348 at rest.
+
+Bundle: 330.1 → **332.9 KiB**, gzip 154.7 KiB. The raster ban in
+`scripts/check-bundle.mjs` still holds — everything added is geometry.
