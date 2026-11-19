@@ -217,6 +217,16 @@ export function createRun(
     // and directional; see the sonic-boom block in renderer.js.
     boom:null,
     boomAge:0,
+    // ── ANIMATION AGES ────────────────────────────────────────────────────
+    //
+    // The renderer needs to know how MANY TICKS AGO something happened, not
+    // just that it happened. These are the only new state the animation system
+    // requires: -1 means "never", and each is reset on its event. The renderer
+    // then interpolates within the tick using alpha, so a swing at 144Hz shows
+    // intermediate frames rather than repeating.
+    slashAge: -1,
+    landAge: -1,
+    fallAge: -1,
     swingStart: 0,
     seed: seed >>> 0,
     hp: 3,
@@ -423,6 +433,11 @@ export function createRun(
     if (s.hyper)
       holdSpeed(world, Math.min(speedBeforeLaunch, world.playerCeiling || HYPER.speed));
     s.previousSlash = s.slashAngle = Math.atan2(v.y, v.x);
+    // Every dash is a swing. Restarting the clock here (rather than on contact)
+    // is what makes the attack read as something the PLAYER did: the wind-up
+    // begins on the input, so by the time the blade reaches a shape it is
+    // already travelling.
+    s.slashAge = 0;
     s.stroke = beginStroke(world.player.position, s.slashAngle, s.shots);
     emit('dash', {
       ...world.player.position,
@@ -579,6 +594,17 @@ export function createRun(
     if (e.lastSlash === s.shots) return;
     e.lastSlash = s.shots;
     glideAt = Infinity;
+    // ── THE IMPACT SQUASH ────────────────────────────────────────────────
+    //
+    // Fired on a CONNECTED CUT, which is the real impact in this game. It was
+    // first keyed on landing, which measured ZERO occurrences across six full
+    // runs -- the cube launches off a pad, climbs, and never comes back down, so
+    // "landing" is not an event that happens.
+    //
+    // A connecting cut is: 17 per run. It is also the moment that deserves the
+    // anime impact frame -- the body compresses for one frame at the instant the
+    // blade meets a shape, which is what an impact cel is for.
+    if (!fromShear) s.landAge = 0;
     const hpBefore = e.hp;
     e.hp -= s.drive > 0 ? 3 : fromShear ? SHEAR.damage : 1;
     e.flash = 16;
@@ -797,6 +823,28 @@ export function createRun(
       s.boom = null;
       s.boomAge = 0;
     }
+    // Animation clocks. These advance in TICKS and are read by the renderer
+    // together with `alpha`, so the animation is frame-rate independent: at
+    // 144Hz the renderer sees the same tick twice with different alpha and
+    // draws the in-between frame itself.
+    if (s.slashAge >= 0) s.slashAge++;
+    if (s.landAge >= 0) s.landAge++;
+    if (world.player.velocity.y > 0) s.fallAge = (s.fallAge >= 0 ? s.fallAge : 0) + 1;
+    else s.fallAge = -1;
+    // ── LANDING ──────────────────────────────────────────────────────────
+    //
+    // The squash fires on the transition from airborne to grounded, which is
+    // what actually happens when the cube comes down: it lands on the pad.
+    //
+    // Keying this on a `bottom` RAIL contact instead fired ZERO times in a
+    // 2,400-tick run, because the arena floor sits below the pad and the cube
+    // never reaches it -- the squash was dead code, and it looked fine in a
+    // unit test because that test called landFor() directly.
+    //
+    // `grounded` is set by the physics step from the real contact normal, so
+    // this is a landing, not an approximation of one.
+    if (world.grounded && !s.wasGrounded && s.phase === 'playing') s.landAge = 0;
+    s.wasGrounded = world.grounded;
     if (s.opening?.finishing) {
       freezePoses();
       if (!--s.opening.finishing) enterField(true);

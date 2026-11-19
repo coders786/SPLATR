@@ -20,6 +20,7 @@ import {
 } from './motion.js';
 import { sceneFor, drawStory } from './storyboard.js';
 import { createSmear, ghostFor, morphWedge } from './smear.js';
+import { cubePose, slashFor, SLASH, DIRS } from './animation.js';
 import { SHEAR, impactFor } from './stroke.js';
 import { rackInk, contactInk, drawSweep } from './cut-ink.js';
 const R = PLAYER_SIZE / 2;
@@ -313,6 +314,67 @@ function wallLine(c, v, x0, y0, x1, y1, a, nx, ny) {
   }
 }
 
+/** THE SWING ARC.
+ *
+ *  The single most anime element in the game, and the reason it is built from
+ *  three concentric strokes rather than one: a hand-drawn sword arc is not a
+ *  clean crescent. It is a bright leading edge, a body of colour behind it, and
+ *  a thin trailing tail that outlives the other two.
+ *
+ *  Timing comes entirely from animation.slashFor(), which is a pure function of
+ *  the tick age -- so the arc is identical at 60 and 144Hz and can be tested
+ *  without a canvas. This function only draws what that returns.
+ *
+ *  `smear` is the trick that sells the speed: the arc is drawn WIDE while the
+ *  blade is travelling and collapses to a thin line on the impact frames, which
+ *  is exactly how a smear cel works. It is never drawn as a full ring, because a
+ *  ring reads as an aura and this must read as a decision.
+ */
+function slashArc(c, x, y, r, age, dir, inv = 1) {
+  const a = slashFor(age, dir);
+  if (!a || a.alpha <= 0.01) return;
+  const { angle, smear, alpha, weight, flash } = a;
+  // The arc spans back from the blade's current bearing. Its width is the
+  // travelled portion, which grows through the swing and then collapses.
+  const span = Math.min(SLASH.sweep, Math.abs(angle - dir) + 0.35) * (0.72 + 0.28 * smear);
+  const r0 = r * 1.05,
+    r1 = r * (1.9 + 0.5 * smear);
+  const from = angle - span,
+    to = angle;
+
+  c.save();
+  c.translate(x, y);
+  // Body of the arc: a filled wedge with the outer edge cut away, so it reads as
+  // a swept volume rather than a pie slice.
+  if (smear > 0.02) {
+    c.globalAlpha = alpha * 0.2 * smear;
+    c.fillStyle = INK.acid;
+    c.beginPath();
+    c.arc(0, 0, r1 * 0.9, from, to);
+    c.arc(0, 0, r0, to, from, true);
+    c.closePath();
+    c.fill();
+  }
+  // The leading edge. Bright, and the only part that survives to the end.
+  c.globalAlpha = alpha * (0.55 + 0.45 * flash);
+  c.strokeStyle = flash > 0.35 ? INK.paper : INK.acid;
+  // `inv` is 1/view.scale from the caller, so the arc has the same physical
+  // weight on a phone and a desktop.
+  c.lineWidth = Math.max(0.6, (1.6 + 1.5 * weight) * inv);
+  c.beginPath();
+  c.arc(0, 0, r1, from, to);
+  c.stroke();
+  // Trailing tail: thin, dimmer, and it outlives the edge by a frame or two.
+  c.globalAlpha = alpha * 0.3 * weight;
+  c.strokeStyle = INK.paper;
+  c.lineWidth = 1.4;
+  c.beginPath();
+  c.arc(0, 0, r0 + (r1 - r0) * 0.35, from - 0.22, from + 0.3);
+  c.stroke();
+  c.globalAlpha = 1;
+  c.restore();
+}
+
 function streak(c, trail, p, live) {
   if (trail.length < 3) return;
   // A decaying ribbon of afterimages: each older sample is thinner, dimmer and
@@ -443,6 +505,9 @@ export function createRenderer(canvas) {
     lastSwing = -1,
     justLaunched = 0,
     ghostClock = 0,
+    // Which of the 8 direction poses to hold while at rest. Kept across frames
+    // so a stopped cube does not snap to east.
+    holdDir = 0,
     stain = 0,
     facing = 1,
     rand = randomSource(1);
@@ -1397,6 +1462,30 @@ export function createRenderer(canvas) {
         c.scale(1 + snap, 1 - snap * 0.72);
         c.rotate(-s.slashAngle);
       }
+      // ── THE ANIMATED POSE ────────────────────────────────────────────────
+      //
+      // One composed pose for the cube: the 8-direction body language, the
+      // falling vocabulary, the swing counter-rotation, and the landing squash,
+      // blended in that order by animation.cubePose(). It is applied FIRST so
+      // every speed effect below layers on top of it rather than replacing it.
+      //
+      // `holdDir` is remembered between frames so a cube at rest keeps the pose
+      // it settled in instead of snapping to east (atan2(0,0) is 0, which would
+      // make it face right every time it stopped).
+      const poseAnim = cubePose({
+        vx: world.player.velocity.x,
+        vy: world.player.velocity.y,
+        slashAge: s.slashAge,
+        fallAge: s.fallAge,
+        landAge: s.landAge,
+        hold: holdDir,
+        facing,
+      });
+      if (poseAnim.move.moving) holdDir = poseAnim.move.index;
+      if (poseAnim.counter) c.rotate(poseAnim.counter);
+      if (poseAnim.tall !== 1 || poseAnim.wide !== 1)
+        c.scale(1 / poseAnim.wide, 1 / poseAnim.tall);
+      if (poseAnim.lean) c.rotate(poseAnim.lean);
       // Motion streaks, as geometry: a genuinely fast cube is pulled along its
       // own travel and thinned across it, so the eye tracks a line instead of
       // a flickering square. Airborne only — a resting cube gets no stretch.
@@ -1526,6 +1615,10 @@ export function createRenderer(canvas) {
       }
       cube(c, 0, 0, R, p.angle, motion ? time : 0, facing);
       c.restore();
+      // THE SWING. Drawn after the cube's own frame is popped, in world space,
+      // so the arc is not clipped by the body rotation -- it is what the cube
+      // is DOING, not part of the cube.
+      if (motion && s.slashAge >= 0) slashArc(c, p.x, p.y, R, s.slashAge, s.slashAngle, 1 / v.scale);
       if (s.held || aim?.power) {
         const val = s.held ? s.focus : aim.power;
         arc(

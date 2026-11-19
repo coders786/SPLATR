@@ -1,0 +1,263 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  slashFor,
+  SLASH,
+  moveFor,
+  DIRS,
+  fallFor,
+  landFor,
+  cubePose,
+  FALL,
+  lerp,
+  spike,
+} from '../src/animation.js';
+
+/* ── 1. THE SLASH ───────────────────────────────────────────────────────── */
+
+test('a swing passes through wind-up, swing, impact and settle in that order', () => {
+  const seen = [];
+  for (let t = 0; t < SLASH.total; t++) {
+    const f = slashFor(t, 0);
+    assert.ok(f, `no pose at tick ${t}`);
+    if (seen.at(-1) !== f.phase) seen.push(f.phase);
+  }
+  // The ORDER is the animation. A swing that skips the wind-up is a poke.
+  assert.deepEqual(seen, ['windup', 'swing', 'impact', 'settle']);
+  assert.equal(slashFor(SLASH.total, 0), null, 'the animation must END, not linger');
+});
+
+test('the swing is asymmetric in time: the attack is faster than the recovery', () => {
+  // This is the whole anime timing rule. A symmetric ease reads as a machine
+  // waving a stick; a fast attack and slow recovery reads as a sword.
+  assert.ok(
+    SLASH.swing < SLASH.settle,
+    `swing ${SLASH.swing} must be shorter than settle ${SLASH.settle}`,
+  );
+  // The blade must cover most of its arc inside the swing phase, not the settle.
+  const atSwingEnd = slashFor(SLASH.windup + SLASH.swing, 0).angle;
+  const atSettleEnd = slashFor(SLASH.windup + SLASH.swing + SLASH.impact + SLASH.settle - 1, 0).angle;
+  const duringSwing = Math.abs(atSwingEnd);
+  const duringSettle = Math.abs(atSettleEnd - atSwingEnd);
+  assert.ok(
+    duringSwing > duringSettle * 3,
+    `most of the arc must be travelled in the swing (swing ${duringSwing.toFixed(2)} vs settle ${duringSettle.toFixed(2)})`,
+  );
+});
+
+test('the blade cocks BACK before it swings forward', () => {
+  // Anticipation. Without this the arc starts at rest and reads as a twitch.
+  const a0 = slashFor(0, 0).angle;
+  const cocked = slashFor(SLASH.windup - 1e-9, 0).angle;
+  assert.ok(cocked < a0, 'the wind-up must rotate backwards from the start angle');
+  // And then it must travel much further forward than it pulled back.
+  const end = slashFor(SLASH.windup + SLASH.swing, 0).angle;
+  assert.ok(end > a0 + SLASH.sweep * 0.8, 'the swing must cover the advertised sweep');
+});
+
+test('the arc smears during travel and collapses on the impact frames', () => {
+  // The smear is what sells speed; a smear that persists into the hold makes
+  // the impact mushy. Peak smear must be inside `swing`, and the impact frames
+  // must be below it.
+  const swingPeak = Math.max(
+    ...Array.from({ length: SLASH.swing }, (_, i) => slashFor(SLASH.windup + i, 0).smear),
+  );
+  const impactStart = slashFor(SLASH.windup + SLASH.swing, 0);
+  assert.ok(swingPeak > 0.9, `expected a full smear mid-swing, got ${swingPeak}`);
+  assert.equal(impactStart.phase, 'impact');
+  assert.ok(impactStart.smear < swingPeak, 'the impact frame must not smear as hard as the swing');
+});
+
+test('the smear never pops back up after the swing peaks', () => {
+  // A real defect this caught: the settle restarted its smear at 0.75 after the
+  // impact frames had cleaned it to 0.32, so the arc visibly re-smeared a frame
+  // after the hit. A fade has to CONTINUE the value it inherits.
+  let prev = null,
+    phase = '';
+  for (let t = 0; t < SLASH.total; t++) {
+    const f = slashFor(t, 0);
+    // Ignore the wind-up and the rise through the swing: that is the attack.
+    if (f.phase === 'impact' || f.phase === 'settle') {
+      if (prev !== null)
+        assert.ok(
+          f.smear <= prev + 0.02,
+          `smear rose at tick ${t} inside ${f.phase}: ${prev.toFixed(2)} -> ${f.smear.toFixed(2)}`,
+        );
+      prev = f.smear;
+    } else if (f.phase === 'swing') {
+      prev = f.smear; // hand-off from the peak
+    }
+    phase = f.phase;
+  }
+  assert.equal(phase, 'settle');
+});
+
+test('the swing settles to nothing rather than snapping off', () => {
+  const last = slashFor(SLASH.total - 1, 0);
+  assert.ok(last.alpha < 0.12, `the last frame must be nearly gone, got alpha ${last.alpha}`);
+  const mid = slashFor(SLASH.windup + SLASH.swing, 0);
+  assert.ok(mid.alpha > last.alpha, 'alpha must fall monotonically through the settle');
+});
+
+/* ── 2. THE FALL ────────────────────────────────────────────────────────── */
+
+test('falling is a vocabulary, not inverted stretch: it fights gravity first', () => {
+  const slow = fallFor(FALL.drift + 2);
+  const fast = fallFor(FALL.plunge + 10);
+  assert.ok(slow, 'a descent just past the drift threshold must produce fall language');
+  // The body leans BACK against the fall early, then straightens as it gives in.
+  assert.ok(slow.lean < 0, 'an early descent must lean against the fall');
+  assert.ok(Math.abs(fast.lean) < Math.abs(slow.lean), 'the lean must relax as the fall speeds up');
+  // The eyes close. This is the anime cue for "committed to the drop".
+  assert.ok(fast.eyes < slow.eyes, 'eyes must close as the drop gets faster');
+  assert.ok(fast.stretch > slow.stretch, 'the plunge must elongate further');
+});
+
+test('a gentle drift is not a fall, so the cube keeps its normal body language', () => {
+  assert.equal(fallFor(-20), null, 'climbing must never read as falling');
+  assert.equal(fallFor(0), null);
+  assert.equal(fallFor(FALL.drift - 0.5), null);
+  assert.ok(fallFor(FALL.drift + 0.5), 'just past the threshold is a fall');
+});
+
+/* ── 3. LANDING ─────────────────────────────────────────────────────────── */
+
+test('the landing squash peaks hard, then recovers with exactly one overshoot', () => {
+  const peak = landFor(0);
+  assert.ok(peak.wide > 1.35, `expected a hard squash, got wide ${peak.wide}`);
+  assert.ok(peak.tall < 0.72, `expected a flattened body, got tall ${peak.tall}`);
+  // Volume is roughly preserved: a squash that also shrinks reads as shrinking.
+  assert.ok(Math.abs(peak.wide * peak.tall - 1) < 0.12, 'the squash must preserve area');
+  // One overshoot: the body passes BACK through 1.0 once and settles.
+  const series = Array.from({ length: FALL.land + 2 }, (_, i) => landFor(i));
+  const ended = series.at(-1);
+  assert.equal(ended, null, 'the squash must end');
+  // An OVERSHOOT is a pass from one side of 1.0 to the other and back -- so the
+  // curve must cross 1.0, reach a peak on the far side, and cross back. Counting
+  // raw sign changes over-counts, because the initial collapse (1.42 -> 0.96)
+  // crosses 1.0 on its way DOWN, which is the squash recovering, not an
+  // overshoot.
+  const vals = series.filter(Boolean).map((l) => l.wide);
+  // After the squash the value must sit below 1.0 (recoil), then come back up.
+  const below = vals.findIndex((v) => v < 0.999);
+  assert.ok(below > 0, 'the squash must recoil past rest at some point');
+  const aboveAfter = vals.findIndex((v, i) => i > below && v > 1.001);
+  assert.ok(aboveAfter > below, 'the recoil must overshoot back above rest exactly once');
+  // And nothing after that may leave the settled band.
+  assert.ok(
+    vals.slice(aboveAfter + 1).every((v) => Math.abs(v - 1) < 0.06),
+    `the squash did not settle: ${vals.slice(aboveAfter).map((v) => v.toFixed(3)).join(', ')}`,
+  );
+});
+
+/* ── 4. MOVEMENT: 8 DIRECTIONS, INTERPOLATED ────────────────────────────── */
+
+test('there are exactly eight direction poses and no two are identical', () => {
+  assert.equal(DIRS.length, 8);
+  const key = (d) => `${d.lean.toFixed(3)}|${d.tall}|${d.wide}|${d.scarf}|${d.eyes}`;
+  assert.equal(new Set(DIRS.map(key)).size, 8, 'two of the eight poses are the same pose');
+});
+
+test('a heading between two directions blends the two, it does not snap', () => {
+  // The brief: "8 directions must be interpolated". Discrete states, continuous
+  // render. Between N (index 2) and NE (index 1) the pose must be strictly
+  // between the two, and monotonically so.
+  const pose = (i) => DIRS[i & 7];
+  const N = pose(2),
+    NE = pose(1);
+  const samples = [];
+  for (const frac of [0, 0.25, 0.5, 0.75, 1]) {
+    const a = ((2 - frac) / 8) * Math.PI * 2;
+    samples.push(moveFor(Math.cos(a) * 30, Math.sin(a) * 30));
+  }
+  // Monotone blend from N's lean toward NE's lean.
+  for (let i = 1; i < samples.length; i++)
+    assert.ok(
+      Math.abs(samples[i].lean - NE.lean) <= Math.abs(samples[i - 1].lean - NE.lean) + 1e-9,
+      'the lean did not move monotonically toward the next pose',
+    );
+  assert.ok(Math.abs(samples[0].lean - N.lean) < 1e-9, 'frac 0 must be exactly N');
+  assert.ok(Math.abs(samples.at(-1).lean - NE.lean) < 1e-9, 'frac 1 must be exactly NE');
+  // And the middle sample must be strictly between, not equal to either.
+  const mid = samples[2];
+  assert.ok(mid.lean > Math.min(N.lean, NE.lean) && mid.lean < Math.max(N.lean, NE.lean), 'the blend is not between');
+});
+
+test('a cube at rest holds its last direction instead of snapping to east', () => {
+  // atan2(0,0) is 0, i.e. east. Without the hold, every stop flips the pose.
+  const still = moveFor(0, 0, 4);
+  assert.equal(still.moving, false);
+  assert.equal(still.index, 4, 'a resting cube must keep the pose index it is given');
+  assert.ok(Math.abs(still.lean) < Math.abs(DIRS[4].lean), 'the resting lean must be relaxed, not the moving one');
+});
+
+/* ── 5. COMPOSITION AND PRECEDENCE ──────────────────────────────────────── */
+
+test('precedence: a landing beats a slash beats a fall beats a direction', () => {
+  const dashing = { vx: 40, vy: 0 };
+  const slashing = cubePose({ ...dashing, slashAge: SLASH.windup + 1 });
+  assert.ok(slashing.counter !== 0, 'a live slash must counter-rotate the body');
+  // A landing overrides the squash axes regardless of what else is happening.
+  const both = cubePose({ ...dashing, slashAge: SLASH.windup + 1, landAge: 0 });
+  assert.ok(both.wide > 1.3, 'the landing squash must win over the slash');
+});
+
+test('the cube pose is a pure function of its inputs', () => {
+  // Same inputs, same output. The renderer relies on this: it recomputes the
+  // pose every frame and must not accumulate drift.
+  const args = { vx: 18, vy: -9, slashAge: 3, landAge: -1, hold: 1, facing: -1 };
+  assert.deepEqual(cubePose(args), cubePose(args));
+});
+
+test('easing helpers are pinned at both ends and monotone where they should be', () => {
+  for (const [name, fn] of [
+    ['easeOutQuint', (t) => slashFor(t, 0)],
+    ['spike', spike],
+  ]) {
+    if (name === 'spike') {
+      assert.equal(fn(0), 1, 'spike must start at 1');
+      assert.equal(fn(1), 0, 'spike must end at 0');
+    }
+  }
+  assert.equal(lerp(2, 8, 0), 2);
+  assert.equal(lerp(2, 8, 1), 8);
+  assert.equal(lerp(2, 8, 0.5), 5);
+});
+
+/* ── 6. THE SYSTEMS ACTUALLY FIRE IN PLAY ───────────────────────────────── */
+
+test('all three animation systems fire during a real run, not just in unit tests', async () => {
+  // This is the test the first version was missing. The landing squash passed
+  // every unit assertion and fired ZERO times in play, because nothing in the
+  // game ever lands: the cube launches off a pad, climbs, and does not come
+  // back down. A direct call to landFor() proved the curve was right and proved
+  // nothing about whether the player ever sees it.
+  const { createRun } = await import('../src/run.js');
+  let swings = 0,
+    squashes = 0,
+    fallTicks = 0;
+  for (const seed of [19, 7]) {
+    const g = createRun(seed, () => {}, { staged: true });
+    let ps = -1,
+      pl = -1;
+    for (let i = 0; i < 1800; i++) {
+      if (i % 10 === 0) {
+        const n = g.nearest();
+        if (n && n.y < g.world.player.position.y + 40) g.dash(g.aimAt(n));
+      }
+      g.tick();
+      const s = g.state;
+      // Count RISING edges of age 0 to -1 only, so a held age counts once.
+      if (s.slashAge === 0 && ps !== 0) swings++;
+      if (s.landAge === 0 && pl !== 0) squashes++;
+      if (s.fallAge >= 0) fallTicks++;
+      ps = s.slashAge;
+      pl = s.landAge;
+      if (s.phase !== 'playing') break;
+    }
+    g.dispose();
+  }
+  assert.ok(swings > 10, `only ${swings} swings fired -- the slash never plays`);
+  assert.ok(squashes > 10, `only ${squashes} impact squashes fired -- the landing is dead code`);
+  assert.ok(fallTicks > 100, `only ${fallTicks} falling ticks -- the fall language never plays`);
+});
