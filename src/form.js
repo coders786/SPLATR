@@ -73,6 +73,15 @@ export const FORM_THRESHOLDS = Object.freeze({
  */
 export const GRADE_AT = Object.freeze([1.0, 1.7, 2.8]);
 
+/** How much evidence an axis needs before its ratio is trusted at all.
+ *
+ *  A RATIO IS NOT A MEASUREMENT when its denominator is tiny. Two kills off one
+ *  dash is a yield of 2.0; that is not a masterful conversion rate, it is two
+ *  events. Gating on a minimum sample is what stops the live readout from
+ *  announcing a form the player has not actually played.
+ */
+export const MIN_SAMPLE = Object.freeze({ dashes: 3, seconds: 6 });
+
 export const FORMS = Object.freeze({
   weave: 'WEAVER',
   bank: 'BANKER',
@@ -134,6 +143,23 @@ export function readForm(input = {}) {
     yield: axis(ratio(kills, dashes), FORM_THRESHOLDS.yield),
   };
 
+  // ── SAMPLE GATE ─────────────────────────────────────────────────────────
+  //
+  // A form must be DEMONSTRATED, not inferred from three lucky kills.
+  //
+  // Without this, a run that lands two kills off its first dash reports yield
+  // 2.0 -- three times the threshold -- and stamps itself GHOST grade III two
+  // seconds into a run. Small denominators make ratios look like mastery, and
+  // the live readout then announces a legend that has not happened yet.
+  //
+  // Every axis needs enough actual events behind it to mean anything. The
+  // thresholds are deliberately low (a real run clears them in the first few
+  // seconds) -- this is a noise guard, not a difficulty gate.
+  const readings = {
+    dash: dashes >= MIN_SAMPLE.dashes,
+    time: seconds >= MIN_SAMPLE.seconds,
+  };
+
   // Which axis leads. Ties go to the earlier key in this list, which is a
   // stable order rather than an accident of object iteration.
   const order = ['weave', 'bank', 'tempo', 'yield'];
@@ -149,14 +175,24 @@ export function readForm(input = {}) {
   // untouchable read: you converted hard AND you were never hit. It must be
   // earned explicitly, or every good run would be a GHOST and the name would
   // stop meaning anything.
+  //
+  // It additionally requires both a sample of dashes and some elapsed time --
+  // "untouched" is trivially true in the first second of a run, and trivially
+  // true of a run that did nothing at all.
   const untouched = (input.hp ?? 3) >= 3,
-    ghost = untouched && (axes.yield >= GRADE_AT[1] || axes.tempo >= GRADE_AT[1]);
+    ghost =
+      untouched &&
+      readings.dash &&
+      readings.time &&
+      (axes.yield >= GRADE_AT[1] || axes.tempo >= GRADE_AT[1]);
   if (ghost && best >= GRADE_AT[0]) {
     return { form: FORMS.ghost, key: 'ghost', grade: gradeOf(best), axes, lead };
   }
 
-  // Nothing cleared grade I: the run happened but had no shape yet.
-  if (!lead || best < GRADE_AT[0]) {
+  // Nothing cleared grade I, or there is not yet enough evidence to say: the
+  // run happened but has no shape YET. Unformed is not a failure -- it is what
+  // every run is before it commits to something.
+  if (!lead || best < GRADE_AT[0] || !readings.dash || !readings.time) {
     return { form: FORMS.unformed, key: 'unformed', grade: 0, axes, lead };
   }
 

@@ -1,4 +1,5 @@
 import { createRun, CHAIN_TIME } from './run.js';
+import { readForm, formLabel, GRADE_AT, GRADE_MARK } from './form.js';
 import { firstStart } from './opening.js';
 import { createClock } from './clock.js';
 import { createRenderer } from './renderer.js';
@@ -119,6 +120,32 @@ function record() {
         : `Broken by ${s.cause}.`,
   );
   setText('debrief', s.throughcuts?`${s.throughcuts} throughcut${s.throughcuts===1?'':'s'} in ${s.shots} dash${s.shots===1?'':'es'}.`:s.shots?`${s.shots} dash${s.shots===1?'':'es'} · ${s.kills} slashed.`:'');
+  // ── THE FORM STAMP ──────────────────────────────────────────────────────
+  //
+  // The run is named for what it WAS, not for how much it scored. Every signal
+  // feeding this was already tracked and every one was being discarded into a
+  // single number, which is why two entirely different runs were previously
+  // indistinguishable at the debrief.
+  //
+  // A run that died early still keeps its form: dying does not erase what you
+  // were doing, and a short violent run is still a REDLINE. Only a run that
+  // never cleared a single axis reads UNFORMED.
+  {
+    const read = readForm({
+      kills: s.kills,
+      throughcuts: s.throughcuts,
+      banks: s.banks || 0,
+      dashes: s.shots,
+      elapsedTicks: s.elapsed,
+      hp: s.hp,
+    });
+    lastForm = read;
+    const stamp = $('form-stamp');
+    stamp.hidden = false;
+    stamp.dataset.form = read.key;
+    setText('form-name', read.form);
+    setText('form-grade', read.grade ? GRADE_MARK[read.grade] : '');
+  }
   const print = s.bestStroke;
   $('best-print').hidden = !print;
   if (print) {
@@ -325,9 +352,17 @@ async function fullscreen() {
 }
 for (const b of document.querySelectorAll('.full')) b.onclick = fullscreen;
 document.addEventListener('fullscreenchange', syncSettings);
+// Build the grade pips from GRADE_AT so the ladder has one source of truth.
+// If a fourth grade is ever added, the HUD grows a pip without being told.
+$('form-pips').replaceChildren(
+  ...GRADE_AT.map(() => document.createElement('i')),
+);
 let lastHp = null,
   lastScore = null,
   lastChain = null,
+  lastFormSig = '',
+  liveForm = null,
+  lastForm = null,
   hitTimer = 0,
   kickTimer = 0,
   flareTimer = 0;
@@ -343,6 +378,46 @@ function updateHUD() {
   // shrinks as the chain grows (run.js: chainWindow), so a constant divisor
   // would draw a full bar when only a third of the window remained.
   $('chain-meter').style.transform = `scaleX(${s.chainTime / (s.chainMax || CHAIN_TIME)})`;
+  // ── FORM READOUT ────────────────────────────────────────────────────────
+  //
+  // The live half of the mastery read. It names what the run is BECOMING, and
+  // it is allowed to change under the player's feet: start weaving, switch to
+  // banking, and the word changes. That instability is the design, not a bug --
+  // the run's identity is contested until it is over.
+  //
+  // Recomputed only when one of the four inputs can have changed. This runs on
+  // every HUD update, and the four counters only move on a kill; there is no
+  // reason to re-derive a division four ways several times a second.
+  {
+    const sig = `${s.kills}|${s.throughcuts}|${s.banks || 0}|${s.shots}|${s.elapsed | 0}|${s.hp}`;
+    if (sig !== lastFormSig) {
+      lastFormSig = sig;
+      // `s.elapsed` is TICKS. Passed under the explicit name so the unit can
+      // never be mistaken for milliseconds again -- that mistake read every run
+      // as 1.8 seconds long and named all twenty test seeds GHOST.
+      liveForm = readForm({
+        kills: s.kills,
+        throughcuts: s.throughcuts,
+        banks: s.banks || 0,
+        dashes: s.shots,
+        elapsedTicks: s.elapsed,
+        hp: s.hp,
+      });
+      const label = formLabel(liveForm, { live: true });
+      const readout = $('form-read');
+      // Hidden in the opening (it is a lesson, not a run), when the run is over
+      // (the debrief stamps it properly), and while nothing has formed yet.
+      const show = !s.opening && s.phase === 'playing' && !!label;
+      readout.hidden = !show;
+      if (show) {
+        setText('form-word', label);
+        readout.dataset.form = liveForm.key;
+        const pips = $('form-pips').children;
+        for (let i = 0; i < pips.length; i++)
+          pips[i].classList.toggle('on', i < liveForm.grade);
+      }
+    }
+  }
   Array.from($('hull').children).forEach((n, i) => n.classList.toggle('empty', i >= s.hp));
   $('hull').setAttribute('aria-label', `${s.hp} hull remaining`);
   // Reactive HUD. Each of these is a one-frame attribute flip that a CSS
@@ -437,8 +512,13 @@ function start() {
   audio.unlock();
   audio.menu();
   lastBeat = -1;
-  // A fresh run must not react to the previous run's hull, score or chain.
+  // A fresh run must not react to the previous run's hull, score or chain --
+  // and must not inherit the previous run's FORM, or the readout would open
+  // already showing the last run's identity.
   lastHp = lastScore = lastChain = null;
+  lastFormSig = '';
+  liveForm = null;
+  $('form-read').hidden = true;
   clearTimeout(hitTimer);
   clearTimeout(kickTimer);
   clearTimeout(flareTimer);

@@ -3,7 +3,7 @@
 Companion to `docs/mastery.md` (the design). This is the build spec: exact changes,
 constraints discovered in code review, verification gates, and what could go wrong.
 
-Status: **chunks 1–3 COMPLETE and verified.** 4–6 pending.
+Status: **ALL SIX CHUNKS COMPLETE and verified.** Shipped.
 
 ---
 
@@ -16,6 +16,10 @@ Status: **chunks 1–3 COMPLETE and verified.** 4–6 pending.
 | 3. Form separation | — | **3 forms** (WEAVER 12, TEMPO 7, BANK 5), modal **50%** | **PASS** |
 
 Test suite: **116/116** (was 102 — 14 new tests: 13 form + 1 anti-farm invariant).
+
+| 4. Live HUD readout | — | `REDLINING ▮▯▯`, changes mid-run (2–3 times) | **PASS** |
+| 5. Debrief stamp | — | `WEAVER II` + contact print | **PASS** |
+| 6. Full verification | — | 118/118 tests, build 320.1 KiB, preview 200 | **PASS** |
 
 ### Corrections found during execution
 
@@ -32,7 +36,12 @@ Test suite: **116/116** (was 102 — 14 new tests: 13 form + 1 anti-farm invaria
 4. **Thresholds set by rank, not feel.** The first constants sat at wildly different
    percentiles (weave near p75, bank above max), so weave could never lead and bank never
    could. They are now each the **p60** of that axis's own measured distribution.
-5. **Grade lines needed widening.** With the cap at 4.0, a third of runs pinned to grade
+5. **The live readout announced a legend that had not happened.** A run that landed two
+   kills off its first dash reported yield 2.0 — triple the threshold — and stamped GHOST
+   grade III two seconds in. A ratio is not a measurement when its denominator is 2. Added
+   a `MIN_SAMPLE` gate (`{dashes: 3, seconds: 6}`) plus two tests pinning it. This is the
+   difference between reading a run and guessing at one.
+6. **Grade lines needed widening.** With the cap at 4.0, a third of runs pinned to grade
    III and the top grade stopped meaning anything. Cap raised to 6, lines at 1.7 / 2.8.
    Grades now spread I:11 / II:3 / III:10 across the test set.
 
@@ -196,6 +205,18 @@ node /tmp/band.mjs           # assist vs random vs idle separation
 ```
 
 Plus a chunk-specific probe. Nothing is committed until all three agree.
+
+## Presentation decisions worth recording
+
+- **The live readout can change mid-run** (2–3 times in a measured run). That is the
+  design, not a defect: the run's identity is contested until it ends.
+- **Not `aria-live`.** It changes on no fixed clock; a screen reader would be interrupted
+  every time density shifted. The debrief stamp is the accessible announcement — stated
+  once, settled.
+- **Pips use a `:empty` guard** on the grade marker, because an UNFORMED run has no grade
+  and the separator border would otherwise render as a stray mark.
+- **Pip contrast had to be raised** (0.22 → 0.3 with a larger block) after rendering showed
+  grade 2 and grade 3 were indistinguishable at a glance.
 
 ## Known risks
 

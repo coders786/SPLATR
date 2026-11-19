@@ -98,6 +98,25 @@ test('GHOST cannot be claimed by an unformed run just for being untouched', () =
   assert.equal(r.key, 'unformed');
 });
 
+test('a ratio with a tiny denominator is not mastery: the sample gate holds', () => {
+  // The bug this exists for: 2 kills off the first dash reads yield 2.0, which
+  // is triple the threshold, and the live readout stamped GHOST grade III two
+  // seconds into a run. A form must be demonstrated, not inferred from noise.
+  const early = readForm(run({ kills: 2, dashes: 1, elapsedTicks: 120, hp: 3 }));
+  assert.equal(early.key, 'unformed', 'two events is not evidence of a form');
+  assert.equal(early.grade, 0);
+  // Same absurd ratio, but now with enough dashes behind it to be a fact.
+  const late = readForm(run({ kills: 6, dashes: 3, elapsedTicks: 400, hp: 3 }));
+  assert.notEqual(late.key, 'unformed', 'three dashes and six seconds is enough to read');
+});
+
+test('GHOST cannot be claimed early even with an untouched hull', () => {
+  // "Untouched" is trivially true at the start of every run, and trivially true
+  // of a run that did nothing. Both must fail the sample gate.
+  assert.equal(readForm(run({ kills: 1, dashes: 1, elapsedTicks: 60, hp: 3 })).key, 'unformed');
+  assert.equal(readForm(run({ kills: 0, dashes: 0, elapsedTicks: 3000, hp: 3 })).key, 'unformed');
+});
+
 test('every axis participates: each can lead when it dominates', () => {
   // elapsed is in TICKS (60/s). Each fixture is built so its target axis is
   // unambiguously the highest and the others stay under grade I.

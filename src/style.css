@@ -912,6 +912,103 @@ body:has(#panel[open]) #hud {
   margin-top: 4px;
   transform-origin: left;
 }
+
+/* ── THE FORM STAMP ──────────────────────────────────────────────────────────
+ *
+ * The debrief names what the run WAS, in the same type as the score, because it
+ * is the same kind of statement: a result. The contact print underneath is its
+ * evidence -- the actual geometry of the stroke that earned it, which is why no
+ * two runs produce the same trophy.
+ */
+#form-stamp {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 0 10px;
+  color: var(--l);
+  text-transform: uppercase;
+}
+#form-name {
+  font: italic 800 26px/1.1 var(--type);
+  letter-spacing: 0.02em;
+}
+#form-grade {
+  font: 12px/1 var(--mono);
+  letter-spacing: 0.22em;
+  opacity: 0.8;
+  /* The stamp is a flex row with an 8px gap, but a long name like UNTOUCHED
+   * plus the grade marker still crowded together. A separator is clearer than
+   * tightening the gap, and it survives any future form name length. */
+  padding-left: 10px;
+  border-left: 1px solid currentColor;
+  align-self: center;
+  line-height: 1.2;
+}
+#form-grade:empty {
+  display: none;
+}
+#form-stamp[data-form='unformed'] {
+  color: #7d6a80;
+}
+
+/* ── THE FORM READOUT ────────────────────────────────────────────────────────
+ *
+ * Mastery is made legible while it is happening, not only at the debrief.
+ * This sits under the multiplier because that is where the player is already
+ * looking for their chain -- a new panel elsewhere on screen would compete for
+ * attention with aiming.
+ *
+ * Deliberately quiet: no background plate, no border, no animation. It is a
+ * label, not a notification. The reading is present-continuous ("WEAVING")
+ * because the identity is not yet a fact -- and it can CHANGE mid-run, which
+ * is the point: the run's form is contested until it ends.
+ *
+ * The pips are rank, not progress toward a goal: three pips, filled to the
+ * current grade. A player should be able to read their standing in one glance
+ * without reading a number.
+ *
+ * NOT aria-live, deliberately. The form can change several times a run and does
+ * not update on a fixed clock; an aria-live region would interrupt a screen
+ * reader every time the density shifted. The debrief stamp is the accessible
+ * announcement -- it is the settled value, stated once.
+ */
+#form-read {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  color: #efcbd8;
+  font: 11px/1.25 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.85;
+}
+#form-word {
+  white-space: nowrap;
+}
+#form-pips {
+  display: inline-flex;
+  gap: 2px;
+}
+#form-pips i {
+  display: block;
+  width: 10px;
+  height: 3px;
+  background: currentColor;
+  /* Empty pips were at 0.22 and effectively invisible, so grade 2 and grade 3
+   * looked identical at a glance. Rank has to be readable without counting
+   * pixels: the unfilled state is now clearly present but clearly OFF. */
+  opacity: 0.3;
+}
+#form-pips i.on {
+  opacity: 1;
+}
+/* GHOST is the untouchable read and is the one form allowed a different
+ * colour -- it is the rarest thing on the screen and should not look like the
+ * rest of the HUD. */
+#form-read[data-form='ghost'] {
+  color: var(--l);
+}
 .score-lock:has(#drive:not([hidden])) #multiplier {
   background: var(--l);
 }
