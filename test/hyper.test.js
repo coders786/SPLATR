@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRun, HYPER } from '../src/run.js';
-import { HYPER_SPEED, MOTION, speedReadout, stretchFor } from '../src/motion.js';
+import { HYPER_SPEED, MOTION, TIERS, speedReadout, stretchFor } from '../src/motion.js';
 import { MAX_SPEED } from '../src/physics.js';
 import Matter from 'matter-js';
 
@@ -207,6 +207,24 @@ test('the effect curve only reads hyper when hyper is actually live', () => {
   assert.ok(stretched.across < flat.across, 'hyper did not thin the cube further than redline');
   // Thinner, but never a line: the cube must stay readable at any speed.
   assert.ok(stretched.across > 0.4, 'hyper squashed the cube past recognition');
+});
+
+test('every band the readout can return maps to a real, ordered tier', () => {
+  // THE BUG THIS PINS: the HUD looked its tier up with
+  // `TIERS.find(t => t.label === band)` and then read `tier.index`. Only
+  // `tierOf` ever stamps an `index`, so the lookup returned a tier whose index
+  // was undefined -- and `i <= undefined` is false for every pip, so all five
+  // went DARK at the moment hyper fired. The index has to come from the array
+  // position, and every band has to exist or the pips silently fall back to
+  // DRIFT (the lowest tier) for the highest speed in the game.
+  const bands = ['DRIFT', 'CRUISE', 'SURGE', 'REDLINE', 'HYPER'];
+  for (const b of bands) assert.ok(TIERS.findIndex((t) => t.label === b) >= 0, `no tier for ${b}`);
+  // Ordered, monotonic, and HYPER last: pips light left to right.
+  const idx = bands.map((b) => TIERS.findIndex((t) => t.label === b));
+  assert.deepEqual(idx, [0, 1, 2, 3, 4]);
+  // The readout must actually reach the top tier at hyper speed.
+  assert.equal(speedReadout(HYPER.speed, MAX_SPEED, HYPER.speed).band, 'HYPER');
+  assert.equal(speedReadout(MAX_SPEED, MAX_SPEED, HYPER.speed).band, 'REDLINE');
 });
 
 test('the renderer constant matches the run constant', () => {

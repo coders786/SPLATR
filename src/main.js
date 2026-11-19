@@ -501,13 +501,22 @@ function updateHUD() {
   if (needle) needle.style.transform = `rotate(${-90 + dialShare * 180}deg)`;
   // Speed tier pips. `readout.band` is already the tier name, so the pips and
   // the word under the dial can never disagree -- one source, two encodings.
-  const tier = TIERS.find((t) => t.label === readout.band) || TIERS[0],
+  // The index comes from the ARRAY POSITION, not from the tier object: TIERS
+  // entries carry `at` and `tint` but only `tierOf` ever stamps an `index` on
+  // them, so looking one up by label left `index` undefined -- and
+  // `i <= undefined` is false for every i, which turned all five pips DARK at
+  // full hyper. Exactly the wrong signal for the loudest state in the game.
+  const tierIndex = Math.max(
+      0,
+      TIERS.findIndex((t) => t.label === readout.band),
+    ),
+    tier = TIERS[tierIndex],
     pips = $('tier-pips');
   if (pips) {
     pips.style.setProperty('--tier', tier.tint);
     for (let i = 0; i < pips.children.length; i++) {
-      pips.children[i].classList.toggle('on', i <= tier.index);
-      pips.children[i].classList.toggle('now', i === tier.index);
+      pips.children[i].classList.toggle('on', i <= tierIndex);
+      pips.children[i].classList.toggle('now', i === tierIndex);
     }
   }
   $('drive').hidden = !!s.opening || s.drive <= 0;

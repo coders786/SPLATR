@@ -263,3 +263,13 @@ at every rate, against a 1.8 limit.
 | deaths | **0** across 26,781 hyper ticks |
 | camera | cube slip p95 **0.000** in hyper, 0.029 normal |
 | build | **323.3 KiB**, one file |
+
+### 8.10 One more, found while checking the HUD wiring
+
+`TIERS.find(t => t.label === readout.band)` then `tier.index`: only `tierOf`
+ever stamps an `index` onto a tier, so the lookup handed back a tier with
+`index === undefined`, and `i <= undefined` is false for every `i`. All five
+pips therefore went **dark at the exact moment hyper fired** — the loudest state
+in the game would have shown the emptiest HUD. The index now comes from the
+array position (`findIndex`), HYPER is the fifth tier, and a test walks every
+band the readout can return to assert it maps to a real, ordered tier.
