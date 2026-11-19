@@ -189,6 +189,12 @@ export const FALL = Object.freeze({
   drift: 8,
   /** At or above this it is a plunge. */
   plunge: 20,
+  /** `rush` reaches 1 here. Was effectively 80 (the old divisor was 60 from
+   *  plunge); a full-speed dive is 280, so the vocabulary had 200 px/tick of
+   *  silence to say nothing in. */
+  terminal: 220,
+  /** The physical ceiling of a fall, where `dive` reaches 1. */
+  top: 378,
   /** Ticks of squash after a landing. */
   land: 9,
 });
@@ -215,24 +221,56 @@ export function fallFor(vy, speed = 0) {
   // `rush` is the second axis: 0 at an ordinary plunge, 1 at terminal. It only
   // ever adds, so every existing sample of the curve is unchanged and the
   // hand-authored vocabulary above still reads exactly as designed.
-  const rush = clamp01((down - FALL.plunge) / 60);
+  // ── rush NOW RUNS TO 220, NOT 80 ──────────────────────────────────────
+  //
+  // `(down - 20) / 60` saturated at vy 80, and measured, 80 / 140 / 280 / 378
+  // were numerically IDENTICAL: tall 1.663, wide 0.599, eyes 0.10, scarf 3.55.
+  // A hyper dive down a wall rendered exactly like a routine drop, which is the
+  // same bug as the horizontal blur last round, still live on this axis.
+  //
+  // The reference is the physical top of a fall (`TOP_FALL`), so the curve has
+  // somewhere to go the whole way down.
+  const rush = clamp01((down - FALL.plunge) / (FALL.terminal - FALL.plunge));
+  // `dive` is the far end, where the body stops resisting and goes streamlined.
+  // It exists so 220 and 378 are different drawings, not just different numbers.
+  const dive = clamp01((down - FALL.terminal) / (FALL.top - FALL.terminal));
   return {
     k,
     rush,
-    /** Lean BACK against the fall: the body fights gravity before it gives in. */
-    lean: -0.16 * (1 - easeInCubic(k)),
-    /** Vertical elongation. Squash is wide+short, plunge is narrow+long. */
-    stretch: 1 + 0.1 * k + 0.16 * rush,
-    squeeze: 1 - 0.12 * k - 0.14 * rush,
-    /** Eyes close to two lines as the drop gets fast. */
-    eyes: 1 - k,
+    /** The far end: the body has stopped resisting and gone streamlined. */
+    dive,
+    /** Lean BACK against the fall: the body fights gravity before it gives in.
+     *
+     *  This used to be `-0.16 * (1 - easeInCubic(k))`, which is LARGEST at
+     *  k = 0 and decays to zero. Added to the pose's own lean, the body rocked
+     *  12 degrees backwards at vy 8 and then snapped upright at vy 20 -- a
+     *  stumble while barely moving, and rigid exactly when the drop got real.
+     *
+     *  Now it starts at 0 and grows with the fall, so the read is: the faster
+     *  the drop, the harder the body resists it. It is an EXPRESSION channel --
+     *  it dips the leading corners rather than rotating them.
+     */
+    lean: 0.2 * easeInCubic(k) + 0.1 * rush,
+    /** Vertical elongation. Squash is wide+short, plunge is narrow+long.
+     *
+     *  `dive` adds a further term past `terminal`, so a full dive keeps
+     *  narrowing instead of flattening out with `rush` once it saturates. */
+    stretch: 1 + 0.1 * k + 0.16 * rush + 0.1 * dive,
+    squeeze: 1 - 0.12 * k - 0.14 * rush - 0.08 * dive,
+    /** Eyes close to two lines.
+     *
+     *  They used to hit their floor at vy 20 -- the instant the fall became a
+     *  fall at all -- so the face was a threshold crossing rather than a
+     *  readout. Now they stay open through the ordinary plunge and close as the
+     *  dive locks in, which is when the body stops looking where it is going. */
+    eyes: 1 - 0.55 * k - 0.45 * dive,
     /** Scarf streams UP in world space, i.e. opposite the travel. */
     scarfLift: 1.25 * k + 0.9 * rush,
     /** The smear runs upward, behind the cube. Never in front. */
-    trail: k + 0.55 * rush,
+    trail: k + 0.55 * rush + 0.5 * dive,
     /** How many trailing cels to draw. A plunge gets one plume; a dive gets a
      *  stack of them, which is the only thing that separates the two on screen. */
-    cels: 1 + Math.round(3 * rush),
+    cels: 1 + Math.round(3 * rush) + Math.round(2 * dive),
     /** 0..1, how much the frame itself should compress at this speed. */
     shock: rush,
   };
@@ -417,9 +455,22 @@ export function cubePose({ vx = 0, vy = 0, age = 0, slashAge = -1, fallAge = -1,
   fall = fallFor(vy, move.speed);
   if (fall) {
     lean += fall.lean;
-    tall = lerp(tall, tall * fall.stretch, fall.k);
-    wide = lerp(wide, wide * fall.squeeze, fall.k);
-    eyes = lerp(eyes, 0, fall.k * 0.9);
+    // ── THE FALL'S SQUASH USED ONLY `k`, WHICH SATURATES AT vy 20 ────────
+    //
+    // `fall.k` is 1 from vy 20 onwards, so this blend was already complete a
+    // quarter of the way down the curve. `rush` and `dive` are the axes that
+    // keep going, and they are what the stretch/squeeze multiply already
+    // contain -- so the weight runs all the way to 1 instead of stopping.
+    const f = Math.min(1, fall.k * 0.6 + fall.rush * 0.3 + fall.dive * 0.3);
+    tall = lerp(tall, tall * fall.stretch, f);
+    wide = lerp(wide, wide * fall.squeeze, f);
+    // ── THE FALL'S EYE CURVE WAS COMPUTED AND THEN IGNORED ───────────────
+    //
+    // This was `lerp(eyes, 0, fall.k * 0.9)` -- a hardcoded zero. `fallFor`
+    // returns a carefully shaped `eyes` that stays open through an ordinary
+    // plunge and closes as the dive locks in, and nothing read it. Now the
+    // stated curve is the one that reaches the face.
+    eyes = lerp(eyes, fall.eyes, f);
     scarf = lerp(scarf, scarf + fall.scarfLift, 1);
   }
 

@@ -106,9 +106,15 @@ test('falling is a vocabulary, not inverted stretch: it fights gravity first', (
   const slow = fallFor(FALL.drift + 2);
   const fast = fallFor(FALL.plunge + 10);
   assert.ok(slow, 'a descent just past the drift threshold must produce fall language');
-  // The body leans BACK against the fall early, then straightens as it gives in.
-  assert.ok(slow.lean < 0, 'an early descent must lean against the fall');
-  assert.ok(Math.abs(fast.lean) < Math.abs(slow.lean), 'the lean must relax as the fall speeds up');
+  // ── THE LEAN GROWS WITH THE FALL ──────────────────────────────────────
+  //
+  // It used to peak at vy 10 and decay to zero, which measured as a 12-degree
+  // rock backwards while barely moving and then a snap upright at vy 20 -- a
+  // stumble, and rigid exactly when the drop got serious. It is now monotone:
+  // 0 at the drift threshold, growing as the fall does.
+  assert.ok(Math.abs(slow.lean) < 0.05, `an early descent must not rock back: ${slow.lean}`);
+  assert.ok(fast.lean > slow.lean, 'the lean must grow as the fall speeds up');
+  assert.ok(fast.lean > 0, 'a plunge must lean into the fall, not away from it');
   // The eyes close. This is the anime cue for "committed to the drop".
   assert.ok(fast.eyes < slow.eyes, 'eyes must close as the drop gets faster');
   assert.ok(fast.stretch > slow.stretch, 'the plunge must elongate further');
@@ -460,9 +466,15 @@ test('a fast dive is drawn differently from an ordinary plunge', async () => {
   // the animation had the most to say was the moment it went quiet.
   const { fallFor } = await import('../src/animation.js');
   const ordinary = fallFor(20),
-    dive = fallFor(80);
+    dive = fallFor(FALL.terminal);
   assert.equal(ordinary.rush, 0, 'an ordinary plunge must not be a dive');
-  assert.equal(dive.rush, 1, 'a terminal dive must saturate');
+  assert.equal(dive.rush, 1, `rush must saturate at terminal (${FALL.terminal})`);
+  // `rush` used to saturate at 80, so 80/140/280/378 were IDENTICAL. The whole
+  // point of moving the reference to terminal is that it does not any more.
+  assert.ok(
+    fallFor(80).stretch < fallFor(FALL.terminal).stretch,
+    'a dive at 80 must still be escalating toward terminal',
+  );
   // The visible consequences, each of which the renderer reads.
   assert.ok(dive.stretch > ordinary.stretch, 'a dive is not stretched further');
   assert.ok(dive.trail > ordinary.trail, 'a dive leaves no longer trail');
@@ -586,4 +598,145 @@ test('the supersonic constant matches the run module', async () => {
   // there. This is the assertion that keeps the two from drifting.
   const { HYPER_SPEED } = await import('../src/motion.js');
   assert.equal(HYPER_CEILING, HYPER_SPEED);
+});
+
+/* ── THE FALL KEEPS ESCALATING, AND NEVER ROTATES ───────────────────────── */
+
+test('the whole fall range is distinguishable, not just the first 80px', () => {
+  // MEASURED BUG: `rush` was `(vy - 20) / 60`, saturating at vy 80. At 80, 140,
+  // 280 and 378 the vocabulary was numerically IDENTICAL -- tall 1.663, wide
+  // 0.599, eyes 0.10, scarf 3.55 -- so a hyper dive down a wall rendered exactly
+  // like a routine drop.
+  const at = (vy) => fallFor(vy);
+  const samples = [80, 140, 220, 280, 378].map(at);
+  for (let i = 1; i < samples.length; i++) {
+    assert.notEqual(
+      samples[i].stretch,
+      samples[i - 1].stretch,
+      `vy ${[80, 140, 220, 280, 378][i]} looks identical to the one before it`,
+    );
+  }
+  // And every axis is monotone through the range, or the escalation stutters.
+  let prevStretch = 0,
+    prevEyes = 2;
+  for (let vy = 20; vy <= FALL.top; vy += 10) {
+    const f = at(vy);
+    assert.ok(f.stretch >= prevStretch, `stretch fell at ${vy}`);
+    assert.ok(f.eyes <= prevEyes, `eyes opened again at ${vy}`);
+    prevStretch = f.stretch;
+    prevEyes = f.eyes;
+  }
+  // The far end is a distinct state, not just a bigger number.
+  assert.equal(at(FALL.top).dive, 1, 'the dive axis must reach 1 at the top');
+  assert.ok(at(FALL.terminal).dive < 0.2, 'the dive must not start before terminal');
+});
+
+test('the fall lean is monotone and never rocks the body backwards', () => {
+  // The old curve peaked at vy 10 and decayed to zero, so the body leaned 12
+  // degrees back while barely moving and then SNAPPED upright at vy 20 --
+  // a stumble, and rigid exactly when the drop got serious.
+  let prev = -1;
+  for (let vy = FALL.drift; vy <= FALL.top; vy += 4) {
+    const f = fallFor(vy);
+    if (!f) continue;
+    assert.ok(f.lean >= prev - 1e-9, `the fall lean went backwards at ${vy}`);
+    assert.ok(f.lean >= 0, `the body leans against the fall at ${vy}: ${f.lean}`);
+    prev = f.lean;
+  }
+});
+
+test('the body never rotates: lean is an expression channel now', () => {
+  // `lean` used to be applied as `c.rotate(poseAnim.lean)` -- a literal body
+  // rotation of up to 19.5 degrees -- which the renderer then undid so the
+  // silhouette stayed upright. It now dips the leading corners instead.
+  //
+  // This asserts on the POSE, which is where the rotation used to come from:
+  // the value still exists and still carries the direction, but nothing in the
+  // render path turns it into a rotation any more.
+  const east = cubePose({ vx: 120, vy: 0 });
+  const west = cubePose({ vx: -120, vy: 0 });
+  assert.ok(east.lean > 0, 'east must still express a lean');
+  assert.ok(west.lean < 0, 'west must express the opposite lean');
+  // Symmetric, which a rotation could never be once east and west are compared.
+  assert.ok(Math.abs(east.lean + west.lean) < 1e-9, 'the lean must be mirror-symmetric');
+});
+
+/* ── THE BODY DEFORMS AS ONE PIECE ──────────────────────────────────────── */
+
+test('the jelly field deforms every vertex of the body, and returns to rest', async () => {
+  // `trace()` is the single funnel every polygon in `cube()` goes through, so
+  // the field has to be reachable from there or the face stays rigid while the
+  // outline wobbles -- which is a masked sprite, not a character.
+  //
+  // This drives the REAL `cube()` through a recording context that applies the
+  // transform stack, so it measures what lands on the glass.
+  const { cube, jelly, createJelly } = await import('../src/art.js');
+  const rec = [];
+  let m = [1, 0, 0, 1, 0, 0];
+  const mul = (a, b) => [
+    a[0] * b[0] + a[2] * b[1], a[1] * b[0] + a[3] * b[1],
+    a[0] * b[2] + a[2] * b[3], a[1] * b[2] + a[3] * b[3],
+    a[0] * b[4] + a[2] * b[5] + a[4], a[1] * b[4] + a[3] * b[5] + a[5],
+  ];
+  const ap = (x, y) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+  const stack = [];
+  const ctx = {
+    save() { stack.push(m.slice()); },
+    restore() { m = stack.pop() || [1, 0, 0, 1, 0, 0]; },
+    translate(x, y) { m = mul(m, [1, 0, 0, 1, x, y]); },
+    rotate() {},
+    scale(x, y) { m = mul(m, [x, 0, 0, y, 0, 0]); },
+    set fillStyle(v) {}, set strokeStyle(v) {}, set lineWidth(v) {}, set lineJoin(v) {},
+    beginPath() { this._p = []; },
+    moveTo(x, y) { this._p = [ap(x, y)]; },
+    lineTo(x, y) { this._p.push(ap(x, y)); },
+    closePath() {},
+    fill() { rec.push(this._p.map((p) => p.slice())); },
+    stroke() {},
+  };
+  const bodyBox = (pose) => {
+    rec.length = 0;
+    m = [1, 0, 0, 1, 0, 0];
+    stack.length = 0;
+    cube(ctx, 0, 0, 23, 0, 0, 1, pose);
+    // The body is the largest filled polygon.
+    let best = null;
+    for (const p of rec) {
+      const xs = p.map((q) => q[0]), ys = p.map((q) => q[1]);
+      const w = Math.max(...xs) - Math.min(...xs), h = Math.max(...ys) - Math.min(...ys);
+      if (!best || w * h > best.w * best.h) best = { w, h };
+    }
+    return best;
+  };
+
+  const rest = bodyBox({ eyes: 1, lift: 0 });
+  // A stretched field must actually reach the glass.
+  const tall = bodyBox({ eyes: 1, lift: 0, field: { sx: 1, sy: 1.5, grip: 1 } });
+  assert.ok(
+    tall.h > rest.h * 1.2,
+    `the field did not reach the body: ${rest.h.toFixed(1)} -> ${tall.h.toFixed(1)}`,
+  );
+  // And a lean must displace the corners asymmetrically rather than scale them.
+  const lean = bodyBox({ eyes: 1, lift: 0, field: { grip: 1, dipX: -0.8 } });
+  assert.ok(lean.w > rest.w, 'the leaning field must widen the leading edge');
+
+  // The spring settles back to nothing, so a cube at rest is a cube.
+  const s = createJelly();
+  s.hit(1, 0, 1);
+  for (let i = 0; i < 60; i++) s.step(1);
+  assert.ok(Math.abs(s.y) < 0.01, `the spring never settles: ${s.y}`);
+  const settled = s.field(1);
+  assert.ok(Math.abs(settled.sy - 1) < 0.01, 'a settled spring must not deform the body');
+
+  // And it must be a spring, not a ramp: it peaks then comes back.
+  const t = createJelly();
+  t.hit(1, 0, 1);
+  let peak = 0;
+  let returned = false;
+  for (let i = 0; i < 60; i++) {
+    t.step(1);
+    if (t.y > peak) peak = t.y;
+    else if (peak > 0.05 && t.y < peak * 0.5) returned = true;
+  }
+  assert.ok(returned, 'the jelly never recovers -- it is a ramp, not a spring');
 });

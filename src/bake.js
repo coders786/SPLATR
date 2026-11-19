@@ -118,7 +118,10 @@ export function bakeLand() {
  * point of `rush` is that the vocabulary KEEPS CHANGING above the plunge
  * threshold -- it used to saturate at 20 and then say nothing at all.
  */
-export const FALL_SAMPLES = 120;
+// The table has to reach `FALL.top` (378), not 120. It was sized when the
+// vocabulary saturated at vy 80, so the last 258 px/tick of a dive had no row
+// at all and the renderer's `vy > FALL_SAMPLES` guard fell back to nothing.
+export const FALL_SAMPLES = 378;
 export const FALL_ROW = Object.freeze({
   k: 0,
   rush: 1,

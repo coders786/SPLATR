@@ -2,6 +2,7 @@ import { createCamera, frameRun, inView, toScreen } from './camera.js';
 import { createBackdrop } from './atmosphere.js';
 import { arc, blade, cube, disk, foe, line, cutHalf, nick, shearInk, poly, trace } from './art.js';
 import { INK, TYPES, TAU, CUBE, pose, bodyPose, bisect, mix } from './shapes.js';
+import { createJelly } from './art.js';
 import { PAD, SPAWN, PLAYER_SIZE, ARENA, clamp, randomSource, openingFacing } from './levels.js';
 import { MAX_SPEED } from './physics.js';
 import { sightPicture } from './guide.js';
@@ -709,11 +710,15 @@ export function createRenderer(canvas) {
       if(k)canvas.dataset.scene=k;else delete canvas.dataset.scene;
     }
   }
+  // The body's own spring. One per renderer, stepped on the simulation delta so
+  // a high refresh rate cannot make the cube wobble faster.
+  const jelly = createJelly();
+  let jellySeen = null;
   function tick(run, motion) {
     const { state: s, world } = run;
-    syncScene(run,s.story?run.nearest():null);
-    if(scene)sceneTicks++;
-    frameRun(camera,run,motion);
+    syncScene(run, s.story ? run.nearest() : null);
+    if (scene) sceneTicks++;
+    frameRun(camera, run, motion);
     // The whole frame agrees on one animation state; effects that belong to
     // one state (a hit-stop pose, a death settle) can then be written once.
     anim = animationState(s);
@@ -725,6 +730,20 @@ export function createRenderer(canvas) {
       forward = b.velocity.x * Math.cos(b.angle) + b.velocity.y * Math.sin(b.angle);
     if (s.phase === 'playing' && Math.abs(forward) > 3) facing = Math.sign(forward);
     stain = Math.max(0, stain - 0.045);
+    // ── FEED THE SPRING FROM EVENTS THAT ALREADY EXIST ──────────────────
+    //
+    // No new physics. `s.impact` is stamped by the collision step with the
+    // normal and the speed, so a tap and a wall at 378 arrive here as different
+    // numbers and the body answers them differently -- which is the whole
+    // reason to use a spring instead of a canned curve.
+    if (motion && s.impact && s.impact !== jellySeen) {
+      jellySeen = s.impact;
+      const power = Math.min(1.6, (s.impact.speed ?? 0) / MAX_SPEED);
+      jelly.hit(power, -s.impact.nx, -s.impact.ny);
+    }
+    // A landing is its own blow, straight down, so it kicks the spring along Y.
+    if (motion && s.landAge === 0) jelly.hit(0.45, 0, 1);
+    jelly.step(dt);
     if (motion && s.phase === 'playing' && dt) {
       // A launch is a discontinuity, and a ribbon must not span one. When the
       // cube goes from resting-on-the-pad to travelling, the oldest samples are
@@ -1680,7 +1699,6 @@ export function createRenderer(canvas) {
         c.scale(1 + k * 0.34, 1 - k * 0.2);
         c.rotate(-(poseAnim.heading - p.angle));
       }
-      if (poseAnim.lean) c.rotate(poseAnim.lean);
       // ── THE BODY FRAME IS ROTATED BY `lean`, NOT BY `p.angle` ──────────
       //
       // MEASURED BUG, and it predates this round. Everything below derives a
@@ -1702,7 +1720,21 @@ export function createRenderer(canvas) {
       // The stretch block above is deliberately on `p.angle`: it runs before
       // this rotation. `cube()` re-rotates by `p.angle` internally, so the body
       // itself was never tilted -- only its effects were.
-      const bodyAngle = p.angle + poseAnim.lean;
+      // ── NO ROTATION ────────────────────────────────────────────────────
+      //
+      // `lean` used to be applied here as `c.rotate(poseAnim.lean)`: a literal
+      // body rotation of up to 19.5 degrees (E) that the renderer then undid
+      // around `cube()` so the silhouette stayed upright. The shape never
+      // turned -- only the deformation did -- so the cost was all of the
+      // complexity and almost none of the read.
+      //
+      // The body does not rotate any more. `lean` is now an EXPRESSION channel:
+      // it dips the leading corners (see the jelly field in art.js). The
+      // rotation is gone, the information it carried is not.
+      //
+      // `bodyAngle` stays as a name because every effect below subtracts it,
+      // and it is now simply the body's own angle.
+      const bodyAngle = p.angle;
       // ── MOVEMENT SPEED LINES ──────────────────────────────────────────
       //
       // The direction poses now deform the body by up to 15.6px, but a shape
@@ -1935,12 +1967,70 @@ export function createRenderer(canvas) {
         c.scale(1 + 0.3 * k, 1 - 0.16 * k);
         c.rotate(-(poseAnim.heading - bodyAngle));
       }
+      // ── THE BODY'S DEFORMATION FIELD ────────────────────────────────────
+      //
+      // Three things drive it, and they are deliberately different in kind so
+      // they never fight: the SPRING (what just hit the cube), the POSE's own
+      // squash (tall/wide, already composed above), and the LEAN, which used to
+      // be a rotation and is now the corner dip.
+      //
+      // `grip` rises with speed. A cube being thrown at 280 is stiffer than one
+      // standing still -- without that, the spring's own follow-through at
+      // hyper speed reads as mush, and the faster the character goes the less
+      // solid it would look, which is exactly backwards.
+      const speedNow = Math.hypot(world.player.velocity.x, world.player.velocity.y);
+      const grip = 0.5 + 0.45 * Math.min(1, speedNow / MAX_SPEED);
+      const field = jelly.field(
+        grip,
+        // `lean` is the cell-animation lead: the leading corner dips. Positive
+        // lean means moving toward +x, so the corner at -x lags.
+        -poseAnim.lean * 1.6,
+        // The fall leans the body back, so the dip runs the other way.
+        poseAnim.fall ? -poseAnim.fall.lean * 1.2 : 0,
+      );
+      // ── FACE AND IDLE LIFE ───────────────────────────────────────────
+      //
+      // `time` is the frame's own clock, so these are pure functions of it --
+      // no per-renderer state to get out of step with a paused or resumed run.
+      //
+      // The blink is on an irregular cycle. An evenly spaced blink is the
+      // single clearest tell that a character is on a loop; two coprime periods
+      // summed make the interval uneven without needing randomness (which would
+      // make a replayed frame differ from the one the player saw).
+      const blinkPhase = Math.sin(time * 0.021) + Math.sin(time * 0.0137);
+      // A blink is short: shut for about a fifth of a cycle.
+      const blink = blinkPhase > 1.72 ? Math.max(0.05, 1 - (blinkPhase - 1.72) * 7) : 1;
+      // Breathing only while it has nothing else to do. A cube at speed is not
+      // resting, and a chest pulse on a body being thrown is noise.
+      const atRest = !poseAnim.move.moving && !poseAnim.fall;
+      const breathe = atRest ? Math.sin(time * 0.045) : 0;
+      // Gaze toward the nearest hostile, in the body's own frame.
+      let look = null;
+      if (nearest) {
+        const dx = nearest.x - p.x,
+          dy = nearest.y - p.y,
+          d = Math.hypot(dx, dy) || 1;
+        // Only when it is close enough to be worth watching, and never past the
+        // edge of the lid -- a pupil pinned to the corner reads as a bug.
+        if (d < 900) {
+          const ca = Math.cos(-p.angle),
+            sa = Math.sin(-p.angle);
+          look = [
+            Math.max(-1, Math.min(1, (dx * ca - dy * sa) / d)),
+            Math.max(-1, Math.min(1, (dx * sa + dy * ca) / d)),
+          ];
+        }
+      }
       cube(c, 0, 0, R, p.angle, motion ? time : 0, facing, {
         // The two expression channels the pose system computes. `lift` is the
         // falling scarf plus a little air-speed, so the character reads as
         // being pushed by the world it is moving through.
         eyes: poseAnim.eyes,
         lift: (poseAnim.fall?.scarfLift ?? 0) + Math.min(0.5, poseAnim.move.speed / MAX_SPEED) * 0.5,
+        blink: motion ? blink : 1,
+        breathe: motion ? breathe : 0,
+        look,
+        field,
       });
       if (poseAnim.sonic > 0.02) c.restore();
       c.restore();

@@ -1,13 +1,44 @@
 import { INK, TYPES, TAU, CUBE, bisect } from './shapes.js';
-export function trace(c, p) {
-  c.moveTo(...p[0]);
-  for (let i = 1; i < p.length; i++) c.lineTo(...p[i]);
+/**
+ * The jelly field: a per-vertex displacement in CUBE space.
+ *
+ * `trace()` is the single funnel every polygon in `cube()` goes through, so
+ * putting the deformation here means the whole character -- body, scarf, brim,
+ * eyes -- deforms as ONE piece instead of an outline wobbling around a rigid
+ * face. That is the difference between a jelly and a masked sprite.
+ *
+ *   - `sx`/`sy` squash and stretch about the centre.
+ *   - `dipX`/`dipY` pull the corners furthest along the lean direction: the
+ *     cell-animation read of follow-through. `dipX` is driven by `lean`, which
+ *     is why the lean is now an expression rather than a rotation.
+ *   - `grip` is the solidity. This is a cube, not a blob, so grip near 1 keeps
+ *     it stiff and a lower grip lets it lag.
+ */
+export function jelly(x, y, f) {
+  if (!f) return [x, y];
+  const g = f.grip ?? 1;
+  let nx = x * (f.sx ?? 1),
+    ny = y * (f.sy ?? 1);
+  const lx = f.dipX ?? 0,
+    ly = f.dipY ?? 0;
+  if (lx !== 0) nx += lx * (1 - y) * 0.5;
+  if (ly !== 0) ny += ly * (1 + x) * 0.5;
+  return [x + (nx - x) * g, y + (ny - y) * g];
+}
+
+export function trace(c, p, field = null) {
+  const a = field ? jelly(p[0][0], p[0][1], field) : p[0];
+  c.moveTo(a[0], a[1]);
+  for (let i = 1; i < p.length; i++) {
+    const v = field ? jelly(p[i][0], p[i][1], field) : p[i];
+    c.lineTo(v[0], v[1]);
+  }
   c.closePath();
 }
-export function poly(c, color, p, edge = null, width = 0.07) {
+export function poly(c, color, p, edge = null, width = 0.07, field = null) {
   c.fillStyle = color;
   c.beginPath();
-  trace(c, p);
+  trace(c, p, field);
   c.fill();
   if (edge) {
     c.lineWidth = width;
@@ -42,8 +73,22 @@ const K = INK.black,
 // One screen-printed character, from the enormous title frame down to a
 // thumb-sized combatant. Scarf tails and eye cuts identify the direction.
 export function cube(c, x, y, r, angle = 0, flutter = 0, face = 1, pose = null) {
+  // `pose.field` deforms every polygon of the character as one piece, so the
+  // face rides the body instead of floating inside it. See `jelly`.
+  const F = pose?.field ?? null;
   c.save();
   c.translate(x, y);
+  // ── BREATHING ────────────────────────────────────────────────────────────
+  //
+  // A resting body is never actually still, and a perfectly static sprite reads
+  // as "the game has stopped". Small scale about the body's BASE, so the cube
+  // settles onto its feet instead of inflating about its middle.
+  //
+  // Placed after `save()` on purpose. The first version applied this before
+  // `save()` -- outside the cube's own transform scope -- so the scale
+  // multiplied the CALLER's matrix and compounded every frame. Measured: one
+  // landing kick flung the body hundreds of pixels off screen.
+  if (pose?.breathe) c.scale(1 + pose.breathe * 0.018, 1 - pose.breathe * 0.012);
   c.rotate(angle);
   c.scale(r * face, r);
   c.lineJoin = 'miter';
@@ -63,6 +108,10 @@ export function cube(c, x, y, r, angle = 0, flutter = 0, face = 1, pose = null) 
   //   lift: 0 = hanging, 1 = streaming. Driven by the fall and by speed.
   const eyes = pose ? Math.max(0, Math.min(1, pose.eyes ?? 1)) : 1;
   const lift = pose ? Math.max(0, Math.min(1.6, pose.lift ?? 0)) : 0;
+  // 1 = open, 0 = shut. Multiplies `eyes`; see the note at the eye block.
+  const blink = pose ? Math.max(0, Math.min(1, pose.blink ?? 1)) : 1;
+  // Pupil offset in cube space, already normalised to about -1..1.
+  const look = pose?.look ?? null;
   // The scarf's own wave, plus the lift pulling the tips further back and up.
   const wave = Math.sin(flutter * 0.09) * 0.13 + lift * 0.2;
   poly(
@@ -79,7 +128,7 @@ export function cube(c, x, y, r, angle = 0, flutter = 0, face = 1, pose = null) 
     ],
     K,
     0.07,
-  );
+  F);
   poly(
     c,
     '#aabe39',
@@ -94,7 +143,7 @@ export function cube(c, x, y, r, angle = 0, flutter = 0, face = 1, pose = null) 
     ],
     K,
     0.06,
-  );
+  F);
   poly(
     c,
     W,
@@ -108,13 +157,13 @@ export function cube(c, x, y, r, angle = 0, flutter = 0, face = 1, pose = null) 
     ],
     K,
     0.105,
-  );
+  F);
   poly(c, L, [
     [-0.97, -0.79],
     [0.98, -0.69],
     [0.98, -0.5],
     [-0.97, -0.52],
-  ]);
+  ], F);
   poly(c, K, [
     [-1, -0.53],
     [1, -0.42],
@@ -122,16 +171,30 @@ export function cube(c, x, y, r, angle = 0, flutter = 0, face = 1, pose = null) 
     [0.59, 0.28],
     [-0.83, 0.09],
     [-1, -0.03],
-  ]);
+  ], F);
   // Eyes. As `eyes` closes, each lid collapses toward its own centre line, so
   // the shape becomes a flat slash rather than shrinking to a dot -- which is
   // the difference between "squinting" and "the face vanished".
   {
-    const e = eyes;
+    // ── BLINK IS A SECOND, INDEPENDENT LID ────────────────────────────────
+    //
+    // `eyes` is the fall/speed channel: it closes when the body commits to a
+    // drop. A blink is a different thing that happens for a different reason,
+    // so it multiplies in rather than sharing the same value -- otherwise a
+    // cube at rest could never blink without also reading as falling.
+    const e = eyes * blink;
+    // ── GAZE ──────────────────────────────────────────────────────────────
+    //
+    // `look` moves the pupils inside the lids. It is deliberately small (a
+    // fifth of the face) and it is offset AFTER the lid squash, so a squinting
+    // cube still looks where it is looking. Without this the face is a decal
+    // that happens to sit on a moving body.
+    const gx = look ? look[0] * 0.2 : 0,
+      gy = look ? look[1] * 0.2 : 0;
     const eye = (q) => {
       // q = four corners, top-left, top-right, bottom-right, bottom-left.
       const cy = (q[0][1] + q[2][1]) / 2;
-      return q.map(([px, py]) => [px, cy + (py - cy) * e]);
+      return q.map(([px, py]) => [px + gx, cy + (py - cy) * e + gy]);
     };
     poly(
       c,
@@ -142,7 +205,7 @@ export function cube(c, x, y, r, angle = 0, flutter = 0, face = 1, pose = null) 
         [0.05, 0.03],
         [-0.54, -0.05],
       ]),
-    );
+    F);
     poly(
       c,
       L,
@@ -152,14 +215,14 @@ export function cube(c, x, y, r, angle = 0, flutter = 0, face = 1, pose = null) 
         [0.79, 0.03],
         [0.38, 0.055],
       ]),
-    );
+    F);
   }
   poly(c, K, [
     [-0.91, 0.63],
     [-0.52, 0.7],
     [-0.66, 0.81],
     [-0.91, 0.77],
-  ]);
+  ], F);
   line(c, K, 0.055, 0.44, 0.54, 0.75, 0.52);
   c.restore();
 }
@@ -501,4 +564,63 @@ export function nick(c, x, y, r, angle, count, scale) {
     );
   }
   c.restore();
+}
+
+/**
+ * The jelly spring: one damped oscillator, sampled into a `jelly` field.
+ *
+ * WHY A SPRING AND NOT A CURVE. A curve can only play back a canned squash; a
+ * spring answers the event that actually happened, so a light tap and a wall at
+ * 378 produce visibly different deformations from the same code. It is also
+ * the only way the body can DELAY: the corner you just landed on moves first
+ * and the far corner follows, which is the whole read of weight.
+ *
+ * State is a single displacement plus its velocity, integrated per tick. The
+ * spring is stiff (omega) and near-critical (zeta), so it does not wobble --
+ * `easeOutElastic` terms are what make a body look like jelly instead of mass.
+ */
+export function createJelly() {
+  let x = 0, y = 0, vx = 0, vy = 0;
+  return {
+    /** Kick the body. `nx`/`ny` is the direction of the blow in cube space.
+     *
+     *  The impulse is scaled into the spring's own units. Feeding raw power in
+     *  as velocity peaks at ~0.014 -- measured, invisible -- because the spring
+     *  immediately pulls the displacement back toward zero. */
+    hit(power, nx = 0, ny = 1) {
+      const p = Math.max(-1.6, Math.min(1.6, power)) * 22;
+      vx += nx * p;
+      vy += ny * p;
+    },
+    step(dt = 1) {
+      // Tuned by measuring the response, not by feel: the first version used
+      // omega 26 / zeta 0.85, peaked at 0.005 and was over inside four ticks --
+      // invisible on screen. This is a 60Hz-friendly step (dt in ticks at 1/60)
+      // that peaks near 0.35 and is visually settled in about 14 ticks, which is
+      // long enough to read as follow-through and short enough that a dash does
+      // not smear into the next one.
+      const omega = 13, zeta = 0.72, h = 0.016 * dt;
+      const ax = -omega * omega * x - 2 * zeta * omega * vx,
+        ay = -omega * omega * y - 2 * zeta * omega * vy;
+      vx += ax * h;
+      vy += ay * h;
+      x += vx * h;
+      y += vy * h;
+    },
+    /** The field `cube()` draws with. `grip` rises with speed: a cube being
+     *  thrown is stiffer than one standing still, which is what stops the
+     *  deformation from reading as mush at 280 px/tick. */
+    field(grip = 0.75, dipX = 0, dipY = 0) {
+      return {
+        sx: 1 + x * 0.22,
+        sy: 1 + y * 0.22,
+        dipX,
+        dipY,
+        grip: Math.max(0, Math.min(1, grip)),
+      };
+    },
+    get x() { return x; },
+    get y() { return y; },
+    reset() { x = y = vx = vy = 0; },
+  };
 }

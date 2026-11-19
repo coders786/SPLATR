@@ -197,7 +197,7 @@ test('the fall table covers the whole dive range, and escalates in it', () => {
   // threshold instead of saturating at 20 and going silent.
   const at = (vy, col) => FALL_TABLE[vy * FALL_ROW.width + col];
   assert.equal(at(20, FALL_ROW.rush), 0, 'an ordinary plunge is not yet a dive');
-  assert.equal(at(80, FALL_ROW.rush), 1, 'a terminal dive must saturate');
+  assert.equal(at(220, FALL_ROW.rush), 1, 'a terminal dive must saturate at FALL.terminal');
   let prevTrail = -1,
     prevCels = 0;
   for (let vy = 20; vy <= 100; vy += 5) {

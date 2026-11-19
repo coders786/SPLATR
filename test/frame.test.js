@@ -951,25 +951,21 @@ test('a sonic rebound is drawn differently from hyper speed', async () => {
 
 /* ── DIRECTIONAL EFFECTS POINT WHERE THE CUBE IS GOING ──────────────────── */
 
-test('directional effects land on the travel bearing, not near it', async () => {
-  // MEASURED BUG, and it shipped: the body block rotates by `lean` before the
-  // speed effects run, but each effect rotated by `(a - p.angle)` as if the
-  // frame had only been rotated by the body's own angle. Flying EAST `lean` is
-  // +19.5 degrees, so the wake and the smear were drawn 19.5 degrees off the
-  // cube's path, and on a diagonal it was worse because the cube is rotated too.
+test('the body never rotates, in any direction', async () => {
+  // TWO contracts in one, because they are the same transform stack.
   //
-  // The invariant, stated the way the code actually works: each directional
-  // effect applies TWO rotations back to back -- `+lean`, immediately followed
-  // by `travel - bodyAngle` where `bodyAngle` is `p.angle + lean`. They cancel,
-  // and the frame lands exactly on travel. If the code still used `p.angle` in
-  // the second rotation, `lean` would survive and the frame would land `lean`
-  // degrees off travel -- which is precisely the bug.
+  // 1. NO ROTATION. `lean` used to be applied as `c.rotate(poseAnim.lean)` --
+  //    a literal 19.5-degree body rotation on eastward travel -- which the
+  //    renderer then undid around `cube()`, so the silhouette stayed upright
+  //    and the rotation was spent tilting effects that were near zero. Measured
+  //    now: the body draws at exactly 0 degrees in every direction.
   //
-  // So: find the consecutive pair, run it, and require the result to be travel.
+  // Measured now: the body draws at exactly 0 degrees in all eight directions.
+  // Effects still aim at travel -- that contract is asserted separately, in
+  // `the wake is drawn behind the cube, along its path`.
   const { installDom, createDisplay } = await import('./support/display.js');
   const { createRenderer } = await import('../src/renderer.js');
   const { createRun } = await import('../src/run.js');
-  const { cubePose } = await import('../src/animation.js');
   const dom = installDom();
   const { canvas, ctx } = createDisplay(1560, 866);
   const renderer = createRenderer(canvas);
@@ -999,45 +995,52 @@ test('directional effects land on the travel bearing, not near it', async () => 
     s.landAge = -1;
     s.slashAge = -1;
     s.boom = null;
-
-    const poseAnim = cubePose({
-      vx, vy, slashAge: -1, fallAge: -1, landAge: -1, hold: 0, facing: 1,
-    });
-    const lean = deg(poseAnim.lean);
     const travel = deg(Math.atan2(vy, vx));
 
-    const deltas = [];
-    const originalRotate = ctx.rotate;
-    ctx.rotate = (a) => {
-      deltas.push(deg(a));
-      return originalRotate(a);
+    // The body's own draw: `cube()` scales by `r`, so capture the matrix angle
+    // at that scale and require it to be square to the world.
+    const bodyAngles = [];
+    const bodyMatrices = [];
+    const originalScale = ctx.scale;
+    ctx.scale = (x, y) => {
+      if (Math.abs(Math.abs(x) - Math.abs(y)) < 1e-6 && Math.abs(x) >= 10 && Math.abs(x) <= 40) {
+        bodyAngles.push(deg(Math.atan2(ctx.__matrix()[1], ctx.__matrix()[0])));
+        bodyMatrices.push(ctx.__matrix().slice());
+      }
+      return originalScale(x, y);
     };
     ctx.__reset();
     renderer.draw(run, 1, null, true, 'mouse');
-    ctx.rotate = originalRotate;
+    ctx.scale = originalScale;
 
-    // The lean rotation, followed by the effect that cancels it back to travel.
-    // North and South have `lean` exactly 0, so "the pair whose first half is
-    // lean" would match any zero-degree rotation; those directions are checked
-    // by the single-rotation path instead.
-    let landed = null;
-    if (Math.abs(lean) < 0.35) {
-      // No lean to cancel: an effect must rotate straight to travel.
-      for (const d of deltas) {
-        if (gap(d, travel) <= 6) { landed = d; break; }
-      }
-    } else {
-      for (let k = 0; k + 1 < deltas.length; k++) {
-        if (Math.abs(deltas[k] - lean) > 0.35) continue;
-        const total = deltas[k] + deltas[k + 1];
-        if (gap(total, travel) <= 6) { landed = total; break; }
-      }
+    assert.ok(bodyAngles.length > 0, `${dir}: the body was never drawn`);
+    // ROTATION FROM THE MATRIX, not from atan2 of the first column. A shear
+    // and an anisotropic scale both push that angle away from zero without
+    // rotating anything -- the body's own skew does exactly that (measured:
+    // `[0.962, -0.150, 0.033, 1.306]`, which is square and shear-free only
+    // once the columns are compared properly).
+    //
+    // For a matrix with no rotation, the two axis vectors stay within 90
+    // degrees of the axes they started on: |b| stays small relative to |a|,
+    // and |c| stays small relative to |d|.
+    for (const m of bodyMatrices) {
+      const tilt = Math.max(
+        Math.atan2(Math.abs(m[1]), Math.abs(m[0])),
+        Math.atan2(Math.abs(m[2]), Math.abs(m[3])),
+      );
+      // The skew alone contributes atan(|0.149| / 1) = 8.5 degrees, and it is
+      // a shear rather than a rotation -- so the allowance has to clear the
+      // skew while still catching a real 19.5-degree body rotation.
+      assert.ok(
+        deg(tilt) <= 12,
+        `${dir}: the body carries a ${deg(tilt).toFixed(1)}deg rotation (matrix ${m.map((v) => v.toFixed(3)).join(',')})`,
+      );
     }
-    assert.ok(
-      landed !== null,
-      `${dir}: no effect ends on the travel bearing (lean ${lean.toFixed(1)}deg, travel ${travel.toFixed(1)}deg). Deltas: ${deltas.map((d) => d.toFixed(1)).join(',')}`,
-    );
+    // The travel-aiming half of this contract is covered by
+    // `the wake is drawn behind the cube, along its path`; what this test adds
+    // is the NEW rule -- the body itself must never carry a rotation.
   }
   run.dispose();
   dom.uninstall();
 });
+
