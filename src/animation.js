@@ -197,19 +197,36 @@ export function fallFor(vy, speed = 0) {
   if (down < FALL.drift) return null;
   // 0 at drift, 1 at plunge -- the single axis everything else reads from.
   const k = clamp01((down - FALL.drift) / (FALL.plunge - FALL.drift));
+  // ── k SATURATES AT 20px/tick, AND THE VOCABULARY USED TO STOP THERE ────
+  //
+  // Measured: everything above vy 20 produced identical numbers. But a plunge
+  // off a full-power launch, or a hyper dive, reaches 80-280. So the FASTEST
+  // falls in the game looked exactly like an ordinary one -- the one moment the
+  // animation had the most to say was the moment it went quiet.
+  //
+  // `rush` is the second axis: 0 at an ordinary plunge, 1 at terminal. It only
+  // ever adds, so every existing sample of the curve is unchanged and the
+  // hand-authored vocabulary above still reads exactly as designed.
+  const rush = clamp01((down - FALL.plunge) / 60);
   return {
     k,
+    rush,
     /** Lean BACK against the fall: the body fights gravity before it gives in. */
     lean: -0.16 * (1 - easeInCubic(k)),
     /** Vertical elongation. Squash is wide+short, plunge is narrow+long. */
-    stretch: 1 + 0.1 * k,
-    squeeze: 1 - 0.12 * k,
+    stretch: 1 + 0.1 * k + 0.16 * rush,
+    squeeze: 1 - 0.12 * k - 0.14 * rush,
     /** Eyes close to two lines as the drop gets fast. */
     eyes: 1 - k,
     /** Scarf streams UP in world space, i.e. opposite the travel. */
-    scarfLift: 1.25 * k,
+    scarfLift: 1.25 * k + 0.9 * rush,
     /** The smear runs upward, behind the cube. Never in front. */
-    trail: k,
+    trail: k + 0.55 * rush,
+    /** How many trailing cels to draw. A plunge gets one plume; a dive gets a
+     *  stack of them, which is the only thing that separates the two on screen. */
+    cels: 1 + Math.round(3 * rush),
+    /** 0..1, how much the frame itself should compress at this speed. */
+    shock: rush,
   };
 }
 
@@ -225,6 +242,12 @@ export function landFor(age) {
     tall: 1 - 0.34 * q,
     alpha: 1,
     t,
+    /** How hard the frame is rung, 1 at the instant of contact -> 0 by the end.
+     *  The renderer uses this for the impact ring and the ground scuff; without
+     *  it the landing was applied as a silent scale and nothing was DRAWN. */
+    shock: Math.pow(1 - t, 1.6),
+    /** 0 at contact, 1 at rest. The ground marks fade along this. */
+    settle: t,
   };
 }
 
@@ -418,6 +441,12 @@ export function cubePose({ vx = 0, vy = 0, age = 0, slashAge = -1, fallAge = -1,
     stretch *= 1 - land.t * 0.8;
   }
 
+  // The dive's extra stretch goes on the body's vertical axis, because a fall is
+  // always straight down in world space regardless of the cube's own angle.
+  if (fall && fall.rush > 0) {
+    tall *= 1 + 0.1 * fall.rush;
+    wide *= 1 - 0.08 * fall.rush;
+  }
   // `stretch` is applied to the body along its own heading, not to `tall`,
   // because a cube thrown east should get LONGER east, not taller. The renderer
   // rotates by the heading to apply it.

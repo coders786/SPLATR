@@ -368,3 +368,138 @@ test('the pose is actually rendered: squash, eyes and fall trail all change the 
   run.dispose();
   dom.uninstall();
 });
+
+/* ── 8. THE OTHER HALF: FALL AND LANDING REACH THE GLASS ────────────────── */
+
+test('a landing is DRAWN, not merely applied as a scale', async () => {
+  // THE BUG THIS PINS: measured before the fix, a landing changed the op count
+  // by ZERO (348 at rest, 348 at the impact frame, then it went DOWN). The
+  // squash was applied as a silent transform, so the single most physical
+  // moment in the game -- the cube hitting the floor -- read as the cube
+  // briefly being a different shape. Nothing asserted that anything was drawn.
+  const { installDom, createDisplay } = await import('./support/display.js');
+  const { createRenderer } = await import('../src/renderer.js');
+  const { createRun } = await import('../src/run.js');
+  const dom = installDom();
+  const { canvas, ctx } = createDisplay(1560, 866);
+  const renderer = createRenderer(canvas);
+  const run = createRun(19, () => {}, { staged: true });
+  run.skipOpening?.();
+  run.state.phase = 'playing';
+  for (let i = 0; i < 30; i++) run.tick();
+  const body = run.world.player;
+  const draw = (landAge) => {
+    body.velocity.x = 0;
+    body.velocity.y = 0;
+    run.state.landAge = landAge;
+    run.state.slashAge = -1;
+    ctx.__reset();
+    renderer.draw(run, 1, null, true, 'mouse');
+    return ctx.__ops.length;
+  };
+  const rest = draw(-1),
+    contact = draw(0);
+  assert.ok(
+    contact > rest + 4,
+    `the landing drew ${contact - rest} extra ops over rest -- it is still invisible`,
+  );
+  // And it must DECAY, not persist: a landing is an event, not a state.
+  //
+  // Counting ops is the wrong instrument -- a ring whose RADIUS is driven by
+  // `settle` still shrinks when `shock` is pinned at 1, so the op count falls
+  // and a landing that never fades passes. (Verified: removing the decay left
+  // the op-count assertion green.) So assert the two things that actually
+  // encode the fade: the curve's own shock values, and the drawn ring radius.
+  const { landFor } = await import('../src/animation.js');
+  assert.ok(landFor(0).shock > 0.95, 'the landing does not begin at full shock');
+  assert.ok(landFor(8).shock < 0.1, 'the landing shock does not decay');
+  // The ring must CONTRACT: radius grows with (1 - settle).
+  const radii = (landAge) => {
+    const seen = [];
+    const orig = ctx.ellipse.bind(ctx);
+    ctx.ellipse = (x, y, rx, ry, ...r) => {
+      seen.push(rx);
+      return orig(x, y, rx, ry, ...r);
+    };
+    body.velocity.x = 0;
+    body.velocity.y = 0;
+    run.state.landAge = landAge;
+    run.state.slashAge = -1;
+    ctx.__reset();
+    renderer.draw(run, 1, null, true, 'mouse');
+    ctx.ellipse = orig;
+    return seen.length ? Math.max(...seen) : 0;
+  };
+  const rNow = radii(0),
+    rLate = radii(8);
+  assert.ok(rNow > 0, 'the landing drew no shock ring');
+  assert.ok(rLate < rNow, `the shock ring does not contract: ${rNow} -> ${rLate}`);
+
+  // The ring has to be an ELLIPSE on the floor. A circle reads as a bubble.
+  const rings = [];
+  const orig = ctx.ellipse.bind(ctx);
+  ctx.ellipse = (x, y, rx, ry, ...r) => {
+    rings.push([rx, ry]);
+    return orig(x, y, rx, ry, ...r);
+  };
+  draw(0);
+  ctx.ellipse = orig;
+  assert.ok(rings.length >= 1, 'the landing drew no shock ring');
+  assert.ok(
+    rings.every(([rx, ry]) => rx > ry * 1.8),
+    `the shock ring is not flattened onto the floor: ${JSON.stringify(rings[0])}`,
+  );
+  run.dispose();
+  dom.uninstall();
+});
+
+test('a fast dive is drawn differently from an ordinary plunge', async () => {
+  // `k` saturates at vy 20, and the whole vocabulary used to stop there, so a
+  // 280px/tick hyper dive looked exactly like an ordinary drop. The one moment
+  // the animation had the most to say was the moment it went quiet.
+  const { fallFor } = await import('../src/animation.js');
+  const ordinary = fallFor(20),
+    dive = fallFor(80);
+  assert.equal(ordinary.rush, 0, 'an ordinary plunge must not be a dive');
+  assert.equal(dive.rush, 1, 'a terminal dive must saturate');
+  // The visible consequences, each of which the renderer reads.
+  assert.ok(dive.stretch > ordinary.stretch, 'a dive is not stretched further');
+  assert.ok(dive.trail > ordinary.trail, 'a dive leaves no longer trail');
+  assert.ok(dive.cels > ordinary.cels, `a dive draws ${dive.cels} cels, the same as a plunge`);
+  // And it must be MONOTONE through the range, or the escalation stutters.
+  let prev = fallFor(20);
+  for (const vy of [30, 45, 60, 75, 90]) {
+    const f = fallFor(vy);
+    assert.ok(f.trail >= prev.trail, `trail went backwards at vy ${vy}`);
+    assert.ok(f.stretch >= prev.stretch, `stretch went backwards at vy ${vy}`);
+    prev = f;
+  }
+});
+
+test('the drawn fall escalates with speed instead of plateauing', async () => {
+  const { installDom, createDisplay } = await import('./support/display.js');
+  const { createRenderer } = await import('../src/renderer.js');
+  const { createRun } = await import('../src/run.js');
+  const dom = installDom();
+  const { canvas, ctx } = createDisplay(1560, 866);
+  const renderer = createRenderer(canvas);
+  const run = createRun(19, () => {}, { staged: true });
+  run.skipOpening?.();
+  run.state.phase = 'playing';
+  for (let i = 0; i < 30; i++) run.tick();
+  const body = run.world.player;
+  const ops = (vy) => {
+    body.velocity.x = 0;
+    body.velocity.y = vy;
+    run.state.landAge = -1;
+    run.state.slashAge = -1;
+    ctx.__reset();
+    renderer.draw(run, 1, null, true, 'mouse');
+    return ctx.__ops.length;
+  };
+  const slow = ops(20),
+    fast = ops(80);
+  assert.ok(fast > slow, `a dive draws ${fast} ops against ${slow} for a plunge`);
+  run.dispose();
+  dom.uninstall();
+});

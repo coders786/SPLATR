@@ -34,7 +34,7 @@
  * live evaluation. A curve change that is not re-baked fails the test.
  */
 
-import { SLASH, FALL, slashFor, landFor, DIRS, TAU } from './animation.js';
+import { SLASH, FALL, slashFor, landFor, fallFor, DIRS, TAU } from './animation.js';
 
 /** How many floats each baked row carries. Named so the reader can index it. */
 export const SLASH_ROW = Object.freeze({
@@ -52,7 +52,13 @@ export const LAND_ROW = Object.freeze({
   wide: 0,
   tall: 1,
   t: 2,
-  width: 4,
+  // How hard the frame is rung, and how settled it is. Both were added with the
+  // landing's drawn impact: without them the renderer had no quantity to fade
+  // the shock ring and the ground scuff on, so a landing was applied as a
+  // silent scale and nothing was ever drawn.
+  shock: 3,
+  settle: 4,
+  width: 5,
 });
 
 /** Bake the whole slash arc, one row per tick, INCLUDING the null tail. */
@@ -94,6 +100,58 @@ export function bakeLand() {
     out[o + LAND_ROW.wide] = l.wide;
     out[o + LAND_ROW.tall] = l.tall;
     out[o + LAND_ROW.t] = l.t;
+    out[o + LAND_ROW.shock] = l.shock;
+    out[o + LAND_ROW.settle] = l.settle;
+  }
+  return out;
+}
+
+/**
+ * The fall vocabulary, sampled per integer downward speed.
+ *
+ * `fallFor` takes a float velocity, but a renderer never needs sub-pixel
+ * resolution on a plume. Sampling every integer px/tick from 0 to `FALL_SAMPLES`
+ * turns a stack of pow/sin/exponential into one index and a few reads, exactly
+ * as the slash and landing tables do.
+ *
+ * The table spans past `FALL.plunge` (20) all the way to 120, because the whole
+ * point of `rush` is that the vocabulary KEEPS CHANGING above the plunge
+ * threshold -- it used to saturate at 20 and then say nothing at all.
+ */
+export const FALL_SAMPLES = 120;
+export const FALL_ROW = Object.freeze({
+  k: 0,
+  rush: 1,
+  lean: 2,
+  stretch: 3,
+  squeeze: 4,
+  eyes: 5,
+  scarfLift: 6,
+  trail: 7,
+  cels: 8,
+  width: 9,
+});
+
+export function bakeFall() {
+  const out = new Float64Array((FALL_SAMPLES + 1) * FALL_ROW.width);
+  for (let vy = 0; vy <= FALL_SAMPLES; vy++) {
+    const f = fallFor(vy);
+    const o = vy * FALL_ROW.width;
+    if (!f) {
+      // Below the drift threshold there is no vocabulary: a null sentinel so the
+      // renderer draws nothing and a gentle drop stays quiet.
+      out[o + FALL_ROW.k] = -1;
+      continue;
+    }
+    out[o + FALL_ROW.k] = f.k;
+    out[o + FALL_ROW.rush] = f.rush;
+    out[o + FALL_ROW.lean] = f.lean;
+    out[o + FALL_ROW.stretch] = f.stretch;
+    out[o + FALL_ROW.squeeze] = f.squeeze;
+    out[o + FALL_ROW.eyes] = f.eyes;
+    out[o + FALL_ROW.scarfLift] = f.scarfLift;
+    out[o + FALL_ROW.trail] = f.trail;
+    out[o + FALL_ROW.cels] = f.cels;
   }
   return out;
 }
@@ -154,3 +212,4 @@ export const SLASH_TABLE = bakeSlash();
 export const LAND_TABLE = bakeLand();
 export const DIR_TABLE = bakeDirections();
 export const BLEND_TABLE = bakeDirectionBlend();
+export const FALL_TABLE = bakeFall();

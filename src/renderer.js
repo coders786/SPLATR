@@ -20,8 +20,8 @@ import {
 } from './motion.js';
 import { sceneFor, drawStory } from './storyboard.js';
 import { createSmear, ghostFor, morphWedge } from './smear.js';
-import { cubePose, slashFor, SLASH, DIRS } from './animation.js';
-import { SLASH_TABLE, LAND_TABLE, SLASH_ROW } from './bake.js';
+import { cubePose, slashFor, landFor, SLASH, DIRS } from './animation.js';
+import { SLASH_TABLE, LAND_TABLE, SLASH_ROW, LAND_ROW, FALL_TABLE, FALL_ROW, FALL_SAMPLES } from './bake.js';
 import { SHEAR, impactFor } from './stroke.js';
 import { rackInk, contactInk, drawSweep } from './cut-ink.js';
 const R = PLAYER_SIZE / 2;
@@ -1761,24 +1761,61 @@ export function createRenderer(canvas) {
       //
       // Only while genuinely plunging: fallFor() returns null below the drift
       // threshold, so a gentle drop gets nothing and the effect stays a readout.
-      if (motion && poseAnim.fall && poseAnim.fall.trail > 0.05) {
-        const k = poseAnim.fall.trail,
-          up = Math.PI / 2;
+      // Read the baked fall row rather than recomputing the vocabulary. Same
+      // numbers, one index instead of a stack of pow/sin/exp.
+      const fallRow = (() => {
+        if (!motion) return null;
+        const vy = Math.round(Math.max(0, world.player.velocity.y));
+        if (vy > FALL_SAMPLES) return null;
+        const o = vy * FALL_ROW.width;
+        if (FALL_TABLE[o + FALL_ROW.k] < 0) return null;
+        return {
+          trail: FALL_TABLE[o + FALL_ROW.trail],
+          cels: FALL_TABLE[o + FALL_ROW.cels],
+          rush: FALL_TABLE[o + FALL_ROW.rush],
+        };
+      })();
+      if (fallRow && fallRow.trail > 0.05) {
+        const k = fallRow.trail,
+          // How many cels this fall earns. A drift gets the single plume it
+          // always had; a terminal dive gets four, which is the only thing that
+          // separates the two on screen.
+          cels = fallRow.cels,
+          rush = fallRow.rush;
         c.save();
         c.translate(p.x, p.y);
-        for (let i = 0; i < 3; i++) {
-          const len = R * (1.6 + 2.4 * k) * (1 - i * 0.22),
-            spread = R * 0.9 * (i - 1);
-          c.globalAlpha = 0.16 * k * (1 - i * 0.22);
-          line(
-            c,
-            INK.acid,
-            Math.max(0.8, (2.4 - i * 0.6) / v.scale),
-            spread,
-            -R * 0.9,
-            spread * 1.5,
-            -R * 0.9 - len,
-          );
+        // THE CEL STACK. Each one is the same plume drawn shorter, dimmer and
+        // higher up the trail, so the eye reads a body that has been through
+        // here rather than a body with a smear behind it.
+        for (let cel = cels - 1; cel >= 0; cel--) {
+          const fade = 1 - cel / Math.max(1, cels),
+            lift = cel * R * 1.5 * (0.5 + rush),
+            scale = 1 - cel * 0.17;
+          for (let i = 0; i < 3; i++) {
+            const len = R * (1.6 + 2.4 * k) * (1 - i * 0.22) * scale,
+              spread = R * 0.9 * (i - 1) * scale;
+            c.globalAlpha = 0.16 * k * fade * (1 - i * 0.22);
+            line(
+              c,
+              i === 1 ? INK.paper : INK.acid,
+              Math.max(0.8, (2.4 - i * 0.6) / v.scale) * scale,
+              spread,
+              -R * 0.9 - lift,
+              spread * 1.5,
+              -R * 0.9 - lift - len,
+            );
+          }
+        }
+        // Speed hatching: short cross-strokes through the plume, only on a real
+        // dive. This is the anime "the air is being torn" mark.
+        if (rush > 0.15) {
+          c.globalAlpha = 0.5 * rush;
+          c.strokeStyle = INK.paper;
+          for (let i = 0; i < 5; i++) {
+            const y = -R * (1.4 + i * 1.5) * (0.5 + rush),
+              w = R * (0.9 + 0.5 * rush) * (1 - i * 0.14);
+            line(c, INK.paper, Math.max(0.6, 1.2 / v.scale), -w, y, w, y);
+          }
         }
         c.globalAlpha = 1;
         c.restore();
@@ -1800,6 +1837,80 @@ export function createRenderer(canvas) {
           -Math.PI * 0.94 + Math.PI * 0.88 * val,
         );
       }
+    }
+    // ── THE LANDING ─────────────────────────────────────────────────────────
+    //
+    // Measured before this: a landing changed the op count by ZERO. The squash
+    // was applied as a silent scale and nothing was ever DRAWN for it, so the
+    // single most physical moment in the game -- the cube hitting the floor --
+    // read as the cube briefly being a different shape.
+    //
+    // Three marks, all world-space and all fading on `land.settle`:
+    //   the ring   an expanding ellipse on the floor, the shock leaving
+    //   the scuff  dust thrown sideways along the surface
+    //   the crack  two short strokes where the body drove into the floor
+    // `poseAnim` is scoped to the cube's own transform block, so the landing is
+    // derived here from the same source of truth rather than reaching across.
+    // `landFor` is a pure function of the age, so this cannot disagree with the
+    // pose the body was drawn with.
+    const landAnim = motion ? landFor(s.landAge) : null;
+    if (landAnim && landAnim.shock > 0.02) {
+      const L = landAnim,
+        sh = L.shock,
+        // The floor is always below the cube: a landing is a downward contact.
+        fy = p.y + R * 0.9;
+      c.save();
+      // The ring. An ellipse, not a circle, because it is lying on a surface
+      // seen from the side -- a circle reads as a bubble, an ellipse as a shock.
+      const rw = R * (0.9 + 3.4 * (1 - L.settle)),
+        rh = rw * 0.26;
+      c.globalAlpha = 0.5 * sh;
+      c.strokeStyle = INK.paper;
+      c.lineWidth = Math.max(0.8, (3.2 * sh + 0.6) / v.scale);
+      c.beginPath();
+      c.ellipse(p.x, fy, rw, rh, 0, 0, Math.PI * 2);
+      c.stroke();
+      c.globalAlpha = 0.34 * sh;
+      c.strokeStyle = INK.acid;
+      c.lineWidth = Math.max(0.6, 1.4 / v.scale);
+      c.beginPath();
+      c.ellipse(p.x, fy, rw * 0.62, rh * 0.62, 0, 0, Math.PI * 2);
+      c.stroke();
+      // The scuff: dust thrown out along the floor, both ways, thinning fast.
+      for (let i = 0; i < 4; i++) {
+        const t = (i + 0.5) / 4,
+          dir = i < 2 ? -1 : 1,
+          out = R * (1.1 + 3.6 * (1 - L.settle) * (0.5 + t)),
+          up = -R * 0.12 * (1 - t) * sh;
+        c.globalAlpha = 0.42 * sh * (1 - t * 0.6);
+        line(
+          c,
+          INK.quiet,
+          Math.max(0.7, (1.8 - t) / v.scale),
+          p.x + dir * R * 0.5,
+          fy - up,
+          p.x + dir * out,
+          fy - up * 2.4,
+        );
+      }
+      // The crack: two short strokes straight down from the contact, only on
+      // the hardest part of the ring.
+      if (sh > 0.35) {
+        c.globalAlpha = 0.6 * sh;
+        for (let i = -1; i <= 1; i += 2) {
+          line(
+            c,
+            INK.paper,
+            Math.max(0.7, 1.6 / v.scale),
+            p.x + i * R * 0.34,
+            fy,
+            p.x + i * R * 0.5,
+            fy + R * 0.5 * sh,
+          );
+        }
+      }
+      c.globalAlpha = 1;
+      c.restore();
     }
     // The edge pips are SCREEN-SPACE, drawn after the cube's frame is popped.
     //

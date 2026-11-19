@@ -282,3 +282,66 @@ With the budget freed, two layers were added:
 
 Bundle: 330.1 → **332.9 KiB**, gzip 154.7 KiB. The raster ban in
 `scripts/check-bundle.mjs` still holds — everything added is geometry.
+
+## The other half: the fall and the landing
+
+Movement and the slash had been brought up to standard. Measured, the other two
+systems had not.
+
+### The landing drew nothing at all
+
+Op count per landing tick, before this: **348 at rest, 348 at the impact frame,
+then it went DOWN.** The squash was applied as a silent scale and no mark was
+ever drawn for it, so the most physical moment in the game — the cube hitting
+the floor — read as the cube briefly being a different shape.
+
+Three marks now, all world-space, all fading on the curve:
+
+- **the ring** — a flattened ellipse opening at contact (`98.9 × 25.7`) and
+  contracting as the shock dissipates (`46.8 × 12.2` by tick 6). An ellipse and
+  not a circle: a circle lying on a floor reads as a bubble.
+- **the scuff** — dust thrown sideways along the surface, thinning fast.
+- **the crack** — two short strokes where the body drove in, hardest beat only.
+
+`landFor` gained `shock` (1 at contact → 0) and `settle` (0 → 1) because there
+was no quantity to fade any of it on. Both are baked into the land row.
+
+### The fall went quiet exactly when it had most to say
+
+`k` saturates at vy 20, and the entire vocabulary was a function of it, so
+**everything above 20 px/tick produced identical numbers**. A plunge off a
+full-power launch reaches 80; a hyper dive reaches 280. The fastest falls in the
+game looked exactly like an ordinary drop.
+
+`rush` is a second axis — 0 at an ordinary plunge, 1 at terminal — and it only
+ever ADDS, so every hand-authored sample of the original curve is unchanged:
+
+| vy | rush | stretch | cels | trail |
+|---|---|---|---|---|
+| 20 | 0.00 | 1.10 | 1 | 1.00 |
+| 45 | 0.42 | 1.17 | 2 | 1.23 |
+| 80 | 1.00 | 1.26 | 4 | 1.55 |
+
+`cels` is the drawn consequence: a stack of trail plumes, each shorter and
+dimmer, so the eye reads a body that has BEEN here rather than one with a smear
+behind it. Plus cross-hatching through the plume on a real dive. Drawn ops:
+`352 (plunge) → 362 → 373 → 379 (terminal)`.
+
+The fall vocabulary is now baked too (`FALL_TABLE`, 121 rows), which is what paid
+for the extra drawing: draw p50 went **0.41 → 0.33ms** while adding two
+substantial effects.
+
+### The test that did not catch its own bug
+
+The first guard for "the landing must decay" counted ops and compared tick 8
+against contact. It passed with the decay REMOVED — because the ring's *radius*
+is driven by `settle`, so the op count falls even when `shock` is pinned at 1. I
+only found this by mutating the decay and watching the test stay green.
+
+It now asserts the curve directly (`landFor(0).shock > 0.95`,
+`landFor(8).shock < 0.1`) and the drawn ring radius. Five mutations were then
+run against the new guards — remove the landing drawing, make the ring a circle,
+revert the dive escalation, pin shock at 1, freeze the ring radius — and all
+five fail with a readable message.
+
+Bundle 332.9 → **334.9 KiB**, gzip 155.6 KiB.

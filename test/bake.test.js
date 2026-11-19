@@ -5,6 +5,10 @@ import {
   LAND_TABLE,
   DIR_TABLE,
   BLEND_TABLE,
+  FALL_TABLE,
+  FALL_ROW,
+  FALL_SAMPLES,
+  bakeFall,
   SLASH_ROW,
   LAND_ROW,
   DIR_LUT_N,
@@ -13,7 +17,7 @@ import {
   bakeDirections,
   bakeDirectionBlend,
 } from '../src/bake.js';
-import { SLASH, FALL, slashFor, landFor, DIRS, TAU } from '../src/animation.js';
+import { SLASH, FALL, slashFor, landFor, fallFor, DIRS, TAU } from '../src/animation.js';
 
 /* ── THE CONTRACT ────────────────────────────────────────────────────────── */
 //
@@ -150,4 +154,73 @@ test('a stale table is actually catchable: mutation', () => {
   const tampered = new Float64Array(fresh);
   tampered[3] += 0.5; // the swing's peak smear
   assert.notDeepEqual([...tampered], [...fresh], 'a corrupted table passed the comparison');
+});
+
+
+/* ── THE ROWS ADDED WITH THE DRAWN LANDING AND THE DIVE ──────────────────── */
+
+test('the landing table carries the shock and settle the drawing fades on', () => {
+  // These two columns did not exist when the landing was a silent scale, and
+  // that is exactly why a landing drew nothing: there was no quantity for the
+  // renderer to fade a shock ring on.
+  const fresh = bakeLand();
+  for (let a = 0; a <= FALL.land; a++) {
+    const l = landFor(a),
+      o = a * LAND_ROW.width;
+    if (!l) continue;
+    assert.equal(fresh[o + LAND_ROW.shock], l.shock, `tick ${a} shock`);
+    assert.equal(fresh[o + LAND_ROW.settle], l.settle, `tick ${a} settle`);
+  }
+  // Pinned against numbers, not against a second bake: full at contact, gone
+  // by the end, monotone in between.
+  assert.equal(LAND_TABLE[LAND_ROW.shock], 1, 'the landing must begin at full shock');
+  assert.equal(LAND_TABLE[LAND_ROW.settle], 0, 'settle starts at contact');
+  const last = FALL.land * LAND_ROW.width;
+  assert.ok(LAND_TABLE[last + LAND_ROW.shock] < 0.02, 'the landing shock does not reach zero');
+  for (let a = 1; a <= FALL.land; a++) {
+    const prev = (a - 1) * LAND_ROW.width,
+      now = a * LAND_ROW.width;
+    assert.ok(
+      LAND_TABLE[now + LAND_ROW.shock] <= LAND_TABLE[prev + LAND_ROW.shock],
+      `the shock rises at tick ${a}`,
+    );
+  }
+});
+
+test('the fall table covers the whole dive range, and escalates in it', () => {
+  const fresh = bakeFall();
+  assert.equal(FALL_TABLE.length, (FALL_SAMPLES + 1) * FALL_ROW.width);
+  assert.deepEqual([...FALL_TABLE], [...fresh], 'the baked fall table is stale');
+  // Below the drift threshold: a null sentinel, so a gentle drop stays quiet.
+  assert.equal(FALL_TABLE[0], -1, 'a stationary cube must have no fall vocabulary');
+  // The whole point of `rush`: the vocabulary keeps changing past the plunge
+  // threshold instead of saturating at 20 and going silent.
+  const at = (vy, col) => FALL_TABLE[vy * FALL_ROW.width + col];
+  assert.equal(at(20, FALL_ROW.rush), 0, 'an ordinary plunge is not yet a dive');
+  assert.equal(at(80, FALL_ROW.rush), 1, 'a terminal dive must saturate');
+  let prevTrail = -1,
+    prevCels = 0;
+  for (let vy = 20; vy <= 100; vy += 5) {
+    const trail = at(vy, FALL_ROW.trail),
+      cels = at(vy, FALL_ROW.cels);
+    assert.ok(trail >= prevTrail - 1e-9, `the trail shrinks at vy ${vy}`);
+    assert.ok(cels >= prevCels, `the cel count drops at vy ${vy}`);
+    prevTrail = trail;
+    prevCels = cels;
+  }
+  assert.ok(at(80, FALL_ROW.cels) > at(20, FALL_ROW.cels), 'a dive draws no more cels than a plunge');
+});
+
+test('every fall row matches landFor/fallFor at its own sample', () => {
+  for (let vy = 0; vy <= FALL_SAMPLES; vy++) {
+    const f = fallFor(vy),
+      o = vy * FALL_ROW.width;
+    if (!f) {
+      assert.equal(FALL_TABLE[o], -1, `vy ${vy} should be the null sentinel`);
+      continue;
+    }
+    assert.equal(FALL_TABLE[o + FALL_ROW.stretch], f.stretch, `vy ${vy} stretch`);
+    assert.equal(FALL_TABLE[o + FALL_ROW.eyes], f.eyes, `vy ${vy} eyes`);
+    assert.equal(FALL_TABLE[o + FALL_ROW.cels], f.cels, `vy ${vy} cels`);
+  }
 });
