@@ -742,7 +742,19 @@ export function createRenderer(canvas) {
     // The whole frame agrees on one animation state; effects that belong to
     // one state (a hit-stop pose, a death settle) can then be written once.
     anim = animationState(s);
-    const dt = s.phase === 'dying' ? 1 : s.stop ? 0 : world.engine.timing.timeScale;
+    // ── THE FRAME CLOCK DOES NOT STOP FOR A HITSTOP ────────────────────
+    //
+    // This used to read `s.stop ? 0 : ...`, which froze every effect layer for
+    // the duration of the stop: no swing, no smear, no spring. Combined with
+    // the old whole-run `return` in the tick, a Crown split stopped the game
+    // dead for 4 ticks and animated nothing -- the opposite of the weight a
+    // hitstop is for.
+    //
+    // The stop is now a PHYSICS freeze only (see run.js). The frame keeps its
+    // real delta so the shockwave, the spring and the smear all play across the
+    // frozen pose, which is what makes the moment read as an impact rather than
+    // as a dropped frame.
+    const dt = s.phase === 'dying' ? 1 : world.engine.timing.timeScale;
     // The bank advances on the simulation delta so the cap cannot be gamed by
     // a high refresh rate: 144 Hz regenerates half as fast per frame.
     shake.tick(dt);

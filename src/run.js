@@ -241,6 +241,13 @@ export function createRun(
      *  one-pip recovery: you have to have LEFT the floor to be paid for
      *  arriving on it again. */
     railAway: true,
+    /** Set by `dash()`; holds `slashAge` at 0 for the swing's first tick. */
+    freshSwing: false,
+    /** Rail banks this run. Feeds the BANK form axis, so it must exist from
+     *  tick zero -- it was never initialised, and `(s.banks || 0) + 1` hid that
+     *  by creating it on the first bank. A run with no banks reported
+     *  `undefined`, which readForm turned into a NaN axis. */
+    banks: 0,
     /** Ticks of post-cut grace left against `cutGraceFrom`. */
     cutGrace: 0,
     /** The id of the enemy just cut. Grace is against THIS one, not the field. */
@@ -482,6 +489,8 @@ export function createRun(
     // begins on the input, so by the time the blade reaches a shape it is
     // already travelling.
     s.slashAge = 0;
+    // Hold the zero frame for one tick -- see the note at the animation clocks.
+    s.freshSwing = true;
     s.stroke = beginStroke(world.player.position, s.slashAngle, s.shots);
     emit('dash', {
       ...world.player.position,
@@ -667,8 +676,6 @@ export function createRun(
     // body. That is the part that fixes the recording's complaint, and it does
     // not touch the physics.
     if (!fromShear) {
-      s.cutGrace = Math.max(s.cutGrace, CUT_GRACE);
-      s.cutGraceFrom = e.id;
       s.cutGrace = Math.max(s.cutGrace, CUT_GRACE);
       s.cutGraceFrom = e.id;
     }
@@ -951,12 +958,30 @@ export function createRun(
         });
       } else if (tier.index < s.tier) s.tier = tier.index;
     }
-    if (s.stop > 0) {
+    // ── ENTITY-ONLY HITSTOP ────────────────────────────────────────────────
+    //
+    // This used to `return` here, which froze THE WHOLE RUN: physics, the
+    // camera, the hazards, the clock. On a Crown split (4 ticks) the world
+    // visibly stopped, and because the camera was frozen inside the stop the
+    // muzzle of the impact and the frame around it both locked -- a dropped
+    // frame, not an impact.
+    //
+    // A hitstop should stop the things that were HIT, not the room they are in.
+    // So the ENTITIES freeze (their poses are pinned and their bodies do not
+    // integrate) while the clock, the camera and the effect layers keep running.
+    // The player keeps reading the frame as a still image of the moment, with
+    // the world continuing around it -- which is what sells the weight.
+    // NOT a `return`. Everything below this line is the part that should keep
+    // running during a hitstop: the animation clocks, the springs, the
+    // shockwaves, the effect ages. Only the physical integration is gated,
+    // and that happens much further down at `stepPhysics`.
+    // Read the flag FIRST. Decrementing before testing is an off-by-one that
+    // silently integrates on the opening tick of every hitstop -- the one tick
+    // that matters, because that is the frame the impact lands on.
+    const stopped = s.stop > 0;
+    if (stopped) {
       s.stop--;
       freezePoses();
-      // A frozen frame still holds its contact pose: the squash is drawn on
-      // the last resolved contact, not on a new one.
-      return;
     }
     if (s.impact && ++s.impactAge > IMPACT.springTicks) {
       s.impact = null;
@@ -970,7 +995,19 @@ export function createRun(
     // together with `alpha`, so the animation is frame-rate independent: at
     // 144Hz the renderer sees the same tick twice with different alpha and
     // draws the in-between frame itself.
-    if (s.slashAge >= 0) s.slashAge++;
+    //
+    // ── AGE 0 MUST BE OBSERVABLE ─────────────────────────────────────────
+    //
+    // `dash()` sets `slashAge = 0` from OUTSIDE the tick, so anything that
+    // increments unconditionally burns the zero frame before the renderer or a
+    // test can see it -- the wind-up's first frame simply never existed. That
+    // went unnoticed because the old whole-run hitstop `return` skipped this
+    // line on the ticks that mattered, which is a bug cancelling a bug.
+    //
+    // `s.freshSwing` is set by `dash()` and consumed here: the tick that
+    // STARTS a swing holds it at 0, and the next tick begins counting.
+    if (s.slashAge >= 0 && !s.freshSwing) s.slashAge++;
+    s.freshSwing = false;
     // The splat runs on its own clock, because it is the BODY's reaction and
     // the dash's clock keeps running. It ends and clears itself, so nothing
     // downstream has to remember to reset it.
@@ -1084,7 +1121,14 @@ export function createRun(
       );
     if(s.breath) s.breath--;
     if(!s.breath) s.breathMax=0;
-    stepPhysics(world, (dt) => combat.move(dt, s.band),pace);
+    // ── THE ONE GATED CALL ────────────────────────────────────────────────
+    //
+    // A hitstop stops the things that were HIT. This is the only line the stop
+    // touches: no integration, no enemy movement, no rail resolution. The
+    // camera, the effect clocks and every spring below keep running, so the
+    // frame is a still image of the impact inside a room that is still moving.
+    if (!stopped) stepPhysics(world, (dt) => combat.move(dt, s.band), pace);
+    else world.previousClock = world.clock;
     // ── READ THE EVENT, NOT THE MEMORY ──────────────────────────────────
     //
     // `world.contact` is the LAST contact and never goes back to null: it is
@@ -1270,7 +1314,7 @@ export function createRun(
       // (one edge, chain reset) is handled above and is deliberately separate:
       // it is the way OUT of trouble, not a reward for touching a wall.
       if (earned) s.edge = Math.min(MAX_EDGE, s.edge + 1);
-      s.banks = (s.banks || 0) + 1;
+      s.banks++;
       s.blade = Math.max(s.blade, 14);
       // Publish the shockwave for the renderer. Only worth drawing at speed:
       // a slow graze should not produce a sonic boom.
@@ -1360,7 +1404,18 @@ export function createRun(
     // hyper just refuses to let the blade expire.
     s.blade = s.hyper ? Math.max(s.blade, 1) : Math.max(0, s.blade - dt);
     s.parry = Math.max(0, s.parry - dt);
-    if (s.cutGrace > 0) {
+    // ── THE GRACE WINDOW IS A DISTANCE, NOT A DURATION ──────────────────
+    //
+    // It must not burn down during a hitstop. The whole point is "you cannot be
+    // hurt while you LEAVE the body", and during a stop the cube is not leaving
+    // anything -- it is pinned in place by the very impact that started the
+    // window. Measured: an 8-tick grace against a Bastion whose armor hit
+    // triggers a 5-tick stop left 3 ticks of real movement, and the cube was
+    // struck by the same Bastion it had just cut.
+    //
+    // So it is held while the entities are frozen. The window is spent on
+    // motion, which is what it was for.
+    if (s.cutGrace > 0 && !stopped) {
       s.cutGrace = Math.max(0, s.cutGrace - dt);
       if (!s.cutGrace) s.cutGraceFrom = null;
     }

@@ -1002,6 +1002,61 @@ body:has(#panel[open]) #hud {
 #form-stamp[data-form='unformed'] {
   color: #7d6a80;
 }
+/* ── THE NEXT RANK NUDGE ────────────────────────────────────────────────────
+   Sits directly under the form stamp and speaks the same language: a small
+   label, the missing amount in the run's own units, and the numeral it would
+   earn. The bar is the honest part -- it shows how much of the line this run
+   already reached, so "one more bank" reads as a near miss and "fifteen more"
+   does not pretend to be one. Quiet by design: this is an invitation, not a
+   second verdict, and it must never outshout the score above it. */
+#next-rank {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 12px;
+  position: relative;
+  padding-bottom: 7px;
+  color: var(--l);
+  font: 11px/1 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.82;
+}
+#next-rank .small {
+  font-size: 9px;
+  opacity: 0.62;
+}
+#next-rank b {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+#next-rank .rank-mark {
+  font: italic 800 15px/1 var(--type);
+  opacity: 0.9;
+}
+/* The rule under the row IS the progress bar: a track at zero alpha with a
+   filled span on top, so the nudge reads as a distance rather than a number. */
+#next-rank::after,
+#next-rank #next-rank-fill {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+}
+#next-rank::after {
+  right: 0;
+  background: #ffffff1f;
+}
+#next-rank #next-rank-fill {
+  width: calc(var(--fill, 0) * 100%);
+  background: var(--l);
+}
+/* A bank nudge is the same offer in a different currency, and the accent tells
+   the eye which stat to watch for on the next run. */
+#next-rank[data-axis='bank'] #next-rank-fill {
+  background: #deff52;
+}
 
 /* ── THE FORM READOUT ────────────────────────────────────────────────────────
  *

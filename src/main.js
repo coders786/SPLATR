@@ -1,5 +1,5 @@
 import { createRun, CHAIN_TIME, HYPER } from './run.js';
-import { readForm, formLabel, GRADE_AT, GRADE_MARK } from './form.js';
+import { readForm, formLabel, GRADE_AT, GRADE_MARK, nextRank } from './form.js';
 import { firstStart } from './opening.js';
 import { createClock } from './clock.js';
 import { createRenderer } from './renderer.js';
@@ -131,20 +131,49 @@ function record() {
   // were doing, and a short violent run is still a REDLINE. Only a run that
   // never cleared a single axis reads UNFORMED.
   {
-    const read = readForm({
+    const input = {
       kills: s.kills,
       throughcuts: s.throughcuts,
       banks: s.banks || 0,
       dashes: s.shots,
       elapsedTicks: s.elapsed,
       hp: s.hp,
-    });
+    };
+    const read = readForm(input);
     lastForm = read;
     const stamp = $('form-stamp');
     stamp.hidden = false;
     stamp.dataset.form = read.key;
     setText('form-name', read.form);
     setText('form-grade', read.grade ? GRADE_MARK[read.grade] : '');
+    // ── ONE MORE RUN ─────────────────────────────────────────────────────
+    //
+    // The stamp on its own is a verdict. A player who scored WEAVER II has no
+    // way to know whether they were a single bank from III or nowhere near it,
+    // and that difference decides whether the run gets replayed. So the debrief
+    // also says the CHEAPEST remaining step, in the axis's own units.
+    //
+    // It is silent when it has nothing honest to say (unformed runs, top
+    // grade), which is why this is a `hidden` toggle rather than an always-on
+    // line with empty text.
+    const nudge = nextRank(read, input),
+      next = $('next-rank');
+    if (next) {
+      next.hidden = !nudge;
+      if (nudge) {
+        setText('next-rank-need', `+${nudge.need}`);
+        setText('next-rank-mark', GRADE_MARK[nudge.to] || '');
+        next.dataset.axis = nudge.axis;
+        // The bar is the fraction of the line this run already reached, so a
+        // near-miss looks like one and a distant one does not.
+        const bar = $('next-rank-fill');
+        if (bar) bar.style.setProperty('--fill', nudge.progress.toFixed(3));
+        next.setAttribute(
+          'aria-label',
+          `${nudge.need} to reach grade ${GRADE_MARK[nudge.to] || nudge.to}`,
+        );
+      }
+    }
   }
   const print = s.bestStroke;
   $('best-print').hidden = !print;

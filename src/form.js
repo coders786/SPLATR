@@ -219,3 +219,76 @@ export function formLabel(read, { live = false } = {}) {
   if (live) return VERB[read.key] || read.form;
   return `${read.form} ${GRADE_MARK[read.grade] || ''}`.trim();
 }
+
+/** ── HOW CLOSE WAS THE NEXT RANK? ───────────────────────────────────────────
+ *
+ *  A debrief that says "WEAVER II" and nothing else is a verdict. The player
+ *  has no idea whether they were one throughcut away from III or nowhere near
+ *  it, and the difference between those two is the difference between "run it
+ *  back" and "close the tab".
+ *
+ *  So this answers the only question worth answering: given the axes this run
+ *  actually earned, what is the CHEAPEST remaining step to the next grade, and
+ *  how much of it is missing? "Cheapest" is measured in the axis's own units,
+ *  then normalised, because a bank is not comparable to a kill until both are
+ *  expressed as a fraction of their thresholds.
+ *
+ *  Returns null when there is nothing to nudge: unformed runs (no identity to
+ *  promote), failed sample gates (the answer would be noise), and the top
+ *  grade (there is no next).
+ *
+ *  Pure, like everything else in this module -- it reads a `readForm` result
+ *  and returns a sentence's worth of numbers.
+ *
+ *  @param {object} read  the object `readForm` returned
+ *  @param {object} input the same input `readForm` was given, for the counts
+ *  @returns {{axis:string, to:number, need:string, gap:number, progress:number}|null}
+ */
+export function nextRank(read, input = {}) {
+  if (!read || !read.lead || read.key === 'unformed') return null;
+  const grade = read.grade | 0;
+  if (grade >= GRADE_AT.length) return null; // already III
+  const target = GRADE_AT[grade]; // the line this run is short of
+  const dashes = Math.max(input.dashes | 0, input.shots | 0),
+    seconds = ratio(input.elapsedTicks ?? input.elapsed ?? 0, 60);
+  // The counts behind each axis, so the gap can be spoken in real units.
+  const have = {
+      weave: dashes ? ratio(input.throughcuts | 0, dashes) : 0,
+      bank: dashes ? ratio(input.banks | 0, dashes) : 0,
+      tempo: seconds ? ratio(input.kills | 0, seconds) : 0,
+      yield: dashes ? ratio(input.kills | 0, dashes) : 0,
+    },
+    // One more of the thing, in this axis's units.
+    oneMore = {
+      weave: dashes ? 1 / dashes : 1,
+      bank: dashes ? 1 / dashes : 1,
+      // Tempo is per second and cannot be re-run, so its nearest step is not
+      // "one more kill" but "the same kills, sooner" -- expressed as the
+      // fraction a single kill adds.
+      tempo: seconds ? 1 / seconds : 1,
+      yield: dashes ? 1 / dashes : 1,
+    };
+  let best = null;
+  for (const k of ['weave', 'bank', 'tempo', 'yield']) {
+    const gap = target - have[k];
+    if (gap <= 0) continue; // this axis already clears the line
+    const steps = Math.max(1, Math.ceil(gap / Math.max(1e-9, oneMore[k])));
+    if (!best || steps < best.steps || (steps === best.steps && gap < best.gap))
+      best = { axis: k, steps, gap };
+  }
+  if (!best) return null;
+  // Progress toward the line, 0..1, from the axis that is closest.
+  const progress = clamp01(have[best.axis] / target);
+  const unit = best.axis === 'tempo' ? 'kill' : best.axis === 'bank' ? 'bank' : best.axis === 'weave' ? 'throughcut' : 'cut';
+  return {
+    axis: best.axis,
+    to: grade + 1,
+    gap: best.gap,
+    steps: best.steps,
+    // Spoken form: "1 more bank", "2 more cuts". Deliberately pluralised here
+    // rather than at the call site so both channels say the same thing.
+    need: `${best.steps} more ${unit}${best.steps === 1 ? '' : 's'}`,
+    progress,
+  };
+}
+const clamp01 = (v) => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0);

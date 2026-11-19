@@ -7,6 +7,7 @@ import {
   FORM_THRESHOLDS,
   GRADE_AT,
   FORMS,
+  nextRank,
 } from '../src/form.js';
 
 // A run state's shape, with sane defaults, so each test states only what matters.
@@ -173,4 +174,42 @@ test('thresholds are frozen so a caller cannot quietly retune the ladder', () =>
   assert.ok(Object.isFrozen(FORM_THRESHOLDS));
   assert.ok(Object.isFrozen(FORMS));
   assert.ok(Object.isFrozen(GRADE_AT));
+});
+
+/* ── the near-rank nudge ────────────────────────────────────────────────── */
+
+test('nextRank speaks in the axis the player was closest on, and in real units', () => {
+  // A run that is a Weaver II by a wide margin but banked almost nothing: the
+  // cheap step to III is a bank, not a throughcut.
+  const input = run({ kills: 8, dashes: 20, shots: 20, banks: 19, throughcuts: 0, elapsed: 2400, hp: 2 });
+  const r = readForm(input),
+    n = nextRank(r, input);
+  assert.equal(r.key, 'bank');
+  assert.ok(n, 'a grade I run has somewhere to go');
+  assert.equal(n.to, r.grade + 1, 'it points at the very next grade');
+  assert.equal(n.axis, 'bank', 'the cheapest axis is the one already leading');
+  assert.match(n.need, /^\d+ more banks?$/, `spoke in banks, got "${n.need}"`);
+  assert.ok(n.progress > 0 && n.progress < 1, 'progress is a fraction of the line');
+});
+
+test('nextRank is silent when there is nothing to say', () => {
+  // No identity yet: there is no axe to promote.
+  const empty = run({ kills: 2, dashes: 2, shots: 2, elapsed: 200 });
+  assert.equal(nextRank(readForm(empty), empty), null);
+  // Top grade: there is no next roman numeral.
+  const top = run({ kills: 400, dashes: 60, shots: 60, banks: 5, throughcuts: 6, elapsed: 3600, hp: 3 });
+  const rt = readForm(top);
+  assert.equal(rt.grade, GRADE_AT.length, 'this run is grade III');
+  assert.equal(nextRank(rt, top), null, 'and there is no nudge above it');
+});
+
+test('nextRank never divides by zero and never returns NaN', () => {
+  for (const input of [run(), run({ kills: 5 }), { kills: undefined }, {}]) {
+    const n = nextRank(readForm(input), input);
+    if (!n) continue;
+    assert.ok(Number.isFinite(n.to));
+    assert.ok(Number.isFinite(n.gap));
+    assert.ok(Number.isFinite(n.steps) && n.steps >= 1);
+    assert.ok(Number.isFinite(n.progress));
+  }
 });
