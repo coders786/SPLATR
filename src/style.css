@@ -31,10 +31,8 @@
   --k: #16111e;
   --w: #fff8ec;
   --l: #deff52;
-  /* Was #ff507b, the rose that used to mean "past the red line". There is no
-     red line any more, and a rose readout was the last thing on screen still
-     saying there was one. Amber still reads as HEAT -- it is the top of the
-     ordinary dial, one step under hyper's cyan -- without meaning danger. */
+  /* Amber: the top of the ordinary dial, one step under hyper's cyan. It
+     reads as heat without meaning danger -- no colour in this game is a wall. */
   --hot: #ffb347;
   --dim: #c0b4c8;
   --mono: Mono, monospace;
@@ -396,7 +394,7 @@ dd {
    anyone who cannot read the needle quickly.
 
    Deliberately quiet until it matters: at cruising speed the whole thing is
-   near-furniture, and only SURGE and REDLINE earn colour. */
+   near-furniture, and only SURGE and EDGE earn colour. */
 #speedo {
   position: relative;
   width: 124px;
@@ -412,7 +410,7 @@ dd {
   transform: scale(1.06);
 }
 /* HYPER is the one state that is not a reading but an event, so the dial is
-   allowed to overshoot itself: a heavier lift than REDLINE, and a glow that
+   allowed to overshoot itself: a heavier lift than EDGE, and a glow that
    pulses. Everything else in the HUD is steady on purpose -- a readout that
    animates all the time is noise, and this only animates when the state is
    actually live. */

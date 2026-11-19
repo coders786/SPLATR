@@ -42,6 +42,9 @@ export function createCamera() {
   const MAX_LEAD_V = 42;
   // Ticks of pinned composition held after hyper speed is lost (see tick).
   let wasPinned = false;
+  // The pin's ease weight, 0 = ordinary follow, 1 = hard pin. State, not a
+  // local, because it has to survive between ticks to be damped (see tick).
+  let pin = 0;
   function desired(p, stationary, vx = 0, vy = 0, z = zoom) {
     const portrait = width < height * 0.85;
     const inset = room ? 0.28 : 0.32;
@@ -161,6 +164,7 @@ export function createCamera() {
       base = frameScale();
       forward = facing;
       home = { ...p };
+      pin = 0;
       snap(p, true);
     },
     snap,
@@ -260,10 +264,59 @@ export function createCamera() {
       // decaying to zero) in a single tick -- measured as a jump back into the
       // calm sample set, which then read as duplicated frames because the view
       // had not finished moving. The hold lets the lead finish retiring first.
-      const pinned = Math.hypot(v.x, v.y) > MAX_SPEED;
-      if (pinned) {
-        x = p.x - vw * 0.48;
-        y = p.y - vh * 0.56;
+      // ── THE PIN IS NO LONGER A CLIFF ────────────────────────────────────
+      //
+      // It was `speed > MAX_SPEED` -> hard set x/y to the pin. Measured: the cube
+      // sat at screen-y 0.827 at 42px/tick and then 0.560 at 48 -- a 231px jump
+      // in a SINGLE FRAME, 27% of the viewport. That is the "camera lags and
+      // jitters when falling fast" report, and it fires on every fall through
+      // the line, not only in hyper.
+      //
+      // The fix is not a lower threshold or a slower pin -- at 280px/tick any
+      // relative motion is a jump and the pin itself is right (see above). The
+      // fix is to STOP TELEPORTING into it: the pin is now an EASING WEIGHT over
+      // the ordinary follow, so the camera arrives over several frames instead
+      // of in one. `pin` is 0 for an ordinary flight, 1 for true hyper, and
+      // blends in between, so the same code serves a slow fall and a hyper dive
+      // without a discontinuity anywhere.
+      //
+      // The blend is over SPEED, not over the hyper state: the pin is about how
+      // far the cube travels per tick relative to the viewport, which is exactly
+      // what speed measures. Using the state flag would have re-created the
+      // cliff at a different number.
+      const sp = Math.hypot(v.x, v.y),
+        // Fully pinned at this speed. 100px/tick crosses the viewport in a
+        // third of a second, where interpolation can no longer hold the cube.
+        PIN_AT = MAX_SPEED * 2.4,
+        PIN_FROM = MAX_SPEED,
+        // The TARGET weight, straight from speed.
+        pinTarget = clamp((sp - PIN_FROM) / (PIN_AT - PIN_FROM), 0, 1);
+      // ── AND THE WEIGHT ITSELF HAS TO EASE ──────────────────────────────
+      //
+      // Blending x/y by `pin` removed the cliff for a cube that ACCELERATES
+      // through the line (a fall: 42, 48, 54...), because pin rises with it.
+      // It does not help the one case that still jumps: hyper entry, where a
+      // single impulse takes the cube from ~40px/tick to 277 in ONE TICK, so
+      // pin goes 0 -> 1 in one tick and the camera is hard-pinned instantly.
+      // Measured over three runs: every remaining visible snap (26-45% of the
+      // viewport) was that one frame, and all of them were `speed 40 -> 277`.
+      //
+      // So the weight is now a damped follow of its own target. The camera takes
+      // ~5 ticks to commit to the pin, which is short enough that the cube is
+      // still held for virtually the whole burst and long enough that the
+      // arrival is a move rather than a teleport. `pin` rises immediately for
+      // ordinary acceleration (the target moves slowly there) and only lags on
+      // the impulse that actually needs it.
+      pin += (pinTarget - pin) * (pinTarget > pin ? 0.34 : 0.5);
+      const pinned = pin > 0.999;
+      if (pin > 0) {
+        // Where the pin wants the camera, and where the follow has it.
+        const px = p.x - vw * 0.48,
+          py = p.y - vh * 0.56;
+        // Ease the two together. At pin=1 this is exactly the old hard pin; at
+        // pin=0 it is exactly the old follow; in between it is neither.
+        x += (px - x) * pin;
+        y += (py - y) * pin;
       }
       // Safety net: the cube can never leave the viewport.
       //

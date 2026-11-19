@@ -478,7 +478,7 @@ function updateHUD() {
   // the effect must know the difference between "fast" and "off the scale".
   const vel = run.world.player.velocity,
     hyperCeiling = s.hyper ? HYPER.speed : MAX_SPEED,
-    readout = speedReadout(Math.hypot(vel.x, vel.y), MAX_SPEED, hyperCeiling),
+    readout = speedReadout(Math.hypot(vel.x, vel.y), MAX_SPEED, hyperCeiling, s.hyper),
     dial = $('speedo');
   dial.dataset.band = readout.band;
   dial.setAttribute('aria-label', `Speed ${readout.kmh}, ${readout.band.toLowerCase()}`);

@@ -156,3 +156,49 @@ is actually falling.
 The lesson worth keeping: **a test that calls a pure function proves the curve,
 not the frame.** Every animation test that only imported `animation.js` would
 have passed with the character rendering inside-out.
+
+## The HUD was lying about speed
+
+Three things were wrong in the same corner of the game, and only one of them was
+where the report pointed.
+
+**The dial was pegged.** `speedReadout` scaled to `MAX_SPEED` (42), so 42 read
+100. But 42 is not a ceiling a player occasionally touches — measured over five
+casual runs it was the p50, p90 *and* p99 of ordinary flight. The needle sat
+against the stop for essentially the whole game, and the only thing left for it
+to say was "HYPER", which it said at 44 px/tick. Of every HYPER label in a real
+run, **27% were false**, and the fastest speed it mislabelled was 106.7 px/tick
+against a true hyper of 280.
+
+The dial now spans the speed the game can actually reach (0-280), and the tiers
+sit on measured positions:
+
+| speed | reads | band |
+|---|---|---|
+| 42 (ordinary p50/p99) | 39 | CRUISE |
+| 108 (fastest ordinary, 5 seeds) | 62 | EDGE |
+| 151 (hyper p50) | 73 | HYPER |
+| 280 (hyper ceiling) | 100 | HYPER |
+
+Ordinary play is now the middle of the dial instead of its ceiling.
+
+**And HYPER is a state, not a speed.** The band was `speed > max`, so any bounce
+that carried the cube past 42 earned the banner. It now keys on the game's
+actual hyper state — seven consecutive links. False labels: **332 -> 0**.
+
+**The camera teleported into its pin.** `pinned = speed > MAX_SPEED` hard-set the
+camera to the cube, so on a fall the cube sat at screen-y 0.827 at 42 px/tick and
+0.560 at 48 — a **231px jump in one frame**, 27% of the viewport, on every fall
+through the line. The pin is now an easing weight, damped over ~5 ticks: worst
+single-frame displacement **27% -> 18.6%**, p50 **1.02% -> 0.67%**, p99.9 **40%
+-> 15.9%**.
+
+The five remaining jumps are real physics: hyper entry (`boostPlayer`) takes the
+cube from ~40 to 277 in one tick. That is a burst the game means to deliver, so
+the camera absorbs it over a few frames rather than pretending it did not happen.
+
+**The red band at the bottom is gone.** It was the last thing still wearing the
+Red Line's costume — a row of rose teeth reading "do not cross", when the bottom
+is a wall identical to the other three and touching it costs a bounce. It is now
+a cool ruler with tick marks that crowd as the floor nears, plus one amber line
+in the final stretch. No red, no teeth.

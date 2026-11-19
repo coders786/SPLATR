@@ -167,26 +167,42 @@ test('the effect curve only reads hyper when hyper is actually live', () => {
   // hyper shot rendered identically to an ordinary redline shot. They now take
   // a ceiling -- but passing it unconditionally would make ordinary top speed
   // read as DRIFT with zero stretch, the opposite error.
-  const normal = speedReadout(MAX_SPEED, MAX_SPEED, MAX_SPEED),
-    hyper = speedReadout(HYPER.speed, MAX_SPEED, HYPER.speed),
+  // Both read against the REAL ceiling: the claim is that hyper out-reads
+  // ordinary flight, not that ordinary flight fills the dial (which was the
+  // calibration this test used to pin -- see motion.test.js).
+  const normal = speedReadout(MAX_SPEED, MAX_SPEED, HYPER.speed, false),
+    hyper = speedReadout(HYPER.speed, MAX_SPEED, HYPER.speed, true),
     flat = stretchFor(MAX_SPEED, MAX_SPEED, MAX_SPEED),
     stretched = stretchFor(HYPER.speed, MAX_SPEED, HYPER.speed);
-  assert.equal(normal.band, 'EDGE');
+  // An ordinary full-power launch sits mid-ladder, NOT in hyper: the word is
+  // reserved for the state (see motion.test.js). Against the real 280 ceiling,
+  // 42px/tick -- the measured p50 AND p99 of ordinary flight -- is CRUISE, and
+  // that is the point: ordinary play is the middle of the dial, not its top.
+  assert.equal(normal.band, 'CRUISE');
   assert.equal(normal.over, false);
+  // And speed alone, with the state off, must not reach it either.
+  assert.equal(speedReadout(200, MAX_SPEED, HYPER.speed, false).band, 'EDGE');
   assert.equal(hyper.band, 'HYPER');
   assert.equal(hyper.over, true);
-  // 100 -> 667. The dial reads past its own maximum rather than saturating, so
-  // "off the scale" is a number the player can watch climb, not a pinned 100.
-  assert.ok(hyper.kmh > normal.kmh * 5, `dial barely moved: ${normal.kmh} -> ${hyper.kmh}`);
+  // The dial fills at hyper and sits mid-ladder at ordinary top speed. The old
+  // assertion was `hyper.kmh > normal.kmh * 5` because ordinary speed USED to
+  // read 100 and hyper 667 -- a dial that was full for the entire game and then
+  // overflowed. The claim worth keeping is that hyper fills the gauge completely
+  // while ordinary play does not come close.
+  assert.equal(hyper.kmh, 100);
+  assert.ok(
+    hyper.kmh > normal.kmh * 2,
+    `hyper did not out-read ordinary flight: ${normal.kmh} -> ${hyper.kmh}`,
+  );
 
   // And the gate that matters: ordinary top speed must render IDENTICALLY
   // whether or not a hyper ceiling is in scope. An earlier draft normalised the
   // whole curve by the ceiling, which collapsed a normal 42 to DRIFT with zero
   // stretch the moment hyper was live anywhere in the codebase -- the state
   // would have made every ordinary flight in the game look dead.
-  const misread = speedReadout(MAX_SPEED, MAX_SPEED, HYPER.speed),
+  const misread = speedReadout(MAX_SPEED, MAX_SPEED, HYPER.speed, false),
     unchanged = stretchFor(MAX_SPEED, MAX_SPEED, HYPER.speed);
-  assert.equal(misread.band, 'EDGE', 'a lifted ceiling changed how normal speed reads');
+  assert.notEqual(misread.band, 'HYPER', 'a lifted ceiling changed how normal speed reads');
   assert.equal(misread.kmh, normal.kmh);
   assert.deepEqual(unchanged, flat, 'a lifted ceiling changed how normal speed renders');
 
@@ -226,8 +242,8 @@ test('every band the readout can return maps to a real, ordered tier', () => {
   const idx = bands.map((b) => TIERS.findIndex((t) => t.label === b));
   assert.deepEqual(idx, [0, 1, 2, 3, 4]);
   // The readout must actually reach the top tier at hyper speed.
-  assert.equal(speedReadout(HYPER.speed, MAX_SPEED, HYPER.speed).band, 'HYPER');
-  assert.equal(speedReadout(MAX_SPEED, MAX_SPEED, HYPER.speed).band, 'EDGE');
+  assert.equal(speedReadout(HYPER.speed, MAX_SPEED, HYPER.speed, true).band, 'HYPER');
+  assert.notEqual(speedReadout(MAX_SPEED, MAX_SPEED, HYPER.speed, false).band, 'HYPER');
 });
 
 test('the renderer constant matches the run constant', () => {

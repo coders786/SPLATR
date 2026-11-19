@@ -29,6 +29,9 @@ export const INK = {
   paper: '#fff8ec',
   acid: '#deff52',
   rose: '#ff426b',
+  // The non-lethal replacement for a rose hazard mark. Used where something
+  // used to shout "danger" and now only reports a condition.
+  cool: '#6f8fa3',
   quiet: '#b3a6bd',
 };
 function species(name, form, color, outline, r, points, ability, counter, extra = {}) {

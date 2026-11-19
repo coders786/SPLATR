@@ -368,23 +368,65 @@ export function hitStopFor(kind, pinned = false) {
  *  "km/h" style units and names the band, so the HUD can show a number that
  *  rises as the game speeds up. Deliberately non-linear at the top so the
  *  last few units feel earned. */
-export function speedReadout(speed, max = MAX_SPEED, ceiling = max) {
-  // Same rule as speedRamp: the normal reading is untouched, and going over the
-  // limit ADDS to it. `dial` stays inside 0..100 for the arc and needle, while
-  // `kmh` is free to read past 100 so the number itself says "off the scale".
-  const t = clamp(speed / max, 0, 1),
-    over = speed > max,
-    normal = Math.round(100 * Math.pow(t, 0.82)),
-    // How far into the lifted ceiling, as a 0..1 dial position.
-    dial = over && ceiling > max ? 1 + clamp((speed - max) / (ceiling - max), 0, 1) : t,
-    // 42 of 280 is 667, and that number is the whole point of the state.
-    kmh = over ? Math.max(normal, Math.round(100 * (speed / max))) : normal;
-  return {
-    kmh,
-    t: dial,
-    over,
-    band: over ? 'HYPER' : kmh > 92 ? 'EDGE' : kmh > 74 ? 'SURGE' : kmh > 46 ? 'CRUISE' : 'DRIFT',
-  };
+export function speedReadout(speed, max = MAX_SPEED, ceiling = HYPER_SPEED, hyperLive = null) {
+  // ── WHY THIS IS NOT `speed / max` ANY MORE ──────────────────────────────
+  //
+  // It was, and it was wrong in a way that read as a design bug rather than a
+  // display bug. Measured over five casual runs (aim at the nearest shape, fire
+  // when you can): ordinary flight sat at p50 42.0, p90 42.0, p99 42.0 against a
+  // MAX_SPEED of 42. The dial was pegged at full through essentially ALL normal
+  // play, and the only thing left for it to say was "HYPER" -- which it did at
+  // 44 px/tick, a 5% overspeed from a single wall bounce. 27% of every HYPER
+  // label in a real run was false, and the fastest speed it mislabelled was
+  // 106 px/tick against a true hyper of 280.
+  //
+  // A gauge whose needle is against the stop for most of the game cannot
+  // communicate anything. So the scale now runs to the REAL ceiling, and the
+  // tiers sit on their measured positions in that range:
+  //
+  //   p50 ordinary 42.0   p99 ordinary 42.0   max ordinary 108.8
+  //   p50 hyper   151.4   p90 hyper   247.2   p99 hyper    274.0
+  //
+  // `ceiling` is the speed that reads 100. Below the lift that is HYPER_SPEED,
+  // so a normal flight sits around 15% and a bank-driven overspeed reaches
+  // ~39% -- the dial finally has somewhere to travel. The bands are placed at
+  // the real distribution's shoulders rather than as fractions of a number the
+  // cube can barely exceed.
+  const span = Math.max(max, ceiling, 1),
+    t = clamp(speed / span, 0, 1),
+    // `over` used to be `speed > max`, i.e. "past 42". That is not what "over"
+    // means to a player -- it means the game's hyper state is live, which is a
+    // reward for seven consecutive links. Speed past the normal limit is
+    // simply a fast launch and belongs on the ordinary scale.
+    over = hyperLive === null ? speed > max * 2 : hyperLive,
+    // Square-rooted, because ordinary play occupies the first 15% of the range
+    // and would otherwise be a dead needle for the entire game.
+    normal = Math.round(100 * Math.pow(t, 0.5)),
+    dial = t,
+    kmh = normal;
+  // The bands, against the measured distribution:
+  //   42  = p50 AND p99 of ordinary flight, so it is not a "fast" threshold --
+  //         it is where normal flight lives. Everything up to it is one band.
+  //   108 = the fastest an ordinary (non-hyper) run reached across five seeds.
+  //   280 = true hyper, which is a STATE, not a speed the physics can reach on
+  //         its own; see `over`.
+  //
+  // `hyperLive` is the game's actual HYPER state (seven consecutive links), and
+  // it -- not the speed number -- decides whether the HUD may say the word.
+  // Speed alone was the old rule and it is why the label felt cheap: any bounce
+  // that carried the cube past 42 earned the banner. When the caller does not
+  // pass the flag (pure-speed callers, tests) the speed rule stands.
+  const live = hyperLive === null ? over : hyperLive;
+  const band = live
+    ? 'HYPER'
+    : speed > max * 1.9
+      ? 'EDGE'
+      : speed > max * 1.15
+        ? 'SURGE'
+        : speed > max * 0.5
+          ? 'CRUISE'
+          : 'DRIFT';
+  return { kmh, t: dial, over, live, band };
 }
 
 /** Blur is never applied to a hostile shape. Exported so a test can assert

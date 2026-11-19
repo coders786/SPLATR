@@ -1703,11 +1703,32 @@ export function createRenderer(canvas) {
     }
     if ((s.phase === 'playing' || s.caught) && !s.opening?.finishing) pointer(c, v, p, nearest);
     if(s.warning>0 && s.phase==='playing'){
-      // The tide's own teeth, a fixed 20 px inside the bottom edge, so the
-      // hazard is legible before the world line reaches this viewport.
-      c.save();c.globalAlpha=.32+s.warning*.58;
-      const base=h-20,h0=4+s.warning*8;
-      for(let x=-14;x<w;x+=28)poly(c,INK.rose,[[x,base],[x+8,base-h0],[x+21,base-h0],[x+13,base]]);
+      // ── THE FLOOR'S APPROACH, WITHOUT THE RED LINE ──────────────────────
+      //
+      // This used to be a row of rose teeth: a red hazard band across the bottom
+      // of the screen. It was the last thing in the game still wearing the Red
+      // Line's costume -- a lethal stripe you must not cross -- and it is not
+      // that any more. The bottom is a WALL, identical to the other three, and
+      // touching it costs nothing but a bounce. So the readout is not a hazard
+      // any more; it is a MEASUREMENT of how close the floor is.
+      //
+      // Drawn as a cool, receding rule with tick marks that compress as the
+      // floor nears, plus a single amber pip that is the only thing that ever
+      // warms. No red, no teeth, no "do not cross" -- the language of a gauge
+      // rather than the language of a warning.
+      c.save();
+      const base = h - 20,
+        k = clamp(s.warning, 0, 1),
+        gap = 46 - 30 * k,          // ticks crowd together as it arrives
+        len = 5 + 9 * k;            // and grow, so the change is legible
+      c.globalAlpha = 0.22 + 0.5 * k;
+      line(c, '#6f8fa3', 1, 0, base, w, base);
+      for (let x = 8; x < w; x += gap) line(c, '#6f8fa3', 1, x, base, x, base - len);
+      // The amber pip is the one warm mark, and only in the last stretch.
+      if (k > 0.55) {
+        c.globalAlpha = 0.35 + 0.5 * ((k - 0.55) / 0.45);
+        line(c, INK.acid, 2, 0, base, w, base);
+      }
       c.restore();
     }
     if (s.panic && s.panicTicks > 0 && s.phase === 'playing') {

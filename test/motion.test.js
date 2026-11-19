@@ -9,6 +9,7 @@ import {
   createShake,
   speedReadout,
   enemyIsSharp,
+  HYPER_SPEED,
 } from '../src/motion.js';
 import { MAX_SPEED } from '../src/physics.js';
 import { createCamera } from '../src/camera.js';
@@ -124,6 +125,108 @@ test('the speedometer is monotonic, in range and names a band', () => {
   }
   assert.equal(speedReadout(0).kmh, 0);
   assert.equal(speedReadout(0).band, 'DRIFT');
-  assert.equal(speedReadout(MAX_SPEED).kmh, 100);
-  assert.equal(speedReadout(MAX_SPEED).band, 'EDGE');
+  // ── THE DIAL RUNS TO THE REAL CEILING, NOT TO MAX_SPEED ──────────────────
+  //
+  // This used to assert `speedReadout(MAX_SPEED).kmh === 100`, which pinned the
+  // exact calibration that made the HUD useless: measured ordinary flight sat
+  // at p50 42.0 / p90 42.0 / p99 42.0 against MAX_SPEED 42, so the needle was
+  // pegged for the whole game and "HYPER" was the only thing left to say. The
+  // dial now spans the speed the game can actually reach.
+  assert.ok(
+    speedReadout(MAX_SPEED).kmh < 55,
+    `an ordinary top-speed launch fills ${speedReadout(MAX_SPEED).kmh}% of the dial`,
+  );
+  assert.equal(speedReadout(HYPER_SPEED).kmh, 100);
+  // The bands still climb in order, which is the property that matters.
+  const ladder = [0, MAX_SPEED * 0.6, MAX_SPEED * 1.3, MAX_SPEED * 2.2].map(
+    (v) => speedReadout(v).kmh,
+  );
+  assert.deepEqual([...ladder].sort((a, b) => a - b), ladder, 'the bands are not ordered');
+});
+
+test('the HUD may only say HYPER when hyper is actually live', () => {
+  // THE BUG THIS PINS: the band was `speed > max ? 'HYPER' : ...`, so a single
+  // wall bounce carrying the cube to 44px/tick earned the banner. Measured over
+  // a real run: 27% of every HYPER label was false, and the fastest speed it
+  // mislabelled was 106.7px/tick against a true hyper of 280. The word is a
+  // reward for seven consecutive links, so the STATE has to decide it.
+  for (const sp of [44, 60, 108, 150, 200, 279]) {
+    assert.notEqual(
+      speedReadout(sp, MAX_SPEED, HYPER_SPEED, false).band,
+      'HYPER',
+      `${sp}px/tick outside the hyper state read as HYPER`,
+    );
+  }
+  assert.equal(speedReadout(MAX_SPEED, MAX_SPEED, HYPER_SPEED, true).band, 'HYPER');
+  // A hyper that has bled down to ordinary speed still wears the name while the
+  // state is live -- it is a state, not a speed threshold.
+  assert.equal(speedReadout(MAX_SPEED, MAX_SPEED, HYPER_SPEED, true).band, 'HYPER');
+  // And the effect flag must follow the same rule.
+  assert.equal(speedReadout(150, MAX_SPEED, HYPER_SPEED, false).over, false);
+  assert.equal(speedReadout(150, MAX_SPEED, HYPER_SPEED, true).over, true);
+});
+
+/* ── THE CAMERA MUST NOT TELEPORT INTO THE PIN ──────────────────────────── */
+
+test('the camera eases into its hyper pin instead of teleporting', () => {
+  // THE BUG THIS PINS: the pin was `speed > MAX_SPEED` -> hard-set x/y. Measured
+  // on a falling cube: screen-y 0.827 at 42px/tick, then 0.560 at 48 -- a 231px
+  // jump in ONE frame, 27% of the viewport. It fired on every fall through the
+  // line, which is exactly the "camera lags and jitters" report.
+  const cam = createCamera();
+  cam.resize(1560, 866);
+  cam.reset({ x: 0, y: 0 }, 1, false);
+  cam.snap({ x: 0, y: 0 }, true);
+  const p = { x: 0, y: 0 };
+  let vy = 30,
+    prevUy = null,
+    worst = 0,
+    worstVy = 0;
+  for (let i = 0; i < 80; i++) {
+    vy += 5;
+    p.y += vy;
+    cam.tick({ ...p }, { x: 0, y: vy }, false, true, null, 0);
+    const v = cam.view(1);
+    const uy = (p.y - v.y) * v.scale / 866;
+    if (prevUy !== null) {
+      const d = Math.abs(uy - prevUy);
+      if (d > worst) {
+        worst = d;
+        worstVy = vy;
+      }
+    }
+    prevUy = uy;
+  }
+  // 12% of the viewport in a single frame is generous; the old cliff was 27%.
+  assert.ok(
+    worst < 0.12,
+    `camera jumped ${(worst * 100).toFixed(1)}% of the viewport in one frame at ${worstVy}px/tick`,
+  );
+  // And it must still ARRIVE: the pin has to actually take effect at hyper.
+  for (let i = 0; i < 30; i++) {
+    p.y += 280;
+    cam.tick({ ...p }, { x: 0, y: 280 }, false, true, null, 0);
+  }
+  const v = cam.view(1);
+  const uy = (p.y - v.y) * v.scale / 866;
+  assert.ok(Math.abs(uy - 0.56) < 0.02, `hyper is not pinned: cube at ${uy.toFixed(3)}`);
+});
+
+test('ordinary flight is not pinned, and hyper is', () => {
+  const cam = createCamera();
+  cam.resize(1560, 866);
+  cam.reset({ x: 0, y: 500 }, 1, false);
+  cam.snap({ x: 0, y: 500 }, true);
+  // A normal full-power launch must still get ordinary framing (the follow is
+  // allowed to lead), or the pin silently became the default view.
+  const p = { x: 0, y: 500 };
+  for (let i = 0; i < 20; i++) {
+    p.y -= 42;
+    cam.tick({ ...p }, { x: 0, y: -42 }, false, true, null, 0);
+  }
+  const normal = (p.y - cam.view(1).y) * cam.view(1).scale / 866;
+  assert.ok(
+    Math.abs(normal - 0.56) > 0.02,
+    `ordinary flight is pinned at ${normal.toFixed(3)} -- the pin is always on`,
+  );
 });
