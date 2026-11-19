@@ -155,7 +155,35 @@ export function createRun(
   const world = createPhysics({ seed, spawn: SPAWN, pad: PAD, arena: ARENA }),
     origin = { ...SPAWN },
     combat = createCombat(world, (e) => emit('tell', e)),
-    place = (spec) => combat.add({ ...spec, x: spec.x + origin.x, y: spec.y + origin.y }),
+    // ── NO ENEMY MAY ENTER OUTSIDE THE WALLS ──────────────────────────────
+    //
+    // Every enemy in the game arrives through `combat.add`, and this is the only
+    // caller, so this is the one place the invariant can actually be held.
+    //
+    // It had to be: the spawn grid is 1,600 x 1,240 and laid out by cell index,
+    // with no knowledge of the arena. Measured before this guard, 24.8% of all
+    // enemy samples sat OUTSIDE the rails -- up to 2,545 units past the right
+    // wall and further above the top one. From inside the table that looked like
+    // shapes crawling out of the barrier, and worse, they were unreachable: the
+    // cube cannot follow them through a wall it bounces off.
+    //
+    // The clamp is by the body's own half-extent, not by a constant, so a big
+    // Bastion is as far inside as a small Fang. Combined with the spawn cliff in
+    // levels.js (cells that fall entirely outside are not generated at all), an
+    // enemy can no longer be placed beyond the rail or on the far side of it.
+    place = (spec) => {
+      // The body's OWN radius, not a constant: combat.add scales by `size` or
+      // `small`, so a 0.6x Fork must sit as far from the rail as a full-size
+      // Bastion. Deriving it here means the clamp cannot drift out of step with
+      // whatever the shape table says.
+      const t = TYPES[spec.kind],
+        r = (t?.r ?? 32) * (spec.size ?? (spec.small ? 0.6 : 1));
+      return combat.add({
+        ...spec,
+        x: clamp(spec.x + origin.x, ARENA.x + r, ARENA.x + ARENA.w - r),
+        y: clamp(spec.y + origin.y, ARENA.y + r, ARENA.y + ARENA.h - r),
+      });
+    },
     stream = createStream(
       seed,
       (spec) => (solo && !spec.sentry ? waiting.push(spec) : place(spec)),

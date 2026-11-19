@@ -1,6 +1,6 @@
 import Matter from 'matter-js';
 import { TYPES, TAU } from './shapes.js';
-import { clamp, PLAYER_SIZE } from './levels.js';
+import { clamp, PLAYER_SIZE, ARENA } from './levels.js';
 const { Bodies, Body, Composite, Events, Vertices } = Matter;
 const E_OPTIONS = {
   isSensor: true,
@@ -89,9 +89,18 @@ export function createCombat(world, tell = () => {}) {
   }
   function crownPost(p, side, self) {
     let best, room=-Infinity;
+    // Posts are offsets from the PLAYER, so near a rail every candidate lands
+    // outside the table and the Crown would relocate through the wall -- it was
+    // the last enemy still escaping (measured: 109 samples outside after every
+    // other path was contained). Clamping each candidate BEFORE the clearance
+    // test means the picked post is always playable, and the spacing check still
+    // compares real positions rather than pre-clamp ones.
+    const cr = TYPES.crown.r,
+      lo = { x: ARENA.x + cr, y: ARENA.y + cr },
+      hi = { x: ARENA.x + ARENA.w - cr, y: ARENA.y + ARENA.h - cr };
     for(const [x,y] of [[260,-530],[-260,-530],[0,-680],[400,-390],[-400,-390],[150,-740],[-150,-740]]){
-      const q={x:p.x+x*side,y:p.y+y}; let gap=Infinity;
-      for(const e of enemies.values()) if(e!==self) gap=Math.min(gap,Math.hypot(e.x-q.x,e.y-q.y)-e.r-TYPES.crown.r);
+      const q={x:clamp(p.x+x*side,lo.x,hi.x),y:clamp(p.y+y,lo.y,hi.y)}; let gap=Infinity;
+      for(const e of enemies.values()) if(e!==self) gap=Math.min(gap,Math.hypot(e.x-q.x,e.y-q.y)-e.r-cr);
       if(gap>room){best=q;room=gap;}
       if(room>=310)break;
     }
@@ -101,15 +110,31 @@ export function createCombat(world, tell = () => {}) {
     if (enemies.has(spec.id)) return enemies.get(spec.id);
     const t = TYPES[spec.kind],
       a = spec.angle ?? (spec.kind === 'fang' ? Math.atan2(-spec.y, -spec.x) : 0);
+    // ── THE LAST PLACE AN ENEMY CAN BE BORN ────────────────────────────────
+    //
+    // `run.js` clamps everything it places, but that is not the only door into
+    // this collection: `kids()` below calls `add()` directly, and a Fork's two
+    // children are offset 94px sideways from a parent that may already be
+    // sitting against a rail. One such child was the only enemy left outside
+    // the table after every other path was contained.
+    //
+    // So the clamp lives here as well, by the body's own radius, computed from
+    // the same `size`/`small` rule used for `r` below. Anything born in this
+    // game is born inside the walls, whatever called for it.
+    const bornR = (t?.r ?? 32) * (spec.size ?? (spec.small ? 0.6 : 1));
+    const bornX = clamp(spec.x, ARENA.x + bornR, ARENA.x + ARENA.w - bornR),
+      bornY = clamp(spec.y, ARENA.y + bornR, ARENA.y + ARENA.h - bornR);
     const e = {
       ...spec,
-      postX:spec.x, postY:spec.y,
+      x: bornX,
+      y: bornY,
+      postX: bornX, postY: bornY,
       r: t.r * (spec.size ?? (spec.small ? 0.6 : 1)),
       hp: t.hp,
-      x: spec.x,
-      y: spec.y,
-      px: spec.x,
-      py: spec.y,
+      x: bornX,
+      y: bornY,
+      px: bornX,
+      py: bornY,
       angle: a,
       pa: a,
       age: 0,
@@ -217,7 +242,8 @@ export function createCombat(world, tell = () => {}) {
         ny = dy / dist;
       if (e.kind === 'crown' && dist > 1160) {
         const q=crownPost(p, Math.cos(e.age)<0?-1:1,e);
-        e.x = e.px = q.x; e.y = e.py = q.y;
+        e.x = e.px = clamp(q.x, ARENA.x + (e.r||0), ARENA.x + ARENA.w - (e.r||0));
+        e.y = e.py = clamp(q.y, ARENA.y + (e.r||0), ARENA.y + ARENA.h - (e.r||0));
         e.mode = 'idle';
         e.cool = 35;
         Body.setPosition(e.body, e);
@@ -231,8 +257,13 @@ export function createCombat(world, tell = () => {}) {
       const k = e.kind;
       e.cool -= dt;
       if (e.mode === 'rush') {
-        e.x += Math.cos(e.aim) * (e.lungeSpeed||10.8) * dt;
-        e.y += Math.sin(e.aim) * (e.lungeSpeed||10.8) * dt;
+        // A lunge is a straight line and does not know about rails. Held to the
+        // table here so a Fang cannot finish its rush on the far side of a wall
+        // -- it commits, hits the boundary and stops there, which also reads
+        // correctly: the rail is solid for everything on the table.
+        const er0 = e.r || 0;
+        e.x = clamp(e.x + Math.cos(e.aim) * (e.lungeSpeed||10.8) * dt, ARENA.x + er0, ARENA.x + ARENA.w - er0);
+        e.y = clamp(e.y + Math.sin(e.aim) * (e.lungeSpeed||10.8) * dt, ARENA.y + er0, ARENA.y + ARENA.h - er0);
         if ((e.clock -= dt) <= 0) {
           e.mode = 'idle';
           e.cool = 118;
@@ -338,6 +369,30 @@ export function createCombat(world, tell = () => {}) {
       if (k === 'well' && dist < 234 && world.launched) {
         const f = (1 - dist / 234) * 0.92 * dt;
         Body.setVelocity(player, { x: player.velocity.x - nx * f, y: player.velocity.y - ny * f });
+      }
+      // ── CONTAINMENT ─────────────────────────────────────────────────────
+      //
+      // Nothing above this point knows where the walls are, and three of the
+      // movement paths can put a shape outside them: a `crown` is repositioned
+      // relative to the PLAYER (crownPost), a lunge is a straight line that does
+      // not stop at a rail, and the closing lean is unconstrained. Measured
+      // after spawns were fixed: a crown drifting out through the top wall and
+      // staying there, unreachable, on screen, forever.
+      //
+      // One clamp for every enemy, by its own radius, at the single point where
+      // a position is committed. The leash that walks it home is upstream and
+      // untouched -- this only refuses to let it leave the table.
+      const lim = ARENA,
+        er = e.r || 0;
+      const cxq = clamp(e.x, lim.x + er, lim.x + lim.w - er),
+        cyq = clamp(e.y, lim.y + er, lim.y + lim.h - er);
+      if (cxq !== e.x || cyq !== e.y) {
+        e.x = e.px = cxq;
+        e.y = e.py = cyq;
+        // A shape pinned against a rail should not keep reporting velocity into
+        // it; that would read as a lunge that never lands.
+        e.vx = 0;
+        e.vy = 0;
       }
       e.vx = (e.x - e.px) / dt;
       e.vy = (e.y - e.py) / dt;

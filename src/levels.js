@@ -262,6 +262,24 @@ export function createStream(seed, enter, leave, staged = false) {
     for (let y = Math.max(0, cy - 1); y <= cy + 1; y++)
       for (let x = cx - 1; x <= cx + 1; x++) {
         if (-(y + 1) * CELL_H > line + 80) continue;
+        // ── NOTHING IS GENERATED OUTSIDE THE TABLE ────────────────────────
+        //
+        // The grid is laid out by cell index and knew nothing about the arena,
+        // so cells hanging past a rail were still built and their shapes fed
+        // in. `place()` in run.js clamps every enemy inside the walls, and
+        // without this skip a whole off-table cell would be built only to be
+        // squeezed against the rail -- a pile of shapes in a corner, which is a
+        // worse artefact than the one being fixed.
+        //
+        // A cell is skipped only when it lies ENTIRELY outside; one that merely
+        // straddles an edge is still built, and its shapes are clamped to the
+        // reachable side. `halfW` spans from the cell's left edge to its right.
+        const cellLeft = x * CELL_W - CELL_W / 2,
+          cellRight = x * CELL_W + CELL_W / 2,
+          cellTop = -(y + 1) * CELL_H,
+          cellBottom = -y * CELL_H;
+        if (cellRight < ARENA.x || cellLeft > ARENA.x + ARENA.w) continue;
+        if (cellBottom < ARENA.y) continue;
         const k = `${x}:${y}`;
         wanted.add(k);
         if (live.has(k)) continue;

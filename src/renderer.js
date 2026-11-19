@@ -313,41 +313,6 @@ function wallLine(c, v, x0, y0, x1, y1, a, nx, ny) {
   }
 }
 
-function tide(c, v, y, t) {
-  if (y > v.y + v.h + 60) return;
-  // THE TIDE IS NO LONGER LETHAL, SO IT MUST NOT LOOK LETHAL.
-  //
-  // It used to flood the entire area below the line with solid rose and stamp
-  // "REDLINE" on it -- a wall of death. The line no longer kills anything; the
-  // bottom wall does, and it only costs speed. Drawing a lethal hazard for a
-  // harmless boundary is worse than drawing nothing, because it teaches the
-  // player to fear the wrong thing.
-  //
-  // What it still IS: the enemy spawn frontier (levels.js will not spawn cells
-  // below it). So it stays visible as a faint informational edge, not a threat.
-  const l = v.x - 4,
-    r = v.x + v.w + 4;
-  c.save();
-  // A shallow gradient instead of a flood: it reads as "the field ends", not
-  // "you die here".
-  const g = c.createLinearGradient(0, y, 0, y + 90);
-  g.addColorStop(0, 'rgba(116,37,63,0.30)');
-  g.addColorStop(1, 'rgba(116,37,63,0)');
-  c.fillStyle = g;
-  c.fillRect(l, y, r - l, 90);
-  c.globalAlpha = 0.5;
-  c.fillStyle = INK.rose;
-  c.fillRect(l, y, r - l, 2);
-  // Tick marks rather than hazard chevrons: a measurement, not a warning.
-  c.globalAlpha = 0.28;
-  for (let x = Math.floor(l / 40) * 40; x < r; x += 40) c.fillRect(x, y + 4, 1, 7);
-  c.globalAlpha = 0.32;
-  c.font = 'bold 10px Mono,monospace';
-  c.fillStyle = '#ff9aa9';
-  c.textAlign = 'center';
-  c.fillText('F I E L D   E D G E', v.x + v.w * 0.5, y + 22);
-  c.restore();
-}
 function streak(c, trail, p, live) {
   if (trail.length < 3) return;
   // A decaying ribbon of afterimages: each older sample is thinner, dimmer and
@@ -802,33 +767,37 @@ export function createRenderer(canvas) {
     // never appeared in play -- the geometry was right and the matrix was not.
     // A screen-space layer should never inherit another layer's matrix.
     c.setTransform(canvas.width / w, 0, 0, canvas.height / h, 0, 0);
-    // The map shows the PLAYED region, not the raw arena rectangle.
+    // ── THE MAP SHOWS THE WHOLE ARENA, EDGES INCLUDED ─────────────────────
     //
-    // The arena is deliberately enormous -- its floor is 16000px under the
-    // spawn and its ceiling is forty bands away, because those rails exist to
-    // catch an escape velocity shot and must never be met in normal play. Using
-    // that rectangle as the map's aspect ratio squashed the whole panel to a
-    // two-pixel-wide sliver in the corner.
+    // It used to frame a 4,200-unit window centred on the player and draw a
+    // decorative border around the panel, so the rails you could see were not
+    // the rails that existed -- the border moved with the camera-and-player
+    // while the real walls are fixed in world space. The instruction was direct:
+    // "keep the walls fully visible on mini map".
     //
-    // So the map frames the space the cube and the field actually occupy: a
-    // window centred on the player, wide enough to hold the visible view plus
-    // every nearby enemy. It scrolls with the player, which is also the only
-    // framing where "where is everything I cannot see" has a stable answer.
-    const VIEW_SPAN = 4200, // world units across the map, ~4 screens
-      side = Math.min(w, h),
+    // So the map now frames the ACTUAL arena rectangle, in world units, and the
+    // four walls are drawn where they really are. This is the only framing where
+    // the map answers "how far am I from an edge" honestly, which is the whole
+    // reason to draw a table on it.
+    //
+    // The panel is therefore not square: the arena is 28,000 x 90,000, roughly
+    // 1:3.2, and forcing that into a box would make the width unreadable. A
+    // tall panel in the corner is the honest shape. It is capped in height so
+    // it cannot eat the field on a short window.
+    //
+    // Deliberately still excluded: enemy kinds and health. It is a locator.
+    const side = Math.min(w, h),
       pad = Math.max(10, side * 0.022),
-      box = Math.min(side * 0.26, 190),
-      half = VIEW_SPAN / 2,
-      cx = world.player.position.x,
-      cy = world.player.position.y,
-      scale = box / VIEW_SPAN,
-      mw = box,
-      mh = box,
+      // Fit the arena's aspect into the available panel, preserving ratio.
+      maxW = Math.min(side * 0.2, 176),
+      maxH = side * 0.46,
+      scale = Math.min(maxW / A.w, maxH / A.h),
+      mw = A.w * scale,
+      mh = A.h * scale,
       x0 = w - mw - pad,
       y0 = h - mh - pad,
-      mapX = cx - half,
-      mapY = cy - half;
-    const toMap = (x, y) => ({ x: x0 + (x - mapX) * scale, y: y0 + (y - mapY) * scale });
+      // World -> map: the arena's top-left corner is the panel's top-left.
+      toMap = (x, y) => ({ x: x0 + (x - A.x) * scale, y: y0 + (y - A.y) * scale });
 
     c.save();
     // Backing plate. Dark and slightly inset so the map reads as a pane of
@@ -844,15 +813,32 @@ export function createRenderer(canvas) {
     c.strokeStyle = '#2a1f33';
     c.lineWidth = 1;
     c.strokeRect(x0 - 4.5, y0 - 4.5, mw + 9, mh + 9);
-    // The table itself: rails as a bright border, because a bank angle is only
-    // useful if you can see where the rails are.
+    // ── THE REAL WALLS, WHERE THEY ACTUALLY ARE ──────────────────────────
+    //
+    // The old border was decoration: a rectangle at the panel's edge that had no
+    // relationship to the arena coordinates. Now the panel IS the arena, so the
+    // frame of the panel is the wall -- drawn bright, because "how far is that
+    // rail" is the only question this map exists to answer.
+    //
+    // Drawn as four explicit edges rather than strokeRect so each can carry its
+    // own weight later, and so the top (the wall hyper exists to reach) reads as
+    // the heaviest line on the map.
     c.strokeStyle = '#5b4058';
     c.lineWidth = 1.5;
     c.strokeRect(x0, y0, mw, mh);
     c.strokeStyle = '#ff507b';
-    c.lineWidth = 1;
-    c.globalAlpha = 0.5;
+    c.globalAlpha = 0.75;
+    c.lineWidth = 1.5;
     c.strokeRect(x0 + 0.75, y0 + 0.75, mw - 1.5, mh - 1.5);
+    c.globalAlpha = 1;
+    // The top wall, emphasised: it is the one the run is climbing toward.
+    c.strokeStyle = '#f2e6ff';
+    c.globalAlpha = 0.9;
+    c.lineWidth = 2;
+    c.beginPath();
+    c.moveTo(x0, y0 + 1);
+    c.lineTo(x0 + mw, y0 + 1);
+    c.stroke();
     c.globalAlpha = 1;
 
     // The view window: what the player can actually see right now. This is the
@@ -862,8 +848,8 @@ export function createRenderer(canvas) {
     c.globalAlpha = 0.32;
     c.lineWidth = 1;
     c.strokeRect(
-      x0 + (v.x - mapX) * scale,
-      y0 + (v.y - mapY) * scale,
+      x0 + (v.x - A.x) * scale,
+      y0 + (v.y - A.y) * scale,
       v.w * scale,
       v.h * scale,
     );
@@ -960,7 +946,6 @@ export function createRenderer(canvas) {
       }
     } else {
       walls(c, v, p);
-      tide(c, v, mix(s.oldLine, s.line, alpha), time);
       if (s.net || s.caught) {
         const y = s.caught
           ? p.y + R * (Math.abs(Math.cos(p.angle)) + Math.abs(Math.sin(p.angle))) + 2

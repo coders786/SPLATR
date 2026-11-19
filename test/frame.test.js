@@ -628,3 +628,103 @@ test('the arena walls are semi-visible: hidden in open space, drawn when approac
   run.dispose();
   dom.uninstall();
 });
+
+test('no red line is drawn anywhere in play', () => {
+  // "no red line concept" -- the FIELD EDGE strip and its gradient are gone.
+  // This is an absence test, so it has to look for the exact marks the old
+  // tide() painted rather than assert a count of zero (which would pass on a
+  // frame that drew nothing at all).
+  const dom = installDom();
+  const { canvas, ctx } = createDisplay(1560, 866);
+  const renderer = createRenderer(canvas);
+  const run = createRun(24, () => {}, { staged: true });
+  for (let i = 0; i < 90; i++) run.tick();
+  ctx.__reset();
+  renderer.draw(run, 1, null, true, 'mouse');
+  const texts = ctx.__ops.filter((o) => o.kind === 'text').map((o) => o.text);
+  assert.equal(
+    texts.filter((t) => /F\s*I\s*E\s*L\s*D\s+E\s*D\s*G\s*E/.test(t)).length,
+    0,
+    'the FIELD EDGE strip is still being stamped',
+  );
+  // Sanity: the frame really did draw, so the assertion above is not vacuous.
+  assert.ok(ctx.__ops.length > 100, 'the frame drew nothing -- the absence proves nothing');
+  run.dispose();
+  dom.uninstall();
+});
+
+test('the minimap frames the whole arena, so all four walls are visible at once', () => {
+  // "keep the walls fully visible on mini map". The map used to frame a
+  // scrolling 4,200-unit window, so the border it drew was decoration that did
+  // not correspond to the real rails. It now frames the arena rectangle.
+  const dom = installDom();
+  const { canvas, ctx } = createDisplay(1560, 866);
+  const renderer = createRenderer(canvas);
+  const run = createRun(19, () => {}, { staged: true });
+  const { ARENA } = arenaModule;
+  // Hard against the LEFT rail: a scrolling window would not show the right.
+  run.world.player.position.x = ARENA.x + 200;
+  run.world.player.position.y = -3000;
+  ctx.__reset();
+  renderer.draw(run, 1, null, true, 'mouse');
+  const frames = ctx.__ops.filter((o) => o.kind === 'strokeRect' && o.pts.length === 2);
+  const map = frames
+    .map((o) => ({
+      w: o.pts[1][0] - o.pts[0][0],
+      h: o.pts[1][1] - o.pts[0][1],
+    }))
+    .filter((r) => r.w > 60 && r.h > 200)
+    .sort((a, b) => b.w * b.h - a.w * a.h)[0];
+  assert.ok(map, 'no minimap panel was drawn');
+  // The panel must carry the arena's aspect ratio, not a square.
+  const aspect = map.w / map.h;
+  const want = ARENA.w / ARENA.h;
+  assert.ok(
+    Math.abs(aspect - want) < 0.03,
+    `minimap aspect ${aspect.toFixed(3)} does not match the arena's ${want.toFixed(3)} -- it is not framing the whole table`,
+  );
+  run.dispose();
+  dom.uninstall();
+});
+
+test('no enemy is ever placed or left outside the walls', () => {
+  // Measured at 24.8% of ALL enemy samples before this work, including shapes
+  // that had escaped through a rail and could never be reached again.
+  //
+  // The seed and length matter. This failure was a FORK's child: `kids()` adds
+  // two Fangs 94px sideways from the parent, bypassing the caller that places
+  // everything else, so a parent already near a rail put a child through it.
+  // Seed 33 is one where that happens; 900 ticks of it was not enough, so the
+  // first version of this test passed against the bug it was written for.
+  const { ARENA } = arenaModule;
+  let checked = 0,
+    kids = 0;
+  for (const seed of [33, 19, 7]) {
+    const run = createRun(seed, () => {}, { staged: true });
+    for (let i = 0; i < 2400; i++) {
+      if (i % 12 === 0) {
+        const n = run.nearest();
+        if (n) run.dash(run.aimAt(n));
+      }
+      run.tick();
+      for (const e of run.combat.enemies.values()) {
+        const r = e.r || 0;
+        checked++;
+        if (e.small) kids++;
+        assert.ok(
+          e.x >= ARENA.x + r - 0.01 &&
+            e.x <= ARENA.x + ARENA.w - r + 0.01 &&
+            e.y >= ARENA.y + r - 0.01 &&
+            e.y <= ARENA.y + ARENA.h - r + 0.01,
+          `enemy ${e.id} (${e.kind}${e.small ? ', small' : ''}) at ` +
+            `${Math.round(e.x)},${Math.round(e.y)} is outside the walls`,
+        );
+      }
+    }
+    run.dispose();
+  }
+  assert.ok(checked > 20000, `only ${checked} enemy samples -- the runs went nowhere`);
+  // If no Fork ever split, the specific bug this test exists for was never
+  // exercised and a pass means nothing.
+  assert.ok(kids > 50, `only ${kids} child shapes seen -- the Fork path was not exercised`);
+});
