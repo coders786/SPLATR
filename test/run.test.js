@@ -51,9 +51,45 @@ test('finite cuts, passive refill, bounded focus; misses eventually time out a c
   s.chain = 3;
   s.chainTime = 80;
   advance(g, 100);
-  assert.equal(s.edge, 1);
-  assert.equal(s.chain, 0);
+  // ── THE DRIP IS AN AIR RULE ──────────────────────────────────────────────
+  //
+  // This used to assert `edge === 1` after 100 ticks, and it passed because the
+  // cube had settled onto a SPAWN PAD within a few ticks of the last dash: the
+  // refill timer was running the whole time it sat there. That is the exact
+  // shape of the floor farm -- park, wait out the timer, get a pip, repeat.
+  //
+  // A pad landing pays nothing (there is no rail contact), so what this now
+  // measures is that the timer genuinely does not run while the cube is lying
+  // around. The pass is the absence of income.
+  assert.equal(s.edge + 0, 0, 'sitting on a pad pays nothing at all');
+  assert.equal(s.chain, 0, 'and the chain is gone');
   assert.equal(s.phase, 'playing');
+  g.dispose();
+});
+test('the floor is a rescue, not an income: one edge at zero pips, and only one', () => {
+  // The anti-farm rule, measured on the real arena floor rather than a pad.
+  //   0 pips  -> the floor hands back ONE, so a bad start is never a soft-lock
+  //   holding -> it does not keep paying: no drip runs while the cube is down
+  //   chain   -> touching down costs the chain, which is the actual penalty
+  const g = createRun(19, () => {}, { staged: true }),
+    s = g.state;
+  g.skipOpening();
+  s.phase = 'playing';
+  for (let i = 0; i < 30; i++) g.tick();
+  for (const e of g.combat.enemies.values()) g.combat.remove(e);
+  const a = g.world.arena,
+    p = g.world.player;
+  p.position.x = 0;
+  p.position.y = a.y + a.h - 200;
+  Object.assign(s, { edge: 0, chain: 6, chainTime: 90 });
+  Body.setVelocity(p, { x: 0, y: 90 });
+  let peak = 0;
+  for (let i = 0; i < 400; i++) {
+    g.tick();
+    peak = Math.max(peak, s.edge);
+  }
+  assert.equal(peak, 1, 'the floor hands back exactly one edge and then stops');
+  assert.equal(s.chain, 0, 'touching down costs the chain');
   g.dispose();
 });
 test('focus is spent in wall ticks instead of slow simulation time, and stays spent until released', () => {

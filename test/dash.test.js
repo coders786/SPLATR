@@ -1,4 +1,5 @@
 import test from 'node:test';
+import Matter from 'matter-js';
 import assert from 'node:assert/strict';
 import {
   octant,
@@ -288,17 +289,45 @@ test('the wall splat flattens against the wall, then dazes back to square', () =
 });
 
 test('a dash into a wall is interrupted, and touching a wall is not', () => {
+  // ── DRIVEN THROUGH THE REAL CHANNEL ─────────────────────────────────────
+  //
+  // This test used to plant `world.contact` and call `tick()`. That worked only
+  // because `contact` was a field that never cleared -- the sticky bug. It is
+  // now the debounce MEMORY, and the per-tick EVENT is `world.struck`, which
+  // `stepPhysics` clears at the top of every step by design.
+  //
+  // So fabricating the field cannot work any more, and fabricating it is the
+  // weaker test anyway. This throws the cube at the real arena floor with a
+  // live dash and asserts the arrival it actually produces.
   const run = boot();
-  // A dash in its active phase that meets a rail becomes a splat.
-  run.state.slashAge = 3;
-  run.world.contact = null;
-  const rail = { x: 0, y: 0, nx: 0, ny: -1, depth: 40, surface: 'rail', speed: 200, clock: 99 };
-  run.world.contact = rail;
-  run.tick();
-  assert.ok(run.state.splat, 'a dash into a rail must splat');
+  const { Body } = Matter,
+    a = run.world.arena,
+    p = run.world.player;
+  p.position.x = 0;
+  p.position.y = a.y + a.h - 120;
+  run.state.slashAge = 3; // mid-dash: this is an interrupted dash, not a walk
+  run.state.splat = null;
+  run.world.struck = null;
+  Body.setVelocity(p, { x: 0, y: 120 });
+  let splatted = false;
+  for (let i = 0; i < 20 && !splatted; i++) {
+    run.tick();
+    splatted = !!run.state.splat;
+  }
+  assert.ok(splatted, 'a dash into a rail must splat');
   // The splat expires on its own and clears itself; nothing has to remember.
   for (let i = 0; i < SPLAT.total + 2; i++) run.tick();
   assert.equal(run.state.splat, null, 'the splat must clear itself');
+  // And a rail touch OUTSIDE the dash window is just a wall, not a splat.
+  const walker = boot();
+  walker.state.slashAge = -1;
+  walker.state.splat = null;
+  walker.world.player.position.x = 0;
+  walker.world.player.position.y = a.y + a.h - 120;
+  Matter.Body.setVelocity(walker.world.player, { x: 0, y: 120 });
+  for (let i = 0; i < 20; i++) walker.tick();
+  assert.equal(walker.state.splat, null, 'touching a wall is not a splat');
+  walker.dispose();
   run.dispose();
 });
 

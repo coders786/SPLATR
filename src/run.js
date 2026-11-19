@@ -9,10 +9,11 @@ import {
   MAX_SPEED,
   RELEASE_GRAVITY,
   boostPlayer,
+  dampPlayer,
 } from './physics.js';
 import { panicWindow, panicScale } from './aim.js';
 import { DASH, SPLAT } from './animation.js';
-import { SPAWN, PAD, ARENA, createStream, bandAt, district, clamp } from './levels.js';
+import { SPAWN, PAD, ARENA, createStream, bandAt, district, clamp, PLAYER_SIZE } from './levels.js';
 import { createCombat } from './slasher.js';
 import { TYPES } from './shapes.js';
 import { createOpening } from './opening.js';
@@ -42,6 +43,10 @@ export const MISS_CAP = 3;
 export const RALLY_CEIL = 58;
 
 export const MAX_EDGE = 3,
+  /** Speed above which a rail bounce is a shot the player played rather than a
+   *  fall gravity paid for. Below it the rail reflects elastically and pays
+   *  nothing; at or above it the bounce boosts and returns a pip. */
+  BANK_EARN = 34,
   // The longest a chain window can ever be. Kept as an export because it is the
   // documented ceiling and because anything external that needs "the" window
   // should get the maximum, not a stale literal.
@@ -212,6 +217,27 @@ export function createRun(
     // in ticks. Drives the contact squash and its shockwave ring.
     impact:null,
     impactAge:0,
+    // ── FLOOR RECOVERY ────────────────────────────────────────────────────
+    //
+    // Touching a rail is not free any more. It returns ONE edge -- enough to
+    // launch again, so a player can never be soft-locked at zero pips on the
+    // floor -- and it costs the chain, which is the thing that actually
+    // matters.
+    //
+    // Before this, the floor gave a pip back on a 76-tick timer regardless, so
+    // parking on it was already the best way to farm dashes. The rule now is:
+    // the floor is a way OUT of trouble, never a way to build a run. Full
+    // three-pip refills and Overdrive stay strictly tied to aerial cuts.
+    edgeReturn: 0,
+    /** Did the player THROW themselves since the last rail? A bank only pays
+     *  for a shot the player played -- see the bank block in tick. */
+    sinceDash: false,
+    /** Ticks of refill cooldown left after touching a rail. */
+    floorCool: 0,
+    /** True while the cube is clear of every rail band. Gate for the floor's
+     *  one-pip recovery: you have to have LEFT the floor to be paid for
+     *  arriving on it again. */
+    railAway: true,
     // Rail-bank shockwave. Separate from `impact` because it is a different
     // event with a different feeling: `impact` says "you touched something",
     // `boom` says "you bounced off a wall at speed". The renderer draws it big
@@ -391,6 +417,7 @@ export function createRun(
     s.caught = false;
     s.held = s.depleted = false;
     s.shots++;
+    s.sinceDash = true;
     s.breath = 0;
     s.breathMax = 0;
     s.firstAir = false;
@@ -653,7 +680,25 @@ export function createRun(
     const mult = Math.min(8, s.chain) * (s.drive > 0 ? 2 : 1),
       base = (e.small ? 45 : TYPES[e.kind].points) * mult,
       stroke = s.stroke,
-      { points, release } = printKill(stroke, e, base, fromShear, s.slashAngle, hpBefore);
+      // ── PRE-EXISTING CRASH, FLAGGED ────────────────────────────────────
+      //
+      // `s.stroke` is only ever assigned inside `dash()` and starts null, but
+      // a rail BANK also sets `s.blade = 14` -- so a cube can hold a live blade
+      // without ever having dashed. When an enemy is in range on that tick,
+      // `cut()` runs and `printKill` trips over `stroke.contacts`.
+      //
+      // Reproduced: TypeError at stroke.js:59 after a floor bank, tick 160.
+      // Not caused by the floor-recovery work, but that work makes banks far
+      // more common, so it gets a guard rather than a re-run. A cut with no
+      // stroke on record opens no ledger; it still scores.
+      ledger = printKill(
+        // A bank-only blade gets a throwaway ledger: the function below reads
+        // `released`/`points`/`kills` on the same object, so passing null was
+        // never an option -- it just crashed further down the line.
+        stroke || (s.bladeLedger ??= beginStroke(world.player.position, s.slashAngle, s.shots)),
+        e, base, fromShear, s.slashAngle, hpBefore,
+      ),
+      { points, release } = ledger;
     // A small kill is still an impact: a short beat, never a free full
     // launch. A full-size kill buys a real choice, longer on the first one.
     if (!s.opening && !fromShear && e.small) grantBreath(breathFor(s, 'small'));
@@ -693,9 +738,9 @@ export function createRun(
       impact,
       release,
       fromShear,
-      throughcut: stroke.released,
-      strokePoints: stroke.points,
-      strokeKills: stroke.kills,
+      throughcut: ledger.released,
+      strokePoints: ledger.points,
+      strokeKills: ledger.kills,
       points,
       chain: s.chain,
     });
@@ -704,8 +749,8 @@ export function createRun(
       const dx = Math.cos(s.slashAngle),
         dy = Math.sin(s.slashAngle),
         end = { x: e.x + dx * SHEAR.reach, y: e.y + dy * SHEAR.reach };
-      stroke.shear = { x: e.x, y: e.y, end, angle: s.slashAngle };
-      emit('shear', stroke.shear);
+      ledger.shear = { x: e.x, y: e.y, end, angle: s.slashAngle };
+      emit('shear', ledger.shear);
       // Snapshot the victims before spawning children. A wave never spawns a
       // second wave or hits a surviving plate twice on the same launch.
       for (const victim of combat.forwardHits(e, end, SHEAR.width)) cut(victim, true);
@@ -741,14 +786,60 @@ export function createRun(
     }
     s.oldLine = s.line;
   }
+  /** Is the cube within a body-length of any arena rail? */
+  function railNear(w) {
+    // Half a body plus a little slack: the rails clamp the CENTRE to
+    // `edge + half`, so this is the band in which a bounce can happen.
+    const pad = PLAYER_SIZE * 0.5 + 6;
+    const a = w.arena,
+      q = w.player.position,
+      half = PLAYER_SIZE / 2;
+    if (!a) return false;
+    return (
+      q.x <= a.x + half + pad ||
+      q.x >= a.x + a.w - half - pad ||
+      q.y <= a.y + half + pad ||
+      q.y >= a.y + a.h - half - pad
+    );
+  }
   function recharge(dt) {
-    if (s.edge < MAX_EDGE) {
-      s.recharge += dt;
-      if (s.recharge >= 76) {
-        s.edge++;
-        s.recharge = 0;
-      }
-    } else s.recharge = 0;
+    // ── THE DRIP ONLY RUNS IN THE AIR ──────────────────────────────────────
+    //
+    // A pip comes back every 76 dt-units. That timer is load-bearing: it is
+    // what keeps a whiffed start recoverable without a kill, and removing it
+    // outright measured as four broken pacing tests (a player who misses twice
+    // is simply stuck).
+    //
+    // What made it a FARM was that it ran while the cube sat on the floor. So
+    // it is gated on `world.grounded` instead of being deleted: touch the rail
+    // and the clock stops. The floor still hands back ONE pip on contact (see
+    // the rail block in tick), so you can never be soft-locked down there --
+    // but the floor can no longer be a pip factory, because the only thing it
+    // pays is the single edge that lets you leave.
+    if (s.edge >= MAX_EDGE) return void (s.recharge = 0);
+    // Refuse to drip while the cube is IN CONTACT RANGE of a rail, not merely
+    // while `grounded` is set. `grounded` is a single-tick flag derived from a
+    // contact that is published once per arrival, and a cube bouncing on the
+    // floor spends most of its time between arrivals -- so the flag was false
+    // on exactly the ticks the drip needed to be suppressed.
+    // ── AND THE DRIP STOPS AT THE RAIL BAND ────────────────────────────
+    //
+    // Proximity alone was not enough. A bounce throws the cube ~1000px clear of
+    // the floor, so by the time the ripening counter mattered it was nowhere
+    // near a rail and the drip paid out mid-air -- measured, a cube that only
+    // fell bounced once and then collected two free pips while climbing away.
+    //
+    // So touching the floor STOPS the clock for a full window rather than just
+    // pausing it while the cube is close. The window is longer than the timer,
+    // which means a bounce can never generate a pip on its own; only sustained
+    // flight can. That is what makes the floor a way out instead of a source.
+    if (s.floorCool > 0) return void (s.recharge = 0);
+    if (world.grounded || railNear(world)) return void (s.recharge = 0);
+    s.recharge += dt;
+    if (s.recharge >= 76) {
+      s.edge++;
+      s.recharge = 0;
+    }
   }
   function enterField(cleared) {
     if (!s.opening || (!cleared && s.opening.finishing) || !['ready', 'playing'].includes(s.phase))
@@ -952,9 +1043,18 @@ export function createRun(
     if(s.breath) s.breath--;
     if(!s.breath) s.breathMax=0;
     stepPhysics(world, (dt) => combat.move(dt, s.band),pace);
+    // ── READ THE EVENT, NOT THE MEMORY ──────────────────────────────────
+    //
+    // `world.contact` is the LAST contact and never goes back to null: it is
+    // the debounce memory `noteContact` uses. Reading it here meant the level
+    // test `hitSurface !== lastContact` was masquerading as an edge test, so a
+    // cube parked on the floor reported "touching a rail" on 289 of 300 ticks
+    // and its pose stayed squashed.
+    //
+    // `world.struck` is the contact that happened THIS TICK, or null.
     // One contact per tick, straight from Matter's resolved normal. A wall,
     // a deck, a plate that stops the blade: the pose bends the same way.
-    const hitSurface = world.contact;
+    const hitSurface = world.struck;
     if (hitSurface && hitSurface !== lastContact && s.phase === 'playing') {
       lastContact = hitSurface;
       noteImpact(hitSurface.x, hitSurface.y, hitSurface.nx, hitSurface.ny, hitSurface.depth);
@@ -987,6 +1087,42 @@ export function createRun(
     // the same contact object. Measuring banks that way saw exactly ONE in 300
     // ticks while the cube was visibly sitting on the rail.
     if (hitSurface?.surface === 'rail' && s.phase === 'playing' && !(s.bankCool > 0)) {
+      // ── THE FLOOR ITSELF ────────────────────────────────────────────────
+      //
+      // One edge back, and the chain goes. `edgeReturn` is a counter the HUD
+      // reads to flash the pip that came back, so the refund is visible rather
+      // than a number quietly changing.
+      //
+      // RESET THE CHAIN, not just let it time out: timing out would let a
+      // player hop on the floor between kills and keep a long chain alive,
+      // which is exactly the farm this is meant to close.
+      // ONE PER ENTRY, not one per cooldown.
+      //
+      // `bankCool` was the gate here, which meant a cube resting on the floor
+      // simply waited out 24 ticks and collected again: measured, a cube that
+      // only ever fell went 0 -> 1 -> 2 -> 3 pips in 71 ticks on the floor
+      // alone. A cooldown is a rate limit; what this needs is an EDGE. So the
+      // recovery pays only if the cube has been clear of the rail band since
+      // the last time it paid, which is tracked as `s.railAway`.
+      // ...and it only pays when you have NOTHING. The brief for this was
+      // narrow: "0-pip floor states aren't soft-locks". A cube with a pip in
+      // reserve is not soft-locked, it is armed -- it needs no rescue, and
+      // paying it anyway turns every bounce into income. Measured before this
+      // gate: a cube that only ever fell collected a pip on each bounce, once
+      // every 24 ticks, indefinitely.
+      if (s.railAway && s.edge === 0) {
+        s.edge++;
+        s.edgeReturn = 14;
+        emit('recover', { edge: s.edge });
+      }
+      // (An earned bounce further down this block may add one more; the cap is
+      // MAX_EDGE either way, so a fast arrival can go 0 -> 2 but never 0 -> 3.)
+      if (s.chain > 0) {
+        s.chain = 0;
+        s.chainTime = 0;
+        s.drive = 0;
+        emit('chainBroken', {});
+      }
       const v = world.player.velocity,
         speed = Math.hypot(v.x, v.y),
         // ── THE BOUNCE, AND THE NEAR-WALL BONUS ────────────────────────────
@@ -1027,7 +1163,13 @@ export function createRun(
               1
             : 1.14,
         CEIL = boom ? HYPER.speed * HYPER.reboundCap : s.hyper ? HYPER.speed : MAX_SPEED * 2.1;
-      s.bankCool = 8; // long enough to debounce, short enough to chain
+      // ── 0.4s, THE NUMBER THE BRIEF ASKS FOR ──────────────────────────
+      //
+      // This was 8 ticks (0.13s), which is a debounce, not a cooldown. On a
+      // floor bounce it meant a pip every 8 ticks: measured, a cube dropped
+      // onto the floor went 0 -> 2 -> 3 pips in 31 ticks doing nothing but
+      // falling. Touching a rail is an ENTRY, and an entry has to cost time.
+      s.bankCool = 24;
       // Raise the CEILING as well as the velocity.
       //
       // This is the rule that makes "chain slashes to a speed beyond the limit"
@@ -1054,10 +1196,38 @@ export function createRun(
           : Math.min(CEIL, rally);
       if (boom) s.hyperBoom = false;
       s.ceiling = world.playerCeiling;
-      // A hyper bounce can GAIN speed (BOOST > 1 up to the cap); a normal bounce
-      // is a modest kick. Both go through the same guarded boost.
-      if (speed > 4 && speed < CEIL) boostPlayer(world, BOOST, CEIL);
-      s.edge = Math.min(MAX_EDGE, s.edge + 1);
+      // ── THE BOUNCE HAS TO BE EARNED ──────────────────────────────────
+      //
+      // This used to pay on SPEED, and speed cannot tell the difference: the
+      // cube's terminal velocity IS `MAX_SPEED` (42), which is also roughly
+      // what a dash arrives at. Measured, a cube simply dropped onto the floor
+      // arrived at 42 px/tick and banked exactly like a deliberate shot, twice
+      // in 47 ticks, with gravity as the only input.
+      //
+      // So the test is not how fast you hit the rail, it is whether you THREW
+      // yourself at it. `s.sinceDash` is set by `dash()` and consumed here, so
+      // a cube that is only falling -- however fast -- banks nothing.
+      const earned = s.sinceDash;
+      s.sinceDash = false;
+      // Touching a rail stops the refill clock for longer than the timer takes
+      // to ripen, so a bounce can never pay for itself. See `recharge`.
+      s.floorCool = 160;
+      if (earned && speed < CEIL) boostPlayer(world, BOOST, CEIL);
+      // An unearned bounce is NOT a free elastic reflection. Left perfectly
+      // elastic it is a perpetual motion machine -- the cube comes back up at
+      // exactly the speed it went down, so gravity re-charges it forever.
+      //
+      // NOTE: `boostPlayer(world, 0.82)` cannot do this. It clamps the factor
+      // with `Math.max(1, ...)`, so anything under 1 is a no-op at best and a
+      // RATCHET at worst: when the cube is over the ceiling it multiplies by
+      // `ceiling/speed` after having already risen, so repeated bounces climb.
+      // Measured with the no-op: a cube that only fell reached -199 px/tick in
+      // 100 ticks and escaped the arena entirely. So this damps directly.
+      else if (!earned) dampPlayer(world, 0.82);
+      // ...and only an earned bounce returns a pip. The floor's own recovery
+      // (one edge, chain reset) is handled above and is deliberately separate:
+      // it is the way OUT of trouble, not a reward for touching a wall.
+      if (earned) s.edge = Math.min(MAX_EDGE, s.edge + 1);
       s.banks = (s.banks || 0) + 1;
       s.blade = Math.max(s.blade, 14);
       // Publish the shockwave for the renderer. Only worth drawing at speed:
@@ -1084,7 +1254,8 @@ export function createRun(
         combo: s.banks >= 3,
       });
     }
-    if (s.bankCool > 0) s.bankCool--;
+    // The pip-return flash is a short readout, not a state.
+    if (s.edgeReturn > 0) s.edgeReturn--;
     // Bleed the rally ceiling back down to the normal limit. A shot is faster
     // than MAX_SPEED for a second or two after a bank and then the world
     // reasserts itself, so the over-speed is a burst the player created.
@@ -1154,6 +1325,20 @@ export function createRun(
       waiting.length = 0;
       emit('leaveLane', {});
     }
+    // ── TIMERS COUNT DOWN EVERY TICK ────────────────────────────────────
+    //
+    // `bankCool` used to be decremented at the BOTTOM OF THE BANK BLOCK, which
+    // only runs on a tick where a bank happened. So the cooldown froze the
+    // moment the cube left the rail and the very next arrival banked again:
+    // measured, a cube dropped on the floor took a second pip 24 ticks later
+    // with the cooldown still reading 23. A head start you give yourself is
+    // only a head start if it runs down.
+    if (s.bankCool > 0) s.bankCool--;
+    if (s.floorCool > 0) s.floorCool--;
+    // "Away from the rails" is a fact about where the cube IS, not a timer.
+    // It is what makes the floor's one-pip recovery an entry rather than a
+    // rate limit, so it is recomputed every tick.
+    s.railAway = !railNear(world);
     s.chainTime = Math.max(0, s.chainTime - dt);
     if (!s.chainTime) s.chain = 0;
     hyperStep();

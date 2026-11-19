@@ -202,6 +202,23 @@ function advanceTiming(world, pace) {
  *  compound past it. `capVelocity` is not used because it clamps to MAX_SPEED,
  *  and a banked rally is explicitly allowed to exceed the launch limit.
  */
+/**
+ * Scale the player's velocity by `factor` -- which may be BELOW 1.
+ *
+ * `boostPlayer` clamps its factor with `Math.max(1, ceiling / speed)` because it
+ * exists to spend speed, never to lose it. A bounce that must LOSE energy needs
+ * this instead: multiplying by 0.82 through `boostPlayer` is a no-op, and near
+ * the ceiling it is a ratchet. Measured with the no-op: a cube that only fell
+ * accelerated to -199 px/tick in 100 ticks and left the arena.
+ */
+export function dampPlayer(world, factor) {
+  const v = world.player.velocity,
+    speed = Math.hypot(v.x, v.y);
+  if (!Number.isFinite(speed) || speed < 0.001) return speed;
+  Body.setVelocity(world.player, { x: v.x * factor, y: v.y * factor });
+  return speed * factor;
+}
+
 export function boostPlayer(world, factor, ceiling) {
   const v = world.player.velocity,
     speed = Math.hypot(v.x, v.y);
@@ -315,7 +332,9 @@ function noteContact(world, x, y, nx, ny, depth, surface = null) {
   // tick. That is not a hit. A contact counts when it is a real closing speed
   // AND either somewhere new or the first one after a clean frame. Depth is
   // the closing rate, so a body merely leaning on a surface reads ~0.
-  if (!Number.isFinite(depth) || depth <= 1.4) return;
+  // The closing speed below which a contact is a REST, not an arrival. A real
+  // landing measures 20+; a body leaning on a pad measures 1.4-1.9.
+  if (!Number.isFinite(depth) || depth <= 3.2) return;
   if (!Number.isFinite(x) || !Number.isFinite(y)) return;
   const prev = world.contact;
   if (prev) {
@@ -327,6 +346,8 @@ function noteContact(world, x, y, nx, ny, depth, surface = null) {
     if (world.clock < prev.until && samePlace && sameFace) return;
   }
   world.contact = { x, y, nx, ny, depth, surface, speed: world.player.speed, clock: world.clock, until: world.clock + 0.22 };
+  // The event for THIS tick. `world.contact` keeps the debounce memory.
+  world.struck = world.contact;
 }
 
 function snapshot(body, ceiling = MAX_SPEED) {
@@ -366,7 +387,32 @@ function railBounce(world) {
   const p = world.player.position,
     v = world.player.velocity,
     RESTITUTION = 0.9,
-    half = PLAYER_SIZE / 2;
+    half = PLAYER_SIZE / 2,
+    // ── ARRIVING AT A RAIL IS AN EVENT, RESTING ON ONE IS NOT ──────────────
+    //
+    // Gravity adds ~0.375 px/tick of downward speed to a resting cube on every
+    // physics substep. The old test was `if (v.y > 0)`, so that crumb of
+    // gravity counted as "moving INTO the floor": the position was clamped, the
+    // velocity reflected, and `world.contact` republished with a brand-new
+    // object -- every substep, forever.
+    //
+    // Measured: a cube parked on the floor reported `surface === 'rail'` on
+    // 289 of 300 ticks. Every consumer of that channel (impact rings, the wall
+    // splat, the bank reward's identity guard) was being handed a fresh contact
+    // ~19 times a second for a cube that was not moving.
+    //
+    // So a closing speed below ARRIVE is treated as REST: the velocity is
+    // zeroed rather than reflected, and no contact is published. A real
+    // arrival -- anything above the threshold -- still reflects and still
+    // publishes, which is what makes this edge-triggered instead of
+    // level-triggered.
+    // Raised from 2.4: a cube parked on the floor picks up 4-5 px/tick of
+    // gravity between substeps, which cleared the old threshold, reflected at
+    // 0.9 and rattled for 300 ticks. These residuals are not arrivals -- a real
+    // one measures tens of pixels per tick (a 70 px/tick drop is a landing; a
+    // parked cube reporting 5.2 is the integrator breathing). Measured on the
+    // old value: four "contact" events over 300 parked ticks.
+    ARRIVE = 8;
   const x0 = a.x + half,
     x1 = a.x + a.w - half,
     y0 = a.y + half,
@@ -377,28 +423,41 @@ function railBounce(world) {
   if (p.x < x0) {
     p.x = x0;
     if (v.x < 0) {
-      v.x = -v.x * RESTITUTION;
-      side = 'left';
-      nx = 1;
+      if (-v.x < ARRIVE) v.x = 0;
+      else {
+        v.x = -v.x * RESTITUTION;
+        side = 'left';
+        nx = 1;
+      }
     }
   } else if (p.x > x1) {
     p.x = x1;
     if (v.x > 0) {
-      v.x = -v.x * RESTITUTION;
-      side = 'right';
-      nx = -1;
+      if (v.x < ARRIVE) v.x = 0;
+      else {
+        v.x = -v.x * RESTITUTION;
+        side = 'right';
+        nx = -1;
+      }
     }
   }
   if (p.y < y0) {
     p.y = y0;
     if (v.y < 0) {
-      v.y = -v.y * RESTITUTION;
-      side = 'top';
-      ny = 1;
+      if (-v.y < ARRIVE) v.y = 0;
+      else {
+        v.y = -v.y * RESTITUTION;
+        side = 'top';
+        ny = 1;
+      }
     }
   } else if (p.y > y1) {
     p.y = y1;
-    if (v.y > 0) {
+    if (v.y > 0 && v.y < ARRIVE) {
+      // Resting on the floor: gravity feeds it a crumb of downward speed every
+      // substep. Absorb it and stay quiet -- see ARRIVE above.
+      v.y = 0;
+    } else if (v.y > 0) {
       v.y = -v.y * RESTITUTION;
       // ── THE FLOOR IS A WALL, NOT A CUSHION ───────────────────────────────
       //
@@ -435,9 +494,31 @@ function railBounce(world) {
     side,
     speed: Math.hypot(v.x, v.y),
   };
+  world.struck = world.contact;
 }
 
 export function stepPhysics(world, beforeStep, pace=1) {
+  const a = world.arena;
+  // ── A CONTACT IS AN EVENT; `world.contact` IS THE MEMORY ────────────────
+  //
+  // Two different things were sharing one field:
+  //
+  //   `world.contact`  the LAST contact, kept alive across ticks because
+  //                    `noteContact` uses it to debounce a body resting on a
+  //                    surface (the `until` window). This is memory.
+  //   `world.struck`   the contact that happened THIS TICK, or null. This is
+  //                    the event.
+  //
+  // They were merged, so `world.contact` never went back to null and read as a
+  // permanent "I am touching a wall" for the rest of the run. Measured: one
+  // contact object stayed live for 60 consecutive ticks on a cube flying AWAY
+  // from the wall at 42 px/tick, and a cube parked on the floor reported
+  // `surface: 'rail'` on 289 of 300 ticks.
+  //
+  // Every edge test downstream (`hitSurface !== lastContact`) was therefore a
+  // level test. Splitting the fields fixes the channel without giving up the
+  // debounce that keeps a resting body from buzzing.
+  world.struck = null;
   advanceTiming(world,pace);
   const scale = world.engine.timing.timeScale;
   beforeStep?.(scale); // enemy timing and gravity wells share this exact step
@@ -465,6 +546,20 @@ export function stepPhysics(world, beforeStep, pace=1) {
     const ny = parentA === world.player ? normal.y : parentB === world.player ? -normal.y : 0;
     return ny < -0.55 && world.player.velocity.y > -1.3;
   });
+  // ── A RAIL IS GROUND FOR THE REFILL RULE ────────────────────────────────
+  //
+  // `world.grounded` is derived from Matter contact normals, and the arena rails
+  // are NOT Matter bodies -- they are an analytic clamp in railBounce. So a cube
+  // resting on the floor reported `grounded: false`, the airborne refill drip
+  // kept ticking, and camping on the floor paid pips at the same rate as flying.
+  // Measured: edge climbed to MAX_EDGE over 300 parked ticks.
+  //
+  // This has to be applied AFTER the Matter pass, which owns the flag and would
+  // otherwise overwrite it.
+  // Proximity to the boundary is the honest test, not a contact event: a cube
+  // pinched against a rail touches it on EVERY tick, so there is no "contact"
+  // to read on the ticks in between. Both axes are checked, so a cube sliding
+  // along the floor is still resting on it.
   if (world.grounded && world.slow) setBulletTime(world, false);
   for (const pair of world.engine.pairs.list) {
     if (!pair.isActive || pair.isSensor) continue;
