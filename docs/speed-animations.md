@@ -148,3 +148,45 @@ project so far, and one of them was a test that passed with the feature deleted.
 - Not touching hyper's *entry conditions* (7 links / 14 dashes) — those are
   specified, and changing them is a balance decision, not an animation one.
 - Not removing `twist` from the pose data, only from the render path.
+
+---
+
+## Built, and what measuring it changed
+
+All five parts shipped. The measured record:
+
+| part | before | after |
+|---|---|---|
+| skew | body rotated ±28° on a diagonal | sheared: E −0.062, NE −0.149, NW +0.149, W −0.087, S none |
+| hyper entry | a line of HUD text | 391 ops during the 18-tick burst, 376 after it ends |
+| hyper aura | 6 static lines | 6→12 lines, alpha 0.12+0.42k, escalates 370→376 ops |
+| sonic | **byte-identical to hyper** | 376 vs 380 ops, different geometry |
+| overspeed blur | exactly 19.00 for every speed above 42 | 19.0 → 33.3 across 42 → 378 |
+| dial at full normal speed | 39 km/h, needle at −20° | 70 km/h, needle at +36° |
+
+`docs/img/speed-states.png` is the same frame at four speeds: normal, the entry
+burst, sustained hyper, and a sonic rebound.
+
+### The bug this round found, which predates it
+
+Every direction-derived effect was anchored to `p.angle`, but the body frame is
+rotated by `p.angle + lean`. Flying **east**, `lean` is +19.5°, so the wake and
+the smear were drawn 19.5° off the cube's path — it reads as the cube sliding
+sideways. On a **diagonal** it is worse: the cube is rotated 45° as well, so
+`atan2` of a rotated vector put the effect at an essentially arbitrary angle.
+
+Reverting the fix makes the new test fail with *"E: lean 19.5deg, no effect ends
+on the travel bearing"*, so the test pins the bug rather than merely passing.
+
+### Two things the plan asked for that the measurement rejected
+
+- **A separate ribbon for hyper** (plan 1.4). Built, rendered, and it duplicated
+  the morph wedge that already existed — two big acid wedges behind one cube is
+  exactly the stacking this document warns about. Removed. The existing wedge
+  now grows with `roar` instead, so it stops looking identical at 280 and 378.
+- **A `strokeRect` body tint** (plan 1.3). The body is a tapered quadrilateral,
+  not an axis-aligned box, so the outline hung off the silhouette on every edge.
+  Replaced with a glow drawn *behind* `cube()`.
+- **The sonic silhouette block** was a no-op on the first pass: it scaled inside
+  a `save()`/`restore()` with nothing drawn between them. Measured by deleting
+  it — not one pixel changed. It now wraps the `cube()` call itself.
