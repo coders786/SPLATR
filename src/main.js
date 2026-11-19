@@ -522,7 +522,7 @@ function updateHUD() {
   $('drive').hidden = !!s.opening || s.drive <= 0;
   $('drive-meter').style.transform = `scaleX(${s.drive / 175})`;
   // Nonvisual equivalents only. The proof strip itself never draws words.
-  const desc={tap:'Tap a pennant, click it, or press Space to cut through the rack.',pull:'Pull back and release towards the next rack, or aim with arrows and press Space.',shell:'One plate over another. Cut the shell.',crack:'The first plate broke. Strike again.',rewind:'Returning to the launch point.',retry:'Try the marked shape again.',stock:'Wait for one cut to refill.',lane:'The triangle charges along the red lane. Cut it or cross its path.',focus:'Hold a target in flight, or hold Shift to focus. Choose a new line and slash.',rise:'The striped tide is rising. Slash up.',net:'One net caught you. Your cuts are full. Launch up.'};
+  const desc={tap:'Tap a pennant, click it, or press Space to cut through the rack.',pull:'Pull back and release towards the next rack, or aim with arrows and press Space.',shell:'One plate over another. Cut the shell.',crack:'The first plate broke. Strike again.',rewind:'Returning to the launch point.',retry:'Try the marked shape again. Two tries left before this rack is conceded.',stock:'Wait for one cut to refill.',lane:'The triangle charges along its marked lane. Cut it or cross its path.',focus:'Hold a target in flight, or hold Shift to focus. Choose a new line and slash.',rise:'The marked floor is rising. Slash up.',net:'One net caught you. Your cuts are full. Launch up.'};
   setText('story-alt',desc[canvas.dataset.scene]||'');
 }
 function restoreField() {

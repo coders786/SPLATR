@@ -18,6 +18,13 @@ export function firstStart(storage) {
 // A real stroke, then a rest. The next row doesn't exist during the stroke
 // that cleared the last one. Mashing Space can't cancel the first rip or fly
 // off the bench; immediately redirecting becomes a choice in the live field.
+/**
+ * How many misses a lesson row tolerates before it is conceded and the next one
+ * comes up. Three is enough that a fumble does not cost the lesson, and few
+ * enough that nobody sits in the tutorial unable to leave it.
+ */
+export const MAX_LESSON_MISSES = 3;
+
 export function createOpening(seed,world,combat) {
   const o = {
     row: 0,
@@ -82,6 +89,18 @@ export function createOpening(seed,world,combat) {
     o.anchor = { ...world.player.position };
   }
   function parkedTick(s) {
+    // A conceded row is retired the moment the player is parked: the next stroke
+    // begins from a clean bench rather than from the shapes they could not hit.
+    // `rest` is only set by `park()`, which runs at the END of a return, so
+    // gating on it here deadlocked: the flag never cleared because the flag was
+    // what cleared it. `returning === 0` is the real "back at the anchor" test.
+    if (o.conceded !== undefined && o.returning === 0) {
+      o.conceded = undefined;
+      o.misses = 0;
+      if (o.row < 2) rack(o.row + 1);
+      else o.finishing = 20;
+      return false;
+    }
     if (!o.rest && !o.returning) return false;
     const p = world.player;
     Object.assign(p.plugin.previous, p.position, { angle: p.angle });
@@ -100,6 +119,11 @@ export function createOpening(seed,world,combat) {
     return true;
   }
   function advance(s, dt) {
+    // A conceded row is already decided: the player is on their way back to the
+    // anchor and `parkedTick` will rack the next row. Letting `advance` keep
+    // running here re-counted the same miss every tick (measured: `misses` went
+    // 3, 4, 5... with `returning` still counting down) and re-set the flag.
+    if (o.conceded !== undefined) return false;
     travel += dt;
     if (o.row === 2 && !combat.enemies.size) {
       hold(s);
@@ -115,10 +139,39 @@ export function createOpening(seed,world,combat) {
         rack(o.row + 1);
       }
     } else {
+      // ── A MISS MUST NOT BE A DEAD END ─────────────────────────────────
+      //
+      // This used to increment `misses` and then do nothing with it: the player
+      // returned to the anchor and the SAME row stayed up forever. Measured, a
+      // player who aims away from the rack climbed to 17 misses on row 0 and the
+      // lesson never advanced. `misses` was counted and never read -- a number
+      // with no consumer, which is the signature of an unfinished branch.
+      //
+      // Three tries, then the row is conceded and the next one comes up. The
+      // lesson is teaching aim, not gating progress: a player who cannot land
+      // the shot should still SEE the rest of it, and a player who keeps missing
+      // should not be able to sit in the tutorial until they give up.
       o.misses++;
       from = { ...world.player.position };
       o.returning = 16;
       hold(s);
+      // ── ONLY THE ROWS THAT CAN BE FINISHED ARE CONCEDED ─────────────────
+      //
+      // Rows 0 and 1 are paper: the player is learning to aim at a fixed rack
+      // and a miss is a miss. Row 2 is the SHELL -- the armored shape that
+      // teaches spending charges -- and it cannot be cleared without hitting it
+      // the right number of times. Conceding it on misses would delete the one
+      // lesson in the tutorial that has a mechanic attached to it, and measured,
+      // it also ended the lesson under a player who was legitimately still
+      // trying (an existing test caught it: `s.opening` went null mid-loop).
+      //
+      // So the concession is bounded to the paper rows. A player stuck on the
+      // shell still has the Skip control, which is the honest escape for a
+      // lesson that is teaching a mechanic rather than a stroke.
+      if (o.misses >= MAX_LESSON_MISSES && o.row < 2) {
+        for (const e of [...combat.enemies.values()]) combat.remove(e);
+        o.conceded = o.row;
+      }
     }
     return false;
   }

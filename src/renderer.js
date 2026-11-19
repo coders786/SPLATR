@@ -1969,8 +1969,22 @@ export function createRenderer(canvas) {
       c.restore();
     }
     if (s.panic && s.panicTicks > 0 && s.phase === 'playing') {
-      // Red directional warning between the cube and the imminent surface,
-      // plus a contracting ring around it: press to aim away. World-space.
+      // ── AN OPPORTUNITY, NOT A HAZARD ────────────────────────────────────
+      //
+      // This was a RED arrow and a red closing ring: the exact visual grammar of
+      // the Red Line -- red means a thing is about to kill you, act now. But the
+      // panic beat is the opposite. It is a GRACE: the game is offering you a
+      // half-second to redirect before a wall you cannot die on. Painting it as
+      // a danger taught the wrong lesson, and it was the last red hazard mark
+      // left in the renderer.
+      //
+      // It now wears the same cool family as the floor gauge, with the amber
+      // edge that means "spend this" elsewhere in the HUD. Nothing about it says
+      // danger; everything about it says the window is open.
+      //
+      // The injury flash (`stain`) stays red: that one IS damage, and it is
+      // feedback about something that already happened rather than a warning
+      // about something that will.
       c.save();
       c.translate(-v.x * v.scale, -v.y * v.scale);
       c.scale(v.scale, v.scale);
@@ -1991,7 +2005,7 @@ export function createRenderer(canvas) {
         c.globalAlpha = (0.5 + 0.45 * burn) * pulse;
         const wide = 8 + 5 * burn,
           tip = Math.max(0, span);
-        poly(c, INK.rose, [
+        poly(c, INK.cool, [
           [0, -wide],
           [tip * 0.72, -wide * 0.56],
           [tip, 0],
@@ -2017,7 +2031,7 @@ export function createRenderer(canvas) {
       c.globalAlpha = 0.32 + 0.5 * burn;
       arc(c, INK.paper, 2.2 / v.scale, p.x, p.y, R + 10 + 30 * (1 - burn));
       c.globalAlpha = 0.6 + 0.4 * burn;
-      arc(c, INK.rose, 1.6 / v.scale, p.x, p.y, R + 6 + 52 * (1 - burn) ** 1.6);
+      arc(c, INK.cool, 1.6 / v.scale, p.x, p.y, R + 6 + 52 * (1 - burn) ** 1.6);
       c.restore();
       c.restore();
     }

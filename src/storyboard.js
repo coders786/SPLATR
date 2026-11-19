@@ -74,9 +74,14 @@ function stocks(c,x,y,n,f=0){
     if(i===n){c.fillStyle=paper;c.fillRect(x+i*12+1.5,y+1.5,7*f,4);}
   }
 }
+// A ruled bar, not a hazard stripe. It used to be red on red (#ab3c55 with ink
+// slashes) and sat under every `net`/`rise` impression, which made the tutorial
+// card the last surface in the game still drawn in the Red Line's palette. The
+// card is teaching a movement, so the bar is now a cool rule -- the same family
+// as the floor gauge it is illustrating.
 function stripe(c,y){
-  c.fillStyle='#ab3c55';c.fillRect(-30,y,60,6);
-  for(let x=-25;x<25;x+=13)line(c,ink,2,x,y+5,x+4,y+1);
+  c.fillStyle='#4a5f6b';c.fillRect(-30,y,60,6);
+  for(let x=-25;x<25;x+=13)line(c,'#8fa9b8',1.6,x,y+5,x+3,y+1);
 }
 function splitLine(c){shearInk(c,-27,15,-.43,61,6);}
 // Three tiny proof impressions show cause and effect even with all animation
@@ -105,12 +110,12 @@ function impression(c,scene,i,device){
     else if(i===1){foe(c,'bastion',-4,-2,15,0,{hp:1,fault:-.49});tapMark(c,1,1,device,true);}
     else{scraps(c,'bastion',1,0,18,{hp:1,fault:-.49});splitLine(c);}
   }else if(scene==='lane'){
-    if(i===0){foe(c,'fang',-14,0,16);c.setLineDash([3,3]);line(c,'#b53d57',2,0,0,26,0);c.setLineDash([]);}
-    else if(i===1){arrow(c,'#b43b50',-25,0,25,0,3,8);cube(c,0,12,6);arrow(c,fern,0,5,10,-16,2,6);}
+    if(i===0){foe(c,'fang',-14,0,16);c.setLineDash([3,3]);line(c,'#5f7f8f',2,0,0,26,0);c.setLineDash([]);}
+    else if(i===1){arrow(c,'#5f7f8f',-25,0,25,0,3,8);cube(c,0,12,6);arrow(c,fern,0,5,10,-16,2,6);}
     else{scraps(c,'fang',-2,1,17);splitLine(c);}
   }else if(scene==='net'||scene==='rise'){
     stripe(c,13);
-    if(i===0){cube(c,-6,-12,7,.3);arrow(c,'#af3855',4,-8,10,8,2,6);}
+    if(i===0){cube(c,-6,-12,7,.3);arrow(c,'#5f7f8f',4,-8,10,8,2,6);}
     if(i===1){c.beginPath();c.moveTo(-29,-2);c.quadraticCurveTo(0,17,29,-2);c.strokeStyle=fern;c.lineWidth=3;c.stroke();cube(c,0,0,7,.12);}
     if(i===2){cube(c,11,-15,6,-.26);arrow(c,fern,-9,8,4,-8,3,7);line(c,seam,1.8,-28,0,-12,5,-9,2);line(c,seam,1.8,6,5,9,7,29,1);}
   }else if(scene==='stock'){

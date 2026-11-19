@@ -321,3 +321,58 @@ test('a run from the bench keeps going through every species and into the normal
   assert.ok(s.score > 100000);
   assert.equal(s.opening, null);
 });
+
+/* ── A MISS MUST NOT BE A DEAD END ──────────────────────────────────────── */
+
+test('a player who misses the paper rows is not stuck on them', () => {
+  // THE BUG THIS PINS: on a miss, `advance` incremented `o.misses` and then did
+  // nothing with it -- the row stayed up forever. Measured, a bot that aimed
+  // away from the rack climbed to 17 misses on row 0 and the lesson never
+  // advanced, so a player who could not aim was stuck in the tutorial.
+  //
+  // `misses` was counted and never read, which is the signature of an
+  // unfinished branch. It now concedes a PAPER row after MAX_LESSON_MISSES.
+  //
+  // Row 2 (the shell) is deliberately NOT conceded: it teaches spending charges
+  // and cannot be cleared without hitting it, so retrying is the lesson rather
+  // than a failure. A player stuck there has the Skip control.
+  const { g, s } = room();
+  const seenRows = new Set();
+  let fired = false;
+  let missesBefore = 0;
+  for (let i = 0; i < 1200 && s.opening && s.opening.row < 2; i++) {
+    if (s.opening.rest && !fired) {
+      seenRows.add(s.opening.row);
+      g.dash({ x: 0, y: 42 }); // straight down, away from every shape
+      fired = true;
+    }
+    g.tick();
+    if (s.opening?.rest) fired = false;
+    missesBefore = s.opening?.misses ?? missesBefore;
+  }
+  // Reaching the shell by missing is the whole point: the paper rows give way.
+  assert.equal(s.opening?.row, 2, 'missing the paper rows never advanced the lesson');
+  assert.deepEqual([...seenRows].sort(), [0, 1], 'not every paper row was reached');
+  // And it must not have taken forever: three tries per row, not seventeen.
+  assert.ok(missesBefore <= 3, `the concede took ${missesBefore} misses on one row`);
+});
+
+test('a successful run through the lesson is unchanged by the miss handling', () => {
+  // The concession must not fire on a player who is hitting things. Three rows
+  // at three strokes, with no misses recorded.
+  const { g, s } = room();
+  let fired = false;
+  let strokes = 0;
+  for (let i = 0; i < 400 && s.opening; i++) {
+    if (s.opening.rest && !fired) {
+      const before = s.shots;
+      g.dash(g.suggestion());
+      if (s.shots > before) strokes++;
+      fired = true;
+    }
+    g.tick();
+    if (s.opening?.rest) fired = false;
+  }
+  assert.equal(s.opening, null, 'a clean run did not finish the lesson');
+  assert.ok(strokes <= 4, `a clean run took ${strokes} strokes`);
+});

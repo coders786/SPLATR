@@ -786,3 +786,72 @@ test('no enemy is ever placed or left outside the walls', () => {
   // exercised and a pass means nothing.
   assert.ok(kids > 50, `only ${kids} child shapes seen -- the Fork path was not exercised`);
 });
+
+/* ── NO HAZARD MAY BE PAINTED RED ───────────────────────────────────────── */
+
+test('the panic beat is not painted as a danger signal', async () => {
+  // THE BUG THIS PINS: the panic grace -- a half-second offer to redirect before
+  // a wall you cannot die on -- was drawn with a RED arrow and a RED closing
+  // ring. That is the Red Line's exact grammar: red means a thing is about to
+  // kill you. It taught the wrong lesson and it was the last red hazard mark in
+  // the renderer after every other one was removed.
+  //
+  // Asserted on the colours that appear ONLY while a panic is live, so an
+  // unrelated red elsewhere in the frame (paper pennants, enemy identity,
+  // injury feedback) cannot make this pass or fail by accident.
+  const { installDom, createDisplay } = await import('./support/display.js');
+  const { createRenderer } = await import('../src/renderer.js');
+  const { createRun } = await import('../src/run.js');
+  const { INK } = await import('../src/shapes.js');
+  const dom = installDom();
+  const { canvas, ctx } = createDisplay(1560, 866);
+  const renderer = createRenderer(canvas);
+  const run = createRun(7, () => {}, { warmup: true });
+  run.skipOpening?.();
+  run.state.phase = 'playing';
+  for (let i = 0; i < 20; i++) run.tick();
+  const pos = run.world.player.position;
+  const paints = (panicOn) => {
+    run.state.panic = panicOn ? { x: pos.x + 300, y: pos.y } : null;
+    run.state.panicTicks = panicOn ? 20 : 0;
+    const seen = [];
+    const oS = ctx.stroke.bind(ctx),
+      oF = ctx.fill.bind(ctx);
+    ctx.stroke = () => {
+      seen.push(String(ctx.strokeStyle));
+      return oS();
+    };
+    ctx.fill = () => {
+      seen.push(String(ctx.fillStyle));
+      return oF();
+    };
+    ctx.__reset();
+    renderer.draw(run, 1, null, true, 'mouse');
+    ctx.stroke = oS;
+    ctx.fill = oF;
+    return seen;
+  };
+  const off = paints(false),
+    on = paints(true);
+  const onlyDuringPanic = [...new Set(on)].filter((c) => !off.includes(c));
+  const isRed = (c) => {
+    const m = String(c).match(/^#([0-9a-f]{6})$/i);
+    if (!m) return false;
+    const n = parseInt(m[1], 16),
+      R = (n >> 16) & 255,
+      G = (n >> 8) & 255,
+      B = n & 255;
+    return R > 120 && R > G * 1.7 && R > B * 1.7;
+  };
+  assert.deepEqual(
+    onlyDuringPanic.filter(isRed),
+    [],
+    `the panic beat paints red: ${onlyDuringPanic.filter(isRed).join(' ')}`,
+  );
+  // ...and it must still be VISIBLE. Removing the mark instead of recolouring it
+  // would pass the assertion above while deleting the feedback.
+  assert.ok(onlyDuringPanic.length > 0, 'the panic beat draws nothing of its own');
+  assert.ok(on.includes(INK.cool), 'the panic beat does not use the cool vocabulary');
+  run.dispose();
+  dom.uninstall();
+});
