@@ -119,11 +119,11 @@ test('the speedometer is monotonic, in range and names a band', () => {
     const r = speedReadout(s);
     assert.ok(r.kmh >= prev, 'readout must not go backwards');
     assert.ok(r.kmh >= 0 && r.kmh <= 100, `kmh ${r.kmh}`);
-    assert.ok(['DRIFT', 'CRUISE', 'SURGE', 'REDLINE'].includes(r.band));
+    assert.ok(['DRIFT', 'CRUISE', 'SURGE', 'EDGE'].includes(r.band));
     prev = r.kmh;
   }
   assert.equal(speedReadout(0).kmh, 0);
   assert.equal(speedReadout(0).band, 'DRIFT');
   assert.equal(speedReadout(MAX_SPEED).kmh, 100);
-  assert.equal(speedReadout(MAX_SPEED).band, 'REDLINE');
+  assert.equal(speedReadout(MAX_SPEED).band, 'EDGE');
 });

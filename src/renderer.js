@@ -756,131 +756,196 @@ export function createRenderer(canvas) {
    *  Deliberately excluded: enemy kinds, health, or anything that would make
    *  the player read the MAP instead of the field. It is a locator, not a HUD.
    */
-  function minimap(c, world, combat, v) {
+  function minimap(c, world, combat, v, state) {
     const A = ARENA;
     if (!A) return;
-    // Reset to the screen transform explicitly.
+    // ── THE TACTICAL PANEL ──────────────────────────────────────────────────
     //
-    // `speedField` runs immediately before this and calls setTransform itself.
-    // Relying on save/restore ordering across two functions that both touch the
-    // transform was the reason this map drew once during the title and then
-    // never appeared in play -- the geometry was right and the matrix was not.
-    // A screen-space layer should never inherit another layer's matrix.
+    // This used to be a 133x407 sliver. Not a bug in the drawing code -- it was
+    // an HONEST scale drawing of a 28,000 x 90,000 arena, and an honest drawing
+    // of a shaft is a strip. The arena is now square (see levels.js), so the
+    // panel can be square too, and the map finally reads like the room it
+    // describes.
+    //
+    // What it answers, in order of how fast you need it:
+    //
+    //   1. WHERE AM I relative to all four walls, including how much room is
+    //      left in the direction I am travelling. That is the number that
+    //      decides whether the next launch is a bank or a wall.
+    //   2. WHERE IS EVERYTHING ELSE, at true position: hostiles, the crown,
+    //      live hazards, the spawn frontier.
+    //   3. WHERE AM I GOING: the aim line, drawn as a ray, so a bounce angle can
+    //      be judged before committing to it.
+    //
+    // It is still a LOCATOR, not a HUD: no health, no kinds, no damage. The
+    // difference between this and the old one is that it is drawn to be read at
+    // a glance rather than decoded.
     c.setTransform(canvas.width / w, 0, 0, canvas.height / h, 0, 0);
-    // ── THE MAP SHOWS THE WHOLE ARENA, EDGES INCLUDED ─────────────────────
-    //
-    // It used to frame a 4,200-unit window centred on the player and draw a
-    // decorative border around the panel, so the rails you could see were not
-    // the rails that existed -- the border moved with the camera-and-player
-    // while the real walls are fixed in world space. The instruction was direct:
-    // "keep the walls fully visible on mini map".
-    //
-    // So the map now frames the ACTUAL arena rectangle, in world units, and the
-    // four walls are drawn where they really are. This is the only framing where
-    // the map answers "how far am I from an edge" honestly, which is the whole
-    // reason to draw a table on it.
-    //
-    // The panel is therefore not square: the arena is 28,000 x 90,000, roughly
-    // 1:3.2, and forcing that into a box would make the width unreadable. A
-    // tall panel in the corner is the honest shape. It is capped in height so
-    // it cannot eat the field on a short window.
-    //
-    // Deliberately still excluded: enemy kinds and health. It is a locator.
     const side = Math.min(w, h),
       pad = Math.max(10, side * 0.022),
-      // Fit the arena's aspect into the available panel, preserving ratio.
-      maxW = Math.min(side * 0.2, 176),
-      maxH = side * 0.46,
-      scale = Math.min(maxW / A.w, maxH / A.h),
-      mw = A.w * scale,
-      mh = A.h * scale,
-      x0 = w - mw - pad,
-      y0 = h - mh - pad,
-      // World -> map: the arena's top-left corner is the panel's top-left.
-      toMap = (x, y) => ({ x: x0 + (x - A.x) * scale, y: y0 + (y - A.y) * scale });
+      box = Math.min(side * 0.3, 226), // the panel: square, because the arena is
+      plot = box - 14, // inset so the walls sit INSIDE the frame
+      x0 = w - box - pad,
+      y0 = h - box - pad,
+      // One scale for both axes: the arena is square, so this is exact.
+      scale = plot / A.w,
+      toMap = (x, y) => ({
+        x: x0 + 7 + (x - A.x) * scale,
+        y: y0 + 7 + (y - A.y) * scale,
+      }),
+      p = world.player.position;
 
     c.save();
-    // Backing plate. Dark and slightly inset so the map reads as a pane of
-    // glass over the world rather than a hole cut in it.
-    // The plate has to be VISIBLY different from the scene behind it.
-    // #0d0a14 at 0.82 alpha over a near-black world was invisible -- the map
-    // drew correctly and nobody could see it, which is worse than not drawing
-    // it at all because it looks like a bug in the effects rather than a panel.
-    c.globalAlpha = 0.9;
+    // ── plate ─────────────────────────────────────────────────────────────
+    c.globalAlpha = 0.92;
     c.fillStyle = '#07050d';
-    c.fillRect(x0 - 4, y0 - 4, mw + 8, mh + 8);
+    c.fillRect(x0, y0, box, box);
     c.globalAlpha = 1;
     c.strokeStyle = '#2a1f33';
     c.lineWidth = 1;
-    c.strokeRect(x0 - 4.5, y0 - 4.5, mw + 9, mh + 9);
-    // ── THE REAL WALLS, WHERE THEY ACTUALLY ARE ──────────────────────────
+    c.strokeRect(x0 + 0.5, y0 + 0.5, box - 1, box - 1);
+
+    // ── the four walls ────────────────────────────────────────────────────
     //
-    // The old border was decoration: a rectangle at the panel's edge that had no
-    // relationship to the arena coordinates. Now the panel IS the arena, so the
-    // frame of the panel is the wall -- drawn bright, because "how far is that
-    // rail" is the only question this map exists to answer.
-    //
-    // Drawn as four explicit edges rather than strokeRect so each can carry its
-    // own weight later, and so the top (the wall hyper exists to reach) reads as
-    // the heaviest line on the map.
-    c.strokeStyle = '#5b4058';
-    c.lineWidth = 1.5;
-    c.strokeRect(x0, y0, mw, mh);
-    c.strokeStyle = '#ff507b';
-    c.globalAlpha = 0.75;
-    c.lineWidth = 1.5;
-    c.strokeRect(x0 + 0.75, y0 + 0.75, mw - 1.5, mh - 1.5);
+    // Drawn individually so each can say something. The wall you are CLOSEST to
+    // brightens: at a glance that is "the next thing I will hit".
+    const inset = 7,
+      wx0 = x0 + inset,
+      wy0 = y0 + inset,
+      wx1 = x0 + inset + plot,
+      wy1 = y0 + inset + plot,
+      // distance to each wall, in world units
+      dl = p.x - A.x,
+      dr = A.x + A.w - p.x,
+      dt = p.y - A.y,
+      db = A.y + A.h - p.y,
+      near = (d) => {
+        // 1 when touching, 0 by a third of the field away.
+        return Math.max(0, Math.min(1, 1 - d / (A.w * 0.33)));
+      },
+      wall = (x1, y1, x2, y2, d) => {
+        const k = near(d);
+        c.globalAlpha = 0.45 + 0.55 * k;
+        c.strokeStyle = k > 0.35 ? '#ff9fb4' : '#6d5470';
+        c.lineWidth = 1.5 + 1.5 * k;
+        c.beginPath();
+        c.moveTo(x1, y1);
+        c.lineTo(x2, y2);
+        c.stroke();
+      };
+    wall(wx0, wy0, wx1, wy0, dt); // top
+    wall(wx0, wy1, wx1, wy1, db); // floor
+    wall(wx0, wy0, wx0, wy1, dl); // left
+    wall(wx1, wy0, wx1, wy1, dr); // right
     c.globalAlpha = 1;
-    // The top wall, emphasised: it is the one the run is climbing toward.
-    c.strokeStyle = '#f2e6ff';
-    c.globalAlpha = 0.9;
-    c.lineWidth = 2;
+
+    // ── the spawn frontier ────────────────────────────────────────────────
+    //
+    // `s.line` is the field's lower bound: nothing spawns below it. Showing it
+    // explains why the field stops where it does, which was previously
+    // invisible. Drawn as a dashed rule, not a hazard.
+    const lineY = toMap(A.x, state?.line ?? A.y).y;
+    if (lineY > wy0 && lineY < wy1) {
+      c.globalAlpha = 0.3;
+      c.strokeStyle = '#8c7590';
+      c.lineWidth = 1;
+      c.setLineDash([3, 4]);
+      c.beginPath();
+      c.moveTo(wx0, lineY);
+      c.lineTo(wx1, lineY);
+      c.stroke();
+      c.setLineDash([]);
+      c.globalAlpha = 1;
+    }
+
+    // ── what the camera can see ───────────────────────────────────────────
+    //
+    // The single most useful overlay, because it separates "the arena" from
+    // "my world" at a glance.
+    c.strokeStyle = '#fff8ec';
+    c.globalAlpha = 0.26;
+    c.lineWidth = 1;
+    const vw = v.w * scale,
+      vh = v.h * scale,
+      vx = toMap(v.x, v.y).x,
+      vy = toMap(v.x, v.y).y;
     c.beginPath();
-    c.moveTo(x0, y0 + 1);
-    c.lineTo(x0 + mw, y0 + 1);
+    c.rect(
+      Math.max(wx0, vx),
+      Math.max(wy0, vy),
+      Math.min(vw, wx1 - Math.max(wx0, vx)),
+      Math.min(vh, wy1 - Math.max(wy0, vy)),
+    );
     c.stroke();
     c.globalAlpha = 1;
 
-    // The view window: what the player can actually see right now. This is the
-    // single most useful thing on the map, because it makes the difference
-    // between "the arena" and "my world" legible at a glance.
-    c.strokeStyle = '#fff8ec';
-    c.globalAlpha = 0.32;
-    c.lineWidth = 1;
-    c.strokeRect(
-      x0 + (v.x - A.x) * scale,
-      y0 + (v.y - A.y) * scale,
-      v.w * scale,
-      v.h * scale,
-    );
-    c.globalAlpha = 1;
-
-    // Every live enemy, at its true position. A dot, not an icon: at this size
-    // a shape would be unreadable and the only information that matters is
-    // "there is something there".
-    for (const e of combat.enemies.values()) {
-      const q = toMap(e.x, e.y);
-      if (q.x < x0 - 2 || q.x > x0 + mw + 2 || q.y < y0 - 2 || q.y > y0 + mh + 2) continue;
-      c.fillStyle = e.kind === 'crown' ? '#ffd166' : e.mode === 'idle' ? '#8c7590' : '#ff507b';
-      c.globalAlpha = e.mode === 'idle' ? 0.7 : 1;
+    // ── live hazards ──────────────────────────────────────────────────────
+    //
+    // Broken rings and needles are things that can hurt you. They were not on
+    // the map at all, so a hazard travelling toward an off-screen player was
+    // invisible until it arrived.
+    c.fillStyle = '#f67f9c';
+    for (const h of combat.hazards || []) {
+      const q = toMap(h.x, h.y);
+      if (q.x < wx0 || q.x > wx1 || q.y < wy0 || q.y > wy1) continue;
+      c.globalAlpha = 0.5;
       c.beginPath();
-      c.arc(q.x, q.y, e.kind === 'crown' ? 2.6 : 1.7, 0, TAU);
+      c.arc(q.x, q.y, 1.3, 0, TAU);
       c.fill();
     }
     c.globalAlpha = 1;
 
-    // The subject. A wedge, not a dot, so heading is readable -- on a billiard
-    // table which way you are pointing IS the information.
-    const p = world.player.position,
-      a = Math.atan2(world.player.velocity.y, world.player.velocity.x),
-      q = toMap(p.x, p.y);
+    // ── hostiles, at true position ────────────────────────────────────────
+    for (const e of combat.enemies.values()) {
+      const q = toMap(e.x, e.y);
+      if (q.x < wx0 - 1 || q.x > wx1 + 1 || q.y < wy0 - 1 || q.y > wy1 + 1) continue;
+      const crown = e.kind === 'crown';
+      c.fillStyle = crown ? '#ffd166' : e.mode === 'idle' ? '#8c7590' : '#ff507b';
+      c.globalAlpha = e.mode === 'idle' ? 0.75 : 1;
+      c.beginPath();
+      c.arc(q.x, q.y, crown ? 2.8 : 1.6, 0, TAU);
+      c.fill();
+    }
+    c.globalAlpha = 1;
+
+    // ── the shot you are about to take ────────────────────────────────────
+    //
+    // The aim line as a ray from the cube. On a table this is the difference
+    // between guessing an angle and reading one.
+    const speed = Math.hypot(world.player.velocity.x, world.player.velocity.y);
+    const q = toMap(p.x, p.y);
+    if (speed > 2) {
+      const a = Math.atan2(world.player.velocity.y, world.player.velocity.x);
+      c.strokeStyle = '#deff52';
+      c.globalAlpha = 0.5;
+      c.lineWidth = 1.2;
+      c.beginPath();
+      c.moveTo(q.x, q.y);
+      c.lineTo(q.x + Math.cos(a) * 16, q.y + Math.sin(a) * 16);
+      c.stroke();
+      c.globalAlpha = 1;
+    }
+
+    // ── the subject ───────────────────────────────────────────────────────
+    //
+    // A wedge, so heading is readable: on a billiard table which way you point
+    // IS the information.
+    const ang = Math.atan2(world.player.velocity.y, world.player.velocity.x);
     c.fillStyle = '#deff52';
     c.beginPath();
-    c.moveTo(q.x + Math.cos(a) * 5, q.y + Math.sin(a) * 5);
-    c.lineTo(q.x + Math.cos(a + 2.5) * 3.4, q.y + Math.sin(a + 2.5) * 3.4);
-    c.lineTo(q.x + Math.cos(a - 2.5) * 3.4, q.y + Math.sin(a - 2.5) * 3.4);
+    c.moveTo(q.x + Math.cos(ang) * 5.4, q.y + Math.sin(ang) * 5.4);
+    c.lineTo(q.x + Math.cos(ang + 2.5) * 3.6, q.y + Math.sin(ang + 2.5) * 3.6);
+    c.lineTo(q.x + Math.cos(ang - 2.5) * 3.6, q.y + Math.sin(ang - 2.5) * 3.6);
     c.closePath();
     c.fill();
+    // A ring so the cube never disappears against a crowded cluster of dots.
+    c.strokeStyle = '#07050d';
+    c.globalAlpha = 0.9;
+    c.lineWidth = 1;
+    c.beginPath();
+    c.arc(q.x, q.y, 6.2, 0, TAU);
+    c.stroke();
+    c.globalAlpha = 1;
     c.restore();
   }
 
@@ -1025,7 +1090,7 @@ export function createRenderer(canvas) {
     // matrix and effectively vanished -- 455 acid pixels became 13.
     if (!s.opening) {
       c.save();
-      minimap(c, world, combat, v);
+      minimap(c, world, combat, v, s);
       c.restore();
     }
     if (motion && s.phase === 'playing') streak(c, trail, p, s.blade > 0);

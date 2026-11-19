@@ -404,7 +404,7 @@ dd {
 }
 /* The whole dial kicks forward with the cube. This is the one HUD element
    allowed to react to speed, because reacting is its entire job. */
-#speedo[data-band='REDLINE'] {
+#speedo[data-band='EDGE'] {
   transform: scale(1.06);
 }
 /* HYPER is the one state that is not a reading but an event, so the dial is
@@ -491,13 +491,13 @@ dd {
 #speedo[data-band='SURGE'] .speedo-needle circle {
   fill: #ffd166;
 }
-#speedo[data-band='REDLINE'] .speedo-fill {
+#speedo[data-band='EDGE'] .speedo-fill {
   stroke: var(--hot);
 }
-#speedo[data-band='REDLINE'] .speedo-needle line {
+#speedo[data-band='EDGE'] .speedo-needle line {
   stroke: var(--hot);
 }
-#speedo[data-band='REDLINE'] .speedo-needle circle {
+#speedo[data-band='EDGE'] .speedo-needle circle {
   fill: var(--hot);
 }
 #speedo-value {
@@ -509,7 +509,7 @@ dd {
   margin-bottom: 11px;
   transition: color 220ms linear;
 }
-#speedo[data-band='REDLINE'] #speedo-value {
+#speedo[data-band='EDGE'] #speedo-value {
   color: var(--hot);
 }
 #speedo[data-band='HYPER'] .speedo-fill {
@@ -533,7 +533,7 @@ dd {
   color: #b39ab0;
   transition: color 220ms linear;
 }
-#speedo[data-band='REDLINE'] #speedo-band {
+#speedo[data-band='EDGE'] #speedo-band {
   color: var(--hot);
 }
 #hud[data-place='room'] #speedo {

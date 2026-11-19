@@ -171,7 +171,7 @@ test('the effect curve only reads hyper when hyper is actually live', () => {
     hyper = speedReadout(HYPER.speed, MAX_SPEED, HYPER.speed),
     flat = stretchFor(MAX_SPEED, MAX_SPEED, MAX_SPEED),
     stretched = stretchFor(HYPER.speed, MAX_SPEED, HYPER.speed);
-  assert.equal(normal.band, 'REDLINE');
+  assert.equal(normal.band, 'EDGE');
   assert.equal(normal.over, false);
   assert.equal(hyper.band, 'HYPER');
   assert.equal(hyper.over, true);
@@ -186,7 +186,7 @@ test('the effect curve only reads hyper when hyper is actually live', () => {
   // would have made every ordinary flight in the game look dead.
   const misread = speedReadout(MAX_SPEED, MAX_SPEED, HYPER.speed),
     unchanged = stretchFor(MAX_SPEED, MAX_SPEED, HYPER.speed);
-  assert.equal(misread.band, 'REDLINE', 'a lifted ceiling changed how normal speed reads');
+  assert.equal(misread.band, 'EDGE', 'a lifted ceiling changed how normal speed reads');
   assert.equal(misread.kmh, normal.kmh);
   assert.deepEqual(unchanged, flat, 'a lifted ceiling changed how normal speed renders');
 
@@ -220,14 +220,14 @@ test('every band the readout can return maps to a real, ordered tier', () => {
   // went DARK at the moment hyper fired. The index has to come from the array
   // position, and every band has to exist or the pips silently fall back to
   // DRIFT (the lowest tier) for the highest speed in the game.
-  const bands = ['DRIFT', 'CRUISE', 'SURGE', 'REDLINE', 'HYPER'];
+  const bands = ['DRIFT', 'CRUISE', 'SURGE', 'EDGE', 'HYPER'];
   for (const b of bands) assert.ok(TIERS.findIndex((t) => t.label === b) >= 0, `no tier for ${b}`);
   // Ordered, monotonic, and HYPER last: pips light left to right.
   const idx = bands.map((b) => TIERS.findIndex((t) => t.label === b));
   assert.deepEqual(idx, [0, 1, 2, 3, 4]);
   // The readout must actually reach the top tier at hyper speed.
   assert.equal(speedReadout(HYPER.speed, MAX_SPEED, HYPER.speed).band, 'HYPER');
-  assert.equal(speedReadout(MAX_SPEED, MAX_SPEED, HYPER.speed).band, 'REDLINE');
+  assert.equal(speedReadout(MAX_SPEED, MAX_SPEED, HYPER.speed).band, 'EDGE');
 });
 
 test('the renderer constant matches the run constant', () => {

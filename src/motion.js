@@ -179,7 +179,11 @@ export const TIERS = Object.freeze([
   { id: 'drift', at: 0, label: 'DRIFT', tint: '#b3a6bd' },
   { id: 'cruise', at: 0.55, label: 'CRUISE', tint: '#ffd166' },
   { id: 'surge', at: 0.78, label: 'SURGE', tint: '#deff52' },
-  { id: 'redline', at: 0.9, label: 'REDLINE', tint: '#ff507b' },
+  // Formerly 'REDLINE'. There is no red line in this game any more -- not on the
+  // field, not on the map, not in the readout. The tier survives as the top of
+  // the ordinary dial, wearing a name that describes what it feels like rather
+  // than a boundary that no longer exists.
+  { id: 'edge', at: 0.9, label: 'EDGE', tint: '#ff507b' },
   // The only tier that is not a position on the 0..100 dial: it means "past the
   // limit", and the HUD reaches it through `speedReadout`'s band rather than
   // through `tierOf`. It lives here so pips, tint and label have one source.
@@ -379,7 +383,7 @@ export function speedReadout(speed, max = MAX_SPEED, ceiling = max) {
     kmh,
     t: dial,
     over,
-    band: over ? 'HYPER' : kmh > 92 ? 'REDLINE' : kmh > 74 ? 'SURGE' : kmh > 46 ? 'CRUISE' : 'DRIFT',
+    band: over ? 'HYPER' : kmh > 92 ? 'EDGE' : kmh > 74 ? 'SURGE' : kmh > 46 ? 'CRUISE' : 'DRIFT',
   };
 }
 

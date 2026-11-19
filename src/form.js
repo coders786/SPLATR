@@ -85,7 +85,7 @@ export const MIN_SAMPLE = Object.freeze({ dashes: 3, seconds: 6 });
 export const FORMS = Object.freeze({
   weave: 'WEAVER',
   bank: 'BANKER',
-  tempo: 'REDLINE',
+  tempo: 'EDGE',
   yield: 'BUTCHER',
   ghost: 'GHOST',
   unformed: 'UNFORMED',

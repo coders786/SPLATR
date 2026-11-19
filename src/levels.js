@@ -60,23 +60,34 @@ export const ARENA = Object.freeze({
   // space on every drop, which is not a lossy cushion, it is a dead screen.
   // 12,000 keeps the bottom wall a real, costly landmark without the wait.
   //
-  // ── SIDES AT +-14,000 ────────────────────────────────────────────────────
+  // ── THE TABLE IS SQUARE: 90,000 x 90,000 ────────────────────────────────
   //
-  // These were +-2,300, kept deliberately close so the field would "feel like
-  // billiards at ordinary speed". That was the wrong call and it was measured:
-  // at 42px/tick a 4,600px arena is CROSSED IN 1.8 SECONDS, so the first side
-  // contact landed at tick 195-273 of EVERY run -- three to four seconds in,
-  // before the player had done anything. Four walls that close also meant the
-  // field was a corridor, and the camera lived permanently near a boundary.
+  // This has been wrong three times and the third failure is the one that
+  // explains the other two.
   //
-  // The brief was "semi-visible walls, far away, in all four directions, on a
-  // massive canvas". So the sides are now 28,000px apart: 6x wider, ~11s of
-  // flight at full speed, and the field reads as open in every direction
-  // instead of as a tube. The stream generates cells by x-band, so width costs
-  // nothing at runtime -- no extra bodies, no extra work.
-  x: -14000,
+  //   +-2,300   crossed in 1.8s. First side contact at tick 195-273 of EVERY
+  //             run. A corridor, and the camera lived near a boundary.
+  //   +-14,000  better, still wrong: 28,000 x 90,000 is a 1:3.2 SHAFT. The
+  //             measured consequence was that 17 of 17 bank contacts in a run
+  //             landed on the TOP wall -- the cube was flying up a chimney, not
+  //             fighting in a canvas. It is also why the minimap had to be a
+  //             133x407 sliver to be honest: an accurate scale drawing of a
+  //             shaft IS a strip.
+  //
+  // A square table fixes the shape of the play AND the shape of the map. All
+  // four walls are the same distance, so no direction is privileged, and the
+  // minimap can be a real square panel that reads like the room it describes.
+  //
+  // Measured at 280px/tick (hyper): 4.6s to the top wall, 2.7s to either side
+  // from mid-table. At ordinary speed (42px/tick) the sides are 17.9s away and
+  // the top is 31s -- the walls are reached by RUNNING, not by existing, which
+  // is the whole point of putting a hyper bounce at the end of the effort.
+  //
+  // The stream generates cells by column, so width costs nothing at runtime:
+  // no extra bodies, no extra work, just more room between the rails.
+  x: -45000,
   y: -78000,
-  w: 28000,
+  w: 90000,
   h: 90000, // floor at y = +12,000
   thick: 150,
 });
