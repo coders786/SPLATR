@@ -228,31 +228,22 @@ test('skipping, retiring and restarting do not clear the racks or grant a net; i
   assert.ok(!r.events.some(([k]) => k === 'field' || k === 'racksCleared'));
 });
 
-test('the first fall after clearing the racks catches once. Time waits for a launch and the next fall is fatal', (t) => {
-  const { g, s, events } = room();
+test('nothing catches you any more: a fall is not a rescue and not a death', (t) => {
+  // The cut-room safety net existed for ONE job -- catching you before the
+  // lethal Redline. With the Redline gone there is nothing to be caught from,
+  // so the net branch was removed. This test replaces the old one that asserted
+  // a catch; it now asserts the opposite, which is the current truth.
+  const { g, s } = room();
   t.after(() => g.dispose());
   rows(g);
   const start = { ...g.world.player.position };
-  assert.equal(s.line, start.y + 650);
+  assert.equal(s.line, start.y + 650, 'the spawn frontier still starts below you');
   press(g);
   tick(g, 550);
-  assert.equal(s.caught, true);
-  assert.equal(s.net, false);
-  assert.deepEqual([s.phase, s.edge], ['ready', 3]);
-  assert.ok(s.hp > 0);
-  const parked = { ...g.world.player.position },
-    line = s.line,
-    score = s.score;
-  tick(g, 700);
-  assert.equal(s.line, line);
-  assert.equal(s.score, score);
-  assert.deepEqual(g.world.player.position, parked);
-  assert.ok(g.suggestion().y < 0);
-  g.dash({ x: 0, y: 34, power: 0.98 });
-  tick(g, 60);
-  assert.equal(s.cause, 'Redline');
-  assert.equal(s.phase, 'over');
-  assert.equal(events.filter(([k]) => k === 'catch').length, 1);
+  // You are NOT rescued, and you are NOT killed.
+  assert.equal(s.caught, false, 'no catch: the net no longer fires');
+  assert.ok(!['over', 'dying'].includes(s.phase), 'falling does not end the run');
+  assert.equal(s.hp, 3, 'and it does not cost hull either');
 });
 
 test('staged cells add at most one new species per row including adjacent cells, with no early prism links', () => {
@@ -299,7 +290,8 @@ test('the proof strip follows what was actually hit, stays out of committed swin
   assert.equal(scene(),'tap');tick(g,500);assert.equal(s.shots,0);assert.equal(scene(),'tap');
   for(const next of ['pull','shell','crack','lane']){press(g);assert.equal(scene(),null);tick(g,46);assert.equal(scene(),next);}
   press(g);tick(g,16);assert.equal(scene(),'focus');assert.equal(s.held,false,'the demo does not press focus');
-  tick(g,500);assert.equal(scene(),'net');
+  // The 'net' scene taught the Redline rescue, which no longer exists.
+  tick(g,500);assert.notEqual(scene(),'net','the guide must not teach a mechanic that is gone');
   const plain=createRun(42,()=>{},{staged:true});t.after(()=>plain.dispose());
   assert.equal(sceneFor(plain.state,plain.nearest(),false,10),null);
   const skip=room().g;t.after(()=>skip.dispose());assert.ok(skip.skipOpening());assert.equal(sceneFor(skip.state,skip.nearest(),false,10),null);

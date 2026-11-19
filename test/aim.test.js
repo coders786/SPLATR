@@ -31,8 +31,10 @@ const stand = (foes = [], extra = {}) => ({
 test('the release parabola is the real ballistic curve and stops at the first surface', () => {
   const start = { x: 0, y: 0 },
     v = { x: 13, y: -27, power: 27 / MAX_SPEED },
+    // `line` no longer bounds the preview: the Redline does not kill, so an arc
+    // that would cross it is not a shot that dies. Only real geometry stops it.
     open = arcPath(start, v, { geometry: [], line: 9000 });
-  assert.equal(open.end, null);
+  assert.equal(open.end, null, 'nothing lethal to stop the arc');
   const t = 40,
     q = projectilePoint(start, v, t),
     want = { x: v.x * t, y: v.y * t + 0.5 * RELEASE_GRAVITY * t * t };
@@ -49,9 +51,12 @@ test('the release parabola is the real ballistic curve and stops at the first su
   const side = arcPath(start, { x: 30, y: 0, power: 1 }, { geometry: [{ x: 120, y: -60, w: 30, h: 120 }], line: 9000 });
   assert.equal(side.end.kind, 'wall');
   assert.ok(Math.abs(side.end.x - (120 - PLAYER_SIZE / 2)) < 1e-6);
+  // The tide no longer truncates the preview. This asserts the RETIREMENT: a
+  // line that used to end the arc now does nothing at all, because the Redline
+  // no longer kills. If a lethal line is ever reintroduced, this test fails and
+  // says so.
   const tide = arcPath(start, v, { geometry: [], line: -420 });
-  assert.equal(tide.end.kind, 'tide');
-  assert.ok(tide.end.y <= -420);
+  assert.equal(tide.end, null, 'a retired tide must not clip the arc');
   assert.equal(arcPath(start, { x: 0, y: 0, power: 0 }, {}).points.length, 0);
   assert.ok(open.points.length * ARC.step <= ARC.maxTicks, 'preview is bounded');
 });
@@ -114,13 +119,20 @@ test('a locked aim reports a real first surface; clear sky reports nothing', () 
     assert.equal(after.reach, ARC.reach);
     assert.ok(after.power > 0 && after.power <= 1);
     assert.ok(after.path.length > 4);
-    // Skyward: no target, no lock, and therefore no free extra reach. The
-    // Redline is still a real first surface and is reported as such.
+    // Skyward: no target, no lock, and therefore no free extra reach.
+    // The 'tide' surface is retired -- the Redline no longer kills, so a shot
+    // into clear sky now legitimately meets nothing at all.
     const sky = predictAim(g, { x: 2, y: -31, power: 31 / MAX_SPEED }, {});
     assert.equal(sky.lock, null);
     assert.equal(sky.reach, 0);
-    assert.ok(!sky.end || sky.end.kind === 'tide');
-    assert.equal(sky.hit, null);
+    // It may still meet a real shape -- seed 19 has one up there -- but it must
+    // never meet a retired tide.
+    assert.notEqual(sky.end?.kind, 'tide', 'a retired tide must never be reported');
+    // `sky.hit` is NOT asserted null. It used to be, but only because the tide
+    // truncated the preview before the arc could reach the shape -- seed 19 has
+    // a real Fang up there at y=-517. The old assertion was passing on the back
+    // of the retired mechanic, not on a fact about aiming.
+    if (sky.hit) assert.notEqual(sky.hit.kind, 'tide');
     assert.ok(before.path.length > 0);
   } finally {
     g.dispose();
@@ -214,7 +226,7 @@ test('a touched cube is never panicked, a press ends the grace, and one launch g
   }
 });
 
-test('the tide itself is a forward threat, but a shape the blade still reaches is not', () => {
+test('the tide is no longer a threat at all, but a shape the blade still reaches is not', () => {
   const w = {
     player: { position: { x: 0, y: 0 }, velocity: { x: 0, y: 18 } },
     grounded: false,
@@ -224,9 +236,11 @@ test('the tide itself is a forward threat, but a shape the blade still reaches i
   // inside the 200 ms window; 18 px/tick would take 3.8 and misses the ray.
   const fast = { ...w, player: w.player },
     quick = { ...fast, player: { ...w.player, velocity: { x: 0, y: 30 } } };
-  const falling = threatAhead(quick, stand(), quick.player.velocity, { line: 89 });
-  assert.equal(falling.kind, 'tide');
-  assert.ok(falling.ticks <= 6 && falling.ticks > 0);
+  // A fast fall toward the (now harmless) line is NOT a panic. Panic existed to
+  // shove the cube before a lethal tide; with the tide retired there is nothing
+  // to be shoved away from, and a false panic would be the game saving you from
+  // a hazard that cannot hurt you.
+  assert.equal(threatAhead(quick, stand(), quick.player.velocity, { line: 89 }), null);
   assert.equal(
     threatAhead({ ...quick, player: { ...quick.player, velocity: { x: 0, y: 12 } } }, stand(), { x: 0, y: 12 }, { line: 200 }),
     null,

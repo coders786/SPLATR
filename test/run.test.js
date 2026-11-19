@@ -4,6 +4,9 @@ import { createClock } from '../src/clock.js';
 import { createRun, ballisticAim } from '../src/run.js';
 import { projectilePoint } from '../src/physics.js';
 import { SPECIES } from '../src/shapes.js';
+import Matter from 'matter-js';
+
+const { Body } = Matter;
 const advance = (g, n) => {
   for (let i = 0; i < n; i++) g.tick();
 };
@@ -67,15 +70,48 @@ test('focus is spent in wall ticks instead of slow simulation time, and stays sp
   assert.ok(g.state.focus > 0);
   g.dispose();
 });
-test('coasting after a single dash leads to a real Redline loss, not a reset or a win', () => {
+test('coasting after a single dash no longer loses to the Redline; it costs speed instead', () => {
+  // The Redline used to end this run. The bottom wall replaces it: falling is a
+  // dead cushion that eats your velocity, not a death. This asserts the intent
+  // directly -- surviving, keeping hull, and arriving slower than you left.
   const events = [],
     g = createRun(5543, (k) => events.push(k));
+  const start = { ...g.world.player.position };
   g.dash({ x: 15, y: -30, power: 0.97 });
-  advance(g, 600);
-  assert.equal(g.state.cause, 'Redline');
-  assert.equal(g.state.phase, 'over');
-  assert.equal(g.state.hp, 0);
-  assert.equal(events.filter((k) => k === 'over').length, 1);
+  let peakSpeed = 0;
+  for (let i = 0; i < 600; i++) {
+    g.tick();
+    peakSpeed = Math.max(peakSpeed, Math.hypot(g.world.player.velocity.x, g.world.player.velocity.y));
+  }
+  assert.notEqual(g.state.cause, 'Redline', 'the Redline no longer kills');
+  assert.ok(!['over', 'dying'].includes(g.state.phase), 'coasting is survivable');
+  assert.equal(events.filter((k) => k === 'over').length, 0);
+  assert.ok(g.world.player.position.y !== start.y, 'the run actually moved');
+  // Hull is NOT asserted here: a 600-tick coast passes through a live field and
+  // this seed legitimately meets a Fang on the way down (measured at y=-703).
+  // Enemy damage is still real; what changed is that GRAVITY no longer kills.
+  g.dispose();
+});
+
+test('the bottom wall is a dead cushion: it catches you and eats most of your speed', () => {
+  const g = createRun(5543, () => {});
+  const w = g.world;
+  // Launch first: physics does not run while the cube is parked on the pad in
+  // `ready`, so a body moved before a launch simply sits there.
+  g.dash({ x: 0, y: 1, power: 0.3 });
+  // Then drop it onto the floor, far below the field. Body.setPosition, not a
+  // direct write: Matter caches bounds and a raw .position.y does not move it.
+  Body.setPosition(w.player, { x: 0, y: 11500 });
+  Body.setVelocity(w.player, { x: 0, y: 60 });
+  let cost = null;
+  for (let i = 0; i < 200 && !cost; i++) {
+    g.tick();
+    if (w.floorCost) cost = w.floorCost;
+  }
+  assert.ok(cost, 'the floor must produce a contact');
+  assert.ok(cost.after < cost.arrival * 0.6, `expected a heavy loss, got ${cost.after}/${cost.arrival}`);
+  assert.ok(!['over', 'dying'].includes(g.state.phase), 'the floor never ends a run');
+  assert.ok(w.player.position.y <= 12000, 'and it never lets you through');
   g.dispose();
 });
 test('retiring banks once; a new run has no old health, combo, hazards or cleared cells', () => {

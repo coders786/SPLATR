@@ -565,8 +565,8 @@ export function createRun(
       }
     }
     if (!s.panicTicks) panicWindow({ world, state: s, combat }, false, true);
-    // Pacing, from one place: a breath is a short lean, the Redline is a
-    // shove, and nothing here is allowed to crawl. `held` focus sets its own
+    // Pacing, from one place: a breath is a short lean, the field-edge warning
+    // is a shove, and nothing here is allowed to crawl. `held` focus sets its own
     // floor through world.slow, which advanceTiming also caps.
     const focusFloor = s.held ? focusPace(s) : 1,
       pace = Math.min(
@@ -704,30 +704,25 @@ export function createRun(
     s.peak = Math.max(s.peak, origin.y - p.y);
     s.oldLine = s.line;
     s.line = Math.min(s.line - dt * (0.38 + Math.min(6, s.band) * 0.07), origin.y - s.peak + 1180);
-    // One safety net after a cleared cutting room. Catch before the lethal
-    // line, with enough headroom to see it. This is a resting place, not a
-    // fresh run: spent enemies stay dead and points don't get paid twice.
-    if (s.net && p.y + 112 >= s.line && world.player.velocity.y >= 0) {
-      s.net = false;
-      s.caught = true;
-      s.phase = 'ready';
-      focus(false);
-      stopPlayer(world);
-      freezePoses();
-      s.edge = MAX_EDGE;
-      s.stop = s.recharge = s.blade = s.parry = s.breath = 0;
-      s.firstAir = false;
-      glideAt = Infinity;
-      s.warning = 0;
-      s.panic = null;
-      s.panicTicks = s.panicWarm = 0;
-      emit('catch', {});
-      return;
-    }
-    if (p.y + 18 >= s.line) {
-      end('Redline');
-      return;
-    }
+    // The cut-room safety net is gone with the Redline.
+    //
+    // It existed for exactly one job: catching you before the lethal stripe.
+    // With the stripe no longer lethal there is nothing to be caught from, and
+    // keeping the branch would mean the game silently rewinds your momentum and
+    // freezes you for a hazard that no longer exists. `s.net` is still SET
+    // (run setup and the field guide both read it) -- it simply no longer
+    // triggers a rescue.
+    // THE REDLINE NO LONGER KILLS.
+    //
+    // The bottom wall is the floor now, and it is a dead cushion (see
+    // physics.railBounce) rather than a loss. Falling is a real, costly setback
+    // you recover from, not the end of a run -- which means the only way to
+    // lose is enemy damage, and the game stops punishing you for gravity.
+    //
+    // `s.line` is deliberately KEPT as the enemy spawn frontier. levels.js uses
+    // it to decide which cells may spawn, so deleting it outright would let the
+    // field grow without bound. It is now a boundary for the FIELD, not for the
+    // player: the field stops descending below it and nothing dies there.
     stream.sync({ x: p.x - origin.x, y: p.y - origin.y }, s.line - origin.y);
     const band = bandAt(-s.peak);
     if (band > s.band) {

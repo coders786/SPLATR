@@ -32,7 +32,7 @@ export const PACE = Object.freeze({
   panicBase: 0.55,
   panicFloor: 0.66, // as tempo climbs, the grace weakens toward here
   panicTicks: 16,
-  // The Redline warning is a shove, not a stall.
+  // The field-edge warning is a shove, not a stall.
   warnDepth: 0.3,
   // Aim assist widens as the game speeds up, and with a beginner's tempo.
   corridor: 19,

@@ -68,16 +68,12 @@ export function arcPath(start, velocity, { geometry = [], line = -Infinity } = {
     if (wall) {
       end = { kind: 'wall', x: wall.x, y: wall.y, ticks: t, nx: wall.nx, ny: wall.ny };
       cut = true;
-    } else if (q.y >= line - ARC.wallPad) {
-      // Cross the exact Redline y, not the sample past it: same y(t) the
-      // physics uses, so the reticle lands where the loss would happen.
-      const a = before.y - (line - ARC.wallPad),
-        b = q.y - (line - ARC.wallPad),
-        u = a === b ? 0 : clamp(a / (a - b), 0, 1),
-        x = before.x + (q.x - before.x) * u;
-      end = { kind: 'tide', x, y: line - ARC.wallPad, ticks: t - ARC.step + ARC.step * u };
-      cut = true;
     }
+    // The 'tide' preview used to stop the arc at the Redline, because crossing
+    // it ended the run. The Redline no longer kills -- the bottom wall does, and
+    // it only costs speed -- so drawing an arc that "lands where the loss would
+    // happen" was showing the player a death that cannot occur. The preview now
+    // runs its full length; the wall itself is where it stops.
   }
   if (end) out.push({ x: end.x, y: end.y });
   return { points: out, end, ticks: Math.max(0, (out.length - 1) * ARC.step) };
@@ -165,16 +161,10 @@ export function threatAhead(world, combat, velocity, { blade = 0, line = -Infini
     if (Math.hypot(cx - ux * along, cy - uy * along) <= r + 6)
       consider(Math.max(0, along), 'link', l.a.x + wx * t, l.a.y + wy * t);
   }
-  // The Redline is a boundary, not a shape. A descent that would cross it
-  // inside the ray is exactly the unfair last-second fall this beat prevents.
-  if (Number.isFinite(line)) {
-    // Rays only see what is IN FRONT of the cube, not every surface below.
-    const gap = line - PLAYER_SIZE / 2 - p.y;
-    // Current downward rate must reach the stripe, and the ray must still be
-    // pointed at it: same 200 ms look-ahead as the wall test.
-    if (uy > 0.2 && gap > 0 && gap / uy <= speed * reach)
-      consider(gap / uy, 'tide', p.x + (gap / uy) * ux, line - PLAYER_SIZE / 2);
-  }
+  // The 'tide' surface is retired along with the Redline's lethality. The
+  // bottom wall is a real, physical surface and is already found by the wall
+  // test below, so a downward shot is still correctly seen as meeting something
+  // -- it just no longer meets a line that kills.
   // The ray only claims surfaces inside its 200 ms look-ahead. The slab test
   // already pads the wall, so the meet can sit a few px past `tip`; a hit at
   // or before t = 1 is the one this ray may call imminent.

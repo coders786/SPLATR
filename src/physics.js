@@ -54,10 +54,10 @@ export function createPhysics(level) {
   // high but not 1.0: a perfectly elastic wall feels weightless, and the cube
   // should lose a little speed off each rail so a long rally is earned.
   //
-  // `arena` is a ring of four rectangles well outside the starting pad. The
-  // cube starts close to the floor of it, and the recovery floor that used to
-  // end a run (the Redline) still exists BELOW the arena floor -- falling out
-  // is a miss, not an instant loss, and the arena walls make that miss rare.
+  // `arena` is a ring of four boundaries. None of them damage the player: the
+  // top and sides are banks that return speed, and the floor is a dead cushion
+  // that costs most of it (see FLOOR_CUSHION below). Nothing here can end a
+  // run -- falling is a setback, and only enemy contact takes hull.
   // RAILS ARE CHECKED, NOT SIMULATED.
   //
   // The first cut built four Matter rectangles and dropped them into the same
@@ -183,7 +183,7 @@ function advanceTiming(world, pace) {
   // reads as "lurching" rather than as speed changing.
   world.focusScale+=(target-world.focusScale)*(world.slow?.46:.62);
   if(Math.abs(target-world.focusScale)<.002)world.focusScale=target;
-  // A cut, the Redline warning or an automatic hazard grace buys reading
+  // A cut, the field-edge warning or an automatic hazard grace buys reading
   // time without changing the committed parabola. Only *held* focus
   // lightens gravity and spends focus; the two never multiply.
   world.engine.timing.timeScale=Math.min(world.focusScale,pace);
@@ -346,6 +346,7 @@ function railBounce(world) {
   const p = world.player.position,
     v = world.player.velocity,
     RESTITUTION = 0.9,
+    FLOOR_CUSHION = 0.45,
     half = PLAYER_SIZE / 2;
   const x0 = a.x + half,
     x1 = a.x + a.w - half,
@@ -379,9 +380,23 @@ function railBounce(world) {
   } else if (p.y > y1) {
     p.y = y1;
     if (v.y > 0) {
+      const arrival = Math.hypot(v.x, v.y);
       v.y = -v.y * RESTITUTION;
+      // THE FLOOR IS A DEAD CUSHION.
+      //
+      // Every other rail is a bank you play, so it returns speed. The floor is
+      // the one wall you are NOT supposed to be at: falling costs you most of
+      // your energy. Without the penalty a fall is a free reset and there is no
+      // reason to stay up -- the climb is the game.
+      //
+      // 0.45 keeps roughly a fifth of the kinetic energy and leaves the player
+      // genuinely set back but alive. That is the difference between a bounce
+      // and a setback, which is what "lossy" has to mean to be felt.
+      v.x *= FLOOR_CUSHION;
+      v.y *= FLOOR_CUSHION;
       side = 'bottom';
       ny = -1;
+      world.floorCost = { arrival, after: Math.hypot(v.x, v.y) };
     }
   }
   if (!side) return;

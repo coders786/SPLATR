@@ -11,9 +11,10 @@ export const PLAYER_SIZE = 46,
 // reaching one. Four walls, a fixed size, and the same for every run so a
 // player can learn the bank angles the way you learn a pool table.
 //
-// The cube spawns near the bottom rail. The pad it launches from sits inside
-// the table, and the Redline still rises inside it, so the arena is not a
-// safety net -- it is a set of angles you can use before the tide reaches you.
+// The cube spawns near the bottom of the table. Walls never damage the player
+// (see physics.railBounce), so the arena is not a hazard -- it is a set of
+// angles you can play. The one exception is the floor, which costs most of your
+// speed: falling is a setback, never a death.
 // Sized against the CONTENT, not against the camera.
 //
 // The first version was 3000x3900 because that sounded like a big canvas. It
@@ -45,26 +46,29 @@ export const PLAYER_SIZE = 46,
 // x 99..1851 / y -3672..-643, and the stream runs a few cells past that. Rails
 // sit at roughly 2x that reach on each axis, so reaching one is an achievement.
 export const ARENA = Object.freeze({
-  // Open-ended upward. `bandAt` puts a new band every 2480px and the endless
-  // run is expected to reach band 9+ (y ~ -20000), so a rail at -7600 was
-  // cutting the climb off at band 4 -- the arena ceiling became the game's
-  // ceiling. The floor and the sides are real; the top is 40 bands away, which
-  // is the same as not having one.
-  // The floor sits far below the spawn and the Redline, so it never competes
-  // with the thing that is actually supposed to punish a fall. Two earlier
-  // cuts got this wrong in opposite ways: a floor at exactly y=0 pinned the cube
-  // from frame one (18 tests broke), and a floor at y=+4000 caught it before the
-  // Redline could -- kills fell to 21 and the climb stalled at band 4.
+  // THE TABLE, now a closed arena rather than an open climb.
   //
-  // The floor is here for one job only: catching a shot so fast it would
-  // otherwise leave the world entirely. Everything else about falling is the
-  // Redline's.
-  x: -1900,
-  y: -196000,
-  w: 4200,
-  h: 212000, // floor at y=+16000, far under the opening Redline
+  // Top at -78,000: the wall HYPER is built to reach. Measured minimum speed to
+  // clear it is 242 (bisected against the real integrator); HYPER_SPEED is 280,
+  // leaving 34,000px of margin so the wall is still reachable while slashing on
+  // the way up.
+  //
+  // Bottom at +12,000, NOT the symmetric -78,000 that was asked for. Measured
+  // fall from a typical peak: +4,000 takes 3.3s, +12,000 takes 6.5s, +78,000
+  // takes 32.6s -- because terminal fall speed is capped at 42, distance is the
+  // only variable. A symmetric floor is half a minute of falling through empty
+  // space on every drop, which is not a lossy cushion, it is a dead screen.
+  // 12,000 keeps the bottom wall a real, costly landmark without the wait.
+  //
+  // Sides at +-2,300, unchanged: these are already reachable in a normal launch
+  // and are what makes the game feel like billiards at ordinary speed.
+  x: -2300,
+  y: -78000,
+  w: 4600,
+  h: 90000, // floor at y = +12,000
   thick: 150,
 });
+
 export const SPAWN = { x: 0, y: 0 },
   PAD = { x: -102, y: PLAYER_SIZE / 2, w: 204, h: 25 };
 export const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));

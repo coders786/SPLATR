@@ -115,8 +115,8 @@ function record() {
       ? s.shots
         ? 'You banked this run.'
         : 'No stroke taken.'
-      : s.cause === 'Redline'
-        ? 'Caught by the Redline.'
+      : s.cause === 'Floor'
+        ? 'The floor took your speed.'
         : `Broken by ${s.cause}.`,
   );
   setText('debrief', s.throughcuts?`${s.throughcuts} throughcut${s.throughcuts===1?'':'s'} in ${s.shots} dash${s.shots===1?'':'es'}.`:s.shots?`${s.shots} dash${s.shots===1?'':'es'} · ${s.kills} slashed.`:'');

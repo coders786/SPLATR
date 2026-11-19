@@ -249,24 +249,38 @@ function warnings(c, e, p, time) {
 }
 function tide(c, v, y, t) {
   if (y > v.y + v.h + 60) return;
+  // THE TIDE IS NO LONGER LETHAL, SO IT MUST NOT LOOK LETHAL.
+  //
+  // It used to flood the entire area below the line with solid rose and stamp
+  // "REDLINE" on it -- a wall of death. The line no longer kills anything; the
+  // bottom wall does, and it only costs speed. Drawing a lethal hazard for a
+  // harmless boundary is worse than drawing nothing, because it teaches the
+  // player to fear the wrong thing.
+  //
+  // What it still IS: the enemy spawn frontier (levels.js will not spawn cells
+  // below it). So it stays visible as a faint informational edge, not a threat.
   const l = v.x - 4,
     r = v.x + v.w + 4;
-  c.fillStyle = '#74253f';
-  c.fillRect(l, y, r - l, Math.max(0, v.y + v.h - y + 12));
+  c.save();
+  // A shallow gradient instead of a flood: it reads as "the field ends", not
+  // "you die here".
+  const g = c.createLinearGradient(0, y, 0, y + 90);
+  g.addColorStop(0, 'rgba(116,37,63,0.30)');
+  g.addColorStop(1, 'rgba(116,37,63,0)');
+  c.fillStyle = g;
+  c.fillRect(l, y, r - l, 90);
+  c.globalAlpha = 0.5;
   c.fillStyle = INK.rose;
-  c.fillRect(l, y, r - l, 4);
-  const off = Math.floor(l / 40) * 40;
-  for (let x = off; x < r; x += 40)
-    poly(c, '#40192d', [
-      [x, y + 7],
-      [x + 20, y + 7],
-      [x + 8, y + 22],
-      [x - 12, y + 22],
-    ]);
-  c.font = 'bold 13px Mono,monospace';
+  c.fillRect(l, y, r - l, 2);
+  // Tick marks rather than hazard chevrons: a measurement, not a warning.
+  c.globalAlpha = 0.28;
+  for (let x = Math.floor(l / 40) * 40; x < r; x += 40) c.fillRect(x, y + 4, 1, 7);
+  c.globalAlpha = 0.32;
+  c.font = 'bold 10px Mono,monospace';
   c.fillStyle = '#ff9aa9';
   c.textAlign = 'center';
-  c.fillText('R E D L I N E', v.x + v.w * 0.5, y + 42);
+  c.fillText('F I E L D   E D G E', v.x + v.w * 0.5, y + 22);
+  c.restore();
 }
 function streak(c, trail, p, live) {
   if (trail.length < 3) return;
