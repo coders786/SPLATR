@@ -219,6 +219,11 @@ export function dampPlayer(world, factor) {
   return speed * factor;
 }
 
+/** Set the player's velocity outright (px/tick). */
+export function setPlayerVelocity(world, x, y) {
+  Body.setVelocity(world.player, { x, y });
+}
+
 export function boostPlayer(world, factor, ceiling) {
   const v = world.player.velocity,
     speed = Math.hypot(v.x, v.y);

@@ -429,6 +429,44 @@ export function foe(c, kind, x, y, r, angle = 0, opts = {}) {
         c.restore();
       }
       if (kind === 'crown') {
+        // ── THREE PLATES, COUNTABLE AT A GLANCE ──────────────────────────
+        //
+        // The shell already cracks and faults as it loses hp, which is a good
+        // "I am hurting it" read -- but it is not a COUNT. A player has to
+        // infer "how much is left" from how bad the damage looks, and at phone
+        // scale a hairline crack and a deep one are the same three pixels.
+        //
+        // So the plates are also drawn as three literal plates across the
+        // crown, and losing one hp SHEDS one: the survivors stay solid paper,
+        // the lost ones are stamped as broken outlines in the shell's own
+        // colour. One hp left therefore reads as one plate standing, which is
+        // the "fragile" read the brief asks for without needing the crack to
+        // be legible.
+        for (let i = 0; i < t.hp; i++) {
+          const px = (i - (t.hp - 1) / 2) * 0.42,
+            live = i < plates;
+          c.save();
+          c.beginPath();
+          c.moveTo(px - 0.155, -0.86);
+          c.lineTo(px + 0.155, -0.86);
+          c.lineTo(px + 0.125, -1.06);
+          c.lineTo(px + 0.045, -0.955);
+          c.lineTo(px, -1.07);
+          c.lineTo(px - 0.045, -0.955);
+          c.lineTo(px - 0.125, -1.06);
+          c.closePath();
+          if (live) {
+            c.fillStyle = W;
+            c.fill();
+          }
+          // A shed plate keeps its outline so the player can count what is
+          // MISSING, not just what is present.
+          c.strokeStyle = live ? K : blend(K, t.color, 0.45);
+          c.lineWidth = live ? 0.052 : 0.038;
+          if (!live) c.setLineDash([0.05, 0.045]);
+          c.stroke();
+          c.restore();
+        }
         poly(
           c,
           W,
@@ -472,6 +510,28 @@ export function foe(c, kind, x, y, r, angle = 0, opts = {}) {
   }
   c.restore();
 }
+/**
+ * Alpha for a live blade, from the blade's own remaining ticks.
+ *
+ * The brief: the blade must be visible for its whole window, and the last few
+ * ticks must FLICKER so expiry is telegraphed rather than silent. A blade that
+ * simply ramps to zero over its last third reads as "the game got dim"; a blade
+ * that strobes reads as "this is about to end".
+ *
+ * @param {number} left  ticks of blade remaining (s.blade)
+ * @param {number} life  the longest it can be (ANIM.blade.life)
+ */
+export function bladeAlpha(left, life = 38, time = 0) {
+  if (!(left > 0)) return 0;
+  // Solid for the body of the window, easing down near the end.
+  const t = Math.min(1, left / life),
+    base = 0.55 + 0.45 * Math.min(1, t * 2.2);
+  // Last four ticks: alternate hard on/off twice. Time is quantised so the
+  // flicker is a deliberate pattern and not a per-frame random strobe.
+  if (left <= 4) return Math.floor(time * 0.5 + left) % 2 ? base * 0.22 : base;
+  return base;
+}
+
 export function blade(c, x, y, angle, r, strength = 1, reach = 1) {
   c.save();
   c.translate(x, y);

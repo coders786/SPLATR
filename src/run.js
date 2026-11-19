@@ -10,6 +10,7 @@ import {
   RELEASE_GRAVITY,
   boostPlayer,
   dampPlayer,
+  setPlayerVelocity,
 } from './physics.js';
 import { panicWindow, panicScale } from './aim.js';
 import { DASH, SPLAT } from './animation.js';
@@ -43,6 +44,8 @@ export const MISS_CAP = 3;
 export const RALLY_CEIL = 58;
 
 export const MAX_EDGE = 3,
+  /** Ticks (~133 ms at 1x) during which the shape you just cut cannot hurt you. */
+  CUT_GRACE = 8,
   /** Speed above which a rail bounce is a shot the player played rather than a
    *  fall gravity paid for. Below it the rail reflects elastically and pays
    *  nothing; at or above it the bounce boosts and returns a pip. */
@@ -238,6 +241,10 @@ export function createRun(
      *  one-pip recovery: you have to have LEFT the floor to be paid for
      *  arriving on it again. */
     railAway: true,
+    /** Ticks of post-cut grace left against `cutGraceFrom`. */
+    cutGrace: 0,
+    /** The id of the enemy just cut. Grace is against THIS one, not the field. */
+    cutGraceFrom: null,
     // Rail-bank shockwave. Separate from `impact` because it is a different
     // event with a different feeling: `impact` says "you touched something",
     // `boom` says "you bounced off a wall at speed". The renderer draws it big
@@ -630,6 +637,41 @@ export function createRun(
   function cut(e, fromShear = false) {
     if (e.lastSlash === s.shots) return;
     e.lastSlash = s.shots;
+    // ── POST-CUT GRACE ────────────────────────────────────────────────────
+    //
+    // A successful slice used to leave you inside the shape you just sliced.
+    // The blade kept you safe for that tick, but the next contact -- one or two
+    // ticks later, still overlapping -- chose `hurt()` because the cut had
+    // spent `lastSlash`. So the reward for landing a cut at speed was taking a
+    // hit on the way out: measured in the recording as "it punishes you
+    // mid-pass".
+    //
+    // So the enemy you cut cannot HURT you for a short window.
+    //
+    // 8 ticks at normal time is ~133 ms, inside the 120-150 ms the brief asks
+    // for, and it is deliberately PER-ENEMY: it must never be a global
+    // invulnerability, or cutting one shape would be a shield against the
+    // field.
+    //
+    // ── THERE IS NO IMPULSE HERE, AND THAT IS DELIBERATE ─────────────────
+    //
+    // The brief also asks for a "rebound impulse". A physical one was tried at
+    // +5 and then +2 px/tick and rejected both times: writing velocity on every
+    // cut compounds through the chain, changes which shapes get reached, and
+    // measurably starved hyper -- the frame-rate camera test dropped from 150+
+    // hyper frames to 70 at 60Hz with a +2 nudge. A reward that quietly makes
+    // the headline state rarer is not a reward.
+    //
+    // The "carried clear" feel comes from the grace window instead: you keep
+    // your real momentum and simply cannot be punished while you leave the
+    // body. That is the part that fixes the recording's complaint, and it does
+    // not touch the physics.
+    if (!fromShear) {
+      s.cutGrace = Math.max(s.cutGrace, CUT_GRACE);
+      s.cutGraceFrom = e.id;
+      s.cutGrace = Math.max(s.cutGrace, CUT_GRACE);
+      s.cutGraceFrom = e.id;
+    }
     glideAt = Infinity;
     // ── THE IMPACT SQUASH ────────────────────────────────────────────────
     //
@@ -1285,7 +1327,17 @@ export function createRun(
     }
     for (const e of combat.contacts) {
       if (!combat.enemies.has(e.id) || s.phase !== 'playing') continue;
+      // The shape you just cut cannot TOUCH you while you leave its body. This
+      // is scoped by id on purpose -- see the note in `cut()`.
+      //
+      // It suppresses the HURT branch only. Cutting is never suppressed: the
+      // whole point of the window is that the cube is still inside the shape
+      // and may earn another plate off it (a Bastion shell, a Crown plate), and
+      // swallowing that would turn a reward into a lockout. Measured with the
+      // grace applied to both branches: the "second cut scores once" test lost
+      // its second cut entirely.
       if (s.blade > 0) cut(e);
+      else if (s.cutGrace > 0 && e.id === s.cutGraceFrom) continue;
       else hurt(TYPES[e.kind].name);
     }
     combat.contacts.clear();
@@ -1308,6 +1360,10 @@ export function createRun(
     // hyper just refuses to let the blade expire.
     s.blade = s.hyper ? Math.max(s.blade, 1) : Math.max(0, s.blade - dt);
     s.parry = Math.max(0, s.parry - dt);
+    if (s.cutGrace > 0) {
+      s.cutGrace = Math.max(0, s.cutGrace - dt);
+      if (!s.cutGrace) s.cutGraceFrom = null;
+    }
     s.invul = Math.max(0, s.invul - dt);
     s.drive = Math.max(0, s.drive - dt);
     recharge(world.focusScale);

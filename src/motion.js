@@ -523,7 +523,18 @@ export const ANIM = Object.freeze({
   flash: { life: 16, hold: 0.18, ease: 'out' },
   // The blade sweep is the single most important read in the game: it must be
   // long enough to show the ARC of the cut, short enough to feel like a whip.
-  blade: { life: 31, hold: 0.0, ease: 'smooth' },
+  // ── 38, NOT 31 ──────────────────────────────────────────────────────────
+  //
+  // `s.blade` is set to 16..31 on a dash (`16 + 15 * speed/MAX_SPEED`) but a
+  // CUT extends it with `s.blade = min(38, s.blade + 7)`. So on a three-kill
+  // dash the hitbox was live for 38 ticks while this animation expired at 31 --
+  // for the last seven ticks the blade could still cut things and drew nothing
+  // at all. That is the "blade expired mid-flight" read in the recording, and
+  // it is a hitbox the player cannot see.
+  //
+  // The window covers the longest the counter can be, and the last four ticks
+  // flicker (see `bladeAlpha`) so expiry is telegraphed instead of silent.
+  blade: { life: 38, hold: 0.0, ease: 'smooth' },
   // A pop is the shape appearing. It overshoots slightly so the eye catches it.
   pop: { life: 18, hold: 0.0, ease: 'snap' },
   // The Overdrive ring is ambient, so it is the slowest thing here.

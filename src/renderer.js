@@ -1,6 +1,6 @@
 import { createCamera, frameRun, inView, toScreen } from './camera.js';
 import { createBackdrop } from './atmosphere.js';
-import { arc, blade, cube, disk, foe, line, cutHalf, nick, shearInk, poly, trace } from './art.js';
+import { arc, blade, bladeAlpha, cube, disk, foe, line, cutHalf, nick, shearInk, poly, trace } from './art.js';
 import { INK, TYPES, TAU, CUBE, pose, bodyPose, bisect, mix } from './shapes.js';
 import { createJelly } from './art.js';
 import { PAD, SPAWN, PLAYER_SIZE, ARENA, clamp, randomSource, openingFacing } from './levels.js';
@@ -1621,19 +1621,37 @@ export function createRenderer(canvas) {
       if (s.blade > 0) {
         const da = s.slashAngle - s.previousSlash;
         const bearing = s.previousSlash + alpha * Math.atan2(Math.sin(da), Math.cos(da));
+        // ── THE BLADE IS DRIVEN BY ITS OWN COUNTER ─────────────────────
+        //
+        // This used the frame-age fade (`fade('blade', time - swingStart)`),
+        // which measures how long ago the swing STARTED -- not how long the
+        // blade has LEFT. Those disagree the moment a cut extends the window
+        // (`s.blade = min(38, s.blade + 7)`), and while they disagreed the
+        // blade was live and invisible. `s.blade` is the same number the
+        // hitbox reads, so the thing on screen and the thing that cuts can no
+        // longer drift apart.
+        const vis = bladeAlpha(s.blade, 38, time);
         if (motion)
-          drawSweep(
-            c,
-            p,
-            bearing,
-            R * s.reach,
-            s.shots % 2 ? 1 : -1,
-            // Sweep strength, timed by the animation registry rather than a
-            // local divisor, so the blade and its snap cannot disagree about
-            // how long the cut is readable.
-            fade('blade', time - s.swingStart),
-          );
-        blade(c, p.x, p.y, bearing, R, 1, s.reach);
+          drawSweep(c, p, bearing, R * s.reach, s.shots % 2 ? 1 : -1, vis);
+        // An aura under the blade so the window reads as a STATE, not a swipe:
+        // a persistent cone marking the arc that will cut, dimmer than the
+        // spearhead itself and flickering on the same schedule.
+        c.save();
+        c.globalAlpha = vis * 0.42;
+        c.translate(p.x, p.y);
+        c.rotate(bearing);
+        c.beginPath();
+        c.moveTo(R * 0.5, 0);
+        c.arc(0, 0, R * s.reach * 0.96, -0.34, 0.34);
+        c.closePath();
+        c.fillStyle = INK.acid;
+        c.fill();
+        c.globalAlpha = vis * 0.5;
+        c.strokeStyle = INK.paper;
+        c.lineWidth = 1.6 / v.scale;
+        c.stroke();
+        c.restore();
+        blade(c, p.x, p.y, bearing, R, vis, s.reach);
       } else if ((s.opening?.rest || (s.phase === 'ready' && s.drive > 0)) && nearest) {
         blade(
           c,
