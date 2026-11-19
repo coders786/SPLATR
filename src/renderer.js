@@ -359,6 +359,45 @@ function pointer(c, v, p, e) {
   ]);
   c.restore();
 }
+/** Draw trace.
+ *
+ *  A test cannot see what the renderer DECIDED by looking at the pixels: a
+ *  shape drawn from a stale interpolation and a shape drawn correctly can emit
+ *  the same op stream. And re-deriving `pose(e, alpha)` inside a test, which is
+ *  what `test/frame.test.js` used to do, measures a copy of the render path
+ *  rather than the render path itself.
+ *
+ *  So the renderer publishes what it actually drew, when a caller asks for it.
+ *  Off by default and a single `null` check on the hot path.
+ */
+let drawTrace = null;
+/** Record every hostile (and the cube) draw of the NEXT frame.
+ *
+ *  Returns a stop function; calling it disables recording and RETURNS THE
+ *  TRACE. Two behaviours matter and both were wrong at first:
+ *
+ *   - Each call allocates a FRESH array unless the caller supplies one. A
+ *     default parameter (`to = []`) is evaluated once per call in JS, so that
+ *     part was fine -- but a caller that held on to the previous frame's array
+ *     while starting a new trace got a hybrid of two frames, which made a test
+ *     compare a shape against its own previous position and pass whenever it
+ *     felt like it.
+ *   - The trace must be EMPTY at the start. Leaving stale entries in it is the
+ *     same trap one level down: a sweep across alphas silently compared shapes
+ *     that had not been redrawn.
+ *
+ *  So the trace is cleared on start and the array is only handed back on stop.
+ */
+export function traceDraws(to) {
+  const sink = to ?? [];
+  sink.length = 0;
+  drawTrace = sink;
+  return () => {
+    drawTrace = null;
+    return sink;
+  };
+}
+
 export function createRenderer(canvas) {
   const c = canvas.getContext('2d', { alpha: false }),
     camera = createCamera(),
@@ -801,6 +840,28 @@ export function createRenderer(canvas) {
       p = bodyPose(world.player, alpha),
       nearest = run.nearest(),
       time = mix(world.previousClock, world.clock, alpha);
+    // The cube is the object every camera rule is written around, so the draw
+    // trace records it alongside the hostiles. Without it a test cannot tell a
+    // pinned cube from a cube that merely happens to be near the middle.
+    if (drawTrace)
+      drawTrace.push({
+        id: '@cube',
+        kind: 'cube',
+        mode: s.phase,
+        alpha,
+        x: p.x,
+        y: p.y,
+        ex: world.player.position.x,
+        ey: world.player.position.y,
+        px: (world.player.plugin.previous ?? world.player.position).x,
+        py: (world.player.plugin.previous ?? world.player.position).y,
+        sx: (p.x - v.x) * v.scale,
+        sy: (p.y - v.y) * v.scale,
+        // Where the cube sits in the VIEWPORT, 0..1. This is the number the pin
+        // is about: it must not move while the camera is pinned.
+        ux: (p.x - v.x) / v.w,
+        uy: (p.y - v.y) / v.h,
+      });
     syncScene(run,nearest);
     if (s.opening) back.bench(v);
     else back.world(v, s.seed, s.band);
@@ -1100,6 +1161,28 @@ export function createRenderer(canvas) {
       // left behind by a passing effect. See MOTION.enemyBlur.
       c.globalAlpha = 1;
       c.filter = 'none';
+      // The trace records the DECISION, not the geometry: which shape, where
+      // the interpolator put it, and which alpha produced that. A test can then
+      // ask the question the player's eye asks -- "did this thing move?" --
+      // without re-implementing the interpolation it is trying to check.
+      if (drawTrace)
+        drawTrace.push({
+          id: e.id,
+          kind: e.kind,
+          mode: e.mode,
+          alpha,
+          x: q.x,
+          y: q.y,
+          // The raw pre/post positions, so a test can prove the interpolator
+          // actually used them rather than happening to be between them.
+          px: e.px,
+          py: e.py,
+          ex: e.x,
+          ey: e.y,
+          // Device space: the space the player sees.
+          sx: (q.x - v.x) * v.scale,
+          sy: (q.y - v.y) * v.scale,
+        });
       foe(c, e.kind, q.x, q.y, e.r, q.angle, {
         hp: e.hp,
         paper: e.paper,

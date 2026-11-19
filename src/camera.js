@@ -273,18 +273,33 @@ export function createCamera() {
       // the screen (p95) because the renderer was drawing it against LAST
       // tick's camera. With prev == x there is nothing to interpolate and the
       // cube sits exactly where the pin put it.
-      // Keep prev == x while pinned AND on the first unpinned tick, so the
-      // release cannot replay one stale frame. At 60Hz the test harness lands on
-      // alpha == 0 every frame, which means `view()` returns prev verbatim; a
-      // prev left over from the last pinned position would therefore draw the
-      // world one full hyper-jump away for a frame.
+      // Do NOT collapse `prev` to the pinned position.
+      //
+      // This looks like the safe thing to do -- `view(alpha)` lerps prev -> x,
+      // and a stale prev would draw the world one hyper-jump away -- and it is
+      // wrong, twice over:
+      //
+      //  1. It is unnecessary. The pin is `x = p.x - vw*0.48`, an affine
+      //     function of the cube, and `bodyPose(player, alpha)` interpolates the
+      //     cube the same way, so interpolating the camera keeps the cube at a
+      //     CONSTANT viewport fraction for every alpha. Measured cube screen
+      //     slip while hyper is live: p95 0.0000 at both 60Hz and 144Hz.
+      //
+      //  2. It actively destroys smoothing. Collapsing prev means the camera
+      //     cannot be interpolated at all during hyper, so every frame shows a
+      //     whole physics tick of camera motion at once. Measured frame-mean
+      //     world travel under hyper: p50 60.2px at 60Hz and 0.4px at 144Hz --
+      //     the *lower* the refresh rate the worse it reads, which is backwards.
+      //     Keeping prev lets sub-tick frames interpolate the pin like anything
+      //     else: 144Hz p50 rose to 25.0px and p95 fell 133 -> 63 (ratio
+      //     332 -> 2.5).
+      //
+      // So the pin sets `x/y` and nothing else. The one thing it must still do
+      // is clear the hold flag, so a release after a hyper cannot reuse a
+      // pinned-to-freeze transition.
       if (pinned) {
-        prevX = x;
-        prevY = y;
         wasPinned = true;
       } else if (wasPinned) {
-        prevX = x;
-        prevY = y;
         wasPinned = false;
       }
     },

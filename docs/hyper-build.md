@@ -273,3 +273,110 @@ pips therefore went **dark at the exact moment hyper fired** — the loudest sta
 in the game would have shown the emptiest HUD. The index now comes from the
 array position (`findIndex`), HYPER is the fifth tier, and a test walks every
 band the readout can return to assert it maps to a real, ordered tier.
+
+---
+
+## 9. Rebuilding the frame tests on the real render path
+
+§8.8 replaced three tuned thresholds with a rate-aware budget and blamed the
+harness. That was half right, and the half that was wrong is the more
+interesting one: **nothing in the suite tested the renderer at all.**
+`test/frame.test.js` called `pose(e, alpha)` and `camera.view(alpha)` itself and
+compared the two results to each other, so it measured a *copy* of the render
+path. A bug inside `draw()` was invisible to it by construction.
+
+### 9.1 Three ways the old harness measured the wrong thing
+
+| flaw | evidence |
+|---|---|
+| Bot cadence ran off **frame count** (`clock % 45`) | 60/75/120/144/240Hz played four different games: **81 / 95 / 100 / 78** dashes |
+| Window was `ticks * 4` **frames** | **5,600** simulation ticks at 60Hz vs **1,400** at 240Hz — four run lengths |
+| `alpha` was **0.000 on every frame at 60Hz** | So "interpolation" was never exercised, and `pose(e, 0)` returns `e.px` verbatim. The duplicate metric was measuring "did the source array change", not the picture |
+
+The fix is to advance by **wall time** and drive the simulation from inside the
+production `clock.frame()`, exactly as `main.js` does. Same seed now reaches the
+same simulation clock at every rate (asserted: spread ≤ 2 ticks).
+
+### 9.2 A display a headless test can see
+
+`test/support/display.js` gives the real `createRenderer()` a recording 2D
+context: a Proxy that answers every canvas call, tracks the affine matrix stack,
+and records every pixel-producing op in **device space**. No jsdom, no canvas
+package. The DOM stub is exactly three globals — `document.createElement`,
+`ResizeObserver`, `devicePixelRatio` — so a new DOM dependency fails loudly
+instead of silently passing.
+
+Two oracles come out of it:
+
+- **frame signature** — what was painted where at what alpha. Two frames with the
+  same signature are the same image, so duplicate detection is exact rather than
+  inferred.
+- **draw trace** (`traceDraws()` in `renderer.js`) — what the renderer *decided*.
+  A shape drawn from a stale interpolation and a shape drawn correctly can emit
+  the same op stream; the trace records the id, the interpolated position, the
+  two ticks it sits between, and the device-space result. The cube is traced too,
+  because every camera rule is written around it.
+
+Cost when off: one `null` check. Measured 1.112 ms/frame off vs 1.284 ms/frame
+with a full capture against a recording context.
+
+### 9.3 The mistake the new tests found in shipped code
+
+The hyper camera §8.7 collapsed `prevX = x` while pinned, so `view(alpha)` had
+nothing to interpolate. That was defended as necessary — a stale `prev` would
+draw the world one hyper-jump away — and it was **both unnecessary and harmful**:
+
+- The pin is `x = p.x - vw*0.48`, an *affine function of the cube*, and
+  `bodyPose(player, alpha)` interpolates the cube identically. So interpolating
+  the camera keeps the cube at a **constant** viewport fraction for every alpha.
+  Measured cube slip in hyper with the collapse removed: **p95 0.0000** at both
+  60Hz and 144Hz; with it in place, the same.
+- Collapsing `prev` prevents *any* smoothing inside hyper, so every frame shows a
+  whole physics tick of camera motion at once. Measured frame-mean world travel
+  under hyper: **p50 60.2 px at 60Hz against 0.4 px at 144Hz** — the *lower* the
+  refresh rate the worse it read, which is backwards. Removing the collapse:
+  144Hz p50 **0.4 → 25.0 px**, p95 **133 → 63** (ratio 332 → 2.5), and the share
+  of steady hyper frames went **41% → 56%** at 60Hz and **76% → 95%** at 144Hz.
+
+That is a real defect in shipped code, found only because a test could finally
+see the glass.
+
+### 9.4 Mutation testing: proof the suite is not vacuous
+
+A green suite proves nothing on its own. Eight plausible regressions were
+injected one at a time, and every one is now caught:
+
+| mutation | caught by |
+|---|---|
+| hostile drawn at the live tick (ignores alpha) | interpolation sweep |
+| hostile drawn at the previous tick (alpha inverted) | interpolation sweep |
+| hostile drawn at `Math.round(alpha)` | interpolation sweep |
+| camera pin removed | cube-pin test |
+| pin offset drifts with position | cube-pin test |
+| clock returns 0 instead of the remainder | clock contract |
+| clock discards debt (skips ticks) | clock contract |
+| renderer leaks a `save()` without `restore()` | transform balance |
+
+Getting to 8/8 required fixing the tests, not the thresholds:
+
+- The first pass **survived the alpha mutation**, because `traceDraws()` reused a
+  caller array and the sweep silently compared stale entries between two frames.
+  The API now clears on start and returns a fresh sink.
+- The sweep then **skipped shapes that culling dropped at some alphas**, so it
+  compared almost nothing. It now asserts a minimum number of survivors and a
+  minimum number of *moving* shapes, and fails loudly instead of passing
+  vacuously.
+- The transform test originally only asserted `Number.isFinite`, which a leaked
+  `scale(1.001)` passes. It now asserts balanced `save`/`restore` counts *and*
+  the absolute matrix returning to the frame's base.
+
+### 9.5 Verification
+
+| gate | result |
+|---|---|
+| suite | **141/141** (10 frame tests, up from 3) |
+| mutation battery | **8/8** injected regressions caught |
+| wall time | 80s before memoising the playthroughs, **27s** after |
+| refresh rates | 60, 75, 120, 144, 240 Hz |
+| build | **323.2 KiB**, one file |
+| preview | 200 |
