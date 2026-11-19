@@ -309,12 +309,20 @@ function noteContact(world, x, y, nx, ny, depth, surface = null) {
   world.contact = { x, y, nx, ny, depth, surface, speed: world.player.speed, clock: world.clock, until: world.clock + 0.22 };
 }
 
-function snapshot(body) {
+function snapshot(body, ceiling = MAX_SPEED) {
   const prev = body.plugin.previous;
   prev.x = body.position.x;
   prev.y = body.position.y;
   prev.angle = body.angle;
-  capVelocity(body);
+  // The ceiling has to be threaded through here too.
+  //
+  // This call used to cap at MAX_SPEED unconditionally, on EVERY tick, before
+  // the substep count was even computed. That meant world.playerCeiling was
+  // being honoured inside the substep loop and then silently undone here at the
+  // top of the next tick -- which is why every "reach the wall" speed boost
+  // measured exactly 2345px of climb no matter what was launched, and why the
+  // measured peak speed never once exceeded 42.1 against a stated ceiling of 88.
+  capVelocity(body, ceiling);
   return body.speed + body.angularSpeed * Math.SQRT1_2 * PLAYER_SIZE;
 }
 
@@ -396,7 +404,7 @@ export function stepPhysics(world, beforeStep, pace=1) {
   advanceTiming(world,pace);
   const scale = world.engine.timing.timeScale;
   beforeStep?.(scale); // enemy timing and gravity wells share this exact step
-  const fastest = snapshot(world.player);
+  const fastest = snapshot(world.player, world.playerCeiling || MAX_SPEED);
   const steps = Math.max(1, Math.ceil(((fastest + 0.5) * scale) / MAX_TRAVEL));
   world.substeps = steps;
   // The speed the cube ARRIVES with. Matter resolves an impact inside
