@@ -526,9 +526,17 @@ export function bladeAlpha(left, life = 38, time = 0) {
   // Solid for the body of the window, easing down near the end.
   const t = Math.min(1, left / life),
     base = 0.55 + 0.45 * Math.min(1, t * 2.2);
-  // Last four ticks: alternate hard on/off twice. Time is quantised so the
-  // flicker is a deliberate pattern and not a per-frame random strobe.
-  if (left <= 4) return Math.floor(time * 0.5 + left) % 2 ? base * 0.22 : base;
+  // ── LAST FOUR TICKS: STRICT ALTERNATION ────────────────────────────────
+  //
+  // Keyed on the REMAINING TICKS, not on a quantised clock. My first version
+  // used `floor(time*0.5 + left) % 2`, which on a real 1-tick-per-frame run
+  // produced on, OFF, OFF, on -- two dark ticks in a row. That is a dim-out,
+  // not a flicker, and it reads as the effect failing rather than as the window
+  // closing.
+  //
+  // Alternating on `left` alone gives on/off/on/off at exactly one toggle per
+  // tick, which is the fastest the eye can read at 60Hz and is unambiguous.
+  if (left <= 4) return Math.round(left) % 2 ? base * 0.16 : base;
   return base;
 }
 

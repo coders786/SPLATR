@@ -573,6 +573,79 @@ export function traceDraws(to) {
   };
 }
 
+// ── POPUP PLACEMENT ────────────────────────────────────────────────────────
+//
+// Extracted from the event handler so it can be tested directly. Two problems
+// showed up only when a real run was rasterised, not in unit tests:
+//
+//   * three popups inside one chain landed on top of each other, and
+//   * two of them printed straight over the blade and the Crown.
+//
+// A score you have to squint at is not feedback, so:
+//
+//   1. MERGE  - a spawn within MERGE_R world px and MERGE_AGE ticks of a live
+//               popup is the same burst of action. Fold the value in, refresh
+//               the life, and set `beat` so the drawn number snaps up briefly.
+//               One number where there were two, and it is the true total.
+//   2. OFFSET - anything that survives the merge is nudged clear of live
+//               sibling popups so two numbers never overprint.
+//
+export const MERGE_R = 26;
+export const MERGE_AGE = 8;
+
+export function recordPopup(pops, d) {
+  // ── SIT BESIDE THE SLASH, NOT ON IT ──────────────────────────────────────
+  // The popup is anchored at the cut point, and the cut point is exactly where
+  // the blade is. Rasterised from a live run, `+2820` printed straight across
+  // the sword and the Crown -- a number you cannot read is worse than no
+  // number. Push it out along the cut NORMAL so it sits beside the stroke
+  // rather than along it, and bias the normal upward so the text lands above
+  // the action where the eye already is.
+  const ang = d.cut ?? d.angle ?? 0;
+  let nx = -Math.sin(ang);
+  let ny = Math.cos(ang);
+  if (ny > 0) {
+    nx = -nx;
+    ny = -ny;
+  }
+  const r = d.r || 20;
+  const push = r * 0.55 + 16;
+  const x = d.x + nx * push;
+  const y = d.y + ny * push - r * 0.25;
+  const live = pops.find(
+    (m) => m.life > 0 && Math.hypot(m.x - x, m.baseY - y) < MERGE_R,
+  );
+  if (live && live.age < MERGE_AGE) {
+    live.value += d.points;
+    live.text = `+${live.value}`;
+    live.big = live.big || d.points >= 400 || !!d.throughcut;
+    live.life = 40;
+    live.age = 0;
+    live.beat = 1;
+    return live;
+  }
+  let py = y;
+  for (const m of pops) {
+    if (m.life < 16) continue;
+    if (Math.abs(m.x - x) > 46 || Math.abs(m.baseY - py) > 14) continue;
+    py = m.baseY - 16;
+  }
+  const pop = {
+    x,
+    baseY: py,
+    value: d.points,
+    text: `+${d.points}`,
+    // `points` decides the weight, so a 24-point chip and a 900-point
+    // throughcut do not print at the same size.
+    big: d.points >= 400 || !!d.throughcut,
+    life: 40,
+    age: 0,
+    beat: 0,
+  };
+  pops.push(pop);
+  return pop;
+}
+
 export function createRenderer(canvas) {
   const c = canvas.getContext('2d', { alpha: false }),
     camera = createCamera(),
@@ -674,19 +747,7 @@ export function createRenderer(canvas) {
       });
       if (beams.length > MOTION.maxImprints) beams.shift();
     }
-    if (type === 'cut' && !d.small && d.points > 0) {
-      pops.push({
-        x: d.x,
-        y: d.y - (d.r || 20) * 0.6,
-        text: `+${d.points}`,
-        // `chain` decides the weight, so a 24-point chip and a 900-point
-        // throughcut do not print at the same size.
-        big: d.points >= 400 || d.throughcut,
-        life: 40,
-        age: 0,
-      });
-      if (pops.length > MOTION.maxImprints) pops.shift();
-    }
+    if (type === 'cut' && !d.small && d.points > 0) recordPopup(pops, d);
     if (type === 'armor' || (type === 'cut' && !d.small && !d.fromShear)) {
       imprints.push({ ...d, type, life: type === 'armor' ? 16 : 9 });
       if (imprints.length > MOTION.maxImprints) imprints.shift();
@@ -854,7 +915,13 @@ export function createRenderer(canvas) {
           list.splice(i, 1);
           continue;
         }
-        if (list === imprints || list === pops || list === beams) continue;
+        if (list === pops) {
+          // `age` gates the merge window and `beat` is the snap on a merge.
+          e.age += dt;
+          if (e.beat) e.beat = Math.max(0, e.beat - dt * 0.5);
+          continue;
+        }
+        if (list === imprints || list === beams) continue;
         e.px = e.x;
         e.py = e.y;
         e.pa = e.angle;
@@ -1588,18 +1655,35 @@ export function createRenderer(canvas) {
     for (const m of pops) {
       const u = 1 - m.life / 40,
         rise = motion ? u * 26 : 0;
+      // A merged popup snaps up a few percent for two ticks so the eye catches
+      // that the number it was reading just grew.
+      const beat = m.beat ? 1 + 0.18 * m.beat : 1;
       c.save();
       c.globalAlpha = (m.life / 40) * (m.life < 8 ? m.life / 8 : 1);
-      c.translate(m.x, m.y - rise);
-      c.scale(1 / v.scale, 1 / v.scale);
+      c.translate(m.x, m.baseY - rise);
+      c.scale(beat / v.scale, beat / v.scale);
       c.textAlign = 'center';
       c.textBaseline = 'middle';
-      c.font = `800 ${m.big ? 26 : 17}px/1 var(--type, sans-serif)`;
+      // ── NO var() IN A CANVAS FONT ────────────────────────────────────────
+      // This was `800 26px/1 var(--type, sans-serif)`. `var()` is only
+      // substituted by the CSS cascade for *declaration* values; a font set
+      // from script is not a declaration, so the substitution never happens
+      // and the whole font string fails to parse. The spec says an invalid
+      // font must leave the previous value untouched -- so every popup
+      // inherited whatever font the last draw pass happened to set (in
+      // capture that was a 10px fallback, i.e. unreadably small). The stack
+      // has to be literal.
+      c.font = `800 ${m.big ? 26 : 17}px/1 Riot, Impact, sans-serif`;
       c.lineWidth = 4;
       c.strokeStyle = INK.black;
       c.lineJoin = 'round';
       c.strokeText(m.text, 0, 0);
-      c.fillStyle = m.big ? INK.acid : INK.paper;
+      // The blade, the beam and the Overdrive ring are ALL acid (#deff52).
+      // Printing an acid number on top of an acid sword is why `+2820`
+      // disappeared into the blade even after it was pushed clear. Big totals
+      // go WHITE so they separate from every acid element on screen; small
+      // chips stay paper so the big ones keep their hierarchy.
+      c.fillStyle = m.big ? INK.paper : '#cfc6d8';
       c.fillText(m.text, 0, 0);
       c.restore();
     }
