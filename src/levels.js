@@ -290,7 +290,26 @@ export function createStream(seed, enter, leave, staged = false) {
           cellTop = -(y + 1) * CELL_H,
           cellBottom = -y * CELL_H;
         if (cellRight < ARENA.x || cellLeft > ARENA.x + ARENA.w) continue;
-        if (cellBottom < ARENA.y) continue;
+        // ── THE TOP WALL MUST NOT BE A REFUGE ──────────────────────────────
+        //
+        // The table is finite and the wall is at -78,000, so a player who
+        // parks against the top rail runs PAST the last row of cells and the
+        // field goes permanently empty. Measured at this commit: climbing to
+        // the wall and parking there took the live enemy count to 0 and held
+        // it there for the rest of the run -- a soft-lock in a run-based
+        // arcade game, reachable simply by flying up.
+        //
+        // OFF_TABLE cells used to be skipped outright, the reasoning being
+        // that a shape squeezed against a rail is a worse artefact than no
+        // shape. That holds for a cell hanging off the SIDE, where the player
+        // can never go. It does not hold ABOVE: the player can and does sit
+        // there, and "no shape at all" is the artefact. So an off-the-top cell
+        // is still built, and `place()` clamps its shapes inside the walls --
+        // which is exactly the containment the skip was protecting.
+        //
+        // This does not raise the ceiling and does not delete the wall: the
+        // rails still stop the cube, and the shapes now follow it there.
+        const offTop = cellBottom < ARENA.y;
         const k = `${x}:${y}`;
         wanted.add(k);
         if (live.has(k)) continue;

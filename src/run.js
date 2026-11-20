@@ -908,8 +908,34 @@ export function createRun(
     s.recharge = 0;
     s.focus = 1;
     s.blade = s.parry = s.stop = 0;
+    // ── THE CUTTING ROOM DOES NOT PAY ──────────────────────────────────────
+    //
+    // This used to read "Keep the score, including the Overdrive they may just
+    // have earned", and it leaked the whole tutorial economy into Sector 01:
+    // measured at this commit, a clean warmup crossed the line carrying 2,100
+    // points and a chain of 4, and a better run carried 5,700 and a chain of
+    // 12. The player then started the real game on a multiplier they had not
+    // earned against opponents that could not fight back, and the wave counter
+    // was dragged up behind them.
+    //
+    // The Cutting Room is a rehearsal. Rehearsals do not score.
+    //
+    // `best` is deliberately untouched -- a run that beat the record and then
+    // quit still beat it. `kills` is lifetime-of-the-run and is kept so the
+    // form readout is honest about what the player actually cut.
+    if (cleared) {
+      s.score = 0;
+      s.chain = s.chainTime = s.chainMax = 0;
+      s.maxChain = 0;
+      s.drive = 0;
+      s.hyper = false;
+      s.hyperAge = s.hyperChain = 0;
+      s.band = 0;
+      s.peak = 0;
+      s.tier = 0;
+    }
     // Let the player actually see the first live opponent before the tide
-    // starts. Keep the score, including the Overdrive they may just have earned.
+    // starts.
     s.phase = 'ready';
     stream.sync(SPAWN, s.line - origin.y);
     emit('field', { cleared });

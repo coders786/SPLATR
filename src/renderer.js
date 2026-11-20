@@ -1088,15 +1088,36 @@ export function createRenderer(canvas) {
       pad = Math.max(10, side * 0.022),
       box = Math.min(side * 0.3, 226), // the panel: square, because the arena is
       plot = box - 14, // inset so the walls sit INSIDE the frame
-      x0 = w - box - pad,
+      home = w - box - pad,
       y0 = h - box - pad,
       // One scale for both axes: the arena is square, so this is exact.
       scale = plot / A.w,
-      toMap = (x, y) => ({
-        x: x0 + 7 + (x - A.x) * scale,
-        y: y0 + 7 + (y - A.y) * scale,
-      }),
       p = world.player.position;
+    // ── THE PANEL STEPS ASIDE ────────────────────────────────────────────────
+    //
+    // It is drawn ON TOP of the player (see the end of `draw()`), so a cube in
+    // the bottom-right corner has its body, its ghost trail and its blade cone
+    // buried under an opaque map -- while its own radar dot sits in the same
+    // box. Fading the panel is the obvious fix and is the wrong one: at 22%
+    // the cube underneath is fully visible and BOTH become unreadable, which
+    // is worse than either being on top.
+    //
+    // So the panel hops to the opposite bottom corner for as long as the
+    // player is within its reach. It is a locator, not the game.
+    //
+    // The reach is generous on purpose. The player is not a point: the blade
+    // cone alone extends ~190px, and a body-only test reported "clear" while
+    // the cone was visibly scribbling across the map.
+    const pc = toScreen(v, world.player.position);
+    const REACH = 210;
+    const underPanel =
+      pc.x > home - REACH && pc.x < home + box + REACH &&
+      pc.y > y0 - REACH && pc.y < y0 + box + REACH;
+    const x0 = underPanel ? Math.max(pad, w - home - box) : home;
+    const toMap = (x, y) => ({
+      x: x0 + 7 + (x - A.x) * scale,
+      y: y0 + 7 + (y - A.y) * scale,
+    });
 
     c.save();
     // ── plate ─────────────────────────────────────────────────────────────
@@ -1399,15 +1420,19 @@ export function createRenderer(canvas) {
     // All of it is drawn in screen space AFTER the world, and none of it
     // touches enemies: they are drawn before this layer, sharp, always.
     if (motion) speedField(c, world, v, time);
-    // Wrapped in save/restore: the minimap sets its own screen transform, and
-    // anything drawn after it (the cube) inherits whatever matrix is left
-    // behind. Without this the cube was drawn through the map's 0.045 scale
-    // matrix and effectively vanished -- 455 acid pixels became 13.
-    if (!s.opening) {
-      c.save();
-      minimap(c, world, combat, v, s);
-      c.restore();
-    }
+    // ── THE MINIMAP MOVED TO THE END OF THE FRAME ──────────────────────────
+    //
+    // It used to be drawn HERE, before the player. The panel is opaque, so
+    // anything drawn after it wins -- and the cube is drawn after. Rasterised
+    // at the arena's bottom-right corner: the cube lands at screen
+    // (756, 613), the panel occupies (665..884, 495..714), and the result is
+    // a cube silhouette and its blade cone plastered across the map it is
+    // standing on. Dimming the panel cannot fix that, because the panel is
+    // underneath. It has to be drawn last, over the player, with the player
+    // still readable THROUGH it -- see the panel's own fade.
+    //
+    // (Save/restore still matters: the map sets its own screen transform, and
+    // anything drawn after it inherits that matrix.)
     if (motion && s.phase === 'playing') streak(c, trail, p, s.blade > 0);
     // One expanding ring per contact, at the point the silhouettes met. A
     // shockwave is the cheapest honest way to say "something stopped here".
@@ -2875,6 +2900,17 @@ export function createRenderer(canvas) {
       c.strokeStyle = INK.rose;
       c.lineWidth = 10;
       c.strokeRect(0, 0, w, h);
+      c.restore();
+    }
+    // ── THE MAP GOES ON TOP ────────────────────────────────────────────────
+    //
+    // Last thing in the frame, so it cannot be overdrawn by the cube. The
+    // player is still readable THROUGH it: `minimap()` fades the whole panel
+    // while the cube is inside its rect, so in the one case they overlap the
+    // map steps back instead of being ruined by the thing walking over it.
+    if (!s.opening) {
+      c.save();
+      minimap(c, world, combat, v, s);
       c.restore();
     }
   }

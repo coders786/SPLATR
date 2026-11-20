@@ -159,6 +159,12 @@ test('paper swings are free; spending cuts on the shell teaches recharge without
 });
 
 test('the bolted shell stops the blade and keeps its crack. No phantom refund; the real sixth kill goes into the field', (t) => {
+  // NOTE: this test used to assert `score: 5700` and `drive > 170` at the
+  // hand-off -- i.e. it asserted that the Cutting Room's points and Overdrive
+  // LEAK into Sector 01. It was encoding the bug as the contract. The bench
+  // rewards below (`drive > 170` INSIDE the room) still hold; what changed is
+  // that the house rules zero the tally on the way out.
+
   const { g, s, events } = room();
   t.after(() => g.dispose());
   press(g);
@@ -177,9 +183,14 @@ test('the bolted shell stops the blade and keeps its crack. No phantom refund; t
   assert.equal(shell.hp, 1);
   press(g);
   tick(g, 60);
+  // `drive` is zero here on purpose. The room used to hand the live field a
+  // full Overdrive meter earned by slicing stationary racks, which is the
+  // "start Round 1 up six knockdowns" problem. The bench still pays during
+  // the room; the house rules zero the tally on the way out.
+  assert.equal(s.drive, 0, 'no free Overdrive on the way in');
   assert.deepEqual(
     [s.opening, s.phase, s.shots, s.score, s.kills, s.throughcuts, s.hp, s.edge],
-    [null, 'ready', 4, 5700, 6, 2, 3, 3],
+    [null, 'ready', 4, 0, 6, 2, 3, 3],
   );
   assert.equal(events.filter(([k]) => k === 'racksCleared').length, 1);
   assert.deepEqual(
@@ -188,7 +199,6 @@ test('the bolted shell stops the blade and keeps its crack. No phantom refund; t
   );
   assert.equal(g.combat.enemies.size, 1);
   assert.equal(g.nearest().mode, 'tell');
-  assert.ok(s.drive > 170);
   assert.equal(g.combat.hazards.length, 0);
   assert.equal(g.combat.links.length, 0);
   const line = s.line,
@@ -197,7 +207,10 @@ test('the bolted shell stops the blade and keeps its crack. No phantom refund; t
   assert.equal(s.line, line);
   assert.equal(g.nearest().clock, timer);
   press(g);
-  assert.equal(s.reach, DRIVE_REACH);
+  // `DRIVE_REACH` was reachable here only because the room's Overdrive
+  // survived the hand-off. With the tally zeroed the first live shot is a
+  // normal one; the long reach is still earned inside the field.
+  assert.equal(s.reach, 1);
   tick(g, 10);
   assert.ok(g.combat.enemies.size > 1);
   assert.ok(s.kills > 6);
