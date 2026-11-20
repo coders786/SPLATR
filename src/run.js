@@ -80,6 +80,37 @@ export const MAX_EDGE = 3,
  *  accelerates the decay, because a cut spends forward velocity to make chaos,
  *  so the player who slashes hardest burns hyper fastest. That tension is free.
  */
+// ── THE ASCENT CAP ─────────────────────────────────────────────────────────
+//
+// A chain that keeps a big vertical component lets the cube out-run the wave
+// director: measured from a real recording, a tutorial-fed Overdrive took the
+// player from Sector 02 to Sector 32 in about nine seconds, which is thirty
+// sectors of content skipped and then a wall of nothing at the top.
+//
+// This is a SOFT cap, applied only while the cube is climbing and only to the
+// UPWARD component. It is deliberately not a speed cap: horizontal speed and
+// the hyper ceiling are untouched, so the game still feels fast. What it buys
+// is time -- the field gets to exist in front of the player before they have
+// flown past it.
+export const MAX_ASCENT_VY = 26;
+
+// ── THE VIEWPORT WATCHDOG ──────────────────────────────────────────────────
+//
+// A backstop, not the fix. The fix for the empty field was in levels.js (the
+// top wall was skipping every cell past it). This exists because "the field is
+// never empty" is a property a RUN must hold, and a property worth having even
+// if the cell geometry is right: one mistake in the wave director, or one
+// future change to the table, and the player is staring at a dead screen again.
+//
+// If nothing has been alive within a viewport of the cube for this long, the
+// stream is forced to resync. Resyncing is the honest repair -- it rebuilds
+// cells relative to the player instead of inventing shapes, so the field the
+// player gets is the field the seed says belongs there.
+export const RAIL_SETTLE_VY = 1.2;
+
+export const EMPTY_WATCHDOG_TICKS = 90;
+export const WATCHDOG_REACH = 1800;
+
 export const HYPER = Object.freeze({
   speed: 280,
   chain: 7,
@@ -209,6 +240,29 @@ export function createRun(
     reach: 1,
     breath:0,
     story:warmup,
+    // Tutorial banners are legal ONLY in the Cutting Room. `enterField()`
+    // lowers this for good; nothing in the live field can raise it again.
+    tutorialActive: warmup,
+    /** Ticks the field has been empty near the player. See EMPTY_WATCHDOG_TICKS. */
+    emptyTicks: 0,
+    /**
+     * SPEED AS THE PLAYER CAN SEE IT.
+     *
+     * This is `hypot(dx,dy)/dt` between settled positions, not the velocity the
+     * integrator happens to be holding. They are usually the same. They diverge
+     * exactly when they must not: a cube pinched against a rail is resolved by
+     * the solver every tick, so a raw velocity can be read mid-resolution --
+     * non-zero while the body has not moved at all. Anything whose job is to
+     * describe MOTION (the speedometer, squash/stretch, ghost emission) reads
+     * this; anything whose job is to MODEL it (gravity, bounces) keeps using
+     * velocity.
+     */
+    moved: 0,
+    /** Last settled position, for `moved`. */
+    _lastX: 0,
+    _lastY: 0,
+    /** How many times the watchdog has had to resync. Diagnostic only. */
+    watchdog: 0,
     firstAir:false,
     warning:0,
     panic:null,
@@ -890,13 +944,71 @@ export function createRun(
       s.recharge = 0;
     }
   }
+  // ── resetRunState: THE CUTTING ROOM DOES NOT PAY ─────────────────────────
+  //
+  // Everything the Cutting Room accumulated is dropped on the way out. This
+  // used to read "Keep the score, including the Overdrive they may just have
+  // earned", and it leaked the whole tutorial economy into Sector 01: measured
+  // at that commit, a clean warmup crossed the line carrying 2,100 points and a
+  // chain of 4, and a better run carried 5,700 and a chain of 12. The player
+  // then began the real game on a multiplier they had not earned, against
+  // opponents that could not fight back, with the wave counter dragged up
+  // behind them.
+  //
+  // A rehearsal does not score.
+  //
+  // Deliberately NOT reset:
+  //   `best`   -- a run that beat the record and then quit still beat it.
+  //   `kills`  -- lifetime-of-the-run, so the form readout stays honest about
+  //               what the player actually cut.
+  //   `hp`     -- the Cutting Room has no damage; rebuilding it would be a gift.
+  function resetRunState() {
+    s.score = 0;
+    s.chain = s.chainTime = s.chainMax = 0;
+    s.maxChain = 0;
+    s.drive = 0;
+    s.hyper = false;
+    s.hyperAge = s.hyperChain = 0;
+    s.band = 0;
+    s.peak = 0;
+    s.tier = 0;
+    s.blade = 0;
+    s.slashAge = -1;
+    s.slashAngle = s.previousSlash = -0.65;
+    s.freshSwing = false;
+    s.parry = 0;
+    s.stop = 0;
+    // `throughcuts` is a lifetime STAT (it feeds the form grade), not an
+    // economy value, so it is kept alongside `kills`.
+    // Three clean pips and no dash in flight. `stopPlayer` is what the field
+    // already used to put the cube at rest; it zeroes velocity properly rather
+    // than leaving a launch the player cannot see.
+    s.edge = MAX_EDGE;
+    s.recharge = 0;
+    s.depleted = false;
+    stopPlayer(world);
+    // ── AND THE BANNERS GO WITH IT ────────────────────────────────────────
+    // One-way. The live field has no tutorial cards at all after this, which
+    // is the fix for the card that kept reappearing in Sector 32.
+    s.story = false;
+    s.tutorialActive = false;
+    s.caught = false;
+    s.net = false;
+    s.firstAir = false;
+    s.warning = 0;
+    s.panic = null;
+    s.panicTicks = s.panicWarm = 0;
+  }
   function enterField(cleared) {
     if (!s.opening || (!cleared && s.opening.finishing) || !['ready', 'playing'].includes(s.phase))
       return false;
     for (const e of combat.enemies.values()) combat.remove(e);
     s.opening = null;
     s.net = cleared;
-    s.story=cleared;
+    // `story` used to be re-armed to `cleared` here, which is what let the
+    // guide cards come back for a player who finished the racks. It is a
+    // one-way switch now: the field has no tutorial cards at all.
+    s.story = false;
     focus(false);
     stopPlayer(world);
     freezePoses();
@@ -908,32 +1020,7 @@ export function createRun(
     s.recharge = 0;
     s.focus = 1;
     s.blade = s.parry = s.stop = 0;
-    // ── THE CUTTING ROOM DOES NOT PAY ──────────────────────────────────────
-    //
-    // This used to read "Keep the score, including the Overdrive they may just
-    // have earned", and it leaked the whole tutorial economy into Sector 01:
-    // measured at this commit, a clean warmup crossed the line carrying 2,100
-    // points and a chain of 4, and a better run carried 5,700 and a chain of
-    // 12. The player then started the real game on a multiplier they had not
-    // earned against opponents that could not fight back, and the wave counter
-    // was dragged up behind them.
-    //
-    // The Cutting Room is a rehearsal. Rehearsals do not score.
-    //
-    // `best` is deliberately untouched -- a run that beat the record and then
-    // quit still beat it. `kills` is lifetime-of-the-run and is kept so the
-    // form readout is honest about what the player actually cut.
-    if (cleared) {
-      s.score = 0;
-      s.chain = s.chainTime = s.chainMax = 0;
-      s.maxChain = 0;
-      s.drive = 0;
-      s.hyper = false;
-      s.hyperAge = s.hyperChain = 0;
-      s.band = 0;
-      s.peak = 0;
-      s.tier = 0;
-    }
+    if (cleared) resetRunState();
     // Let the player actually see the first live opponent before the tide
     // starts.
     s.phase = 'ready';
@@ -1155,6 +1242,61 @@ export function createRun(
     // frame is a still image of the impact inside a room that is still moving.
     if (!stopped) stepPhysics(world, (dt) => combat.move(dt, s.band), pace);
     else world.previousClock = world.clock;
+    // ── IS THE CUBE CLEAR OF THE RAILS? (read by the contact block below) ──
+    //
+    // This has to be measured AFTER physics and BEFORE any contact is handled:
+    // the floor's one-pip rescue pays only if the cube has been clear of the
+    // rail since it last paid, and the contact block is what asks. Computing it
+    // at the bottom of the tick (where it used to live) meant the answer was
+    // always one tick stale -- measured while the cube was still ON the rail --
+    // so the rescue never fired at all on a clean fall.
+    if (!stopped) s.railAway = !railNear(world);
+
+    // ── SOFT ASCENT CAP ──────────────────────────────────────────────────
+    //
+    // Only the UPWARD component, only while climbing, and applied after the
+    // integrator so it cannot fight the solver. Horizontal speed is untouched,
+    // so this costs the player nothing except altitude-per-tick.
+    //
+    // Not applied during hyper: hyper is the reward state and its whole point
+    // is going through the ceiling. Boarded-out ascent is a problem of the
+    // ORDINARY chain, which is where it was measured.
+    //
+    // IT DOES NOT APPLY TO A REBOUND. `railBounce` has already written the new
+    // upward velocity by the time this runs, and clamping that is clamping the
+    // bank -- measured, it shrank every bounce by ~40%, which changed the whole
+    // shape of a floor rally (4 bottom contacts in 400 ticks where there had
+    // been 2, and the one-pip floor rescue stopped paying because the cube never
+    // got clear of the rail band). A bank is the player's reward for arriving
+    // fast; it is not the run-away ascent this cap exists to fix.
+    //
+    // So the cap only trims speed the CHAIN built -- the case where the cube is
+    // climbing on its own momentum with the blade out.
+    if (!stopped && !s.hyper && !world.banked) {
+      const vy = world.player.velocity.y;
+      if (vy < -MAX_ASCENT_VY) world.player.velocity.y = -MAX_ASCENT_VY;
+    }
+    // ── WHAT ACTUALLY MOVED ──────────────────────────────────────────────
+    //
+    // Displacement over the tick, computed after physics and before anything
+    // reads it. `velocity` can be non-zero on a body that did not move -- the
+    // rail solver resolves every tick -- so anything whose job is to DESCRIBE
+    // motion (the speedometer, squash/stretch, ghost emission) reads this
+    // instead. Anything whose job is to MODEL motion (gravity, bounces) keeps
+    // velocity.
+    {
+      const p2 = world.player.position;
+      s.moved = Math.hypot(p2.x - s._lastX, p2.y - s._lastY);
+      s._lastX = p2.x;
+      s._lastY = p2.y;
+      // A cube resting on a rail or a deck, with no meaningful vertical speed,
+      // is AT REST: whatever velocity the solver left behind is not motion the
+      // player can see, so the effects that read "how fast is this thing"
+      // are told zero.
+      const rest = world.railRest;
+      s.railSettle =
+        (rest || world.grounded) && Math.abs(world.player.velocity.y) < RAIL_SETTLE_VY;
+    }
     // ── READ THE EVENT, NOT THE MEMORY ──────────────────────────────────
     //
     // `world.contact` is the LAST contact and never goes back to null: it is
@@ -1321,6 +1463,7 @@ export function createRun(
       // a cube that is only falling -- however fast -- banks nothing.
       const earned = s.sinceDash;
       s.sinceDash = false;
+
       // Touching a rail stops the refill clock for longer than the timer takes
       // to ripen, so a bounce can never pay for itself. See `recharge`.
       s.floorCool = 160;
@@ -1475,7 +1618,12 @@ export function createRun(
     // "Away from the rails" is a fact about where the cube IS, not a timer.
     // It is what makes the floor's one-pip recovery an entry rather than a
     // rate limit, so it is recomputed every tick.
-    s.railAway = !railNear(world);
+    // NOTE: `s.railAway` is refreshed at the TOP of the next tick (it is a
+    // fact about where the cube IS, and it has to be current when the rail
+    // contact block reads it). This line used to sit HERE, after the contact
+    // block had already consumed it, so the rescue always saw the value from
+    // while the cube was still ON the rail -- and never paid. MOVED to the
+    // start of the tick; see `s.railAway` there.
     s.chainTime = Math.max(0, s.chainTime - dt);
     if (!s.chainTime) s.chain = 0;
     hyperStep();
@@ -1503,6 +1651,24 @@ export function createRun(
     // field grow without bound. It is now a boundary for the FIELD, not for the
     // player: the field stops descending below it and nothing dies there.
     stream.sync({ x: p.x - origin.x, y: p.y - origin.y }, s.line - origin.y);
+    // ── THE WATCHDOG ───────────────────────────────────────────────────────
+    //
+    // Counts ticks with nothing alive within a viewport of the cube. Counting
+    // NEARBY rather than just `enemies.size` matters: a shape stranded two
+    // screens away is not a field, it is a number in a map.
+    {
+      let near = 0;
+      for (const e of combat.enemies.values()) {
+        if (Math.hypot(e.x - p.x, e.y - p.y) < WATCHDOG_REACH) { near++; break; }
+      }
+      if (near > 0) s.emptyTicks = 0;
+      else if (++s.emptyTicks >= EMPTY_WATCHDOG_TICKS) {
+        s.emptyTicks = 0;
+        s.watchdog++;
+        // Resync rather than invent: the seed still owns what belongs here.
+        stream.sync({ x: p.x - origin.x, y: p.y - origin.y }, s.line - origin.y);
+      }
+    }
     const band = bandAt(-s.peak);
     if (band > s.band) {
       s.band = band;

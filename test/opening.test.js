@@ -301,10 +301,22 @@ test('the proof strip follows what was actually hit, stays out of committed swin
   const {g,s}=room();t.after(()=>g.dispose());
   const scene=()=>sceneFor(s,g.nearest(),g.world.player.velocity.y>0,s.line-g.world.player.position.y);
   assert.equal(scene(),'tap');tick(g,500);assert.equal(s.shots,0);assert.equal(scene(),'tap');
-  for(const next of ['pull','shell','crack','lane']){press(g);assert.equal(scene(),null);tick(g,46);assert.equal(scene(),next);}
-  press(g);tick(g,16);assert.equal(scene(),'focus');assert.equal(s.held,false,'the demo does not press focus');
-  // The 'net' scene taught the Redline rescue, which no longer exists.
-  tick(g,500);assert.notEqual(scene(),'net','the guide must not teach a mechanic that is gone');
+  // Three racks show cards; the FOURTH press is the transition out of the room,
+  // and `lane` was never a room card -- it only appeared because the field was
+  // still allowed to show one. That is the haunted card, and it is gone.
+  for(const next of ['pull','shell','crack']){press(g);assert.equal(scene(),null);tick(g,46);assert.equal(scene(),next);}
+  press(g);assert.equal(scene(),null);tick(g,46);
+  assert.equal(s.opening,null,'the room is over');
+  // ── THE STRIP IS CONFINED TO THE CUTTING ROOM ───────────────────────────
+  //
+  // This used to assert `lane` HAPPENED HERE, then a `focus` card after it.
+  // Both were the live field showing tutorial cards -- exactly the strip the
+  // review filmed popping up in Sector 32. `enterField()` lowers
+  // `tutorialActive` for good, so the last card of the room is the last card
+  // of the run.
+  assert.equal(s.tutorialActive,false,'the room disarmed the banners');
+  assert.equal(scene(),null,'no card leaks out of the room');
+  tick(g,500);assert.equal(scene(),null,'and none appears later either');
   const plain=createRun(42,()=>{},{staged:true});t.after(()=>plain.dispose());
   assert.equal(sceneFor(plain.state,plain.nearest(),false,10),null);
   const skip=room().g;t.after(()=>skip.dispose());assert.ok(skip.skipOpening());assert.equal(sceneFor(skip.state,skip.nearest(),false,10),null);

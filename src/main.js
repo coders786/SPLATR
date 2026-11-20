@@ -505,9 +505,17 @@ function updateHUD() {
   // The ceiling only lifts while hyper is live. Passing HYPER.speed always
   // would make ordinary top-speed flight read as DRIFT and strip its stretch --
   // the effect must know the difference between "fast" and "off the scale".
+  // ── THE NUMBER IS DISPLACEMENT, NOT VELOCITY ───────────────────────────
+  //
+  // Reading `velocity` here is what let a cube parked on the floor display
+  // 70 CRUISE while its minimap dot sat still: the rail solver resolves every
+  // tick, and the velocity it leaves behind at the END of that is not the same
+  // as motion the player can see. `moved` is displacement over the tick, so a
+  // body that did not move reads 0 no matter what the solver did.
   const vel = run.world.player.velocity,
     hyperCeiling = s.hyper ? HYPER.speed : MAX_SPEED,
-    readout = speedReadout(Math.hypot(vel.x, vel.y), MAX_SPEED, hyperCeiling, s.hyper),
+    seen = s.moved ?? Math.hypot(vel.x, vel.y),
+    readout = speedReadout(seen, MAX_SPEED, hyperCeiling, s.hyper),
     dial = $('speedo');
   dial.dataset.band = readout.band;
   dial.setAttribute('aria-label', `Speed ${readout.kmh}, ${readout.band.toLowerCase()}`);

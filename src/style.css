@@ -244,12 +244,38 @@ dd {
   margin-bottom: 6px;
   font-size: 30px;
 }
+/* ── ONE ACTIVE STATE, NOT TWO ─────────────────────────────────────────────
+   `Resume run` is `.primary`, so it OWNED a bright acid fill; every other
+   button is `.quiet` and only tinted. Hovering End run therefore left Resume
+   glowing acid while the hovered button went muddy plum -- the screen pointed
+   at two things at once, and the one it pointed at hardest was the one the
+   pointer was not on. (Hovering Resume itself then turned it stark white,
+   which read as a third state.)
+
+   The fix is to stop keying "this is the button you will hit" to a class. A
+   primary button is highlighted only when it is genuinely the active target;
+   when something else is, it steps back to the same treatment as everything
+   else. `:has()` lets that be expressed without JavaScript, and it degrades
+   to the old behaviour on browsers that lack it rather than breaking. */
+#panel:has(.choice:hover) .choice.primary:not(:hover),
+#panel:has(.choice:focus-visible) .choice.primary:not(:focus-visible) {
+  background: #3a2a3d;
+  color: #e6dbe9;
+  box-shadow: none;
+}
 .choice.primary:hover,
 .choice.primary:focus-visible {
   background: var(--w);
+  color: var(--k);
 }
 .choice.primary:focus-visible {
   box-shadow: inset 0 0 0 3px var(--hot);
+}
+/* The keyboard cursor and the pointer must look identical, because they do
+   the same thing. */
+.choice.quiet:is(:hover, :focus-visible) {
+  background: #3a2a3d;
+  color: var(--w);
 }
 .choice .icon {
   width: 18px;
@@ -637,7 +663,15 @@ dd {
   box-shadow: 8px 8px 0 #100d1899;
 }
 #panel::backdrop {
-  background: #100c1bd9;
+  /* ── THE BACKGROUND DOES NOT BLEED THROUGH ────────────────────────────────
+     A flat 85% scrim still let the field's brightest layers read through the
+     dialog's shadow and its thin lower edge -- a glitch stack poking out from
+     under the frame. A blur removes the legibility the glow was stealing while
+     staying darker than "frosted glass", so the panel still reads as OPAQUE
+     and the room behind it as behind it. */
+  background: rgba(12, 6, 20, 0.86);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 .panel-inner {
   padding: 24px 26px 21px;

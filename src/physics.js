@@ -422,6 +422,12 @@ function railBounce(world) {
     x1 = a.x + a.w - half,
     y0 = a.y + half,
     y1 = a.y + a.h - half;
+  // ── WHAT THE CUBE IS RESTING ON ────────────────────────────────────────
+  //
+  // Published every tick, whether or not anything bounces. `run.js` reads this
+  // to settle the resting state explicitly instead of letting a micro-cycle
+  // survive into the next frame. Reset first so it never goes stale.
+  world.railRest = null;
   let side = null,
     nx = 0,
     ny = 0;
@@ -448,6 +454,7 @@ function railBounce(world) {
   }
   if (p.y < y0) {
     p.y = y0;
+    world.railRest = { side: 'ceiling' };
     if (v.y < 0) {
       if (-v.y < ARRIVE) v.y = 0;
       else {
@@ -458,6 +465,9 @@ function railBounce(world) {
     }
   } else if (p.y > y1) {
     p.y = y1;
+    // Touching the floor at all, at any speed, is what "resting" means here;
+    // `run.js` decides whether the VERTICAL SPEED is small enough to settle.
+    world.railRest = { side: 'floor' };
     if (v.y > 0 && v.y < ARRIVE) {
       // Resting on the floor: gravity feeds it a crumb of downward speed every
       // substep. Absorb it and stay quiet -- see ARRIVE above.
@@ -486,6 +496,7 @@ function railBounce(world) {
     }
   }
   if (!side) return;
+  if (v.y < 0) world.banked = true;
   Body.setPosition(world.player, { x: p.x, y: p.y });
   Body.setVelocity(world.player, { x: v.x, y: v.y });
   // The rail is a bank, not a wall: publish the contact so the run can pay it.
@@ -524,6 +535,10 @@ export function stepPhysics(world, beforeStep, pace=1) {
   // level test. Splitting the fields fixes the channel without giving up the
   // debounce that keeps a resting body from buzzing.
   world.struck = null;
+  // Did a RAIL write upward velocity this step? The ascent cap in run.js must
+  // not clamp a bank -- a bank is a reward, not the runaway climb the cap
+  // exists for. Set here because it is the physics pass that knows.
+  world.banked = false;
   advanceTiming(world,pace);
   const scale = world.engine.timing.timeScale;
   beforeStep?.(scale); // enemy timing and gravity wells share this exact step

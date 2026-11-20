@@ -112,16 +112,24 @@ function drawArc(c, run, aim, alpha, scale, hint, time, view) {
     // lens widens under a held aim).
     const o = aim.anchor,
       tip = a.start;
-    // Neutral, dim ink on purpose: the tether says "this is where you grabbed",
-    // the arc says how fast. Painting both in the speed colour made the two
-    // lines one white smear at full pull.
+    // ── ONE DIRECTION, OR TWO? ───────────────────────────────────────────
+    //
+    // This used to draw a dashed CHORD from the press point to the cube, on
+    // top of a dotted ARC that says where the shot actually goes. They point
+    // in different directions by construction -- the chord is "where my finger
+    // was", the arc is "where the cube will fly" -- so at full pull the screen
+    // was showing three arrows (tether, parabola, blade cone) and no two of
+    // them agreed. On a phone, mid-dash, that reads as the aim being broken.
+    //
+    // The chord was the least informative of the three: the press point is
+    // useful as a PLACE, not as a heading. So it is now a small anchor dot and
+    // nothing else. Everything directional on screen comes from the one
+    // post-magnetise trajectory.
     c.save();
-    c.globalAlpha = 0.22 + 0.3 * a.power;
-    c.setLineDash([4 / scale, 4 / scale]);
-    line(c, INK.paper, 1.5 / scale, tip.x, tip.y, o.x, o.y);
-    c.setLineDash([]);
-    c.globalAlpha = 0.5 + 0.3 * a.power;
-    arc(c, INK.paper, 1.4 / scale, o.x, o.y, (4 + 2 * a.power) / scale, 0, TAU);
+    c.globalAlpha = 0.34 + 0.26 * a.power;
+    arc(c, INK.paper, 1.4 / scale, o.x, o.y, (5 + 2.5 * a.power) / scale, 0, TAU);
+    c.globalAlpha = 0.16 + 0.14 * a.power;
+    arc(c, INK.paper, 1 / scale, o.x, o.y, (11 + 4 * a.power) / scale, 0, TAU);
     c.restore();
   }
   // Two layers: a translucent wide under-stroke, then crisp dashes whose
@@ -505,14 +513,31 @@ function streak(c, trail, p, live) {
     c.restore();
   }
 }
+// The map panel's rect, derived the same way `minimap()` derives it, so the
+// two cannot drift apart. Null before layout.
+function panelRectFor(v) {
+  const w = v.width, h = v.height;
+  if (!(w > 0 && h > 0)) return null;
+  const side = Math.min(w, h),
+    pad = Math.max(10, side * 0.022),
+    size = Math.min(side * 0.3, 226);
+  return { x: w - size - pad, y: h - size - pad, size };
+}
 function pointer(c, v, p, e) {
   if (!e) return;
+  const panelRect = panelRectFor(v);
   const q = toScreen(v, e),
     o = toScreen(v, p),
-    l = 21,
-    r = v.width - 21,
+    // A 24px inset from the viewport edge, so an off-screen arrow is never
+    // sliced by the frame. That was already true; what was NOT true is that
+    // the arrow also has to miss the HUD, and the map panel sits over the
+    // bottom-right corner, so a shape below and to the right had its
+    // indicator drawn through the minimap.
+    INSET = 24,
+    l = INSET,
+    r = v.width - INSET,
     t = 90,
-    b = v.height - 65;
+    b = v.height - INSET;
   if (q.x > l && q.x < r && q.y > t && q.y < b) return;
   const x = clamp(o.x, l, r),
     y = clamp(o.y, t, b),
@@ -523,8 +548,15 @@ function pointer(c, v, p, e) {
     dx > 0 ? (r - x) / dx : dx < 0 ? (l - x) / dx : Infinity,
     dy > 0 ? (b - y) / dy : dy < 0 ? (t - y) / dy : Infinity,
   );
+  const ax = x + dx * f,
+    ay = y + dy * f;
+  // The map panel is opaque and on top, so an arrow under it is a broken
+  // glint at its edge. Better to not draw it: the map itself is carrying the
+  // same information at true position.
+  if (panelRect && ax > panelRect.x - 10 && ax < panelRect.x + panelRect.size + 10 &&
+      ay > panelRect.y - 10 && ay < panelRect.y + panelRect.size + 10) return;
   c.save();
-  c.translate(x + dx * f, y + dy * f);
+  c.translate(ax, ay);
   c.rotate(Math.atan2(dy, dx));
   poly(c, TYPES[e.kind].color, [
     [8, 0],
@@ -2285,9 +2317,14 @@ export function createRenderer(canvas) {
       // Fed only while the cube is genuinely fast, so the ghosts are a READOUT
       // of speed. An effect that is always on stops carrying information.
       {
-        const speed = Math.hypot(world.player.velocity.x, world.player.velocity.y),
+        // `s.moved` is DISPLACEMENT this tick, not velocity: a cube pinched on
+        // a rail can hold a non-zero velocity while not moving a pixel, and
+        // that is what stacked a chimney of ghosts over a parked cube. It is
+        // also suppressed outright while settled, because a resting cube is
+        // not fast and ghosts are a readout of fast.
+        const speed = s.railSettle ? 0 : (s.moved ?? Math.hypot(world.player.velocity.x, world.player.velocity.y)),
           g = ghostFor(speed, MAX_SPEED);
-        if (motion && g.count && !world.grounded) {
+        if (motion && g.count && !world.grounded && !s.railSettle) {
           // Sample the trail every other frame. Sampling every frame makes the
           // ghosts overlap into a smear; every other frame keeps them as
           // distinct cels, which is the look.
@@ -2323,7 +2360,7 @@ export function createRenderer(canvas) {
       // An impossible shape trailing the cube. Drawn before the cube so the
       // solid form always sits on top of its own distortion.
       {
-        const speed = Math.hypot(world.player.velocity.x, world.player.velocity.y),
+        const speed = s.railSettle ? 0 : (s.moved ?? Math.hypot(world.player.velocity.x, world.player.velocity.y)),
           // `roar` is how far past ordinary speed the cube actually is, so the
           // wake keeps growing through hyper and sonic instead of hitting the
           // same ceiling as a 60 px/tick cruise.

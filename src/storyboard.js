@@ -17,6 +17,20 @@ export function sceneFor(s, target, falling, gap) {
     if (o.misses) return 'retry';
     return o.row===1?'pull':'tap';
   }
+  // ── THE LIVE FIELD GETS ONE CARD, NOT A ROTATING SET ─────────────────────
+  //
+  // Below this line were four rules that fired at ANY altitude: `net` above,
+  // then `rise` (you are falling), `focus` (you jumped with no breath) and
+  // `stock` (no pips). Because they were keyed to the cube's STATE rather than
+  // to being new, they kept firing forever -- a player in Sector 32 who fell
+  // near the floor got the bounce card again, then rose, then got it again.
+  // That is the teleporting "haunted card": same card, two anchor sides, chosen
+  // by whichever rule was true this frame.
+  //
+  // The live field now shows ONE card, once, on the transition out of the
+  // Cutting Room, and never again for that run. `s.tutorialActive` is cleared
+  // by `enterField()` and is never set again.
+  if (!s.tutorialActive) return null;
   if(s.caught) return 'net';
   if(s.phase==='ready' && target?.sentry) return 'lane';
   if(s.net && falling && gap<400) return 'rise';
