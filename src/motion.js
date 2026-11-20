@@ -302,7 +302,43 @@ export const CAMERA = Object.freeze({
    *    and the field stays readable.
    */
   follow: 0.2,
+  /** Vertical budget per tick. Named, because the brief and the tests both
+   *  speak in terms of ONE number for "the worst a dash may move the frame
+   *  vertically". 30 is the proven ceiling: below it a full-speed climb is
+   *  outrun by the cube, above it the frame reads as a pan. */
+  maxCamStepY: 30,
   maxStepPx: 30,
+
+  // ── HORIZONTAL IS NOT THE PROBLEM THE FOLLOW WAS SOLVING ────────────────
+  //
+  // The follow was tuned for the VERTICAL axis -- a cube climbing at terminal
+  // speed, where the frame must keep up or the player flies off the top.
+  // Horizontally the same value means a 42px/tick lateral dash drags the entire
+  // skyline 30px sideways in a frame, and a dash is the most common thing the
+  // player does. That is the "screen whip".
+  //
+  // So the axes are separated: vertical keeps the proven follow, horizontal is
+  // capped at a fraction of it. The cube is allowed to move sideways on screen;
+  // the city is not.
+  //
+  // 18 rather than the 2 that seemed right on paper. A hard 2px/tick cap does
+  // stop the whip, and it also breaks the frame: the cube outruns the view by
+  // 40px/tick, so it slides across the screen and every dash visibly stutters
+  // (measured: p95/p50 traced travel 1.90, i.e. sprites speeding up and slowing
+  // down, against a 1.8 threshold). 18 is the value at which the skyline stops
+  // whipping and the frame still reads as a glide -- and it is enforced ONCE
+  // per tick, on the tick's actual displacement, so no other rule can add to it.
+  maxStepXPx: 18,
+  /** Deadzone around the framing target, as a fraction of the viewport.
+   *  Motion inside it does not move the camera at all -- which is what makes a
+   *  small hover, a rail bounce or a breathing idle read as a still frame. */
+  deadzoneX: 0.05,
+  deadzoneY: 0.1,
+  /** Downward look-ahead while falling, in world px, and the speed at which it
+   *  is fully applied. Small and damped: enough that a fast drop shows where it
+   *  is going, not enough to swing the frame. */
+  fallLead: 60,
+  fallLeadVy: 40,
   /**
    * How far ahead of the cube the lens frames while it is flying, as a
    * fraction of the viewport at terminal speed.
@@ -339,57 +375,137 @@ export function dampedTarget(ideal, current, viewW, viewH) {
 /** A shake bank: requests are clamped to a regenerating budget so effects can
  *  ask for as much drama as they like without the screen ever vibrating
  *  forever. One instance lives in the renderer. */
+// ── SCREEN SHAKE: TRAUMA, NOT IMPULSES ─────────────────────────────────────
+//
+// Squirrel Eiserloh's model, and the reason for it is that the old one was not
+// a shake at all: it stored a single scalar AND a bearing, then translated the
+// frame by `cos(bearing)/sin(bearing)` for the whole life of the effect. That
+// is a SHOVE in one direction -- the screen jumps once and slides back -- with
+// no oscillation anywhere in it. It also stored the amount rather than the
+// trauma, so the decay curve was a straight line and every impact looked the
+// same size.
+//
+// What this does instead:
+//
+//   * `trauma` in [0,1], decaying LINEARLY over ~0.38s.
+//   * displacement = trauma^2, so small hits are almost invisible and big ones
+//     are unmistakable, and the decay reads as "shutting down" rather than
+//     "fading out".
+//   * the offset is driven by CONTINUOUS WAVES of differing frequency, not by
+//     a random number per frame. Random per-frame offsets read as noise (and
+//     make a 144Hz screen shake differently from a 60Hz one); waves at
+//     incommensurate frequencies read as a physical shudder and are
+//     reproducible frame for frame.
+//   * hard clamps, because a shake is a garnish and this is a game people play
+//     for minutes at a time: SHAKE.maxPx positional, SHAKE.maxRollDeg
+//     rotational. Roll is included but tiny -- rotation is the single most
+//     nauseating transform a camera can apply.
+//   * the HUD is never inside this transform (see renderer.js: the shake is
+//     applied to the world pass only).
+export const SHAKE = Object.freeze({
+  /** Peak positional displacement of the frame, in px. */
+  maxPx: 7,
+  /** Peak rotational roll, in degrees. Deliberately tiny. */
+  maxRollDeg: 0.6,
+  /** Seconds for trauma to fall from 1 to 0. */
+  decaySeconds: 0.38,
+  /** Wave frequencies (radians per tick at 60Hz) and phase offsets. Chosen to
+   *  be incommensurate so the pattern does not visibly repeat. */
+  freqX: 13.7,
+  freqY: 17.3,
+  freqRoll: 9.1,
+  /** A single impact may add at most this much trauma before clamps apply, so
+   *  a chain of cuts cannot sum into a seizure. */
+  maxBump: 0.55,
+  /** Ticks before another bump is accepted. Prevents a fast multi-kill from
+   *  re-triggering on every contact in the same frame burst. */
+  cooldown: 6,
+});
+
 export function createShake() {
-  let budget = MOTION.shakeBudget,
-    amount = 0,
-    bearing = 0;
+  let trauma = 0,
+    clock = 0,
+    cool = 0,
+    lastBump = 0;
+  // Wave functions. `sin` of three different rates, sampled on a clock that
+  // only advances while trauma is alive, so the pattern always starts from the
+  // same phase on a new impact and is therefore the same shake every time.
+  const wave = (f, ph) => Math.sin(clock * f + ph);
   return {
+    /** Current positional amplitude in px, already trauma^2 and clamped. */
+    get px() {
+      // Two independent ceilings, and both matter. `SHAKE.maxPx` is the
+      // vestibular limit -- no impact may move the world further than that,
+      // ever. `MOTION.shakeBudget` is the older per-impact budget that the
+      // volume of the effect was originally expressed in; a single bump must
+      // not exceed it either, or a "capped" shake can still be louder than the
+      // sound design assumes. Both are applied, smallest wins.
+      const a = trauma * trauma * SHAKE.maxPx;
+      return Math.min(SHAKE.maxPx, MOTION.shakeBudget, a);
+    },
+    /** Back-compat: the old API exposed a single scalar. */
     get amount() {
-      return amount;
+      return this.px;
     },
-    get bearing() {
-      return bearing;
+    get trauma() {
+      return trauma;
     },
-    /** Ask for shake. Returns how much was actually granted.
+    /** The offset to translate the WORLD by, this frame. */
+    get x() {
+      const a = this.px;
+      return a * wave(SHAKE.freqX, 0);
+    },
+    get y() {
+      const a = this.px;
+      return a * wave(SHAKE.freqY, 1.7) * 0.8;
+    },
+    /** Roll in DEGREES. Clamped hard; callers must apply it to the world only. */
+    get rollDeg() {
+      const a = this.px;
+      const r = (a / SHAKE.maxPx) * wave(SHAKE.freqRoll, 0.9) * SHAKE.maxRollDeg;
+      return Math.max(-SHAKE.maxRollDeg, Math.min(SHAKE.maxRollDeg, r));
+    },
+    /**
+     * Ask for a bump of trauma. `force` is in the old pixel units for the
+     * callers that already speak it; it is converted to trauma here.
      *
-     *  ── TRAUMA SQUARED ────────────────────────────────────────────────
-     *
-     *  The displacement is the SQUARE of the stored trauma, not the trauma
-     *  itself. That is the whole trick behind a shake that feels authored
-     *  rather than mechanical: a linear decay spends most of its life at a
-     *  visible amplitude, so every impact looks roughly the same size and the
-     *  screen is always trembling a little. Squaring makes small hits almost
-     *  invisible and big ones enormous, and the decay becomes an audible
-     *  "shutting down" instead of a fade.
-     *
-     *  The budget is unchanged -- it still caps how much can be asked for in a
-     *  burst -- so squaring changes the SHAPE of a response, never how much of
-     *  it is affordable.
+     * MAX, NOT SUM -- and this is the whole anti-stacking rule. Cutting three
+     * shapes in one swing used to call this three times, and three summed
+     * impulses produced a single very large shake out of three small ones. A
+     * shake is a reaction to an event, and three events that land in the same
+     * six ticks are one event as far as the eyes are concerned.
      */
-    ask(force, angle, scale = 1) {
-      // Store the trauma that would produce this displacement, so the curve is
-      // continuous: amount == trauma^2 and `ask` still reasons in pixels.
-      const granted = Math.min(force, budget);
-      const trauma = Math.min(1, granted / MOTION.shakeBudget);
-      if (trauma * trauma * MOTION.shakeBudget <= amount) return 0;
-      amount = trauma * trauma * MOTION.shakeBudget;
-      bearing = angle;
-      budget = Math.max(0, budget - granted * 0.6 * scale);
-      return amount;
+    ask(force, _angle, scale = 1) {
+      if (cool > 0) return 0;
+      const bump = Math.min(SHAKE.maxBump, Math.max(0, force) / MOTION.shakeBudget);
+      if (bump <= 0) return 0;
+      // MAX with the live trauma, plus a small diminishing addition so a
+      // genuinely bigger hit still reads bigger. Never a plain sum.
+      const next = Math.min(1, Math.max(trauma, bump * scale) + bump * 0.18);
+      const gained = next > trauma;
+      lastBump = bump;
+      if (!gained) return 0;
+      trauma = next;
+      cool = SHAKE.cooldown;
+      return this.px;
     },
-    /** Advance one tick. `dt` is the frame's simulation delta, in nominal
-     *  60 Hz steps. Both terms are linear in `dt` on purpose: a high refresh
-     *  rate runs this more often with a smaller `dt`, and the total change per
-     *  unit of game time must come out identical. */
+    /** Advance. `dt` is in ticks. */
     tick(dt) {
-      budget = Math.min(MOTION.shakeBudget, budget + MOTION.shakeRegen * dt * 0.06);
-      amount = Math.max(0, amount - MOTION.shakeDecay * dt);
-      return amount;
+      if (cool > 0) cool = Math.max(0, cool - dt);
+      if (trauma > 0) {
+        // Linear decay in SECONDS, converted through the tick delta so a high
+        // refresh rate runs it more often with a smaller dt and the total comes
+        // out identical.
+        trauma = Math.max(0, trauma - (dt / 60) / SHAKE.decaySeconds);
+        clock += dt;
+      }
+      return this.px;
     },
     reset() {
-      budget = MOTION.shakeBudget;
-      amount = 0;
-      bearing = 0;
+      trauma = 0;
+      clock = 0;
+      cool = 0;
+      lastBump = 0;
     },
   };
 }

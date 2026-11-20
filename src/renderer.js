@@ -689,6 +689,13 @@ export function createRenderer(canvas) {
     revision = 0,
     anim = 'rest',
     shake = createShake(),
+    // Set from options. Defaults to FULL; the renderer never guesses.
+    shakeLevel = 'full',
+    // Minimap fade, driven in SIMULATION time so it is deterministic: the
+    // panel reaches 0.08 in exactly MAP_FADE_TICKS ticks no matter the refresh
+    // rate, which is what makes it testable without a browser.
+    mapOpacity = 0.92,
+    frameDt = 1,
     ghosts = createSmear(10),
     lastSwing = -1,
     justLaunched = 0,
@@ -897,6 +904,7 @@ export function createRenderer(canvas) {
     // frozen pose, which is what makes the moment read as an impact rather than
     // as a dropped frame.
     const dt = s.phase === 'dying' ? 1 : world.engine.timing.timeScale;
+    frameDt = dt;
     // The bank advances on the simulation delta so the cap cannot be gamed by
     // a high refresh rate: 144 Hz regenerates half as fast per frame.
     shake.tick(dt);
@@ -980,7 +988,7 @@ export function createRenderer(canvas) {
    *  to make a fast game unwatchable, which is a thing this project has
    *  already learned the hard way. These effects add light and lines only.
    */
-  function speedField(c, world, v, time) {
+  function speedField(c, world, v, time, state) {
     // `world.player` is a Matter body: its coordinates live on `.position`.
     // Reading `.x`/`.y` here yields undefined, and every stroke then lands at
     // NaN and disappears without an error -- which is exactly how this layer
@@ -1036,32 +1044,51 @@ export function createRenderer(canvas) {
 
     // 3. Speed lines.
     //
-    //    Anchored around the cube and biased BEHIND its direction of travel:
-    //    the space the player just came from is what should be streaming past.
-    //    Lines only exist in a narrow cone behind the cube, because a full
-    //    360-degree starburst is not speed, it is a sunburst -- the first
-    //    working version of this did exactly that and overwhelmed the frame.
+    //    These are a garnish on top of the vignette and must never be the
+    //    thing that tells you that you are moving. Three constraints, each of
+    //    which was broken in a previous version:
     //
-    //    They are also biased to a single flat tint at low alpha. Speed reads
-    //    through MOVEMENT and repetition, not through brightness; bright lines
-    //    compete with the enemies, and enemies must always win.
-    if (tier.index >= 2) {
-      const cx = (p.x - v.x) * v.scale,
-        cy = (p.y - v.y) * v.scale,
-        travel = Math.atan2(body.velocity.y, body.velocity.x),
+    //    (a) Gated on REAL DISPLACEMENT, not on the speed tier. The tier is a
+    //        function of velocity, and velocity is not movement: a cube pinned
+    //        on the floor rail, or shoved by a rebound, can hold a high
+    //        velocity while its position barely changes. Gating on velocity
+    //        drew streaming lines on a stationary cube.
+    //    (b) At most 8 lines, at most 0.12 alpha. Past that they stop being
+    //        speed and become a strobe, which is a nausea problem rather than
+    //        a style choice.
+    //    (c) Anchored to the VIEWPORT CENTRE, not the cube. Anchoring to the
+    //        cube makes every line swing around the frame as the cube moves
+    //        inside it, which reads as the camera whipping even when it is
+    //        still. The centre is the one point that never moves.
+    // `s.moved` is true displacement over the tick, published by run.js.
+    // Fall back to velocity only when no state is supplied (offline frames).
+    const moved = state?.moved ?? world.realMoved ?? speed;
+    const gate = MAX_SPEED * 0.65;
+    if (moved > gate) {
+      const cx = (w / 2),
+        cy = (h / 2),
+        travel =
+          Math.abs(body.velocity.x) + Math.abs(body.velocity.y) > 0.01
+            ? Math.atan2(body.velocity.y, body.velocity.x)
+            : 0,
         behind = travel + Math.PI,
-        reach = Math.hypot(w, h);
+        reach = Math.hypot(w, h),
+        // 0 at the gate, 1 at full speed. Lines fade in from nothing so a
+        // player crossing the threshold never sees them snap into place.
+        calm = Math.min(1, (moved - gate) / (MAX_SPEED - gate)),
+        lines = Math.min(8, 3 + Math.round(5 * calm));
       c.globalCompositeOperation = 'lighter';
       c.lineCap = 'round';
-      const lines = 5 + Math.round(4 * sweep);
       for (let i = 0; i < lines; i++) {
-        const spread = (i / Math.max(1, lines - 1) - 0.5) * 1.5,
-          a = behind + spread + Math.sin(time * 0.03 + i * 1.9) * 0.05,
-          r0 = 120 + 30 * Math.sin(i * 2.1),
-          r1 = r0 + reach * (0.32 + 0.3 * sweep) * (0.75 + 0.25 * Math.sin(i * 1.7));
+        const spread = (i / Math.max(1, lines - 1) - 0.5) * 1.4,
+          a = behind + spread + Math.sin(time * 0.023 + i * 1.9) * 0.04,
+          r0 = 120 + 26 * Math.sin(i * 2.1),
+          r1 =
+            r0 + reach * (0.26 + 0.22 * calm) * (0.78 + 0.22 * Math.sin(i * 1.7));
         c.strokeStyle = tier.tint;
-        c.globalAlpha = (0.06 + 0.12 * sweep) * (1 - Math.abs(spread));
-        c.lineWidth = 1.1 + sweep * 1.4;
+        // 0.12 is the hard ceiling; the spread term can only lower it.
+        c.globalAlpha = Math.min(0.12, 0.1 * calm * (1 - Math.abs(spread)));
+        c.lineWidth = 1 + calm * 1.2;
         c.beginPath();
         c.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
         c.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
@@ -1125,27 +1152,44 @@ export function createRenderer(canvas) {
       // One scale for both axes: the arena is square, so this is exact.
       scale = plot / A.w,
       p = world.player.position;
-    // ── THE PANEL STEPS ASIDE ────────────────────────────────────────────────
+    // ── THE PANEL STAYS PUT ─────────────────────────────────────────────────
     //
-    // It is drawn ON TOP of the player (see the end of `draw()`), so a cube in
-    // the bottom-right corner has its body, its ghost trail and its blade cone
-    // buried under an opaque map -- while its own radar dot sits in the same
-    // box. Fading the panel is the obvious fix and is the wrong one: at 22%
-    // the cube underneath is fully visible and BOTH become unreadable, which
-    // is worse than either being on top.
+    // This used to HOP to the opposite bottom corner whenever the cube came
+    // within reach. That was a fix for the cube being buried under an opaque
+    // panel, and it traded one problem for a worse one: a large opaque object
+    // teleporting across the frame is caught by peripheral vision on every
+    // hop, so the map itself became the most distracting thing on screen --
+    // exactly the category of motion this round is removing.
     //
-    // So the panel hops to the opposite bottom corner for as long as the
-    // player is within its reach. It is a locator, not the game.
+    // The panel is now PINNED bottom-right, permanently. When the cube comes
+    // into its padded zone the panel keeps its position and fades its own
+    // opacity toward 0.08 over 120 ms -- an object that stays where the eye
+    // last saw it and quietly gets out of the way. The fade is asymmetric on
+    // purpose: fading IN is slower than fading out, because the map returning
+    // should not snap either.
     //
-    // The reach is generous on purpose. The player is not a point: the blade
-    // cone alone extends ~190px, and a body-only test reported "clear" while
-    // the cone was visibly scribbling across the map.
+    // The reach is generous, the same 210 px as before: the player is not a
+    // point, and the blade cone alone extends ~190 px.
     const pc = toScreen(v, world.player.position);
     const REACH = 210;
     const underPanel =
       pc.x > home - REACH && pc.x < home + box + REACH &&
       pc.y > y0 - REACH && pc.y < y0 + box + REACH;
-    const x0 = underPanel ? Math.max(pad, w - home - box) : home;
+    // 0.92 -> 0.08 is a 0.84 change and 120 ms at 60 Hz is exactly 7.2 ticks.
+    const FADE_TICKS = 7.2,
+      target = underPanel ? 0.08 : 0.92,
+      // Approach the target at a fixed rate in SIMULATION time. Linear rather
+      // than exponential so that "120 ms" is a promise and not an asymptote.
+      // Divided by (FADE_TICKS - 1): the fade is a sequence of steps and the
+      // arrival is the LAST of them, so N ticks of travel need N-1 intervals.
+      // Dividing by FADE_TICKS made a 7.2-tick fade land on tick 8 (133 ms)
+      // instead of tick 7 (117 ms).
+      step = (0.84 / (FADE_TICKS - 1)) * Math.max(frameDt, 0.0001);
+    mapOpacity += Math.sign(target - mapOpacity) * Math.min(Math.abs(target - mapOpacity), step);
+    // Interior alphas are absolute in canvas, so every blip has to be
+    // multiplied by the fade rather than relying on the plate's alpha.
+    const op = (a) => a * (mapOpacity / 0.92);
+    const x0 = home;
     const toMap = (x, y) => ({
       x: x0 + 7 + (x - A.x) * scale,
       y: y0 + 7 + (y - A.y) * scale,
@@ -1153,11 +1197,14 @@ export function createRenderer(canvas) {
 
     c.save();
     // ── plate ─────────────────────────────────────────────────────────────
-    c.globalAlpha = 0.92;
+    // The whole panel is drawn at `mapOpacity`. Keeping the outline just
+    // above the fill means that in its faded state the map still reads as an
+    // object with a position rather than as a smudge.
+    c.globalAlpha = mapOpacity;
     c.fillStyle = '#07050d';
     c.fillRect(x0, y0, box, box);
-    c.globalAlpha = 1;
-    c.strokeStyle = '#2a1f33';
+    c.globalAlpha = Math.min(1, mapOpacity + 0.06);
+    c.strokeStyle = 'rgba(150,120,210,0.5)';
     c.lineWidth = 1;
     c.strokeRect(x0 + 0.5, y0 + 0.5, box - 1, box - 1);
 
@@ -1181,7 +1228,7 @@ export function createRenderer(canvas) {
       },
       wall = (x1, y1, x2, y2, d) => {
         const k = near(d);
-        c.globalAlpha = 0.45 + 0.55 * k;
+        c.globalAlpha = op(0.45 + 0.55 * k);
         c.strokeStyle = k > 0.35 ? '#ff9fb4' : '#6d5470';
         c.lineWidth = 1.5 + 1.5 * k;
         c.beginPath();
@@ -1202,7 +1249,7 @@ export function createRenderer(canvas) {
     // invisible. Drawn as a dashed rule, not a hazard.
     const lineY = toMap(A.x, state?.line ?? A.y).y;
     if (lineY > wy0 && lineY < wy1) {
-      c.globalAlpha = 0.3;
+      c.globalAlpha = op(0.3);
       c.strokeStyle = '#8c7590';
       c.lineWidth = 1;
       c.setLineDash([3, 4]);
@@ -1219,7 +1266,7 @@ export function createRenderer(canvas) {
     // The single most useful overlay, because it separates "the arena" from
     // "my world" at a glance.
     c.strokeStyle = '#fff8ec';
-    c.globalAlpha = 0.26;
+    c.globalAlpha = op(0.26);
     c.lineWidth = 1;
     const vw = v.w * scale,
       vh = v.h * scale,
@@ -1244,7 +1291,7 @@ export function createRenderer(canvas) {
     for (const h of combat.hazards || []) {
       const q = toMap(h.x, h.y);
       if (q.x < wx0 || q.x > wx1 || q.y < wy0 || q.y > wy1) continue;
-      c.globalAlpha = 0.5;
+      c.globalAlpha = op(0.5);
       c.beginPath();
       c.arc(q.x, q.y, 1.3, 0, TAU);
       c.fill();
@@ -1257,7 +1304,7 @@ export function createRenderer(canvas) {
       if (q.x < wx0 - 1 || q.x > wx1 + 1 || q.y < wy0 - 1 || q.y > wy1 + 1) continue;
       const crown = e.kind === 'crown';
       c.fillStyle = crown ? '#ffd166' : e.mode === 'idle' ? '#8c7590' : '#ff507b';
-      c.globalAlpha = e.mode === 'idle' ? 0.75 : 1;
+      c.globalAlpha = op(e.mode === 'idle' ? 0.75 : 1);
       c.beginPath();
       c.arc(q.x, q.y, crown ? 2.8 : 1.6, 0, TAU);
       c.fill();
@@ -1273,7 +1320,7 @@ export function createRenderer(canvas) {
     if (speed > 2) {
       const a = Math.atan2(world.player.velocity.y, world.player.velocity.x);
       c.strokeStyle = '#deff52';
-      c.globalAlpha = 0.5;
+      c.globalAlpha = op(0.5);
       c.lineWidth = 1.2;
       c.beginPath();
       c.moveTo(q.x, q.y);
@@ -1296,7 +1343,7 @@ export function createRenderer(canvas) {
     c.fill();
     // A ring so the cube never disappears against a crowded cluster of dots.
     c.strokeStyle = '#07050d';
-    c.globalAlpha = 0.9;
+    c.globalAlpha = op(0.9);
     c.lineWidth = 1;
     c.beginPath();
     c.arc(q.x, q.y, 6.2, 0, TAU);
@@ -1362,9 +1409,33 @@ export function createRenderer(canvas) {
       c.restore();
     }
     c.save();
-    const shakeAmount = motion ? shake.amount : 0;
-    if (shakeAmount > 0)
-      c.translate(-Math.cos(shake.bearing) * shakeAmount, -Math.sin(shake.bearing) * shakeAmount);
+    // ── SHAKE: WAVES, CLAMPED, WORLD-ONLY ────────────────────────────────
+    //
+    // `shake.x`/`shake.y` are an oscillating offset (see motion.js) rather than
+    // the fixed-direction shove this used to apply. The roll is applied about
+    // the viewport centre and is capped at 0.6 degrees.
+    //
+    // This transform wraps the WORLD pass only. Everything drawn before it
+    // (the vignette) and everything drawn after the matching `restore()` (the
+    // minimap, the HUD) is outside it, so a hit can never move the interface.
+    // `shakeLevel` is OFF / LOW / FULL, set by options. LOW is a third of the
+    // amplitude and no roll at all -- for players who want to feel the hit but
+    // not have the frame move under them. OFF is exactly zero, not a small
+    // number, so "off" means off.
+    const shakeScale =
+        shakeLevel === 'off' ? 0 : shakeLevel === 'low' ? 0.34 : 1,
+      shakeX = motion && shakeScale ? shake.x * shakeScale : 0,
+      shakeY = motion && shakeScale ? shake.y * shakeScale : 0,
+      shakeRoll = motion && shakeScale && shakeLevel === 'full' ? shake.rollDeg : 0;
+    if (shakeX || shakeY) c.translate(shakeX, shakeY);
+    if (shakeRoll) {
+      // About the centre of the VIEWPORT, not the world origin: rotating about
+      // a corner turns a 0.6-degree shake into a multi-pixel lateral slide at
+      // the far edge, which is exactly the whip the clamp exists to prevent.
+      c.translate(w / 2, h / 2);
+      c.rotate((shakeRoll * Math.PI) / 180);
+      c.translate(-w / 2, -h / 2);
+    }
     c.scale(v.scale, v.scale);
     c.translate(-v.x, -v.y);
     if (inView(v, SPAWN, 140)) pad(c);
@@ -1451,7 +1522,7 @@ export function createRenderer(canvas) {
     //
     // All of it is drawn in screen space AFTER the world, and none of it
     // touches enemies: they are drawn before this layer, sharp, always.
-    if (motion) speedField(c, world, v, time);
+    if (motion) speedField(c, world, v, time, run.state);
     // ── THE MINIMAP MOVED TO THE END OF THE FRAME ──────────────────────────
     //
     // It used to be drawn HERE, before the player. The panel is opaque, so
@@ -2953,6 +3024,24 @@ export function createRenderer(canvas) {
   }
   return {
     reset,
+    // OFF / LOW / FULL. Pulled from options rather than passed every frame so
+    // a mid-run change takes effect on the very next frame.
+    setShakeLevel(level) {
+      shakeLevel = level === 'off' || level === 'low' ? level : 'full';
+    },
+    // Read-only hooks for the headless camera checks.
+    mapFade() {
+      return mapOpacity;
+    },
+    shakeState() {
+      return {
+        px: shake.px,
+        trauma: shake.trauma,
+        rollDeg: shake.rollDeg,
+        level: shakeLevel,
+        effPx: shake.px * (shakeLevel === 'off' ? 0 : shakeLevel === 'low' ? 0.34 : 1)
+      };
+    },
     field(origin, side) {
       camera.reset(origin, side);
       lastView = camera.view(1);

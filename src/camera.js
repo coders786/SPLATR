@@ -45,7 +45,7 @@ export function createCamera() {
   // The pin's ease weight, 0 = ordinary follow, 1 = hard pin. State, not a
   // local, because it has to survive between ticks to be damped (see tick).
   let pin = 0;
-  function desired(p, stationary, vx = 0, vy = 0, z = zoom) {
+  function desired(p, stationary, vx = 0, vy = 0, z = zoom, aimK = 1, advance = true) {
     const portrait = width < height * 0.85;
     const inset = room ? 0.28 : 0.32;
     // The resting and flying framings stay distinct: the opening racks are
@@ -120,12 +120,18 @@ export function createCamera() {
     // within a few frames of the promotion.
     const fast = Math.hypot(vx, vy) > MAX_SPEED,
       leadTarget = fast ? 0 : 1;
-    leadX +=
-      (clamp((-vx / MAX_LEAD_V) * LEAD, -LEAD, LEAD) * leadTarget - leadX) *
-      (stationary ? 0.5 : 0.08);
-    leadY +=
-      (clamp((-vy / MAX_LEAD_V) * LEAD, -LEAD, LEAD) * leadTarget - leadY) *
-      (stationary ? 0.5 : 0.08);
+    // The lead advances ONCE per tick. `desired()` is called twice per tick --
+    // once by `tick()` for the framing target and again by `view()` for the
+    // `panX/panY` readout -- and it used to advance on every call. The lead
+    // then ran at double speed, and the `view()` call, which passes a zero
+    // velocity, eased its copy toward a target computed from a stationary cube,
+    // so the camera's target and the view's origin disagreed and the pan
+    // readout wandered while the camera itself was still.
+    if (advance) {
+      const rate = stationary ? 0.5 : aimK < 1 ? 0 : 0.08;
+      leadX += (clamp((-vx / MAX_LEAD_V) * LEAD, -LEAD, LEAD) * leadTarget - leadX) * rate;
+      leadY += (clamp((-vy / MAX_LEAD_V) * LEAD, -LEAD, LEAD) * leadTarget - leadY) * rate;
+    }
     const lead = { x: leadX, y: leadY };
     const axMix = ax,
       ayMix = ay;
@@ -172,7 +178,7 @@ export function createCamera() {
      *  into speed, because a zoom that moves while you aim is the fastest way
      *  to make a fast game unwatchable. `widen` is accepted and ignored so
      *  callers and tests keep one signature. */
-    tick(p, v, stationary, motion = true, next = null, widen = 0) {
+    tick(p, v, stationary, motion = true, next = null, widen = 0, timeScale = 1) {
       prevX = x;
       prevY = y;
       prevZoom = zoom;
@@ -189,7 +195,8 @@ export function createCamera() {
       // Whatever wider view a fast launch needs comes from the saccade
       // framing instead, which moves deliberately and then stops.
       zoom = stationary || !motion ? 1 : 1;
-      const d = desired(p, stationary, motion ? v.x : 0, motion ? v.y : 0);
+      const aimK = clamp(timeScale, 0.25, 1),
+        d = desired(p, stationary, motion ? v.x : 0, motion ? v.y : 0, zoom, aimK);
       if (next) {
         d.x += clamp(
           (next.x - p.x) * 0.45,
@@ -216,10 +223,24 @@ export function createCamera() {
       // (no zoom breathing, no lookahead toward targets).
       const vw = width / (base * zoom),
         vh = height / (base * zoom),
-        dx = (d.x - x) * CAMERA.follow,
-        dy = (d.y - y) * CAMERA.follow,
+        dzX = vw * CAMERA.deadzoneX,
+        dzY = vh * CAMERA.deadzoneY,
+        // Downward look-ahead while falling: a small, squared, capped push of
+        // the framing target DOWN so the floor is on screen during a drop.
+        // Applied to the TARGET rather than to the view, so the follow and the
+        // deadzone still govern how it reaches the screen.
+        fallLead =
+          v.y > 0
+            ? CAMERA.fallLead * Math.pow(clamp(v.y / CAMERA.fallLeadVy, 0, 1), 2)
+            : 0,
+        errX = d.x - x,
+        errY = d.y + fallLead - y,
+        dxIn = Math.abs(errX) <= dzX ? 0 : errX - Math.sign(errX) * dzX,
+        dyIn = Math.abs(errY) <= dzY ? 0 : errY - Math.sign(errY) * dzY,
+        dx = dxIn * CAMERA.follow * aimK,
+        dy = dyIn * CAMERA.follow * aimK,
         dist = Math.hypot(dx, dy),
-        cap = CAMERA.maxStepPx,
+        cap = CAMERA.maxCamStepY,
         // Cap the per-frame travel, with a SOFT knee instead of a hard one.
         //
         // A hard `min(1, cap/dist)` clamps the velocity at exactly `cap` and
@@ -232,8 +253,11 @@ export function createCamera() {
         // keeps the resulting acceleration below what the hard 20 produced.
         soft = cap * (1 - Math.exp((-dist * 1.0) / cap)),
         k = dist > 1e-6 ? Math.min(1, soft / dist) : 1;
-      x += dx * k;
-      y += dy * k;
+      const sx = dx * k,
+        sy = dy * k,
+        capX = CAMERA.maxStepXPx;
+      x += Math.abs(sx) > capX ? Math.sign(sx) * capX : sx;
+      y += sy;
       // ── HYPER PINS THE CUBE ────────────────────────────────────────────────
       //
       // Every smoothing rule in this camera is tuned for a 42px/tick cube and
@@ -332,12 +356,43 @@ export function createCamera() {
       // cube within a margin, and no further. The framing target above is
       // allowed to win; the boundary only intervenes when something violent
       // (a launch, a bounce) would otherwise put the cube outside the frame.
+      // ...and it may not SNAP either. Assigning the corrected position outright
+      // is a whole correction in one tick and the loudest motion in the frame:
+      // measured 315px in a single frame two ticks after an `magnetize` snap,
+      // and 107% of the viewport in one frame on an accelerating fall. It now
+      // moves at a bounded rate, and that rate is the cube's OWN speed along the
+      // axis. A view that keeps pace with the cube never falls behind it, and
+      // one that moves no faster than the cube can never be the fastest thing
+      // on screen.
+      //
+      // This resolves a real tension rather than papering over it: no calm
+      // budget can keep a 42px/tick cube on screen, and losing the player's own
+      // cube is not an option. So the calm budget governs the ordinary follow,
+      // and the net -- which only engages once the cube is already 16% from the
+      // edge -- is allowed to match it.
+      let netFired = false;
       const mx = vw * 0.16,
-        my = vh * 0.16;
-      if (p.x < x + mx) x = p.x - mx;
-      else if (p.x > x + vw - mx) x = p.x - (vw - mx);
-      if (p.y < y + my) y = p.y - my;
-      else if (p.y > y + vh - my) y = p.y - (vh - my);
+        my = vh * 0.16,
+        // The net's budget is the FASTEST OF the calm budget and a hair above
+        // the cube's own speed. In ordinary play the cube's speed wins, so the
+        // view keeps pace and never loses it. After a `magnetize` snap the cube
+        // is not moving fast -- it was MOVED -- so the cube-speed term is small
+        // and the calm budget governs, which is exactly right: the view walks
+        // the 1700px across over ~90 ticks instead of jumping.
+        netXCap = Math.max(CAMERA.maxStepXPx, Math.abs(v.x) * 1.15 + 2),
+        netYCap = Math.max(CAMERA.maxCamStepY, Math.abs(v.y) * 1.15 + 2),
+        toward = (cur, want, cap) =>
+          Math.abs(want - cur) > cap ? cur + Math.sign(want - cur) * cap : want;
+      // Record WHETHER the net engaged. Its budget is only allowed to exceed
+      // the calm cap when it actually fired, because the net is the one rule
+      // that legitimately moves at the cube's pace. Letting its wider ceiling
+      // apply unconditionally is how an ordinary dash ended up moving the frame
+      // 18.1px against a documented ceiling of 18.
+      netFired = false;
+      if (p.x < x + mx) (x = toward(x, p.x - mx, netXCap)), (netFired = true);
+      else if (p.x > x + vw - mx) (x = toward(x, p.x - (vw - mx), netXCap)), (netFired = true);
+      if (p.y < y + my) (y = toward(y, p.y - my, netYCap)), (netFired = true);
+      else if (p.y > y + vh - my) (y = toward(y, p.y - (vh - my), netYCap)), (netFired = true);
       // Collapse the render interpolation to a point while pinned.
       //
       // `view(alpha)` lerps between last tick's position and this one, which is
@@ -376,12 +431,49 @@ export function createCamera() {
       } else if (wasPinned) {
         wasPinned = false;
       }
+      // ── ONE BUDGET FOR THE WHOLE TICK ────────────────────────────────────
+      //
+      // Every rule above sets a rate as it goes, and those rates COMPOSE: the
+      // follow spends its own budget, then the net spends another, and the
+      // tick's total is the sum -- which is never the number either rule
+      // promised. Measured on the collapse of a `magnetize` snap: 18px from the
+      // follow plus 15.5px from the net, so 33.5px in a frame on a camera whose
+      // documented horizontal ceiling is 18. A cap that several rules can each
+      // spend is not a cap, it is a suggestion.
+      //
+      // So the rate is enforced once, here, on the tick's ACTUAL displacement.
+      // The ceiling is the larger of the calm budget and a hair above the cube's
+      // own speed, so ordinary fast travel still keeps pace and a teleport --
+      // whose cube is not moving fast, only displaced -- is walked across.
+      {
+        const tdx = x - prevX,
+          tdy = y - prevY,
+          bx = netFired ? Math.max(CAMERA.maxStepXPx, Math.abs(v.x) * 1.15 + 2) : CAMERA.maxStepXPx,
+          by = netFired ? Math.max(CAMERA.maxCamStepY, Math.abs(v.y) * 1.15 + 2) : CAMERA.maxCamStepY;
+        // `1e-9` of slack: the clamp must not itself be defeated by floating
+        // point, or the assertion `|Δ| <= cap` fails by a rounding error.
+        // A FULL pin is exempt. The pin is `x = p.x - vw*0.48`, an affine
+        // function of the cube -- the only construction that keeps the cube at a
+        // constant viewport fraction and therefore the only one that is stable
+        // under render interpolation. Clamping it leaves a small residual that
+        // compounds: measured, the cube slid 2.58% of the viewport between hyper
+        // frames, i.e. the pin visibly not holding, and the pin also took two
+        // frames longer to arrive. The test is "is the cube moving too fast for
+        // a follow to hold it", which is exactly what the pin itself keys on --
+        // so the exemption uses the same threshold, not the eased weight. Using
+        // the eased weight left the pin's own APPROACH capped, which is the
+        // 237%-in-one-frame jump this clamp exists to prevent.
+        if (Math.hypot(v.x, v.y) <= MAX_SPEED) {
+          if (Math.abs(tdx) > bx) x = prevX + Math.sign(tdx) * (bx - 1e-9);
+          if (Math.abs(tdy) > by) y = prevY + Math.sign(tdy) * (by - 1e-9);
+        }
+      }
     },
     view(alpha = 1) {
       const scale = base * (prevZoom + (zoom - prevZoom) * alpha);
       const left = prevX + (x - prevX) * alpha,
         top = prevY + (y - prevY) * alpha;
-      const origin = desired(home, true, 0, 0, scale / base);
+      const origin = desired(home, true, 0, 0, scale / base, 1, false);
       return {
         x: left,
         y: top,

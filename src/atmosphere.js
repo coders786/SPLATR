@@ -157,7 +157,12 @@ export function createBackdrop(c) {
     // Dust, in three planes. Deeper planes drift slower and draw duller, so
     // the parallax sells depth without any of it competing with a target.
     for (const [u, v, z, n, layer] of glints) {
-      const depth = 0.05 + layer * 0.12,
+      // 0.08 / 0.13 / 0.18. The band is deliberately narrow: parallax that is
+      // too strong makes the dust read as objects moving behind the playfield,
+      // and these are meant to be atmosphere, not things. Three rates inside a
+      // tenth of each other still separate the planes -- it is the RATIO that
+      // sells depth, and 0.08 vs 0.18 is more than a factor of two.
+      const depth = 0.08 + layer * 0.05,
         px2 = ((((u * w - x * z * depth) % (w + 26)) + w + 26) % (w + 26)) - 12,
         py2 = ((((v * h - y * z * depth) % (h + 26)) + h + 26) % (h + 26)) - 12;
       const big = n > 0.965,

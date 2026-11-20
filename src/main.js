@@ -56,6 +56,11 @@ window.addEventListener('keydown',()=>{lastDevice='keys';},true);
 const pref = matchMedia('(prefers-reduced-motion: reduce)'),
   opts = {
     motion: storage.get('motion', pref.matches ? '0' : '1') === '1',
+    // OFF / LOW / FULL. A single reduced-motion flag is not enough for a
+    // garnish: some players want the game's motion and not the screen moving
+    // under them, which is a different complaint and deserves its own control.
+    // Anyone who has asked for reduced motion starts at LOW rather than FULL.
+    shake: storage.get('shake', pref.matches ? 'low' : 'full'),
     music: storage.get('music', '1') === '1',
     assist: storage.get('assist', '1') === '1',
   };
@@ -337,6 +342,8 @@ function syncSettings() {
     b.querySelector('b').textContent = on ? 'On' : 'Off';
     b.setAttribute('aria-pressed', on);
   }
+  $('shake-opt').querySelector('b').textContent =
+    opts.shake === 'off' ? 'Off' : opts.shake === 'low' ? 'Low' : 'Full';
   $('pace-opt').querySelector('b').textContent=speed().label;
   setText('pace-note',speed().note);
   $('opening-opt').querySelector('b').textContent=mix==='full'?'Full field':'Gradual';
@@ -381,9 +388,23 @@ for (const k of ['music', 'motion', 'assist'])
     syncSettings();
     audio.menu();
   };
+$('shake-opt').onclick = () => {
+  // Cycle OFF -> LOW -> FULL -> OFF. Stored as a word, not a number: a third
+  // state is a third meaning, and `0/1/2` would need a legend to read.
+  const order = ['off', 'low', 'full'];
+  opts.shake = order[(order.indexOf(opts.shake) + 1) % order.length];
+  storage.set('shake', opts.shake);
+  dirty = true;
+  syncSettings();
+  renderer.setShakeLevel(opts.shake);
+  audio.menu();
+};
 pref.addEventListener('change', () => {
   if (storage.get('motion', null) === null) {
     opts.motion = !pref.matches;
+    // Reduced motion also drops the shake a notch. It does not force it OFF:
+    // the player can still choose, and the OS preference is a default.
+    if (storage.get('shake', null) === null) opts.shake = pref.matches ? 'low' : 'full';
     dirty = true;
     syncSettings();
   }
@@ -796,6 +817,7 @@ function frame(now) {
   raf = requestAnimationFrame(frame);
 }
 syncSettings();
+renderer.setShakeLevel(opts.shake);
 setText('title-best', score(best));
 renderer.title(0);
 // Only reveal the menu once its artwork and action handlers are ready.
