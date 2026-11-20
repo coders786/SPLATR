@@ -1999,6 +1999,24 @@ export function createRun(
     combat,
     stream,
     state: s,
+    /**
+     * Publish the viewport height, which the floor's trampoline needs.
+     *
+     * `trampolineVy` is defined as "one third of a screen", and it reads
+     * `world.viewH`. Nothing ever wrote that property -- the comment in
+     * physics.js claimed the camera did, but the camera has no reference to the
+     * world -- so the `|| 720` fallback was silently the real rule on every
+     * device. A phone in portrait got a 720px kick on an 800px screen; a tall
+     * desktop window got one third of 720 instead of one third of 1080.
+     *
+     * The renderer calls this on every resize, which is the only place that
+     * knows the real height. It is also safe to call before the first frame.
+     */
+    setViewport(w, h) {
+      if (Number.isFinite(h) && h > 0) world.viewH = h;
+      if (Number.isFinite(w) && w > 0) world.viewW = w;
+      return world.viewH;
+    },
     tick,
     dash,
     hurt,

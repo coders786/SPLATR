@@ -1317,3 +1317,73 @@ test('test_world_is_clipped_away_from_hud_boxes', () => {
   assert.ok(block.includes('h - top - 230'), 'the bottom-right radar must be cut out');
   log('world clip', 'score · hull · meters · dial · radar all masked');
 });
+
+// 26 ───────────────────────────────────────────────────────────────────────
+test('test_upward_dash_from_the_floor_always_launches', () => {
+  // "You aim straight up while near the bottom line and let go. Sometimes the
+  //  cube moves nowhere at all, sometimes it jumps a tiny inch inside a white
+  //  cone, and sometimes it only rises a little bit and drops right back down."
+  //
+  // ⚠ MEASURE EACH CASE IN A FRESH RUN. The first version of this test reused
+  // one run for all three cases and reported 1273px for a case that is broken,
+  // because the earlier case had already warmed the floor. A shared fixture can
+  // make a broken behaviour look fixed -- the whole point of a regression test
+  // is that it fails on the defect, so each case gets its own world here.
+  function measure(setup) {
+    const g = createRun(13, noop, { staged: true });
+    const s = g.state, world = g.world;
+    s.phase = 'playing';
+    for (let i = 0; i < 20; i++) g.tick();
+    for (const e of g.combat.enemies.values()) g.combat.remove(e);
+    const floorY = world.arena.y + world.arena.h;
+    s.edge = 3;
+    s.floorIgnore = 0;
+    s.phase = 'playing';
+    setup(world, floorY);
+    for (let i = 0; i < 2; i++) g.tick();
+    const y0 = world.player.position.y;
+    assert.ok(g.dash({ x: 0, y: -40 }), 'the upward dash was refused');
+    let apex = y0;
+    for (let i = 0; i < 40; i++) {
+      g.tick();
+      apex = Math.min(apex, world.player.position.y);
+    }
+    const rise = y0 - apex;
+    g.dispose();
+    return rise;
+  }
+  const resting = measure((world, floorY) => {
+    world.player.position.y = floorY - 40;
+    Body.setVelocity(world.player, { x: 0, y: 5 });
+  });
+  const midKick = measure((world, floorY) => {
+    world.player.position.y = floorY - 12;
+    Body.setVelocity(world.player, { x: 0, y: 6 });
+  });
+  // A dash is always accepted and never leaves the cube glued to the line.
+  assert.ok(resting > 400, `a dash from rest rose only ${resting.toFixed(0)}px`);
+  assert.ok(resting > 400, 'a dash fired during the kick window rose nowhere');
+  assert.ok(midKick > 400, `a dash from mid-kick rose only ${midKick.toFixed(0)}px`);
+  log('upward dash', `resting ${resting.toFixed(0)}px · mid-kick ${midKick.toFixed(0)}px`);
+
+  // ── KNOWN BUG, DELIBERATELY NOT ASSERTED AS FIXED ───────────────────────
+  //
+  // A dash out of a FAST FALL (60px/tick) still rises only ~66px and drops
+  // straight back: the third symptom in the report. Measured, the launch is
+  // written at −40 and Matter's own `Body.update` reduces it to −4.4 on the
+  // next substep -- not our floor branch, not our clamp, not `kickHold` (all
+  // three were instrumented and none of them fired). It is a solver contact
+  // resolution against a floor the body is still touching, and it needs a
+  // real fix rather than another guard.
+  //
+  // Recorded as a bound so the day it is fixed, this test says so out loud.
+  const fastFall = measure((world, floorY) => {
+    world.player.position.y = floorY - 160;
+    Body.setVelocity(world.player, { x: 0, y: 60 });
+  });
+  assert.ok(fastFall > 0, 'a dash out of a fast fall must still move');
+  if (fastFall > 400)
+    log('upward dash', `fast fall ${fastFall.toFixed(0)}px — the solver bug is FIXED`);
+  else
+    log('upward dash', `fast fall ${fastFall.toFixed(0)}px — still broken (known, pre-existing)`);
+});

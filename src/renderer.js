@@ -743,6 +743,12 @@ export function createRenderer(canvas) {
   // The dash tick a burst last fired on, so both bursts fire ONCE per dash
   // instead of on every tick their phase happens to be current.
   let dashBurstAt = -1;
+  let viewListener = null;
+  /** @param {(w:number,h:number)=>void} fn */
+  function onViewport(fn) {
+    viewListener = fn;
+    fn(w, h);
+  }
   function resize() {
     const box = canvas.getBoundingClientRect();
     w = Math.max(1, box.width);
@@ -753,6 +759,13 @@ export function createRenderer(canvas) {
     camera.resize(w, h);
     lastView = camera.view(1);
     revision++;
+    // ── THE CAMERA IS THE ONLY THING THAT KNOWS THE SCREEN ────────────────
+    //
+    // The floor's trampoline is defined as one third of a SCREEN, so the physics
+    // needs the real viewport height. Nothing was publishing it, which left the
+    // 720px fallback quietly acting as the rule on every device. The renderer is
+    // the only place with a measured height, so it publishes on every resize.
+    viewListener?.(w, h);
   }
   const ro = new ResizeObserver(resize);
   ro.observe(canvas);
@@ -3108,6 +3121,7 @@ export function createRenderer(canvas) {
   }
   return {
     reset,
+    onViewport,
     // OFF / LOW / FULL. Pulled from options rather than passed every frame so
     // a mid-run change takes effect on the very next frame.
     setShakeLevel(level) {

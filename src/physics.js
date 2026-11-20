@@ -681,11 +681,13 @@ function railBounce(world) {
       world.kickHold = { y: -kick };
       side = 'bottom';
       ny = -1;
-    } else if (v.y > 0) {
+    } else if (v.y > 0 && p.y > y1 - PLAYER_SIZE) {
       // Ignoring: settle onto the line rather than reflect. This is the half
-      // second of quiet that proves the trampoline has a dead band -- and it
-      // must NOT touch a cube that is already climbing, which is why the test
-      // is `v.y > 0` and not "is near the floor".
+      // second of quiet that proves the trampoline has a dead band.
+      //
+      // `p.y > y1 - PLAYER_SIZE` is the depth guard: only a cube actually inside
+      // the body of the floor is settled onto it. The test used to be `v.y > 0`
+      // alone, which is also true of a cube that is LEAVING.
       v.y = 0;
     }
   }
