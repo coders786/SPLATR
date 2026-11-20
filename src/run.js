@@ -111,6 +111,16 @@ export const RAIL_SETTLE_VY = 1.2;
 export const EMPTY_WATCHDOG_TICKS = 90;
 export const WATCHDOG_REACH = 1800;
 
+/** Ticks the floor is ignored after a trampoline kick -- half a second at 60Hz.
+ *
+ *  The floor is an INSTANT trampoline: it kicks on every touch, at a fixed
+ *  height, regardless of arrival speed. Without a dead band that behaviour is
+ *  a vibrator -- the kick lifts the cube, gravity returns it 40 ticks later,
+ *  it kicks again, forever, and the player is pinned to a line they cannot
+ *  leave. The window is the difference between a trampoline and a trap.
+ */
+export const FLOOR_IGNORE_TICKS = 30;
+
 export const HYPER = Object.freeze({
   speed: 280,
   chain: 7,
@@ -167,6 +177,48 @@ export const HYPER = Object.freeze({
  *  binds. It exists so the function stays total for any chain value.
  */
 export const chainWindow = (chain) => Math.max(24, CHAIN_TIME - chain * 6);
+
+/* ── THE SPEED WINDOW ───────────────────────────────────────────────────────
+ *
+ * The speedometer used to read a single tick's displacement, which is not a
+ * speed -- it is a sample, and it lies in two specific, reported ways:
+ *
+ *   1. A hitstop skips `stepPhysics`, so that tick's distance is 0 and the dial
+ *      dropped to 0 on the exact frame an impact landed.
+ *   2. The rail solver nudges a resting cube a few px every tick, so the dial
+ *      read 61 while the cube lay flat on the floor.
+ *
+ * Both are fixed by the same thing: measure a ~0.2s MEAN of real distance, and
+ * publish exactly zero when the simulation says the cube is at rest. They live
+ * here rather than inline so the behaviour can be asserted directly instead of
+ * inferred from a 400-tick simulation that has to reproduce a floor.
+ */
+export const MOVE_WINDOW = 12;
+
+/** Append one tick's displacement to the window and recompute the mean.
+ *  Mean distance per TICK, not per second: every consumer already speaks in
+ *  px/tick and the speed tiers are calibrated to that. */
+export function pushMove(s, moved) {
+  s.moveHist[s.moveHistAt] = moved;
+  s.moveHistAt = (s.moveHistAt + 1) % s.moveHist.length;
+  let sum = 0;
+  for (let i = 0; i < s.moveHist.length; i++) sum += s.moveHist[i];
+  s.movedAvg = sum / s.moveHist.length;
+  return s.movedAvg;
+}
+
+/** A cube at rest has no speed, and the average has to say so too.
+ *
+ *  Averaging alone cannot fix the floor report. The residual per tick is small
+ *  but PERSISTENT, so the mean of twelve jittery samples is a steady small
+ *  number -- a liar's 61 rather than a liar's 0. At rest the window is emptied,
+ *  which also means a player leaving the floor starts the average from nothing
+ *  instead of inheriting the speed they had before they landed. */
+export function settleMove(s) {
+  s.movedAvg = 0;
+  s.moveHist.fill(0);
+  return s.movedAvg;
+}
 export function ballisticAim(from, to, speed) {
   const dx = to.x - from.x,
     dy = to.y - from.y,
@@ -258,6 +310,16 @@ export function createRun(
      * velocity.
      */
     moved: 0,
+    /** Ticks of floor immunity after a trampoline kick. See FLOOR_IGNORE_TICKS. */
+    floorIgnore: 0,
+    /** Ticks the bottom line stays white after a kick (renderer reads it). */
+    floorFlash: 0,
+    /** Total trampoline kicks, diagnostic only. */
+    floorKicks: 0,
+    // 12-tick rolling window of `moved` (200ms at 60Hz), and its mean.
+    moveHist: new Array(12).fill(0),
+    moveHistAt: 0,
+    movedAvg: 0,
     /** Last settled position, for `moved`. */
     _lastX: 0,
     _lastY: 0,
@@ -1039,6 +1101,10 @@ export function createRun(
       return;
     }
     s.elapsed++;
+    // The floor's dead band is a fact about the WORLD, and it is what the
+    // physics step reads to decide whether a touch is a kick or a landing.
+    // Published every tick so it can never go stale.
+    world.floorIgnore = s.floorIgnore;
     // Speed tier crossings. The tier is read from the cube's LIVE velocity,
     // so it can change mid-flight as gravity bleeds a launch or a chain
     // accelerates one. Only a crossing UPWARD is celebrated: announcing that
@@ -1240,7 +1306,22 @@ export function createRun(
     // touches: no integration, no enemy movement, no rail resolution. The
     // camera, the effect clocks and every spring below keep running, so the
     // frame is a still image of the impact inside a room that is still moving.
-    if (!stopped) stepPhysics(world, (dt) => combat.move(dt, s.band), pace);
+    if (!stopped)
+      stepPhysics(
+        world,
+        // `beforeStep` runs immediately BEFORE the substeps, so anything the
+        // physics pass reads must be published here, not at the top of the
+        // tick. The floor's ignore window was published at the top of the tick
+        // and set at the bottom of it, which meant physics always saw the value
+        // from the PREVIOUS tick -- 0 -- and re-kicked the cube on the very
+        // substep after every trampoline launch. Measured: -13.5 in, -35.5 out,
+        // and a 1,700px climb from a rule that promises one third of a screen.
+        (dt) => {
+          world.floorIgnore = s.floorIgnore;
+          combat.move(dt, s.band);
+        },
+        pace,
+      );
     else world.previousClock = world.clock;
     // ── IS THE CUBE CLEAR OF THE RAILS? (read by the contact block below) ──
     //
@@ -1272,7 +1353,19 @@ export function createRun(
     //
     // So the cap only trims speed the CHAIN built -- the case where the cube is
     // climbing on its own momentum with the blade out.
-    if (!stopped && !s.hyper && !world.banked) {
+    // ── A TRAMPOLINE KICK IS A BANK, NOT A CLIMB ─────────────────────────
+    //
+    // The floor writes a FIXED upward speed (see trampolineVy), and the cap
+    // below exists to trim speed the CHAIN built on open-air momentum. Clamping
+    // a kick would silently make the trampoline's height depend on the cap
+    // instead of on one third of a screen -- and it did: measured, a kick of
+    // 13.5 px/tick came out of the tick reading -26, because the cap exempted
+    // only `world.banked` and the kick had not set it.
+    //
+    // `world.floorKick` is consumed by the floor paayer earlier in this tick, so
+    // the exemption is latched on `s.floorIgnore`, which is exactly the half
+    // second the floor owns after a kick.
+    if (!stopped && !s.hyper && !world.banked && !(s.floorIgnore > 0)) {
       const vy = world.player.velocity.y;
       if (vy < -MAX_ASCENT_VY) world.player.velocity.y = -MAX_ASCENT_VY;
     }
@@ -1289,6 +1382,24 @@ export function createRun(
       s.moved = Math.hypot(p2.x - s._lastX, p2.y - s._lastY);
       s._lastX = p2.x;
       s._lastY = p2.y;
+      // ── A SMOOTHED SPEED, NOT A ONE-FRAME ONE ───────────────────────────
+      //
+      // `moved` is the distance covered in ONE tick, and anything reading it
+      // directly has two failure modes that both showed up in play:
+      //
+      //  1. A hitstop skips `stepPhysics` entirely, so the distance for those
+      //     ticks is 0. A readout of the raw value drops to 0 in the middle of
+      //     the fastest moment in the game -- the frame the impact lands on.
+      //  2. A cube vibrating against the floor rail covers a few px every
+      //     tick, so a raw readout says "61" while the cube is visibly still.
+      //
+      // Both are the same mistake: a single tick is not a speed, it is a
+      // sample. The speedometer now reads a ~0.2s mean of real distance, which
+      // survives a 2-5 tick freeze because the samples around it are large, and
+      // averages floor jitter against the still frames between bounces.
+      //
+      // `MOVE_HIST` is 12 ticks -- 200ms at the 60Hz the simulation runs at.
+      pushMove(s, s.moved);
       // A cube resting on a rail or a deck, with no meaningful vertical speed,
       // is AT REST: whatever velocity the solver left behind is not motion the
       // player can see, so the effects that read "how fast is this thing"
@@ -1296,6 +1407,16 @@ export function createRun(
       const rest = world.railRest;
       s.railSettle =
         (rest || world.grounded) && Math.abs(world.player.velocity.y) < RAIL_SETTLE_VY;
+      // ── AT REST THE WINDOW IS ZEROED, NOT AVERAGED ──────────────────────
+      //
+      // Averaging alone cannot fix the "61 while standing still" report. The
+      // rail solver nudges the cube a few px every tick, so the mean of twelve
+      // jittery samples is a steady small number -- a liar's 61 rather than a
+      // liar's 0. At rest the window is emptied, which also means a player
+      // leaving the floor starts the average from nothing instead of
+      // inheriting the speed they had before they landed.
+      if (s.railSettle) settleMove(s);
+
     }
     // ── READ THE EVENT, NOT THE MEMORY ──────────────────────────────────
     //
@@ -1309,6 +1430,40 @@ export function createRun(
     // One contact per tick, straight from Matter's resolved normal. A wall,
     // a deck, a plate that stops the blade: the pose bends the same way.
     const hitSurface = world.struck;
+    // ── THE FLOOR PAYS, ONCE PER TOUCH ────────────────────────────────────
+    //
+    // The brief for the bottom line is exact: every touch kicks the cube up a
+    // third of a screen (physics does that), flashes the line WHITE, plays ONE
+    // spring sound, and returns ONE edge pip -- but only while the player is
+    // below three, and then the floor is ignored for half a second so a cube
+    // can never double-bounce or buzz against it.
+    //
+    // `world.floorKick` is the physics layer saying "a kick just happened", and
+    // it is one event per arrival, not one per tick: the ignore window below is
+    // what guarantees that, because without it a trampoline that always kicks
+    // would re-kick on the very next substep.
+    if (world.floorKick) {
+      const kick = world.floorKick;
+      world.floorKick = null;
+      if (s.phase === 'playing' && !(s.floorIgnore > 0)) {
+        // Half a second of immunity from the floor. 30 ticks at 60Hz.
+        s.floorIgnore = FLOOR_IGNORE_TICKS;
+        s.floorFlash = 8; // how long the line stays white; see the renderer
+        s.floorKicks = (s.floorKicks || 0) + 1;
+        // Tells the generic rail-bank block below that this contact is already
+        // paid and must not be boosted or damped on top of the kick.
+        s.floorTouched = true;
+        // ONE pip, and only while below the maximum. A player sitting on three
+        // edges gets the bounce and the flash but not a fourth pip; a player
+        // with none gets a way back into the game. This is the anti-farm: the
+        // cap is the reward ceiling, not a cooldown.
+        if (s.edge < MAX_EDGE) {
+          s.edge++;
+          s.edgeReturn = 14;
+        }
+        emit('floorKick', { vy: kick.vy, edge: s.edge });
+      }
+    }
     if (hitSurface && hitSurface !== lastContact && s.phase === 'playing') {
       lastContact = hitSurface;
       noteImpact(hitSurface.x, hitSurface.y, hitSurface.nx, hitSurface.ny, hitSurface.depth);
@@ -1461,13 +1616,28 @@ export function createRun(
       // So the test is not how fast you hit the rail, it is whether you THREW
       // yourself at it. `s.sinceDash` is set by `dash()` and consumed here, so
       // a cube that is only falling -- however fast -- banks nothing.
-      const earned = s.sinceDash;
-      s.sinceDash = false;
+      // ── THE FLOOR'S KICK IS THE REWARD, NOT A BANK TO BOOST ──────────
+      //
+      // The trampoline already wrote a fixed upward speed this tick. Letting the
+      // generic bank machinery boost it as well turned a 240px kick into a
+      // 1,700px one -- measured: arrive at 20, kick at 13.5, and the next tick
+      // read -35.5 because `earned` was still true from the dash that began the
+      // fall. The two rules are alternatives, not layers: if the floor kicked,
+      // this contact has already paid.
+      // `floorTouched` is set by the trampoline block above on the tick a kick
+      // was paid, and is the honest "the floor already handled this contact".
+      // Comparing `floorKicks` against a falling `floorIgnore` was a losing
+      // race: the window decrements before this block reads it, so the test was
+      // false on exactly the tick it needed to be true.
+      const floorKicked = Boolean(s.floorTouched);
+      s.floorTouched = false;
+      const earned = s.sinceDash && !floorKicked;
+      if (floorKicked) s.sinceDash = false;
 
       // Touching a rail stops the refill clock for longer than the timer takes
       // to ripen, so a bounce can never pay for itself. See `recharge`.
       s.floorCool = 160;
-      if (earned && speed < CEIL) boostPlayer(world, BOOST, CEIL);
+      if (earned && !floorKicked && speed < CEIL) boostPlayer(world, BOOST, CEIL);
       // An unearned bounce is NOT a free elastic reflection. Left perfectly
       // elastic it is a perpetual motion machine -- the cube comes back up at
       // exactly the speed it went down, so gravity re-charges it forever.
@@ -1478,11 +1648,24 @@ export function createRun(
       // `ceiling/speed` after having already risen, so repeated bounces climb.
       // Measured with the no-op: a cube that only fell reached -199 px/tick in
       // 100 ticks and escaped the arena entirely. So this damps directly.
-      else if (!earned) dampPlayer(world, 0.82);
+      // ── NEVER DAMP A CUBE THE FLOOR JUST KICKED ─────────────────────────
+      //
+      // The floor's kick is an absolute upward speed. The generic damping below
+      // exists to stop an unearned rail bounce being a perpetual-motion machine,
+      // but it does not know the difference between "the cube drifted into a
+      // wall" and "the trampoline just fired". Because it multiplies whatever
+      // velocity it finds, running it on a kick tick silently reduced a 13.5
+      // launch to 11.05 -- a floor that gets weaker the faster you land.
+      //
+      // `s.floorIgnore` is the floor's own half-second, which is exactly the
+      // window in which the floor owns the cube's vertical speed.
+      else if (!earned && !(s.floorIgnore > 0)) dampPlayer(world, 0.82);
       // ...and only an earned bounce returns a pip. The floor's own recovery
       // (one edge, chain reset) is handled above and is deliberately separate:
       // it is the way OUT of trouble, not a reward for touching a wall.
-      if (earned) s.edge = Math.min(MAX_EDGE, s.edge + 1);
+      // The floor's own pip is paid in the trampoline block above; paying again
+      // here would make one touch worth two pips.
+      if (earned && !floorKicked) s.edge = Math.min(MAX_EDGE, s.edge + 1);
       s.banks++;
       s.blade = Math.max(s.blade, 14);
       // Publish the shockwave for the renderer. Only worth drawing at speed:
@@ -1615,6 +1798,8 @@ export function createRun(
     // only a head start if it runs down.
     if (s.bankCool > 0) s.bankCool--;
     if (s.floorCool > 0) s.floorCool--;
+    if (s.floorIgnore > 0) s.floorIgnore--;
+    if (s.floorFlash > 0) s.floorFlash--;
     // "Away from the rails" is a fact about where the cube IS, not a timer.
     // It is what makes the floor's one-pip recovery an entry rather than a
     // rate limit, so it is recomputed every tick.
@@ -1665,8 +1850,31 @@ export function createRun(
       else if (++s.emptyTicks >= EMPTY_WATCHDOG_TICKS) {
         s.emptyTicks = 0;
         s.watchdog++;
-        // Resync rather than invent: the seed still owns what belongs here.
+        // ── RESYNC IS NOT ENOUGH ────────────────────────────────────────────
+        //
+        // `stream.sync` rebuilds the cells around the cube, but every slot in a
+        // cell the player has already been through is still masked out by
+        // `cleared` -- so on a return visit the resync re-enters cells that
+        // have nothing left to give and the field stays empty. Reported as 65
+        // seconds of empty sky in Sector 07: the player fell to the floor while
+        // the field was high, the watchdog fired over and over, and each fire
+        // rebuilt a region that had already been cleared.
+        //
+        // So the watchdog now GUARANTEES shapes, the way the design asks: if
+        // there is nothing within reach, put two enemies in the upper half of
+        // the view the player is actually looking at. This is not a random
+        // event and it does not respect the seed's cell layout -- it is a floor
+        // under "a run-based game may not present an empty screen", and it is
+        // deliberately the strongest thing in this file.
+        //
+        // First resync, because a fresh cell may legitimately have plenty to
+        // offer and inventing shapes on top of that would double the field.
         stream.sync({ x: p.x - origin.x, y: p.y - origin.y }, s.line - origin.y);
+        let live2 = 0;
+        for (const e of combat.enemies.values()) {
+          if (Math.hypot(e.x - p.x, e.y - p.y) < WATCHDOG_REACH) { live2++; break; }
+        }
+        if (live2 === 0) spawnInView(p, origin);
       }
     }
     const band = bandAt(-s.peak);
@@ -1688,6 +1896,36 @@ export function createRun(
         });
       }
     }
+  }
+  /** Put shapes where the player is LOOKING.
+   *
+   *  The last resort of the empty-field watchdog. Two enemies, in the upper
+   *  half of the CURRENT view, spaced across it so they are not one blob. Kinds
+   *  are the two cheapest ordinary ones on purpose: a rescue must never hand
+   *  the player a Crown as a gift, and it must not need the cell layout to
+   *  decide anything.
+   *
+   *  `WATCHDOG_REACH` is a little over a viewport, so shapes placed here are
+   *  inside the frame the player can see, not merely inside the arena.
+   */
+  function spawnInView(p, origin) {
+    if (!['ready', 'playing'].includes(s.phase) || s.opening) return 0;
+    const halfW = origin?.halfW || origin?.w || WATCHDOG_REACH,
+      halfH = origin?.halfH || origin?.h || WATCHDOG_REACH,
+      // Upper half of the view: in world terms, ABOVE the cube.
+      topY = p.y - Math.min(halfH * 0.75, WATCHDOG_REACH * 0.6),
+      spread = Math.min(halfW * 0.55, WATCHDOG_REACH * 0.5);
+    let n = 0;
+    for (let i = 0; i < 2; i++) {
+      const kind = i === 0 ? 'fang' : 'prism',
+        x = p.x + (i === 0 ? -spread : spread),
+        y = topY + i * 90,
+        id = `rescue-${s.watchdog}-${i}`;
+      const e = combat.add({ kind, x, y, id, home: 'rescue', slot: -1, delay: 24 });
+      if (e) n++;
+    }
+    if (n) emit('rescue', { n });
+    return n;
   }
   function retire() {
     if (!['ready', 'playing'].includes(s.phase)) return;

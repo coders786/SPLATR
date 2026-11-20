@@ -1,12 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRun, MAX_EDGE, EMPTY_WATCHDOG_TICKS } from '../src/run.js';
+import Matter from 'matter-js';
+const { Body } = Matter;
+import { createRun, MAX_EDGE, EMPTY_WATCHDOG_TICKS, WATCHDOG_REACH, pushMove, settleMove } from '../src/run.js';
 import { ARENA, bandAt } from '../src/levels.js';
 import { sceneFor } from '../src/storyboard.js';
 import { createCamera } from '../src/camera.js';
 import { createShake, CAMERA, SHAKE, meterReadout, dialGeometry, speedReadout } from '../src/motion.js';
-import { HYPER } from '../src/run.js';
-import { MAX_SPEED } from '../src/physics.js';
+import { HYPER, FLOOR_IGNORE_TICKS } from '../src/run.js';
+import { MAX_SPEED, trampolineVy, trampolineRise } from '../src/physics.js';
 import { readFileSync } from 'node:fs';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -556,4 +558,255 @@ test('test_hud_corner_does_not_overlap', () => {
   );
   assert.ok(offset <= columnH + 20, `the dial is drifting too far from the meters (+${offset}px)`);
   log('hud corner', `meter column ${columnH}px · dial starts +${offset}px · clear by ${offset - columnH}px`);
+});
+
+// 14 ───────────────────────────────────────────────────────────────────────
+test('test_speed_readout_survives_hitstop_and_rail', () => {
+  // Two reports, both from the same mistake: the dial read ONE tick.
+  //
+  //   "At 00:45 and 02:20 the meter drops to 0 exactly when I hit something."
+  //     A hitstop skips stepPhysics, so that tick's distance is 0.
+  //   "At 03:33 it says 61 while the cube is flat on the floor."
+  //     The rail solver nudges the cube a few px every tick, so the sample is
+  //     never quite 0 even though nothing is moving.
+  const g = createRun(5, noop, { staged: true });
+  const s = g.state, world = g.world;
+  s.phase = 'playing';
+  for (let i = 0; i < 30; i++) g.tick();
+
+  // Fly for real: a staged run has no gravity integration, so the cube has to
+  // be launched the way the game launches it.
+  assert.equal(g.dash({ x: 14, y: -40 }), true, 'the harness could not launch');
+  for (let i = 0; i < 12; i++) g.tick();
+  const flying = s.movedAvg;
+  assert.ok(flying > 25, `the window must build while flying (got ${flying.toFixed(2)}px/tick)`);
+
+  // ── A HITSTOP MUST NOT ZERO THE DIAL ────────────────────────────────────
+  s.stop = 4;
+  const during = [];
+  for (let i = 0; i < 4; i++) {
+    g.tick();
+    during.push(s.movedAvg);
+  }
+  assert.equal(s.moved, 0, 'the single-tick sample IS zero during a freeze -- that was the bug');
+  for (const v of during)
+    assert.ok(
+      v > flying * 0.5,
+      `the averaged dial collapsed to ${v.toFixed(2)} from ${flying.toFixed(2)} during a hitstop`,
+    );
+
+  // ── THE WINDOW IS NOT A HITSTOP-SHAPED PATCH ────────────────────────────
+  // A one-frame hold would still read 0 for a longer freeze, so the window has
+  // to be long enough to cover a real one. 12 ticks of mean at 40px/tick means
+  // a 5-tick freeze costs at most 5/12 of the reading.
+  assert.ok(s.moveHist.length >= 10, `a ${s.moveHist.length}-tick window is too short to survive a freeze`);
+  const longFreeze = createRun(5, noop, { staged: true });
+  const ls = longFreeze.state, lw = longFreeze.world;
+  ls.phase = 'playing';
+  for (let i = 0; i < 30; i++) longFreeze.tick();
+  longFreeze.dash({ x: 14, y: -40 });
+  for (let i = 0; i < 12; i++) longFreeze.tick();
+  ls.stop = 5;
+  for (let i = 0; i < 5; i++) longFreeze.tick();
+  assert.ok(
+    ls.movedAvg > 10,
+    `a 5-tick freeze must still read as flight, got ${ls.movedAvg.toFixed(2)}`,
+  );
+  longFreeze.dispose();
+
+  // ── AT REST IT MUST BE EXACTLY ZERO ─────────────────────────────────────
+  // The arena's floor is a hard reflector, so a staged cube cannot come to
+  // rest on it -- but "at rest" is a decision the simulation PUBLISHES, and
+  // that decision is what the dial has to obey. Drive the published state.
+  const restState = { moved: 61, moveHist: new Array(12).fill(61) };
+  const zero = settleMove(restState);
+  assert.equal(Math.max(...restState.moveHist), 0, 'the window itself must be emptied, not masked');
+  assert.equal(zero, 0, `a resting cube must read 0, got ${zero}`);
+  // And a moving cube keeps its average, so the zeroing cannot swallow flight.
+  const flyingPub = pushMove({ moveHist: new Array(12).fill(40), moveHistAt: 0, movedAvg: 0 }, 40);
+  assert.equal(flyingPub, 40, `a flying cube must keep its average, got ${flyingPub}`);
+  log('speed dial', `hitstop held ${during[0].toFixed(1)} of ${flying.toFixed(1)}px/tick · rest 0.00`);
+  g.dispose();
+});
+
+// 15 ───────────────────────────────────────────────────────────────────────
+test('test_empty_sky_rescued_in_view', () => {
+  // "At 02:31 I reached 013640 in Sector 07. After 02:35 not one single enemy
+  //  showed up for 65 seconds. The radar went completely black."
+  //
+  // The watchdog existed and fired the whole time. What it did was `sync()` the
+  // cells around the cube -- on the assumption that a fresh cell would have
+  // shapes to offer. That assumption fails whenever the seed has nothing for
+  // the cells the player is actually standing in (a cell that is off the table,
+  // a region already cleared, or simply a thin part of the layout). Measured
+  // here: the cube sits still, the field is emptied, `sync()` re-enters the same
+  // cells, `cleared` masks every slot, and the sky stays empty forever while the
+  // watchdog reports that it is working.
+  //
+  // The rescue is now a guarantee, not a hope: if a resync does not put anything
+  // within reach, two shapes are placed in the upper half of the CURRENT view.
+  const g = createRun(31, noop, { staged: true });
+  const s = g.state, world = g.world;
+  s.phase = 'playing';
+  for (let i = 0; i < 120; i++) g.tick();
+  // The Cutting Room holds the field back on purpose (`solo`), so a test about
+  // an empty LIVE field has to actually be in the live field.
+  g.skipOpening();
+  for (let i = 0; i < 30; i++) g.tick();
+
+  // Force the unfixable state: the field is EMPTY and the stream has nothing
+  // more to give. Killing a shape does not mark its cell cleared (`combat`
+  // re-adds by id when the same cell is resynced), so the stream is stubbed to
+  // deliver nothing while a resync runs -- which is precisely the situation the
+  // report describes: the player has been here, everything here is dead, and
+  // the seed has no fresh cells for the place they are standing in.
+  const realSync = g.stream.sync;
+  g.stream.sync = () => {}; // a resync that offers nothing: the 65-second state
+  const drain = () => {
+    // Hold the field empty, EXCEPT for rescues: releasing the tutorial's `solo`
+    // gate re-places everything the stream had queued, so without this the test
+    // would be measuring the tutorial, not the watchdog.
+    for (const e of [...g.combat.enemies.values()])
+      if (!e.id.startsWith('rescue-')) g.combat.remove(e);
+  };
+  drain();
+  assert.equal(g.combat.enemies.size, 0, 'the field must start empty');
+  const startWatchdog = s.watchdog;
+
+  // Hold the cube still and watch the sky.
+  let worstGap = 0, gap = 0, rescued = 0;
+  const px = world.player.position.x, py = world.player.position.y;
+  for (let i = 0; i < EMPTY_WATCHDOG_TICKS * 6; i++) {
+    world.player.position.x = px;
+    world.player.position.y = py;
+    drain();
+    g.tick();
+    let near = 0;
+    for (const e of g.combat.enemies.values()) {
+      if (Math.hypot(e.x - world.player.position.x, e.y - world.player.position.y) < WATCHDOG_REACH) near++;
+      if (e.id.startsWith('rescue-')) rescued++;
+    }
+    if (near > 0) gap = 0;
+    else worstGap = Math.max(worstGap, ++gap);
+  }
+  assert.ok(
+    s.watchdog > startWatchdog,
+    'the watchdog never fired -- the reproduction did not reach the empty state',
+  );
+  assert.ok(rescued > 0, 'no rescue shapes were ever placed');
+  assert.ok(
+    worstGap <= EMPTY_WATCHDOG_TICKS + 2,
+    `the sky went empty for ${worstGap} ticks after a rescue -- it resynced into nothing`,
+  );
+
+  // They must be IN THE VIEW and in its UPPER HALF -- not merely somewhere in
+  // the arena. "Two shapes 4000px away" would satisfy a count and fail a player.
+  const placed = [...g.combat.enemies.values()].filter((e) => e.id.startsWith('rescue-'));
+  assert.ok(placed.length >= 2, `a rescue must place 2 shapes, got ${placed.length}`);
+  for (const e of placed.slice(0, 2)) {
+    const dx = e.x - world.player.position.x, dy = e.y - world.player.position.y;
+    assert.ok(Math.hypot(dx, dy) < WATCHDOG_REACH, `a rescued shape landed ${Math.hypot(dx, dy).toFixed(0)}px away`);
+    assert.ok(dy < 0, `a rescued shape must be ABOVE the cube, got dy=${dy.toFixed(0)}`);
+  }
+  log('empty sky', `watchdog ${s.watchdog - startWatchdog}x · worst gap ${worstGap}t · ${placed.length} placed`);
+  g.stream.sync = realSync;
+  g.dispose();
+});
+
+// 16 ───────────────────────────────────────────────────────────────────────
+test('test_floor_is_an_instant_trampoline', () => {
+  // Part 2, locked answer A: "Instant Clean Trampoline". Touch the bottom and
+  // the cube is kicked straight up ONE THIRD OF THE SCREEN, every time, no
+  // matter how fast it arrived -- with a white flash, one spring sound, one
+  // edge pip below three, and half a second where the floor is ignored.
+  //
+  // The three things a restitution cannot give you, and this must:
+  //   same height from a soft landing and a fast one,
+  //   no double-bounce and no buzzing against the line,
+  //   never more than one pip for one touch.
+  for (const screenH of [720, 1080]) {
+    const want = screenH / 3;
+    const kick = trampolineVy({}, screenH);
+    assert.ok(
+      Math.abs(trampolineRise(kick) - want) < 1,
+      `a ${screenH}px screen must kick ${want.toFixed(0)}px, got ${trampolineRise(kick).toFixed(0)}`,
+    );
+  }
+
+  // ── THE HEIGHT DOES NOT DEPEND ON HOW HARD YOU LAND ─────────────────────
+  // This is the whole point of the option: a tired, slow fall must still put
+  // the player back in the air, and a fast one must not fire them into orbit.
+  const heights = [];
+  for (const arrive of [3, 20, 60]) {
+    const g = createRun(77, noop, { staged: true });
+    const s = g.state, world = g.world;
+    s.phase = 'playing';
+    for (let i = 0; i < 20; i++) g.tick();
+    for (const e of g.combat.enemies.values()) g.combat.remove(e);
+    s.edge = 0;
+    const a = world.arena;
+    world.player.position.y = a.y + a.h - 40;
+    Body.setVelocity(world.player, { x: 0, y: arrive });
+    // Measure from the FLOOR, not from launch: the cube may still be travelling
+    // down for a tick or two after the kick, and including that descent would
+    // make a fast arrival look like a taller kick than it is.
+    let apex = Infinity, kicked = false;
+    for (let i = 0; i < 200; i++) {
+      g.tick();
+      if (s.floorKicks > 0) kicked = true;
+      if (kicked) apex = Math.min(apex, world.player.position.y);
+    }
+    assert.ok(kicked, `arriving at ${arrive}px/tick must still kick`);
+    heights.push(a.y + a.h - 30 - apex);
+    g.dispose();
+  }
+  const spread = Math.max(...heights) - Math.min(...heights);
+  // A 6px band, not zero. The kick is written as a downward-independent SPEED,
+  // and the apex then lands on a frame boundary, plus a fast arrival spends an
+  // extra tick being clamped to the line before the kick resolves. What must
+  // NOT happen is a dependence on impact speed -- the old behaviour gave 155px
+  // from a soft landing and 1,700px from a fast one, a 10x difference.
+  assert.ok(
+    spread <= 6,
+    `the kick height must not depend on impact speed: ${heights.map((h) => h.toFixed(0)).join(', ')} (spread ${spread.toFixed(1)})`,
+  );
+  // And it must be the mandated height, not merely consistent.
+  for (const h of heights)
+    assert.ok(
+      Math.abs(h - 240) < 20,
+      `a 720px screen must kick about 240px, got ${h.toFixed(0)}`,
+    );
+
+  // ── ONE KICK, ONE PIP, NO BUZZING ───────────────────────────────────────
+  const g = createRun(78, noop, { staged: true });
+  const s = g.state, world = g.world;
+  s.phase = 'playing';
+  for (let i = 0; i < 20; i++) g.tick();
+  for (const e of g.combat.enemies.values()) g.combat.remove(e);
+  s.edge = 0;
+  world.player.position.y = world.arena.y + world.arena.h - 30;
+  Body.setVelocity(world.player, { x: 0, y: 40 });
+  const kickTicks = [];
+  let prev = 0, peakEdge = 0;
+  for (let i = 0; i < 240; i++) {
+    g.tick();
+    if (s.floorKicks > prev) kickTicks.push(i);
+    prev = s.floorKicks;
+    peakEdge = Math.max(peakEdge, s.edge);
+  }
+  assert.ok(kickTicks.length >= 2, `the trampoline must keep working, got ${kickTicks.length} kicks`);
+  for (let i = 1; i < kickTicks.length; i++)
+    assert.ok(
+      kickTicks[i] - kickTicks[i - 1] >= FLOOR_IGNORE_TICKS - 1,
+      `kicks ${kickTicks[i] - kickTicks[i - 1]} ticks apart: the floor is buzzing`,
+    );
+  assert.ok(peakEdge <= MAX_EDGE, `the floor handed out ${peakEdge} pips, above the maximum`);
+  assert.equal(peakEdge, MAX_EDGE, 'the floor must still be able to top the bar up');
+  // The flash is the cue the brief asks for, and it must be driven by the kick.
+  assert.ok(s.floorFlash > 0 || s.floorKicks > 0, 'the line must flash white on a kick');
+  log(
+    'trampoline',
+    `rise ${heights.map((h) => h.toFixed(0)).join('/')}px (spread ${spread.toFixed(1)}) · ${kickTicks.length} kicks · ${peakEdge} pips`,
+  );
+  g.dispose();
 });

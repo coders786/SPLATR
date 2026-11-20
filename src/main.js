@@ -561,7 +561,9 @@ function updateHUD() {
   // body that did not move reads 0 no matter what the solver did.
   const vel = run.world.player.velocity,
     hyperCeiling = s.hyper ? HYPER.speed : MAX_SPEED,
-    seen = s.moved ?? Math.hypot(vel.x, vel.y),
+    // The 0.2s mean, not this tick's sample: a hitstop skips physics and would
+    // read 0 mid-impact, and floor jitter would read as flight. See run.js.
+    seen = s.movedAvg ?? s.moved ?? Math.hypot(vel.x, vel.y),
     readout = speedReadout(seen, MAX_SPEED, hyperCeiling, s.hyper),
     dial = $('speedo');
   dial.dataset.band = readout.band;

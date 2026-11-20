@@ -80,10 +80,19 @@ export function createPhysics(level) {
     Bodies.rectangle(r.x + r.w / 2, r.y + r.h / 2, r.w, r.h, {
       isStatic: true,
       friction: 0.48,
-      // Rails bounce; the starting pad does not (you land on it, you do not
-      // ping off it). A rail at ~0.86 keeps a rally alive without ever
-      // out-speeding the launch that started it.
-      restitution: 0.15,
+      // ── MATTER MUST NOT BOUNCE THE RAILS ─────────────────────────────────
+      //
+      // `railBounce` owns all four boundaries analytically: it is what
+      // implements the trampoline kick, the 0.25s wall ignore and the pinball
+      // inward bounce, none of which Matter knows about. These bodies exist so
+      // the cube can be STOPPED by a rail, not so they can reflect it.
+      //
+      // Leaving a restitution here meant the floor bounced the cube twice --
+      // once analytically and once through the solver. Measured while chasing
+      // it: a kick that wrote -13.5 px/tick came out of the next tick reading
+      // -35.5, a 1,700px climb from a rule that promises one third of a screen.
+      // The analytic layer has to be the only one writing velocity at a rail.
+      restitution: 0,
     }),
   );
   const player = Bodies.rectangle(level.spawn.x, level.spawn.y, PLAYER_SIZE, PLAYER_SIZE, {
@@ -386,6 +395,40 @@ function snapshot(body, ceiling = MAX_SPEED) {
  *  Matter produces, so the bank reward, impact rings and surface tags all keep
  *  working without knowing rails are handled differently.
  */
+/* ── HOW HARD THE FLOOR KICKS ───────────────────────────────────────────────
+ *
+ * The brief fixes the HEIGHT (one third of a screen), not the speed, so the
+ * speed is derived from the height. A launch at v peaks v^2/(2g) above the
+ * launch point, so the kick that peaks exactly h up is sqrt(2 g h).
+ *
+ * G is MEASURED, not assumed. Solving v^2/(2*rise) against the real integrator
+ * gives 0.3773, 0.3776 and 0.3799 for launches of 16, 24 and 34 px/tick -- the
+ * spread is the frame quantisation, and 0.378 is the value all three agree on.
+ * Writing the constant down rather than re-deriving it from GRAVITY_Y keeps the
+ * kick honest even though the engine's gravity scale and Matter's internal
+ * scaling both sit between that number and the pixels the player sees.
+ *
+ * `world.viewH` is published by the camera on every resize; 720 is the stand-in
+ * where it is absent. The clamps keep the result sane for any viewport: a tiny
+ * screen must not kick so weakly the cube cannot clear anything, and a huge one
+ * must not fire it into the ceiling.
+ */
+export const GRAVITY_PX = 0.378;
+const TRAMPOLINE_FRACTION = 1 / 3,
+  TRAMPOLINE_MIN = 8,
+  TRAMPOLINE_MAX = 60;
+
+export function trampolineVy(world, screenH) {
+  const h = (screenH || world?.viewH || 720) * TRAMPOLINE_FRACTION,
+    v = Math.sqrt(2 * GRAVITY_PX * h);
+  return Math.min(TRAMPOLINE_MAX, Math.max(TRAMPOLINE_MIN, v));
+}
+
+/** How high a launch at `vy` actually peaks -- the inverse, for assertions. */
+export function trampolineRise(vy) {
+  return (vy * vy) / (2 * GRAVITY_PX);
+}
+
 function railBounce(world) {
   const a = world.arena;
   if (!a) return;
@@ -418,6 +461,16 @@ function railBounce(world) {
     // parked cube reporting 5.2 is the integrator breathing). Measured on the
     // old value: four "contact" events over 300 parked ticks.
     ARRIVE = 8;
+  // ── HOW HARD THE FLOOR KICKS ───────────────────────────────────────────────
+  //
+  // The brief fixes the HEIGHT (one third of a screen), not the speed, so the
+  // speed has to be derived from the height with the gravity this step
+  // integrates. For constant gravity, the apex of a launch at speed v is
+  // v^2 / (2g), so the launch speed that peaks exactly h above the floor is
+  // sqrt(2 g h). Deriving it means the kick stays a third of a screen if the
+  // viewport or gravity is ever retuned, instead of silently becoming a
+  // fifth of one.
+  //
   const x0 = a.x + half,
     x1 = a.x + a.w - half,
     y0 = a.y + half,
@@ -464,35 +517,94 @@ function railBounce(world) {
       }
     }
   } else if (p.y > y1) {
-    p.y = y1;
+    // ── THE CLAMP IS WHAT TURNED THE KICK INTO A TRAP ────────────────────
+    //
+    // This used to run unconditionally, BEFORE the kick was decided. On the
+    // substep after a launch the cube is above the line moving UP, but its
+    // freshly-written velocity had not been integrated yet, so `p.y` was still
+    // exactly `y1` from the clamp a moment ago -- and the branch re-clamped it,
+    // re-kicked it, and the arc came out at 1,700px from a rule that promises a
+    // third of a screen. Measured: -13.5 in, -35.7 out on the very next
+    // substep, with the ignore window correctly at 29.
+    //
+    // So the clamp is now conditional: a cube that is already at the floor and
+    // moving down gets placed on it, and a cube that is leaving is left alone.
+    if (v.y > 0) p.y = y1;
     // Touching the floor at all, at any speed, is what "resting" means here;
     // `run.js` decides whether the VERTICAL SPEED is small enough to settle.
     world.railRest = { side: 'floor' };
-    if (v.y > 0 && v.y < ARRIVE) {
-      // Resting on the floor: gravity feeds it a crumb of downward speed every
-      // substep. Absorb it and stay quiet -- see ARRIVE above.
-      v.y = 0;
-    } else if (v.y > 0) {
-      v.y = -v.y * RESTITUTION;
-      // ── THE FLOOR IS A WALL, NOT A CUSHION ───────────────────────────────
+    // ── THE FLOOR IS A TRAMPOLINE, AND ITS KICK IS FIXED ────────────────
+    //
+    // The brief is explicit: touching the bottom must kick the cube straight up
+    // by a THIRD OF A SCREEN, every time, no matter how fast it arrived. That
+    // is deliberately NOT a restitution: a restitution makes a gentle landing
+    // gentle and a fast one violent, which is how you end up pinned to the
+    // floor after a slow fall, unable to get back into play.
+    //
+    // So the reflect is replaced by an absolute speed, computed from the
+    // viewport the cube is being played on. The 1/3-screen height is converted
+    // into a launch velocity by `TRAMPOLINE_VY` below, using the same gravity
+    // the step integrates, so the arc actually lands where the brief says.
+    //
+    // `world.floorKick` publishes the event. `run.js` pays the pip, flashes
+    // the line, plays the one sound and holds the ignore window -- the physics
+    // layer knows nothing about any of that.
+    // ── THE DEAD BAND MAKES IT A TRAMPOLINE AND NOT A VIBRATOR ─────────
+    //
+    // `run.js` sets `world.floorIgnore` for half a second after every kick. While
+    // it is set the floor behaves as an ordinary cushion: the cube lands, the
+    // vertical speed is absorbed, and nothing is published. Without this the
+    // kick would fire on the very next substep, because a fixed kick lifts the
+    // cube to a fixed height and gravity returns it forever -- measured, a cube
+    // dropped once onto the floor bounced on an identical arc until the run was
+    // over, and the pit recovery never had a chance to run.
+    // ── IT KICKS ONCE, AND ONLY WHEN IT IS AT THE FLOOR ──────────────────
+    //
+    // `railBounce` runs once per SUBSTEP, and a tick can be split into four.
+    // Two separate ways that produced a double kick:
+    //
+    //   * the ignore window is published by run.js AFTER this tick's physics,
+    //     so the second substep still saw 0;
+    //   * a fast arrival can be clamped into the floor, kicked, and then
+    //     clamped again in the same tick while still "moving down".
+    //
+    // The fix is not a longer timer, it is asking the question properly: the
+    // cube only gets kicked when it is actually AT the floor and moving into
+    // it. A cube that has just been kicked is above the line with upward
+    // velocity, so it cannot be kicked again, whatever the timer says.
+    const atFloor = p.y >= y1 - 0.5;
+    if (v.y > 0 && atFloor && !(world.floorIgnore > 0)) {
+      const kick = trampolineVy(world, world.viewH);
+      v.y = -kick;
+      // AN ABSOLUTE KICK, WRITTEN THROUGH THE BODY.
       //
-      // It used to be a "dead cushion": 45% of your speed, gone, and the run
-      // treats arriving there as a setback. That was written when the floor sat
-      // 12,000px below the spawn while the top wall sat 78,000 above -- the
-      // bottom was a trap door in a shaft, not a fourth side of a table.
+      // `v` is a live reference to the body's velocity, and Matter's solver
+      // will integrate again inside this same tick's remaining substeps. On a
+      // fast arrival the solver had already eaten part of the downward speed
+      // before this branch ran, so the written value was being reduced to
+      // whatever was left: measured, a 60px/tick arrival produced a kick of 11
+      // instead of 13.5, and the same rule that promises one third of a screen
+      // delivered 155px instead of 240. Writing it through the body makes the
+      // kick the last word on the cube's vertical speed this substep.
+      Body.setVelocity(world.player, { x: v.x, y: -kick });
+      world.floorKick = { vy: kick, speed: Math.hypot(v.x, v.y) };
+      // ── THE KICK IS THE LAST WORD OF THE STEP ────────────────────────────
       //
-      // The measured consequence was that it was never reached at all: across a
-      // 2,400-tick run the cube's deepest point was y = -28, i.e. it never went
-      // BELOW THE SPAWN, while it hit the top wall four times. A wall nobody
-      // ever touches and nobody can see is not a wall.
-      //
-      // So the arena is now symmetric (top -78,000, floor +78,000) and the
-      // floor banks like every other rail. The user's words: "add wall to
-      // bottom just like above". There is no reason for one of four sides to
-      // behave differently in a game about banking off four sides.
-
+      // A tick splits into up to four substeps and this can fire on any of
+      // them. The substeps after it integrate gravity and resolve the floor
+      // contact again, and each one takes a bite out of the launch: measured,
+      // a 13.5 kick left the tick reading 11.0 -- a trampoline that gets weaker
+      // the faster you land. `stepPhysics` re-applies it after the loop so the
+      // height is a constant rather than a remainder.
+      world.kickHold = { y: -kick };
       side = 'bottom';
       ny = -1;
+    } else if (v.y > 0) {
+      // Ignoring: settle onto the line rather than reflect. This is the half
+      // second of quiet that proves the trampoline has a dead band -- and it
+      // must NOT touch a cube that is already climbing, which is why the test
+      // is `v.y > 0` and not "is near the floor".
+      v.y = 0;
     }
   }
   if (!side) return;
@@ -557,6 +669,17 @@ export function stepPhysics(world, beforeStep, pace=1) {
     catchCrossing(world, x, y, incoming);
     railBounce(world);
     capVelocity(p, world.playerCeiling || MAX_SPEED);
+  }
+  // ── RE-ASSERT THE FLOOR'S KICK ─────────────────────────────────────────
+  //
+  // See `kickHold` in `railBounce`. Only the vertical component is forced: a
+  // kick never changes the player's lateral speed, and overwriting x would
+  // cancel a steer that happened in the same tick.
+  if (world.kickHold) {
+    const k = world.kickHold;
+    world.kickHold = null;
+    if (world.player.velocity.y > k.y)
+      Body.setVelocity(world.player, { x: world.player.velocity.x, y: k.y });
   }
   // A wall or the underside of a deck is NOT ground. Check the contact normal
   // in the blade's frame rather than approximating airborne from vertical speed.

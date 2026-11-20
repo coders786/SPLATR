@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createClock } from '../src/clock.js';
-import { createRun, ballisticAim } from '../src/run.js';
+import { createRun, ballisticAim, FLOOR_IGNORE_TICKS } from '../src/run.js';
 import { projectilePoint } from '../src/physics.js';
 import { SPECIES } from '../src/shapes.js';
 import Matter from 'matter-js';
@@ -66,11 +66,16 @@ test('finite cuts, passive refill, bounded focus; misses eventually time out a c
   assert.equal(s.phase, 'playing');
   g.dispose();
 });
-test('the floor is a rescue, not an income: one edge at zero pips, and only one', () => {
-  // The anti-farm rule, measured on the real arena floor rather than a pad.
-  //   0 pips  -> the floor hands back ONE, so a bad start is never a soft-lock
-  //   holding -> it does not keep paying: no drip runs while the cube is down
-  //   chain   -> touching down costs the chain, which is the actual penalty
+test('the floor is an instant trampoline: one pip per touch, capped at three', () => {
+  // SUPERSEDES the old "one edge at zero pips, and only one" rule.
+  //
+  // The brief for this round is explicit and changes the design: the bottom
+  // line is an INSTANT CLEAN TRAMPOLINE. Every touch kicks the cube straight up
+  // by a third of a screen and returns ONE edge pip -- but only while the
+  // player is below three, so the floor can top you up and can never hand you
+  // the full bar. The anti-farm is the ignore window now, not a ratchet: the
+  // floor is dead for half a second after a kick, so it cannot be milked by
+  // sitting on it or by buzzing against it.
   const g = createRun(19, () => {}, { staged: true }),
     s = g.state;
   g.skipOpening();
@@ -83,12 +88,34 @@ test('the floor is a rescue, not an income: one edge at zero pips, and only one'
   p.position.y = a.y + a.h - 200;
   Object.assign(s, { edge: 0, chain: 6, chainTime: 90 });
   Body.setVelocity(p, { x: 0, y: 90 });
-  let peak = 0;
+
+  const kicks = [];
+  let peak = 0,
+    lastEdge = s.edge;
   for (let i = 0; i < 400; i++) {
     g.tick();
     peak = Math.max(peak, s.edge);
+    if (s.edge !== lastEdge) {
+      kicks.push({ tick: i, to: s.edge });
+      lastEdge = s.edge;
+    }
   }
-  assert.equal(peak, 1, 'the floor hands back exactly one edge and then stops');
+  // ONE pip per touch: no touch may ever add two.
+  for (const k of kicks) assert.ok(k.to <= 3, `a floor touch pushed edge to ${k.to}`);
+  // CAPPED: the floor tops you up, it never fills the bar from empty in one go.
+  assert.equal(peak, 3, `the floor must top out at 3, got ${peak}`);
+  assert.ok(kicks.length >= 2, 'the floor must pay more than once across several touches');
+  // and the first payment comes from zero, so a bad start is never a soft-lock
+  assert.equal(kicks[0].to, 1, 'the first touch from zero pays exactly one');
+  // The trampoline must actually be kicking: the cube has to leave the line.
+  assert.ok(g.state.floorKicks > 0, 'the floor never kicked');
+  // Dead band: consecutive kicks are half a second apart, so the floor cannot
+  // vibrate. Anything tighter than FLOOR_IGNORE_TICKS is a double-bounce.
+  for (let i = 1; i < kicks.length; i++)
+    assert.ok(
+      kicks[i].tick - kicks[i - 1].tick >= FLOOR_IGNORE_TICKS,
+      `two pips ${kicks[i].tick - kicks[i - 1].tick} ticks apart -- inside the ignore window`,
+    );
   assert.equal(s.chain, 0, 'touching down costs the chain');
   g.dispose();
 });
