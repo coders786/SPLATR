@@ -46,6 +46,19 @@ export const RALLY_CEIL = 58;
 export const MAX_EDGE = 3,
   /** Ticks (~133 ms at 1x) during which the shape you just cut cannot hurt you. */
   CUT_GRACE = 8,
+  /**
+   * Ticks (~500 ms at 1x) of safety after hitting ARMOUR instead of a body.
+   *
+   * A Bastion shell or a Crown plate does not die to one cut, so the ordinary
+   * 133 ms grace expires while the cube is still inside the shape it just
+   * bounced off -- and the player takes a hit for the crime of having attacked
+   * a target the game invited them to attack. Armoured contact is the one case
+   * that needs the longer window, and the brief names 0.5 s for it.
+   */
+  ARMOR_GRACE = 30,
+  /** The shove off a plate, in px/tick. Small on purpose: this is the cue that
+   *  the blade bounced, not a launch. */
+  ARMOR_PUSH = 7,
   /** Speed above which a rail bounce is a shot the player played rather than a
    *  fall gravity paid for. Below it the rail reflects elastically and pays
    *  nothing; at or above it the bounce boosts and returns a pip. */
@@ -836,6 +849,44 @@ export function createRun(
     if (e.hp > 0) {
       if (!s.opening) grantBreath(breathFor(s, 'cut'));
       s.stop = Math.max(e.pinned ? 5 : 2, s.stop);
+      e.fault = s.slashAngle - e.angle;
+      // ── HITTING ARMOUR IS A SHOVE, NOT A TURN ───────────────────────────
+      //
+      // This branch used to `return` with no consequence for the player at all,
+      // so a blade that bounced off a plate felt identical to a blade that
+      // missed -- and then the ordinary 133 ms grace expired while the cube was
+      // still inside the shape, so the buzz of armour was followed by a hit.
+      //
+      // Two things happen instead:
+      //
+      // 1. THE PLAYER IS PUSHED BACK along the cut, away from the plate. One
+      //    shove per contact, written through the body, and capped so a
+      //    point-blank diagonal cannot fling the cube into a wall.
+      // 2. The grace window is the ARMOURED one -- half a second -- so the
+      //    follow-through cannot punish the player for the bounce.
+      // The shove runs BACK along the cut: the blade came in along the slash
+      // direction, so the cube is turned away from the plate.
+      const a = s.slashAngle,
+        pv = world.player.velocity;
+      const nx = pv.x - Math.cos(a) * ARMOR_PUSH,
+        ny = pv.y - Math.sin(a) * ARMOR_PUSH;
+      // ── THE CEILING IS THE LIVE ONE, NOT `MAX_SPEED` ────────────────────
+      //
+      // This clamped to MAX_SPEED (42) and took hyper away the first time the
+      // cube bounced off a plate at hyper speed: 42 is the bound for an ordinary
+      // run, and hyper exists precisely to raise it. Two tests caught it -- the
+      // cube "fell under the normal limit" and hyper ended, and the blade lapsed
+      // with it.
+      //
+      // `world.playerCeiling` is the running limit the physics already enforces,
+      // so the shove can never be the thing that slows the cube below what the
+      // game has granted it.
+      const ceil = world.playerCeiling || MAX_SPEED,
+        mag = Math.hypot(nx, ny) || 1,
+        k = Math.min(1, ceil / mag);
+      setPlayerVelocity(world, nx * k, ny * k);
+      s.cutGrace = Math.max(s.cutGrace, ARMOR_GRACE);
+      s.cutGraceFrom = e.id;
       e.fault = s.slashAngle - e.angle;
       emit('armor', { x: e.x, y: e.y, r: e.r, cut: s.slashAngle, hp: e.hp, kind: e.kind });
       return;

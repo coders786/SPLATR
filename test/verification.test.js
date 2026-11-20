@@ -8,7 +8,7 @@ import { TYPES } from '../src/shapes.js';
 import { sceneFor } from '../src/storyboard.js';
 import { createCamera } from '../src/camera.js';
 import { createShake, CAMERA, SHAKE, ANIM, meterReadout, dialGeometry, speedReadout } from '../src/motion.js';
-import { HYPER, FLOOR_IGNORE_TICKS, FALL_CAP_VY, AIM_FALL_KEEP } from '../src/run.js';
+import { HYPER, FLOOR_IGNORE_TICKS, FALL_CAP_VY, AIM_FALL_KEEP, ARMOR_GRACE, CUT_GRACE } from '../src/run.js';
 import { jelly, cube } from '../src/art.js';
 import { dashFor, ghostsFor, DASH, GHOSTS } from '../src/animation.js';
 import { MAX_SPEED, WALL_KEEP, trampolineVy, trampolineRise } from '../src/physics.js';
@@ -1421,4 +1421,79 @@ test('test_ghosts_are_spaced_by_actual_travel', () => {
     assert.equal(g.x * d.lead.y - g.y * d.lead.x, 0, 'a ghost must sit on the axis of travel');
   }
   log('ghosts', `slow ${slow[2].toFixed(1)} · fast ${fast[2].toFixed(1)} half-cubes back`);
+});
+
+// 28 ───────────────────────────────────────────────────────────────────────
+test('test_armored_hit_pushes_back_and_grants_half_a_second', () => {
+  // Part 2: "armored push-back + 0.5 s no-damage".
+  //
+  // The armoured branch of `cut` used to emit a buzz and `return`, so a blade
+  // that bounced off a plate was indistinguishable from a miss -- and then the
+  // ordinary 133 ms grace expired while the cube was still inside the shape, so
+  // the bounce was followed by a hit for attacking what the game invited you to
+  // attack.
+  function trial() {
+    const g = createRun(7, noop, { staged: true });
+    const s = g.state, world = g.world;
+    s.phase = 'playing';
+    for (let i = 0; i < 20; i++) g.tick();
+    for (const e of g.combat.enemies.values()) g.combat.remove(e);
+    const e = {
+      id: 'armor-1', kind: 'crown', x: 0, y: 0, r: 30, hp: 3,
+      angle: 0, vx: 0, vy: 0, small: false, paper: false,
+    };
+    e.x = world.player.position.x + 55;
+    e.y = world.player.position.y;
+    g.combat.add(e);
+    world.player.velocity.x = 20;
+    world.player.velocity.y = 0;
+    s.edge = 3;
+    s.slashAngle = 0;
+    s.blade = 20;
+    s.shots = 5;
+    const before = world.player.velocity.x;
+    g.tick();
+    const out = {
+      hp: e.hp,
+      grace: s.cutGrace,
+      from: s.cutGraceFrom,
+      vx: world.player.velocity.x,
+      before,
+    };
+    g.dispose();
+    return out;
+  }
+  const r = trial();
+  // The hit was ARMOUR: the plate is still there.
+  assert.equal(r.hp, 3, 'the crown should have lost no hp from a single cut');
+  // Half a second of no-damage from THAT enemy, not the ordinary 133 ms.
+  assert.equal(r.from, 'armor-1', 'the grace must be against the enemy that was hit');
+  assert.ok(
+    r.grace >= ARMOR_GRACE - 1,
+    `an armoured hit must grant ~${ARMOR_GRACE} ticks of grace, got ${r.grace}`,
+  );
+  assert.ok(
+    r.grace > CUT_GRACE,
+    'the armoured window must be longer than the ordinary post-cut grace',
+  );
+  // And the cube was shoved back along the cut, not left sitting inside the plate.
+  assert.ok(
+    r.vx < r.before - 10,
+    `the blade must rebound off armour: was ${r.before.toFixed(0)}px/tick, now ${r.vx.toFixed(1)}`,
+  );
+  // The shove is bounded -- armour is not a slingshot.
+  assert.ok(Math.abs(r.vx) <= MAX_SPEED, 'the rebound may never exceed the speed ceiling');
+  // And it is bounded by the RUN's ceiling, not by the constant. Clamping to
+  // MAX_SPEED here was the first version of this code, and it deleted hyper the
+  // first time the cube bounced off a plate at hyper speed -- two tests in
+  // hyper.test.js caught it. Reading the source is the cheap guard: the clamp
+  // must not mention MAX_SPEED.
+  const src = readFileSync(new URL('../src/run.js', import.meta.url), 'utf8');
+  const branch = src.slice(src.indexOf('if (e.hp > 0) {'), src.indexOf('combat.remove(e);', src.indexOf('if (e.hp > 0) {')));
+  assert.ok(
+    !/Math\.min\(1,\s*MAX_SPEED\s*\//.test(branch),
+    'the armoured shove must clamp to the live playerCeiling, not the MAX_SPEED constant',
+  );
+  assert.ok(/playerCeiling/.test(branch), 'the armoured shove must respect the run ceiling');
+  log('armor', `hp held · grace ${r.grace} ticks (~${Math.round((r.grace / 60) * 1000)}ms) · rebound ${r.before.toFixed(0)}→${r.vx.toFixed(1)}px/tick`);
 });
