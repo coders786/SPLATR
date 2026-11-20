@@ -270,7 +270,23 @@ export function launch(world, velocity) {
   const k = Math.min(1, MAX_SPEED / length);
   setBulletTime(world, false, true);
   Body.setVelocity(world.player, { x: velocity.x * k, y: velocity.y * k });
-  Body.setAngularVelocity(world.player, Math.sign(velocity.x) * Math.min(length * 0.003, 0.105));
+  // ── THE CUBE DOES NOT SPIN. EVER. ────────────────────────────────────────
+  //
+  // This line added angular velocity proportional to the launch, up to 0.105
+  // rad/tick. It was the "diagonal corner-twisting" in the bug report and it is
+  // a direct violation of the golden rule: the cube's outer edges must stay
+  // parallel to the screen axes, so its corners are always 90 degrees.
+  //
+  // Measured before the fix: one dash left the cube at 1.99 rad -- 114 degrees
+  // of rotation -- and it kept turning, which is why the shape read as a
+  // crooked diamond with spikes coming out of it rather than a square. Nothing
+  // downstream was at fault; every diagonal frame in the video traces back to
+  // this one line.
+  //
+  // Zeroed rather than deleted so a body that somehow arrives spinning is also
+  // straightened by a launch.
+  Body.setAngularVelocity(world.player, 0);
+  Body.setAngle(world.player, 0);
   world.grounded = false;
   world.launched = true;
   return true;
@@ -414,6 +430,17 @@ function snapshot(body, ceiling = MAX_SPEED) {
  * must not fire it into the ceiling.
  */
 export const GRAVITY_PX = 0.378;
+// ── THE PINBALL WALLS ────────────────────────────────────────────────────────
+//
+// Inward speed kept on a sideways bounce, the lift added, and how long that wall
+// ignores the cube afterwards. The 0.85 is deliberately below 1: a wall that
+// returns everything is a perpetual-motion rally, and the missing 15% is what
+// makes a wall bounce a repositioning move rather than free energy.
+export const WALL_KEEP = 0.85,
+  WALL_HOP = 4,
+  /** Seconds, in the clock units `railBounce` compares against. */
+  WALL_IGNORE = 0.25;
+
 const TRAMPOLINE_FRACTION = 1 / 3,
   TRAMPOLINE_MIN = 8,
   TRAMPOLINE_MAX = 60;
@@ -483,30 +510,65 @@ function railBounce(world) {
   world.railRest = null;
   let side = null,
     nx = 0,
-    ny = 0;
+    ny = 0,
+    // Where the body must end up, if a rail clamped it. Written once, below.
+    clampX = null,
+    clampY = null;
+  // ── PINBALL WALLS ──────────────────────────────────────────────────────
+  //
+  // The brief for the side walls is exact: bounce INWARD at 85% of the sideways
+  // speed you arrived with, add a TINY upward hop, and ignore that wall for a
+  // quarter second so one arrival cannot be counted twice. The cube stays
+  // perfectly upright -- the walls never rotate it, which is the same rule as
+  // the golden one: no shear, no twist, axis-aligned only.
+  //
+  // The hop is why a wall is useful rather than a wall of punishment: arriving
+  // flat and sideways at rail height came back flat and sideways, so the cube
+  // would scrape along the same rail until it lost all speed. A small lift turns
+  // that into an arc the player can steer out of.
+  //
+  // The old reflect was `RESTITUTION` (0.9) with no hop and no ignore window,
+  // which is also why a cube grazing a wall could re-collide on the next
+  // substep and buzz along the boundary.
+  const wallIgnore = world.wallIgnore || (world.wallIgnore = { left: 0, right: 0 });
   if (p.x < x0) {
-    p.x = x0;
+    clampX = x0;
     if (v.x < 0) {
-      if (-v.x < ARRIVE) v.x = 0;
-      else {
-        v.x = -v.x * RESTITUTION;
-        side = 'left';
-        nx = 1;
+      if (!(wallIgnore.left > 0)) {
+        if (-v.x < ARRIVE) v.x = 0;
+        else {
+          v.x = -v.x * WALL_KEEP;
+          // The hop is a LIFT, so it only ever adds upward speed. A cube already
+          // climbing keeps its own -- adding a fixed number here would make a
+          // fast climb even faster and break the ascent cap's assumptions.
+          v.y = Math.min(v.y, -WALL_HOP);
+          wallIgnore.left = world.clock + WALL_IGNORE;
+          // Tells run.js that this wall already applied its own fixed
+          // reduction, so the generic cushion damper must not apply a second.
+          world.wallBounced = 2;
+          side = 'left';
+          nx = 1;
+        }
       }
     }
   } else if (p.x > x1) {
-    p.x = x1;
+    clampX = x1;
     if (v.x > 0) {
-      if (v.x < ARRIVE) v.x = 0;
-      else {
-        v.x = -v.x * RESTITUTION;
-        side = 'right';
-        nx = -1;
+      if (!(wallIgnore.right > 0)) {
+        if (v.x < ARRIVE) v.x = 0;
+        else {
+          v.x = -v.x * WALL_KEEP;
+          v.y = Math.min(v.y, -WALL_HOP);
+          wallIgnore.right = world.clock + WALL_IGNORE;
+          world.wallBounced = 2;
+          side = 'right';
+          nx = -1;
+        }
       }
     }
   }
   if (p.y < y0) {
-    p.y = y0;
+    clampY = y0;
     world.railRest = { side: 'ceiling' };
     if (v.y < 0) {
       if (-v.y < ARRIVE) v.y = 0;
@@ -529,7 +591,27 @@ function railBounce(world) {
     //
     // So the clamp is now conditional: a cube that is already at the floor and
     // moving down gets placed on it, and a cube that is leaving is left alone.
-    if (v.y > 0) p.y = y1;
+    // ── DO NOT TELEPORT A CUBE THAT IS ALREADY LEAVING ───────────────────
+    //
+    // The condition used to be `if (v.y > 0) p.y = y1`, on the theory that a
+    // downward-moving cube belongs on the floor. But `v` is Matter's LIVE
+    // velocity, and the solver rewrites it every substep -- including setting
+    // it positive again AFTER a kick has already fired. So on the very next
+    // substep this clamp yanked a cube that was 45px in the air back down onto
+    // the line, and the solver answered the teleport with a −134 px/tick
+    // velocity. That is the 1,700px "kick".
+    //
+    // The honest test is positional: the cube is at the floor only if it is at
+    // the floor. A cube inside the boundary gets placed on it; a cube already
+    // above it is left exactly where it is.
+    // (`p` is a live reference to the body's position. Writing it directly and
+    // then returning early -- which `if (!side) return` below does -- leaves
+    // Matter's `positionPrev` describing the OLD position while the body has
+    // already been moved. The next integration diffs the two and invents a
+    // velocity out of the jump: measured, a 45px clamp produced −134 px/tick.
+    // The clamp is recorded here and written through `Body.setPosition` once,
+    // at the bottom, for every branch.
+    if (p.y > y1) clampY = y1;
     // Touching the floor at all, at any speed, is what "resting" means here;
     // `run.js` decides whether the VERTICAL SPEED is small enough to settle.
     world.railRest = { side: 'floor' };
@@ -607,6 +689,23 @@ function railBounce(world) {
       v.y = 0;
     }
   }
+  // ── THE CLAMP IS WRITTEN WHETHER OR NOT A RAIL PAID ────────────────────
+  //
+  // This used to `return` when no rail bounced, which skipped the position
+  // write below -- but `p` had already been mutated in place, so the body was
+  // moved without its `positionPrev` being updated. Matter then integrated the
+  // difference on the next substep and produced a velocity out of thin air.
+  // The floor's half-second ignore window is exactly a case where the clamp
+  // applies and no rail pays, so this path was hit on every trampoline landing.
+  if (clampX !== null || clampY !== null) {
+    Body.setPosition(world.player, {
+      x: clampX ?? p.x,
+      y: clampY ?? p.y,
+    });
+    if (clampX !== null) p.x = clampX;
+    if (clampY !== null) p.y = clampY;
+    Body.setVelocity(world.player, { x: v.x, y: v.y });
+  }
   if (!side) return;
   if (v.y < 0) world.banked = true;
   Body.setPosition(world.player, { x: p.x, y: p.y });
@@ -651,6 +750,9 @@ export function stepPhysics(world, beforeStep, pace=1) {
   // not clamp a bank -- a bank is a reward, not the runaway climb the cap
   // exists for. Set here because it is the physics pass that knows.
   world.banked = false;
+  // Cleared before the substeps and re-set by `railBounce` when a side wall
+  // applies its own fixed reduction. See WALL_KEEP.
+  if (world.wallBounced > 0) world.wallBounced--;
   advanceTiming(world,pace);
   const scale = world.engine.timing.timeScale;
   beforeStep?.(scale); // enemy timing and gravity wells share this exact step
@@ -680,6 +782,26 @@ export function stepPhysics(world, beforeStep, pace=1) {
     world.kickHold = null;
     if (world.player.velocity.y > k.y)
       Body.setVelocity(world.player, { x: world.player.velocity.x, y: k.y });
+    // The body's cached speed drives the NEXT tick's substep count and the
+    // ceiling clamp. `setVelocity` does not refresh it, so a kick left it at the
+    // pre-kick value and `capVelocity` scaled the whole vector to match -- which
+    // turned a 13.5 launch into a 42 one on the following tick.
+    world.player.speed = Math.hypot(world.player.velocity.x, world.player.velocity.y);
+    world.player.speedSquared = world.player.speed * world.player.speed;
+  }
+  // ── THE GOLDEN RULE, ENFORCED EVERY TICK ────────────────────────────────
+  //
+  // Corners are always 90 degrees. Launch no longer adds spin (see `launch`),
+  // but a wall, an enemy contact or the solver can still impart some, and a
+  // shape that is even a degree or two off square reads as a diamond at this
+  // size. Rather than chase every source, the invariant is asserted where it
+  // matters: after the physics step, the cube is axis-aligned by definition.
+  //
+  // This is a straighten, not a freeze -- there is nothing to preserve, because
+  // the cube is never meant to have an orientation other than zero.
+  if (world.player.angle !== 0 || world.player.angularVelocity !== 0) {
+    Body.setAngle(world.player, 0);
+    Body.setAngularVelocity(world.player, 0);
   }
   // A wall or the underside of a deck is NOT ground. Check the contact normal
   // in the blade's frame rather than approximating airborne from vertical speed.

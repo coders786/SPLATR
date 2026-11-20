@@ -7,8 +7,8 @@ import { ARENA, bandAt } from '../src/levels.js';
 import { sceneFor } from '../src/storyboard.js';
 import { createCamera } from '../src/camera.js';
 import { createShake, CAMERA, SHAKE, meterReadout, dialGeometry, speedReadout } from '../src/motion.js';
-import { HYPER, FLOOR_IGNORE_TICKS } from '../src/run.js';
-import { MAX_SPEED, trampolineVy, trampolineRise } from '../src/physics.js';
+import { HYPER, FLOOR_IGNORE_TICKS, FALL_CAP_VY, AIM_FALL_KEEP } from '../src/run.js';
+import { MAX_SPEED, WALL_KEEP, trampolineVy, trampolineRise } from '../src/physics.js';
 import { readFileSync } from 'node:fs';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -809,4 +809,179 @@ test('test_floor_is_an_instant_trampoline', () => {
     `rise ${heights.map((h) => h.toFixed(0)).join('/')}px (spread ${spread.toFixed(1)}) · ${kickTicks.length} kicks · ${peakEdge} pips`,
   );
   g.dispose();
+});
+
+// 17 ───────────────────────────────────────────────────────────────────────
+test('test_fall_is_capped_and_aim_slows_it', () => {
+  // Part 2, locked answers B + C:
+  //   "the cube must never fall faster than one screen height per 1.2 seconds"
+  //   "holding aim slows falling by 90%"
+  // A cap has to hold for ANY fall, including one that starts at terminal speed
+  // and one that has been accelerating for hundreds of ticks -- so it is tested
+  // against the worst case, not a gentle drop.
+  const g = createRun(91, noop, { staged: true });
+  const s = g.state, world = g.world;
+  s.phase = 'playing';
+  for (let i = 0; i < 20; i++) g.tick();
+  for (const e of g.combat.enemies.values()) g.combat.remove(e);
+
+  // Worst case: start the cube falling as fast as the solver will allow.
+  // `arena.y` is the TOP wall (-78,000), so "airborne" means far below it and
+  // far above the floor. Anywhere near either boundary tests the clamp, not the
+  // fall. The cube also has to be launched rather than teleported: `grounded`
+  // is a fact about contacts, and a body placed in mid-air without a launch is
+  // still holding the pad's contact for a tick.
+  let worst = 0;
+  assert.equal(g.dash({ x: 0, y: -40 }), true, 'the harness could not launch');
+  g.tick();
+  for (let i = 0; i < 240; i++) {
+    // Hammer it downward every tick: this is the worst case the cap exists for,
+    // and it guarantees the cube is genuinely travelling down when measured.
+    if (world.player.velocity.y < 100) world.player.velocity.y = 400;
+    g.tick();
+    worst = Math.max(worst, world.player.velocity.y);
+    if (s.floorKicks > 0) break; // a kick legitimately owns vy
+  }
+  assert.ok(worst > FALL_CAP_VY * 0.5, `the cube never actually fell (worst ${worst.toFixed(2)})`);
+  assert.ok(
+    worst <= FALL_CAP_VY + 0.001,
+    `the fall reached ${worst.toFixed(2)}px/tick, above the ${FALL_CAP_VY}px cap`,
+  );
+  // ...and the cap must be the one the brief names.
+  assert.ok(
+    Math.abs(FALL_CAP_VY - (720 / 1.2) / 60) < 0.001,
+    'the cap must be one screen height per 1.2 seconds',
+  );
+
+  // ── AIM SLOWS THE FALL BY 90% ───────────────────────────────────────────
+  const g2 = createRun(92, noop, { staged: true });
+  const s2 = g2.state, w2 = g2.world;
+  s2.phase = 'playing';
+  for (let i = 0; i < 20; i++) g2.tick();
+  for (const e of g2.combat.enemies.values()) g2.combat.remove(e);
+  // Deliver a fall INSIDE the cap so the cap cannot be mistaken for the aim.
+  // The cube has to be launched first (a staged run spawns it on a pad, and a
+  // grounded cube cannot fall), then allowed to reach the top of its arc so
+  // that it is genuinely DESCENDING when the aim is held.
+  assert.equal(g2.dash({ x: 0, y: -40 }), true, 'the harness could not launch');
+  let waited = 0;
+  while (g2.world.player.velocity.y <= 0 && waited++ < 200) g2.tick();
+  assert.ok(waited < 200, 'the cube never started falling');
+  // Leave it exactly where it is: moving it would be a teleport across the
+  // arena, and the rail clamp would answer with a bounce instead of a fall.
+  w2.player.velocity.y = FALL_CAP_VY;
+  w2.player.velocity.x = 0;
+  const before = w2.player.velocity.y;
+  s2.held = true;
+  g2.tick();
+  const after = w2.player.velocity.y;
+  assert.ok(after > 0, 'the cube must still be falling, just slowly');
+  assert.ok(
+    after <= before * 0.2,
+    `a held aim must cut the fall by ~90%: ${before.toFixed(2)} became ${after.toFixed(2)}`,
+  );
+  // The effect is conditional on HOLDING, not a one-way ratchet: with the aim
+  // released the cube keeps falling at the cap. Tested on a fresh launch,
+  // because by now the cube in `g2` has reached the floor and a grounded body
+  // correctly reads zero.
+  const g3 = createRun(93, noop, { staged: true });
+  const s3 = g3.state, w3 = g3.world;
+  s3.phase = 'playing';
+  for (let i = 0; i < 20; i++) g3.tick();
+  for (const e of g3.combat.enemies.values()) g3.combat.remove(e);
+  g3.dash({ x: 0, y: -40 });
+  let w3waited = 0;
+  while (w3.player.velocity.y <= 0 && w3waited++ < 200) g3.tick();
+  // The cap is a CEILING on downward speed, not a floor: a cube at the top of
+  // its arc has almost no downward speed at all and that is correct. What must
+  // be true is that releasing the aim does not keep the 90% cut -- so the fall
+  // after release has to be FASTER than the same fall held.
+  w3.player.velocity.y = FALL_CAP_VY;
+  s3.held = false;
+  g3.tick();
+  const freeFall = w3.player.velocity.y;
+  assert.ok(
+    freeFall <= FALL_CAP_VY + 0.001,
+    `free fall must still respect the cap, got ${freeFall.toFixed(2)}`,
+  );
+  assert.ok(
+    freeFall > after * 2,
+    `aim must be slower than no aim: held ${after.toFixed(2)} vs released ${freeFall.toFixed(2)}`,
+  );
+  g3.dispose();
+  log('fall', `cap ${worst.toFixed(2)}px/tick · aim ${before.toFixed(2)}→${after.toFixed(2)}`);
+  g.dispose();
+  g2.dispose();
+});
+
+// 18 ───────────────────────────────────────────────────────────────────────
+test('test_walls_are_pinball_and_never_rotate_the_cube', () => {
+  // Part 2, locked answer A for bouncing:
+  //   "bounce inward at 85% of the sideways speed, add a tiny upward hop,
+  //    ignore that wall for a quarter second, and stay 100% upright."
+  // The last clause is the golden rule and is the one that has broken before:
+  // the cube must never be rotated by a wall, only scaled.
+  const g = createRun(41, noop, { staged: true });
+  const s = g.state, world = g.world;
+  s.phase = 'playing';
+  for (let i = 0; i < 20; i++) g.tick();
+  for (const e of g.combat.enemies.values()) g.combat.remove(e);
+
+  const a = world.arena;
+  const left = a.x + 23; // the left rail, by the half-width
+  // Fire it flat into the left wall.
+  world.player.position.x = left + 60;
+  world.player.position.y = a.y + 2000;
+  Body.setVelocity(world.player, { x: -20, y: 0 });
+  const angleBefore = world.player.angle;
+  let hit = false, inbound = 0;
+  for (let i = 0; i < 30; i++) {
+    g.tick();
+    if (world.player.velocity.x > 0) { hit = true; inbound = world.player.velocity.x; break; }
+  }
+  assert.ok(hit, 'the cube never bounced off the left wall');
+  // 85% inward, within the frame's rounding.
+  assert.ok(
+    inbound >= 20 * WALL_KEEP - 1.5 && inbound <= 20 * WALL_KEEP + 1.5,
+    `a 20px/tick arrival must return at ~${(20 * WALL_KEEP).toFixed(1)}, got ${inbound.toFixed(1)}`,
+  );
+  // The tiny upward hop.
+  assert.ok(world.player.velocity.y < 0, `a wall bounce must add a small lift, got vy=${world.player.velocity.y.toFixed(2)}`);
+
+  // ── IT STAYS UPRIGHT ────────────────────────────────────────────────────
+  // 90-degree corners forever: a wall may not rotate the cube at all.
+  let worstSpin = 0;
+  for (let i = 0; i < 120; i++) {
+    g.tick();
+    worstSpin = Math.max(worstSpin, Math.abs(world.player.angle - angleBefore));
+    // keep it bouncing on the walls for the whole window
+    if (Math.abs(world.player.velocity.x) < 3) world.player.velocity.x = -18;
+  }
+  assert.ok(
+    worstSpin < 1e-9,
+    `a wall rotated the cube by ${worstSpin.toFixed(6)}rad -- corners must stay square`,
+  );
+
+  // ── THE WALL IS IGNORED FOR A QUARTER SECOND ────────────────────────────
+  // Two contacts inside the window must not count twice: park the cube against
+  // the wall with a big inward speed and confirm it is not bounced again.
+  const g2 = createRun(42, noop, { staged: true });
+  const s2 = g2.state, w2 = g2.world;
+  s2.phase = 'playing';
+  for (let i = 0; i < 20; i++) g2.tick();
+  for (const e of g2.combat.enemies.values()) g2.combat.remove(e);
+  const a2 = w2.arena;
+  w2.player.position.x = a2.x + 23 + 30;
+  w2.player.position.y = a2.y + 2000;
+  Body.setVelocity(w2.player, { x: -20, y: 0 });
+  let bounces = 0, prevX = w2.player.velocity.x;
+  for (let i = 0; i < 20; i++) {
+    g2.tick();
+    if (prevX < 0 && w2.player.velocity.x > 0) bounces++;
+    prevX = w2.player.velocity.x;
+  }
+  assert.ok(bounces <= 2, `the wall bounced ${bounces} times in 20 ticks -- the ignore window is not holding`);
+  log('walls', `inbound ${inbound.toFixed(1)}px/tick from 20 · lift −${(-world.player.velocity.y).toFixed(1)} · spin ${worstSpin} · ${bounces} bounce(s)`);
+  g.dispose();
+  g2.dispose();
 });

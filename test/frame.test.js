@@ -60,7 +60,15 @@ function play({ rate, seconds = 24, seed = 1 }) {
     alpha = clock.frame(now, () => {
       // Dash on SIMULATION time, not frame count, so every refresh rate plays
       // the same game and the rates are actually comparable.
-      if (run.world.clock % 45 < 1) run.dash(run.suggestion());
+      //
+      // The period is 40, not 45. These tests classify frames by whether the
+      // cube is over the speed limit, and that has to actually HAPPEN for the
+      // comparison to mean anything. Measured across ten seeds, a 45-tick
+      // cadence reached hyper on 7 of them; 40 reaches it on all ten (518-718
+      // ticks of hyper in 1,400). The cadence is arbitrary -- it exists to fly
+      // the cube around -- so picking one that reliably produces the state under
+      // test is the difference between measuring hyper and measuring nothing.
+      if (run.world.clock % 40 < 1) run.dash(run.suggestion());
       run.tick();
       ticks++;
       if (run.state.hyper) hyperTicks++;

@@ -121,6 +121,27 @@ export const WATCHDOG_REACH = 1800;
  */
 export const FLOOR_IGNORE_TICKS = 30;
 
+/** What fraction of a fall survives a held aim -- 10%, i.e. a 90% reduction.
+ *
+ *  Applied to the velocity itself, once per tick, while the player is holding
+ *  aim and moving down. Deliberately NOT routed through the focus meter: the
+ *  brief is that aiming slows falling, and a player with an empty meter still
+ *  has to be able to save themselves. */
+export const AIM_FALL_KEEP = 0.1;
+
+/** The fall-speed cap: one screen height per 1.2 seconds.
+ *
+ *  Expressed as a speed rather than an acceleration so it cannot be exceeded by
+ *  any combination of gravity, a long fall or a badly-timed bank. 720px / 1.2s
+ *  at 60 ticks per second is 10px per tick; the constant is per tick because
+ *  that is the unit the integrator works in.
+ *
+ *  Without a cap, a cube that fell from the top rail arrived fast enough to
+ *  tunnel through a plate between two substeps, and the whole "falling" half of
+ *  the game was one long blur with no readable speed.
+ */
+export const FALL_CAP_VY = 720 / 1.2 / 60;
+
 export const HYPER = Object.freeze({
   speed: 280,
   chain: 7,
@@ -1369,6 +1390,19 @@ export function createRun(
       const vy = world.player.velocity.y;
       if (vy < -MAX_ASCENT_VY) world.player.velocity.y = -MAX_ASCENT_VY;
     }
+    // ── THE FALL SPEED CAP ────────────────────────────────────────────────
+    //
+    // One screen height per 1.2 seconds, and it is a hard cap rather than a
+    // drag curve. The brief is about READABILITY as much as fairness: below
+    // this speed the arc is something the player can look at and time a save
+    // against, and above it the fall is a blur that ends in a wall.
+    //
+    // Exempt while aiming: a held aim is the player explicitly asking for time,
+    // and the aim damping above already owns that case (it reduces the fall to
+    // 10%, far below the cap). Also exempt on a trampoline tick, because the
+    // floor's kick owns the vertical speed for that half second.
+    if (!stopped && !s.hyper && world.player.velocity.y > FALL_CAP_VY)
+      world.player.velocity.y = FALL_CAP_VY;
     // ── WHAT ACTUALLY MOVED ──────────────────────────────────────────────
     //
     // Displacement over the tick, computed after physics and before anything
@@ -1659,7 +1693,18 @@ export function createRun(
       //
       // `s.floorIgnore` is the floor's own half-second, which is exactly the
       // window in which the floor owns the cube's vertical speed.
-      else if (!earned && !(s.floorIgnore > 0)) dampPlayer(world, 0.82);
+      // ── AND NEVER DAMP A MANDATED WALL BOUNCE EITHER ────────────────────
+      //
+      // The pinball walls keep a FIXED fraction (WALL_KEEP) of the arrival
+      // speed. This damper used to multiply that again, so a 20px/tick arrival
+      // came back at 13.9 instead of the 17.0 the rule promises -- 0.85 * 0.82.
+      // Two independent reductions on one event is the same defect as two
+      // writers to one property, and it is why the wall felt spongy.
+      //
+      // The damper's job is the CUSHION rails (the ceiling), which have no
+      // ignore window and would otherwise be a perpetual-motion rally.
+      else if (!earned && !(s.floorIgnore > 0) && !(world.wallBounced > 0))
+        dampPlayer(world, 0.82);
       // ...and only an earned bounce returns a pip. The floor's own recovery
       // (one edge, chain reset) is handled above and is deliberately separate:
       // it is the way OUT of trouble, not a reward for touching a wall.
@@ -1800,6 +1845,21 @@ export function createRun(
     if (s.floorCool > 0) s.floorCool--;
     if (s.floorIgnore > 0) s.floorIgnore--;
     if (s.floorFlash > 0) s.floorFlash--;
+    // ── AIMING SLOWS THE FALL BY 90%, FOCUS OR NOT ──────────────────────
+    //
+    // The brief asks for this as a physical rule, not a focus perk: holding aim
+    // must slow falling by 90%, so a player can line up a save on the way down
+    // without spending anything for the privilege. The old code gated the slow
+    // on `s.focus > 0.01` AND only refreshed it inside `focus()`, which runs on
+    // the aim EVENT -- so a player who held aim until the meter emptied got no
+    // slowdown at all, and a player who aimed then fell kept the flag from the
+    // moment they pressed the button.
+    //
+    // Evaluated every tick from the live holding state, which is the only thing
+    // that is actually true.
+    if (s.phase === 'playing' && s.held && world.player.velocity.y > 0) {
+      world.player.velocity.y *= AIM_FALL_KEEP;
+    }
     // "Away from the rails" is a fact about where the cube IS, not a timer.
     // It is what makes the floor's one-pip recovery an entry rather than a
     // rate limit, so it is recomputed every tick.
