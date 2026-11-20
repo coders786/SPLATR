@@ -10,7 +10,7 @@ import { createCamera } from '../src/camera.js';
 import { createShake, CAMERA, SHAKE, ANIM, meterReadout, dialGeometry, speedReadout } from '../src/motion.js';
 import { HYPER, FLOOR_IGNORE_TICKS, FALL_CAP_VY, AIM_FALL_KEEP } from '../src/run.js';
 import { jelly, cube } from '../src/art.js';
-import { dashFor, ghostsFor, DASH } from '../src/animation.js';
+import { dashFor, ghostsFor, DASH, GHOSTS } from '../src/animation.js';
 import { MAX_SPEED, WALL_KEEP, trampolineVy, trampolineRise } from '../src/physics.js';
 import { readFileSync } from 'node:fs';
 
@@ -1386,4 +1386,39 @@ test('test_upward_dash_from_the_floor_always_launches', () => {
     log('upward dash', `fast fall ${fastFall.toFixed(0)}px — the solver bug is FIXED`);
   else
     log('upward dash', `fast fall ${fastFall.toFixed(0)}px — still broken (known, pre-existing)`);
+});
+
+// 27 ───────────────────────────────────────────────────────────────────────
+test('test_ghosts_are_spaced_by_actual_travel', () => {
+  // Part 2's ghost requirement: "ghosts spaced per half-cube of actual travel".
+  //
+  // They used to be placed at fixed body-unit offsets, so a 12px/tick dash and
+  // a 42px/tick dash left the identical pattern -- a slow dash looked fast and
+  // a fast one looked like it had barely moved.
+  const d = { ghost: 1, t: 0.4, phase: 'active', lead: { x: 1, y: 0 } };
+  const at = (travel) => ghostsFor(d, travel).map((g) => Math.abs(g.x));
+  const slow = at(1.2);
+  const fast = at(6);
+  // One gap should be about one half-cube, so the ghost nearest the body sits
+  // about half a cube back and the furthest about one and a half.
+  assert.ok(
+    fast[2] > slow[2] * 1.5,
+    `a fast dash must leave a longer trail: slow ${slow[2].toFixed(1)} vs fast ${fast[2].toFixed(1)}`,
+  );
+  // Strictly increasing: an after-image may never be in front of a newer one.
+  for (const trail of [slow, fast])
+    for (let i = 1; i < trail.length; i++)
+      assert.ok(trail[i] > trail[i - 1], 'ghosts must be ordered oldest-furthest');
+  // And a dash that has not moved must not stack ghosts on top of each other.
+  const still = at(0);
+  assert.ok(
+    still[2] - still[0] > 0.05,
+    'a stationary dash still needs separated echoes, not one stacked blob',
+  );
+  // Every ghost must be a square under an axis-aligned scale -- no rotation.
+  for (const g of ghostsFor(d, 4)) {
+    assert.ok(g.scale > 0 && g.scale <= 1.001, 'a ghost may only shrink, never mirror');
+    assert.equal(g.x * d.lead.y - g.y * d.lead.x, 0, 'a ghost must sit on the axis of travel');
+  }
+  log('ghosts', `slow ${slow[2].toFixed(1)} · fast ${fast[2].toFixed(1)} half-cubes back`);
 });

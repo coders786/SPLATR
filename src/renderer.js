@@ -743,6 +743,9 @@ export function createRenderer(canvas) {
   // The dash tick a burst last fired on, so both bursts fire ONCE per dash
   // instead of on every tick their phase happens to be current.
   let dashBurstAt = -1;
+  // How far the current dash has carried the body, in body half-widths. Reset
+  // whenever `slashAge` goes backwards, which is what a new slash looks like.
+  let dashTravel = { age: null, x: 0, y: 0, along: 0 };
   let viewListener = null;
   /** @param {(w:number,h:number)=>void} fn */
   function onViewport(fn) {
@@ -1417,6 +1420,26 @@ export function createRenderer(canvas) {
     // It is driven from `s.slashAge`, the blade's own counter, so the
     // animation can never disagree with the cut it is drawing.
     const dash = dashFor(s.slashAge, world.player.velocity.x, world.player.velocity.y);
+    // ── HOW FAR THIS DASH HAS ACTUALLY CARRIED THE BODY ───────────────────
+    //
+    // The after-images are echoes of real positions, so they need a real
+    // distance rather than a fixed decoration offset. `travel` accumulates the
+    // body's displacement along the dash axis over the life of the dash, in
+    // body half-widths, and resets the moment a new dash starts. Integration
+    // happens on the tick clock, not the frame clock, so a slow frame does not
+    // shorten the trail.
+    if (dash && dash.phase !== 'windup') {
+      // A new slash (age 0 or 1) starts a new measurement. The origin is the
+      // body's position at that point, and the trail is the straight-line
+      // distance from it -- the dash is a straight launch, so that is the
+      // distance that matters, and it cannot drift from accumulated rounding.
+      if (dashTravel.age === null || s.slashAge < dashTravel.age)
+        dashTravel = { age: 0, x: p.x, y: p.y, along: 0 };
+      dashTravel.age = s.slashAge;
+      dashTravel.along = Math.hypot(p.x - dashTravel.x, p.y - dashTravel.y) / (R * 2);
+    } else if (!dash) {
+      dashTravel = { age: null, x: 0, y: 0, along: 0 };
+    }
     // The cube is the object every camera rule is written around, so the draw
     // trace records it alongside the hostiles. Without it a test cannot tell a
     // pinned cube from a cube that merely happens to be near the middle.
@@ -2672,7 +2695,7 @@ export function createRenderer(canvas) {
       // Squares stay squares: the ghost is emitted under an axis-aligned scale
       // only, exactly like the body it echoes.
       if (dash) {
-        for (const g of ghostsFor(dash)) {
+        for (const g of ghostsFor(dash, dashTravel.along)) {
           c.save();
           c.translate(g.x * R, g.y * R);
           c.scale(g.scale, g.scale);

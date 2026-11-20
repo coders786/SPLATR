@@ -763,9 +763,32 @@ export const GHOSTS = Object.freeze({
    */
   spread: 1.05,
   fade: 0.4,
+  /**
+   * ── AFTER-IMAGES ARE ECHOES OF POSITIONS, NOT DECORATION ─────────────────
+   *
+   * A ghost marks where the body WAS. So the spacing between them is set by how
+   * far the body actually travelled, not by a constant: one ghost per half-cube
+   * of travel, which is the interval at which the eye stops reading overlap and
+   * starts reading separate echoes.
+   *
+   * The old code spaced them in fixed body units off `lead`, so a 12px/tick
+   * dash and a 42px/tick dash left exactly the same pattern -- a slow dash
+   * looked like it had been moving fast, and a fast one looked like it had not
+   * moved at all. `travel` below is what fixes that.
+   */
+  spacing: 0.5,
+  /** Never fewer than this between images, or a slow dash stacks them. */
+  minGap: 0.85,
 });
 
-export function ghostsFor(dash) {
+/**
+ * @param dash   the object from `dashFor`
+ * @param travel how far the body has moved along its axis DURING THIS DASH, in
+ *               body half-widths. The renderer accumulates it from the body's
+ *               own displacement; omitting it falls back to the old fixed
+ *               spacing so nothing that does not have the number breaks.
+ */
+export function ghostsFor(dash, travel = null) {
   if (!dash || !(dash.ghost > 0.02) || dash.phase === 'windup') return [];
   const out = [];
   for (let i = 0; i < GHOSTS.count; i++) {
@@ -780,7 +803,15 @@ export function ghostsFor(dash) {
     // was drawn inside the 1.48-long stretched body and read as three vertical
     // stripes across the cube instead of as after-images behind it. Measured:
     // ghosts at -1.2..-2.6px against a body half-width of 34px.
-    const back = 1 + u * GHOSTS.spread * dash.ghost * (1 + dash.t);
+    // One echo per half-cube of actual travel. `travel` is clamped so a dash
+    // that has not moved yet still shows nothing behind it, and each ghost is
+    // placed at its own multiple of the interval -- so they spread out as the
+    // cube accelerates and bunch up as it arrives.
+    const step =
+      travel === null
+        ? GHOSTS.spread * dash.ghost * (1 + dash.t)
+        : Math.max(GHOSTS.minGap, travel * GHOSTS.spacing * 2);
+    const back = 1 + u * step;
     // `lead` is a SIGN PAIR, so on a diagonal `(-1,-1)` it is sqrt(2) long. Using
     // it raw put the diagonal ghosts 1.41x further out than the cardinal ones
     // and they detached from the body into free-floating plates. Normalising it
