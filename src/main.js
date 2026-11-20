@@ -117,8 +117,16 @@ function record() {
   setText(
     'cause',
     s.cause === 'Retired'
-      ? s.shots
-        ? 'You banked this run.'
+      ? // ── QUITTING IS NOT AN ACHIEVEMENT ────────────────────────────────
+        //
+        // "You banked this run" was written for a different game, one where
+        // stopping deliberately did something for you. Here, quitting early
+        // from pause is just stopping, and congratulating the player for it
+        // reads as if they had beaten something. An early exit gets the plain
+        // fact; the score is already printed above this line and does not need
+        // a euphemism beside it.
+        s.shots
+        ? 'Run ended early.'
         : 'No stroke taken.'
       : s.cause === 'Floor'
         ? 'The floor took your speed.'
@@ -185,9 +193,22 @@ function record() {
   if (print) {
     drawStrokePrint($('stroke-map'), print);
     setText('print-points', `+${print.points.toLocaleString('en-US')}`);
+    // ── THE CARD MUST COUNT WHAT IT DRAWS ─────────────────────────────────
+    //
+    // The label read `print.kills` while `drawStrokePrint` draws
+    // `print.marks`. Those are different numbers, and the picture is the one
+    // the player is looking at: the report caught the card showing ONE shape
+    // beside the words "3 SHAPES".
+    //
+    // A stroke can mark a shape without killing it (a plate cracked off a
+    // Crown is a mark, not a kill), so kills is legitimately the smaller
+    // number -- and `marks` is capped at 8 by the recorder, so the drawing has
+    // an upper bound the label did not. Counting the marks makes the words
+    // describe the picture exactly, which is the only thing this line has to do.
+    const drawn = print.marks?.length ?? 0;
     setText(
       'print-type',
-      `${print.released ? 'Throughcut' : 'Slash'} · ${print.kills} ${print.kills === 1 ? 'shape' : 'shapes'}`,
+      `${print.released ? 'Throughcut' : 'Slash'} · ${drawn} ${drawn === 1 ? 'shape' : 'shapes'}`,
     );
     setText('print-shot', `No. ${two(print.shot)}`);
   }
@@ -353,12 +374,26 @@ function syncSettings() {
     b.setAttribute('aria-label', audio.enabled ? 'Mute audio' : 'Enable audio');
     b.setAttribute('aria-pressed', audio.enabled);
   }
-  for (const b of document.querySelectorAll('.full')) b.disabled = !document.fullscreenEnabled;
-  $('full-opt').querySelector('b').textContent = document.fullscreenEnabled
-    ? document.fullscreenElement
-      ? 'Exit'
-      : 'Enter'
-    : 'Unavailable';
+  // ── IF FULLSCREEN IS UNAVAILABLE, IT IS NOT LISTED ────────────────────────
+  //
+  // This used to leave the row on screen reading "Fullscreen Unavailable", which
+  // is an option the player cannot use, printed in the same list as the options
+  // they can. The report is exact: it "sits in the options list even though you
+  // can't click it". A disabled control that cannot ever be enabled is not a
+  // control, it is clutter -- and on the browsers where this happens (iOS
+  // Safari, most in-app webviews) it is clutter in every session.
+  //
+  // `hidden` rather than `display:none` so the row is also out of the
+  // accessibility tree; a screen reader announcing an unusable option is the
+  // same bug with a different reader.
+  const fullOk = Boolean(document.fullscreenEnabled);
+  for (const b of document.querySelectorAll('.full')) {
+    b.hidden = !fullOk;
+    b.disabled = !fullOk;
+  }
+  $('full-opt').hidden = !fullOk;
+  if (fullOk)
+    $('full-opt').querySelector('b').textContent = document.fullscreenElement ? 'Exit' : 'Enter';
 }
 $('pace-opt').onclick = () => {
   const next = SPEEDS[(speedIndexOf(speed().id) + 1) % SPEEDS.length];
@@ -847,7 +882,19 @@ function frame(now) {
       run.tick(); // owns the panic ray, grace and every other tick rule
       audio.focus(run.state.phase === 'playing' && run.state.held && run.world.slow);
       audio.flush();
-      renderer.tick(run, opts.motion);
+      // ── "SCREEN SHAKE: OFF" MUST MEAN OFF ────────────────────────────────
+      //
+      // `motion` is the flag that gates EVERY moving flourish in the renderer:
+      // the speed field's streak lines, the hyper aura, the streak trail, the
+      // impact rings, the whole lot. It was wired only to `opts.motion` -- the
+      // separate Reduce Motion switch -- so turning Screen shake OFF zeroed the
+      // camera's positional shake and left every line, flare and wobble running.
+      // The report describes exactly that: "turning shake off still leaves
+      // background lines flashing and the cube shaking on the floor."
+      //
+      // Both switches now feed it, because both mean the same thing to a player
+      // with motion sensitivity: stop the movement.
+      renderer.tick(run, opts.motion && opts.shake !== 'off');
       if (receiptTicks && !--receiptTicks) $('imprint').hidden = true;
       if (noticeTicks && !--noticeTicks) $('callout').hidden = true;
       const beat = Math.floor(run.world.clock / 15);

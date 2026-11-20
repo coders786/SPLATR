@@ -1184,3 +1184,73 @@ test('test_callout_never_covers_the_speed_dial', () => {
   assert.ok(/#callout/.test(css) && /right:\s*var\(--gutter/.test(callout), 'the callout must stay in the right-hand corner');
   log('callout', `dial ${dialTop}–${dialBottom}px · callout starts ${calloutTop}px`);
 });
+
+// 23 ───────────────────────────────────────────────────────────────────────
+test('test_menus_hide_dead_options_and_describe_shake_honestly', () => {
+  // Bug 11 from the report, in three parts:
+  //   "Fullscreen: UNAVAILABLE sits in the options list even though you can't
+  //    click it."
+  //   "Turning Screen shake: OFF repeats the description for FULL right
+  //    underneath, and turning shake off still leaves background lines flashing."
+  //   "Quitting early from pause says You banked this run like you beat
+  //    something cool."
+  //
+  // All three are text/wiring bugs, which is exactly the class that a green
+  // simulation suite cannot catch on its own -- so these assertions read the
+  // real source rather than a model of it.
+  const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+
+  // ── FULLSCREEN IS HIDDEN, NOT MERELY DISABLED ───────────────────────────
+  assert.ok(
+    /full-opt'\)\.hidden\s*=\s*!fullOk/.test(main) || /full-opt.*hidden/.test(main),
+    'the fullscreen row must be hidden when the browser cannot do it',
+  );
+  assert.ok(
+    !/:\s*'Unavailable'/.test(main),
+    'the row must never render the word Unavailable -- it is hidden instead',
+  );
+
+  // ── SHAKE OFF ACTUALLY STOPS THE MOVEMENT ───────────────────────────────
+  // `motion` gates every moving flourish in the renderer. It has to be false
+  // when shake is off, or OFF only stops the camera and leaves the lines.
+  assert.ok(
+    /renderer\.tick\(\s*run,\s*opts\.motion\s*&&\s*opts\.shake\s*!==\s*'off'\s*\)/.test(main),
+    'Screen shake OFF must also disable the renderer motion layer',
+  );
+
+  // ── THE DESCRIPTION DESCRIBES ALL THREE SETTINGS ────────────────────────
+  const note = html.match(/<p id="shake-note">([\s\S]*?)<\/p>/);
+  assert.ok(note, 'the shake note must exist');
+  const text = note[1];
+  for (const word of ['Full', 'Low', 'Off'])
+    assert.ok(text.includes(`<b>${word}</b>`), `the shake note must describe ${word}`);
+  assert.ok(/no shaking|no shake|nothing moves/i.test(text), 'the note must say that OFF stops the movement');
+  // The old copy described only the full-strength behaviour, which is what made
+  // OFF read as a repeat of FULL.
+  assert.ok(
+    !/^Shake is applied to the world only, never to the HUD/.test(text.trim()),
+    'the note still carries the FULL-only description',
+  );
+
+  // ── QUITTING IS NOT A TRIUMPH ───────────────────────────────────────────
+  // Search the CODE, not the comments: the fixed line has a comment above it
+  // explaining what it used to say, and a naive grep for the old phrase would
+  // match that explanation forever.
+  const codeOnly = main
+    .split('\n')
+    .filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l))
+    .join('\n');
+  assert.ok(!/You banked this run/.test(codeOnly), 'quitting must not congratulate the player');
+
+  // ── THE CARD COUNTS WHAT IT DRAWS ───────────────────────────────────────
+  assert.ok(
+    /print\.marks\?\.length/.test(main),
+    'the BEST STROKE label must count the marks the picture actually draws',
+  );
+  assert.ok(
+    !/'print-type',\s*[\s\S]{0,120}print\.kills/.test(main),
+    'the label must not count kills while the picture draws marks',
+  );
+  log('menus', 'fullscreen hidden · shake off stops motion · note names Full/Low/Off · no "banked" copy · card counts marks');
+});
