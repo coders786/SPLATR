@@ -178,6 +178,25 @@ export function createAudio() {
       tone(138, 63, 0.19, 'triangle', 0.1);
       tone(92, 177, 0.15, 'sine', 0.048, 0.06);
     },
+    /**
+     * The floor's trampoline. A spring, not a bounce: a quick UP-sweep with a
+     * soft body behind it, so the cube being thrown back into the air sounds
+     * like something doing work rather than like a ball landing.
+     *
+     * `run.js` has emitted `floorKick` since the trampoline was built and
+     * nothing ever listened, so the most frequent event in the game -- the thing
+     * that keeps the player alive -- was silent.
+     */
+    spring(power = 1) {
+      const p = Math.min(1, Math.max(0, power));
+      // The sweep goes up in pitch: that rise is what reads as "lifted".
+      tone(150 + p * 40, 420 + p * 130, 0.11, 'sine', 0.05);
+      // A small thump under it so the kick has weight at low volume.
+      tone(96, 58, 0.075, 'triangle', 0.062);
+      // And a short bright tick at the top, which is the spring reaching its
+      // stop. Quiet: this fires many times a run.
+      tone(880 + p * 220, 660, 0.035, 'triangle', 0.019, 0.055);
+    },
     zone() {
       [440, 660].forEach((f, i) => tone(f, f * 1.1, 0.18, 'triangle', 0.045, i * 0.1));
     },

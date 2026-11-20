@@ -232,6 +232,13 @@ function event(type, d) {
     case 'dash':
       audio.launch(d.power);
       break;
+    case 'floorKick':
+      // The trampoline was silent. `run.js` has emitted this since the floor
+      // became a spring and there was no listener, so the one event that keeps
+      // the player alive made no sound at all. Volume follows the kick's own
+      // power so a full-height throw is louder than a save off a slow fall.
+      audio.spring((d.vy || 13.5) / 15);
+      break;
     case 'cut':
       audio.strike(d.impact.cue, d.chain);
       if (d.kind === 'crown') pop('Crown split', 48, 2);

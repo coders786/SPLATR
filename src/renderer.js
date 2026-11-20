@@ -308,7 +308,7 @@ function warnings(c, e, p, time) {
  *  This is a world-space layer: it is drawn inside the camera transform, so it
  *  moves correctly and costs nothing when off screen.
  */
-function walls(c, v, p) {
+function walls(c, v, p, floorFlash = 0) {
   const A = ARENA;
   if (!A) return;
   const half = PLAYER_SIZE / 2,
@@ -328,6 +328,34 @@ function walls(c, v, p) {
     const a = near(e.d);
     if (a <= 0.01) continue;
     e.draw(a);
+  }
+  // ── THE FLOOR REMEMBERS IT KICKED YOU ─────────────────────────────────
+  //
+  // The trampoline rule promises "one white flash" as the cue that the floor
+  // fired and the next half second is quiet. run.js has been counting that flash
+  // down since the rule was written -- `s.floorFlash = 8`, decremented every
+  // tick -- and NOTHING EVER DREW IT. The cue existed as a number.
+  //
+  // Drawn as a short bright pad under the cube rather than across the whole
+  // floor line: a whole line flashing reads as a screen effect, a local one
+  // reads as the floor under YOU answering.
+  if (floorFlash > 0) {
+    const f = Math.min(1, floorFlash / 8),
+      a = Math.min(1, f * 1.35),
+      w = 34 + 26 * (1 - f);
+    c.globalAlpha = a;
+    c.strokeStyle = '#fff6e8';
+    c.lineWidth = 2.5 + 3 * f;
+    c.beginPath();
+    c.moveTo(p.x - w, y1);
+    c.lineTo(p.x + w, y1);
+    c.stroke();
+    c.globalAlpha = a * 0.2;
+    c.lineWidth = 12;
+    c.beginPath();
+    c.moveTo(p.x - w - 18, y1);
+    c.lineTo(p.x + w + 18, y1);
+    c.stroke();
   }
   c.restore();
 }
@@ -1555,7 +1583,7 @@ export function createRenderer(canvas) {
         c.restore();
       }
     } else {
-      walls(c, v, p);
+      walls(c, v, p, s.floorFlash);
       if (s.net || s.caught) {
         const y = s.caught
           ? p.y + R * (Math.abs(Math.cos(p.angle)) + Math.abs(Math.sin(p.angle))) + 2

@@ -1497,3 +1497,40 @@ test('test_armored_hit_pushes_back_and_grants_half_a_second', () => {
   assert.ok(/playerCeiling/.test(branch), 'the armoured shove must respect the run ceiling');
   log('armor', `hp held · grace ${r.grace} ticks (~${Math.round((r.grace / 60) * 1000)}ms) · rebound ${r.before.toFixed(0)}→${r.vx.toFixed(1)}px/tick`);
 });
+
+// 29 ───────────────────────────────────────────────────────────────────────
+test('test_floor_kick_has_a_sound_and_a_flash', () => {
+  // Two cues the game promised and never delivered:
+  //
+  //   "one white flash" as the trampoline fires -- `run.js` set `s.floorFlash`
+  //   and decremented it every tick, and NO RENDERER EVER READ IT. The cue
+  //   existed as a number.
+  //
+  //   and the kick itself was silent: `run.js` emits `floorKick` and `main.js`
+  //   had no case for it, so the most frequent event in the game -- the thing
+  //   that keeps the player alive -- made no sound.
+  const runSrc = readFileSync(new URL('../src/run.js', import.meta.url), 'utf8');
+  const renderSrc = readFileSync(new URL('../src/renderer.js', import.meta.url), 'utf8');
+  const mainSrc = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+  const audioSrc = readFileSync(new URL('../src/audio.js', import.meta.url), 'utf8');
+
+  // The producer still exists...
+  assert.ok(/s\.floorFlash\s*=\s*\d+/.test(runSrc), 'the floor must still set its flash');
+  // ...and now something draws it. Assert the value reaches the drawing code,
+  // not merely that the name appears somewhere.
+  assert.ok(
+    /walls\(c, v, p, s\.floorFlash\)/.test(renderSrc),
+    'the floor flash must be passed into the wall drawing',
+  );
+  assert.ok(
+    /floorFlash > 0/.test(renderSrc) && /#fff6e8/.test(renderSrc),
+    'the flash must actually draw something white',
+  );
+  // The sound: an event with a handler, and a handler that plays a voice that
+  // exists on the audio object.
+  assert.ok(/emit\('floorKick'/.test(runSrc), 'the kick must still be emitted');
+  assert.ok(/case 'floorKick':/.test(mainSrc), 'main must handle the floorKick event');
+  assert.ok(/audio\.spring\(/.test(mainSrc), 'the handler must play the spring voice');
+  assert.ok(/\bspring\(/.test(audioSrc), 'the audio object must actually define spring()');
+  log('floor cues', 'flash drawn · spring voice wired');
+});
