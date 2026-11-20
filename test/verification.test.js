@@ -6,9 +6,9 @@ import { createRun, MAX_EDGE, EMPTY_WATCHDOG_TICKS, WATCHDOG_REACH, pushMove, se
 import { ARENA, bandAt } from '../src/levels.js';
 import { sceneFor } from '../src/storyboard.js';
 import { createCamera } from '../src/camera.js';
-import { createShake, CAMERA, SHAKE, meterReadout, dialGeometry, speedReadout } from '../src/motion.js';
+import { createShake, CAMERA, SHAKE, ANIM, meterReadout, dialGeometry, speedReadout } from '../src/motion.js';
 import { HYPER, FLOOR_IGNORE_TICKS, FALL_CAP_VY, AIM_FALL_KEEP } from '../src/run.js';
-import { jelly } from '../src/art.js';
+import { jelly, cube } from '../src/art.js';
 import { dashFor, ghostsFor, DASH } from '../src/animation.js';
 import { MAX_SPEED, WALL_KEEP, trampolineVy, trampolineRise } from '../src/physics.js';
 import { readFileSync } from 'node:fs';
@@ -1052,4 +1052,135 @@ test('test_cube_stays_square_and_ghosts_need_a_dash', () => {
   assert.equal(active.sx >= 0.8 && active.sx <= 1.25, true, `active dash sx ${active.sx} is outside the budget`);
   assert.equal(active.sy >= 0.8 && active.sy <= 1.25, true, `active dash sy ${active.sy} is outside the budget`);
   log('cube shape', `worst corner error ${worstCorner.toExponential(1)}deg · ${ghostsFor(active).length} ghosts while dashing · 0 at rest`);
+});
+
+// 20 ───────────────────────────────────────────────────────────────────────
+test('test_scarf_is_one_ribbon_not_two_spikes', () => {
+  // "Green spikes shoot straight out of both its head and its butt."
+  //
+  // The scarf was two polygons: one sweeping up-and-back, one down-and-back.
+  // Two separate strips leaving opposite corners of the body read as needles,
+  // not cloth. A scarf is ONE piece attached at one point and trailing away
+  // from travel.
+  const rec = [];
+  let m = [1, 0, 0, 1, 0, 0];
+  const stack = [];
+  const mul = (a, b) => [
+    a[0] * b[0] + a[2] * b[1], a[1] * b[0] + a[3] * b[1],
+    a[0] * b[2] + a[2] * b[3], a[1] * b[2] + a[3] * b[3],
+    a[0] * b[4] + a[2] * b[5] + a[4], a[1] * b[4] + a[3] * b[5] + a[5],
+  ];
+  const ap = (x, y) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+  const ctx = {
+    save() { stack.push(m.slice()); },
+    restore() { m = stack.pop() || [1, 0, 0, 1, 0, 0]; },
+    translate(x, y) { m = mul(m, [1, 0, 0, 1, x, y]); },
+    rotate() {},
+    scale(x, y) { m = mul(m, [x, 0, 0, y, 0, 0]); },
+    set fillStyle(v) { this._f = v; },
+    set strokeStyle(v) {}, set lineWidth(v) {}, set lineJoin(v) {},
+    beginPath() { this._p = []; },
+    moveTo(x, y) { this._p = [ap(x, y)]; },
+    lineTo(x, y) { this._p.push(ap(x, y)); },
+    closePath() {},
+    fill() { rec.push({ fill: this._f, pts: this._p.map((p) => p.slice()) }); },
+    stroke() {},
+  };
+  cube(ctx, 0, 0, 23, 0, 0, 1, { eyes: 1, lift: 0 });
+  // The scarf is drawn in the character's own scarf colour. There must be
+  // exactly ONE large scarf polygon: the outline plus its inner fold stripe are
+  // one piece of cloth, but the FILL count for the pale highlight is what
+  // distinguishes a ribbon from two separate strips.
+  const scarf = rec.filter((r) => r.fill === '#aabe39');
+  assert.equal(scarf.length, 1, `the scarf must be one piece of cloth, found ${scarf.length}`);
+  const sPts = scarf[0].pts;
+  const xs = sPts.map((p) => p[0]), ys = sPts.map((p) => p[1]);
+  const w = Math.max(...xs) - Math.min(...xs),
+    h = Math.max(...ys) - Math.min(...ys);
+  // A ribbon is long and thin. The old pair of spikes was ~40 wide and ~30
+  // tall, because the two strips pointed in opposite directions.
+  assert.ok(
+    w / h > 2,
+    `the scarf must trail, not spike: ${w.toFixed(1)}x${h.toFixed(1)} (ratio ${(w / h).toFixed(2)})`,
+  );
+  // And it must be ATTACHED: its nearest corner has to touch the body, not float
+  // beside it. The body is 46px across, so the attachment must be within it.
+  const nearest = Math.min(...sPts.map((p) => Math.hypot(p[0], p[1])));
+  assert.ok(nearest < 30, `the scarf is detached from the body (nearest ${nearest.toFixed(1)}px)`);
+  log('scarf', `one ribbon ${w.toFixed(0)}x${h.toFixed(0)}px, attached at ${nearest.toFixed(0)}px`);
+});
+
+// 21 ───────────────────────────────────────────────────────────────────────
+test('test_stray_marks_clear_within_04s', () => {
+  // "Even when you are NOT aiming, a giant white dashed line stretches across
+  //  half the screen... It looks like a broken line left behind by mistake."
+  //
+  // The brief asks for finished dash trails and contact marks to fade in under
+  // 0.4s. The contact ink was the longest-lived mark in the game at 34 ticks
+  // (567ms), which is nearly a second of a stroke sitting where the player is
+  // no longer looking.
+  const TICK_MS = 1000 / 60;
+  for (const [name, row] of Object.entries({ imprint: ANIM.imprint, shard: ANIM.shard })) {
+    assert.ok(
+      row.life * TICK_MS < 400,
+      `${name} lives ${(row.life * TICK_MS).toFixed(0)}ms, over the 400ms ceiling`,
+    );
+  }
+  // The marks that LAND ON THE WORLD and then stop being relevant. A state
+  // duration (how long `drive` is available, how long the blade stays out) is
+  // not a mark and is deliberately allowed to outlive this bound -- sweeping
+  // every row caught `drive` at exactly 1000ms and would have failed a value
+  // that is doing its job.
+  const MARKS = ['imprint', 'shard', 'spark', 'flash', 'pop', 'ring', 'boom'];
+  for (const name of MARKS) {
+    const row = ANIM[name];
+    if (!row || typeof row.life !== 'number') continue;
+    assert.ok(
+      row.life * TICK_MS < 1000,
+      `${name} lives ${(row.life * TICK_MS).toFixed(0)}ms -- that is a stuck line`,
+    );
+  }
+  log('stray marks', `imprint ${(ANIM.imprint.life * TICK_MS).toFixed(0)}ms · shard ${(ANIM.shard.life * TICK_MS).toFixed(0)}ms`);
+});
+
+// 22 ───────────────────────────────────────────────────────────────────────
+test('test_callout_never_covers_the_speed_dial', () => {
+  // "Every warning (HULL HIT, CROWN INCOMING, CROWN SPLIT) prints directly on
+  //  top of the speed numbers in the top-right corner so both become
+  //  unreadable."
+  //
+  // The pop-up was placed with `top: calc(100% + 6px)` while being a child of
+  // `#hud`, which is `inset: 0` -- so its parent was the viewport, not the
+  // corner. The offset was unrelated to the corner's own height and it landed
+  // on the dial.
+  //
+  // This derives both boxes from the real stylesheet rather than trusting a
+  // hard-coded number, so a future change to either one fails here.
+  const css = readFileSync(new URL('../src/style.css', import.meta.url), 'utf8');
+  const ruleFor = (sel) => {
+    const i = css.indexOf(sel + ' {');
+    assert.ok(i >= 0, `no rule for ${sel}`);
+    const j = css.indexOf('}', i);
+    return css.slice(i, j);
+  };
+  const px = (txt, what) => {
+    const m = txt.match(new RegExp(what + '\\s*:\\s*calc\\(var\\(--top\\)\\s*\\+\\s*(\\d+)px\\)'));
+    assert.ok(m, `could not read ${what} from the rule`);
+    return Number(m[1]);
+  };
+  const speedo = ruleFor('#speedo');
+  const dialTop = px(speedo, 'top');
+  const h = speedo.match(/height\s*:\s*(\d+)px/);
+  assert.ok(h, 'the dial needs an explicit height for this to be checkable');
+  const dialBottom = dialTop + Number(h[1]);
+  const callout = ruleFor('#callout');
+  const calloutTop = px(callout, 'top');
+  assert.ok(
+    calloutTop >= dialBottom,
+    `the callout starts at +${calloutTop}px but the dial ends at +${dialBottom}px -- it covers the speed`,
+  );
+  // And it must be anchored to the same edge it used to be, or it drifts to the
+  // far side of the screen.
+  assert.ok(/#callout/.test(css) && /right:\s*var\(--gutter/.test(callout), 'the callout must stay in the right-hand corner');
+  log('callout', `dial ${dialTop}–${dialBottom}px · callout starts ${calloutTop}px`);
 });

@@ -133,37 +133,66 @@ export function cube(c, x, y, r, angle = 0, flutter = 0, face = 1, pose = null) 
   // Pupil offset in cube space, already normalised to about -1..1.
   const look = pose?.look ?? null;
   // The scarf's own wave, plus the lift pulling the tips further back and up.
+  // ── ONE RIBBON, NOT TWO SPIKES ───────────────────────────────────────────
+  //
+  // There used to be TWO scarf polygons: one sweeping up and back from the
+  // upper-left corner, one sweeping down and back from the lower-left. Between
+  // them they read as green needles firing out of the head and the butt, which
+  // is exactly what the report describes -- "green spikes shoot straight out of
+  // both its head and its butt".
+  //
+  // A scarf is one piece of cloth attached at ONE point (the neck) and trailing
+  // away from travel. So this is a single tapered ribbon: it starts wide at the
+  // neck, narrows as it goes, and waves along its length. The wave is applied
+  // to the CENTRELINE offset, and both edges get the same offset, so the ribbon
+  // bends as a cloth rather than fraying into points.
+  //
+  // `wave` is still driven by flutter and lift, so it flows faster at speed and
+  // lifts when the cube is dashing -- the motion is preserved, only the shape is
+  // honest.
   const wave = Math.sin(flutter * 0.09) * 0.13 + lift * 0.2;
-  poly(
-    c,
-    L,
-    [
-      [-0.79, -0.63],
-      [-1.18, -0.83],
-      [-1.66, -0.71 + wave],
-      [-2.18, -0.93 + wave],
-      [-1.72, -0.39 + wave],
-      [-1.33, -0.33],
-      [-0.82, -0.42],
-    ],
-    K,
-    0.07,
-  F);
-  poly(
-    c,
-    '#aabe39',
-    [
-      [-0.86, -0.5],
-      [-1.26, -0.29],
-      [-1.68, 0.04 - wave],
-      [-1.97, 0.1 - wave],
-      [-1.75, 0.3 - wave],
-      [-1.32, 0.17],
-      [-0.79, -0.2],
-    ],
-    K,
-    0.06,
-  F);
+  {
+    const SEG = 5,
+      LEN = 1.75,
+      WIDTH = 0.34;
+    // The ribbon leaves the neck (upper-left of the body) and trails LEFT and
+    // slightly DOWN, i.e. opposite the usual direction of travel. Each segment
+    // is a fraction further out and its centreline is displaced by a sine that
+    // grows along the length, which is how cloth behaves: the far end swings
+    // most.
+    const centre = [],
+      top = [],
+      bot = [];
+    for (let i = 0; i <= SEG; i++) {
+      const u = i / SEG,
+        x = -0.86 - u * LEN,
+        // The tail swings most; the attachment barely moves.
+        y = -0.52 + Math.sin(u * 3.4 + flutter * 0.09) * 0.2 * u + wave * u * 0.8,
+        // Taper: the cloth narrows to a point at the free end.
+        w = WIDTH * (1 - u * 0.82);
+      centre.push([x, y]);
+      top.push([x, y - w]);
+      bot.push([x, y + w]);
+    }
+    // One closed outline: out along the top edge, back along the bottom.
+    poly(c, L, [...top, ...bot.slice().reverse()], K, 0.07, F);
+    // A lighter inner stripe, inset so the ribbon reads as cloth with a fold
+    // rather than a flat slab.
+    const inner = [];
+    for (let i = 0; i <= SEG; i++) {
+      const u = i / SEG,
+        [x, y] = centre[i],
+        w = WIDTH * (1 - u * 0.82) * 0.42;
+      inner.push([x + 0.06, y - w]);
+    }
+    for (let i = SEG; i >= 0; i--) {
+      const u = i / SEG,
+        [x, y] = centre[i],
+        w = WIDTH * (1 - u * 0.82) * 0.42;
+      inner.push([x + 0.06, y + w]);
+    }
+    poly(c, '#aabe39', inner, K, 0.02, F);
+  }
   poly(
     c,
     W,

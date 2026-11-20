@@ -828,9 +828,24 @@ dd {
   font: inherit;
 }
 #callout {
+  /* ── BELOW THE DIAL, NOT ON IT ───────────────────────────────────────────
+     This was `top: calc(100% + 6px); right: 0`. `#callout` is a child of
+     `#hud`, and `#hud` is `inset: 0` -- the WHOLE SCREEN -- so `100%` was the
+     full height of the viewport and the pop-up landed somewhere unrelated to
+     the corner it belongs to. In practice it was found sitting directly on top
+     of the speed numbers: HULL HIT, CROWN SPLIT and CROWN INCOMING all printed
+     over the dial and made both unreadable.
+
+     The brief says top-centre or below the speed dial. Below the dial is the
+     right answer here, because the callout also feeds the built-in
+     screen-reader status line and lives in the same corner as the readouts it
+     describes.
+
+     `#speedo` starts at `var(--top) + 81px` and is 78px tall, so the dial's
+     bottom edge is `var(--top) + 159px`. 6px of air puts this at +165. */
   position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
+  top: calc(var(--top) + 165px);
+  right: var(--gutter, 12px);
   padding: 3px 7px;
   border-right: 2px solid var(--hot);
   background: #211626e6;

@@ -646,10 +646,21 @@ const EASE = {
  *  Keep these in ONE place. If an effect needs a new timing, add a row here
  *  rather than a divisor in the renderer. */
 export const ANIM = Object.freeze({
-  // Contact ink stays long enough to read as a mark on the world, not a flash.
-  imprint: { life: 34, hold: 0.55, ease: 'smooth' },
+  // ── CONTACT INK: 0.4 SECONDS, HARD CEILING ─────────────────────────────
+  //
+  // This was 34 ticks -- 567 ms -- and it is the single longest-lived mark the
+  // game draws. The report is blunt about the result: long white/dark strokes
+  // were being found stretched across the screen at moments when the player was
+  // not aiming and had not dashed, and they read as a broken line left behind
+  // by mistake rather than as a mark that had been made.
+  //
+  // 20 ticks is 333 ms: long enough that the eye registers a mark ON the world
+  // and ties it to the cut that made it, short enough that nothing is still on
+  // screen by the time the cube has moved somewhere else. The brief's number is
+  // "under half a second"; this is comfortably under a third.
+  imprint: { life: 20, hold: 0.4, ease: 'smooth' },
   // A cut shard is debris: it leaves quickly and must not linger to be read.
-  shard: { life: 32, hold: 0.1, ease: 'in' },
+  shard: { life: 20, hold: 0.1, ease: 'in' },
   // A spark is a short punctuation mark, not an object.
   spark: { life: 11, hold: 0, ease: 'in' },
   // The hit flash on an enemy: two frames of white, then gone. Any longer and
