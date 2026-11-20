@@ -713,3 +713,72 @@ export function alive(name, age) {
 export function appear(name, age) {
   return 0.55 + 0.45 * curve(name, age);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE METER READOUTS
+   ══════════════════════════════════════════════════════════════════════════
+
+   One function that turns run state into every number the HUD displays.
+   Extracted for one reason: a meter is a claim about the game, and a claim
+   that lives inside a DOM update callback can only be checked by looking at
+   it. Here it can be asserted.
+
+   What the HUD was missing:
+
+     edge   -- the cut charges. Three, spent on every slash, re-earned only by
+               staying airborne. There was NO readout. A player whose cuts
+               stopped working had nothing on screen explaining why.
+     focus  -- the bullet-time reserve. It drains while held and regenerates
+               while not, and it is the entire risk/reward of aiming mid-air.
+               Also had no readout.
+
+   Those two are the resources the game is actually built on, and both were
+   invisible. That is the "new meters" part of this rework; the rest is
+   making the existing ones agree with each other.
+*/
+export function meterReadout(s) {
+  const hp = Math.max(0, s.hp | 0),
+    edgeMax = s.edgeMax || 3,
+    edge = clamp(s.edge ?? 0, 0, edgeMax),
+    // The recharge timer, as a share of the window it has to fill. `sig` is
+    // the window the simulation actually uses, so the HUD cannot drift from
+    // it: 76 dt-units, the same constant run.js banks against.
+    regenWindow = s.regenWindow || 76,
+    regen = edge >= edgeMax ? 0 : clamp((s.recharge || 0) / regenWindow, 0, 1),
+    focus = clamp(s.focus ?? 1, 0, 1);
+  return {
+    hp,
+    edge,
+    edgeMax,
+    edgeEmpty: edge <= 0,
+    // The timer only means something when a pip is actually owed.
+    regen: edge >= edgeMax ? 0 : regen,
+    regenDue: edge < edgeMax && regen > 0.02,
+    focus,
+    focusPct: Math.round(100 * focus),
+    // Local, not global: these two describe this meter, and a shared
+    // "isLow" flag would be the kind of state that ends up meaning two things.
+    focusLive: !!s.held && !s.depleted && focus > 0.01,
+    focusEmpty: !!s.depleted || focus <= 0.01,
+  };
+}
+
+/** The dial's needle angle, in degrees, and the arc's fill share.
+ *
+ *  Two encodings of one number, and they must never disagree. Both are
+ *  derived here so a test can assert the relationship instead of trusting
+ *  that two DOM writes stayed in step. */
+export function dialGeometry(readout) {
+  // The arc is capped at the top of the scale; the needle is not. HYPER is an
+  // event, and the pointer leaving its track is the one honest way to draw
+  // "past the end" without the arc spinning off the dial.
+  const arc = clamp(readout.t, 0, 1),
+    needle = clamp(readout.t, 0, 1.15);
+  return {
+    arcPct: arc * 100,
+    // -90deg is the needle at rest (pointing left along the dial's base); a
+    // full 0..1 sweep is 180deg.
+    needleDeg: -90 + needle * 180,
+    over: readout.t > 1,
+  };
+}

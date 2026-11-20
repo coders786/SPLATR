@@ -4,9 +4,10 @@ import { createRun, MAX_EDGE, EMPTY_WATCHDOG_TICKS } from '../src/run.js';
 import { ARENA, bandAt } from '../src/levels.js';
 import { sceneFor } from '../src/storyboard.js';
 import { createCamera } from '../src/camera.js';
-import { createShake, CAMERA, SHAKE } from '../src/motion.js';
+import { createShake, CAMERA, SHAKE, meterReadout, dialGeometry, speedReadout } from '../src/motion.js';
 import { HYPER } from '../src/run.js';
 import { MAX_SPEED } from '../src/physics.js';
+import { readFileSync } from 'node:fs';
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  THE FIVE CHECKS THE REVIEW ASKED FOR
@@ -387,4 +388,172 @@ test('test_minimap_pinned_and_fades_in_120ms', () => {
   while (o < 0.92 - 1e-9 && back < 100) (o = fade(o, 0.92)), back++;
   assert.ok(Math.abs(o - 0.92) < 1e-9 && back <= 8, `fade-in took ${back} ticks`);
   log('minimap fade', `0.92 -> 0.08 in ${n} ticks (${ms.toFixed(0)}ms at 60Hz), back in ${back}`);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  THE METER SYSTEM
+//
+//  A meter is a claim about the game state. These assert the claims.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// 10 ───────────────────────────────────────────────────────────────────────
+test('test_meter_edge_and_focus_readouts', () => {
+  // Edge and Focus are the two resources the game is built on, and neither had
+  // ANY readout before this round. Edge is spent on every slash; Focus is the
+  // bullet-time reserve. A player whose cuts stopped working had nothing on
+  // screen explaining why.
+  const full = meterReadout({ hp: 3, edge: 3, edgeMax: 3, recharge: 40, focus: 1 });
+  assert.equal(full.edge, 3);
+  assert.equal(full.edgeEmpty, false);
+  assert.equal(full.regen, 0, 'a full meter owes nothing -- the timer must not run');
+
+  const owed = meterReadout({ edge: 2, edgeMax: 3, recharge: 38, focus: 0.5 });
+  assert.equal(owed.edgeEmpty, false);
+  assert.equal(owed.regenDue, true);
+  assert.ok(Math.abs(owed.regen - 0.5) < 1e-9, `half the 76-tick window: ${owed.regen}`);
+  assert.equal(owed.focusPct, 50);
+
+  const spent = meterReadout({ edge: 0, edgeMax: 3, recharge: 0, focus: 0, depleted: true });
+  assert.equal(spent.edgeEmpty, true);
+  assert.equal(spent.focusEmpty, true);
+  assert.equal(spent.focusPct, 0);
+  assert.equal(spent.regen, 0);
+
+  // Clamping: a meter may never draw past its own track or before its start.
+  const over = meterReadout({ edge: 9, edgeMax: 3, focus: 4, hp: 9 });
+  assert.equal(over.edge, 3);
+  assert.equal(over.focus, 1);
+  assert.equal(over.hp, 9, 'hp is not clamped -- 4 hull is a legitimate state');
+  const under = meterReadout({ edge: -2, focus: -1, hp: -1 });
+  assert.equal(under.edge, 0);
+  assert.equal(under.focus, 0);
+  assert.equal(under.hp, 0);
+  // The default edgeMax must match the game's own MAX_EDGE, not a guess.
+  assert.equal(meterReadout({ edge: 3 }).edgeMax, MAX_EDGE, 'edgeMax default must be MAX_EDGE');
+  log('meters', `edge ${owed.edge}/3 regen ${(100 * owed.regen).toFixed(0)}% · focus ${owed.focusPct}% · full meter owes 0`);
+});
+
+// 11 ───────────────────────────────────────────────────────────────────────
+test('test_dial_needle_and_arc_agree', () => {
+  // The arc and the needle are two encodings of ONE number. They used to be
+  // computed separately in the DOM callback, which is how the needle ended up
+  // rotating a different element from the one CSS rotated -- the screenshot
+  // showed two white bars over the gauge and no needle at the hub.
+  for (let i = 0; i <= 100; i++) {
+    const t = i / 100,
+      g = dialGeometry({ t });
+    // Needle at rest points left (-90deg); full scale is +90deg.
+    assert.ok(Math.abs(g.needleDeg - (-90 + t * 180)) < 1e-9, `needle at t=${t}`);
+    assert.ok(Math.abs(g.arcPct - t * 100) < 1e-9, `arc at t=${t}`);
+    assert.equal(g.over, false);
+  }
+  // The needle may leave the track for the top 15%; the ARC may not, because a
+  // bar that leaves its own track is a drawing error rather than a reading.
+  const past = dialGeometry({ t: 1.4 });
+  assert.equal(past.arcPct, 100, 'the arc must stop at the end of the scale');
+  assert.ok(past.needleDeg > 90, 'the needle must be allowed past the end');
+  assert.ok(past.needleDeg <= 117, `the needle must still be bounded: ${past.needleDeg}`);
+  assert.equal(past.over, true, 'past the end must be reportable');
+
+  // And the real readout at the game's own speeds: ordinary top speed must put
+  // the needle past two-thirds, or the gauge does not move during normal play.
+  const cruise = dialGeometry(speedReadout(MAX_SPEED, MAX_SPEED));
+  assert.ok(cruise.arcPct > 66, `full ordinary speed must be past two-thirds: ${cruise.arcPct.toFixed(1)}`);
+  assert.ok(cruise.arcPct <= 71, `...and below the hyper region: ${cruise.arcPct.toFixed(1)}`);
+  const rest = dialGeometry(speedReadout(0, MAX_SPEED));
+  assert.ok(Math.abs(rest.arcPct) < 1e-9 && Math.abs(rest.needleDeg + 90) < 1e-9);
+  log('dial geometry', `rest ${rest.needleDeg}deg .. top speed ${cruise.arcPct.toFixed(0)}% .. hyper over=${past.over}`);
+});
+
+// 12 ───────────────────────────────────────────────────────────────────────
+test('test_meter_dom_css_agreement', () => {
+  // ── THIS TEST EXISTS BECAUSE OF A SCREENSHOT ────────────────────────────
+  //
+  // The speedometer shipped with its rotation declared on `.speedo-needle line`
+  // while the script rotated `.speedo-needle`. Two different elements. The <g>
+  // carried no transform, so it was a plain block box and the needle rendered
+  // as a stray bar floating above the gauge, with NO needle at the hub at all.
+  //
+  // No headless assertion caught it, because every test asserted the NUMBER
+  // (which was right) and nothing asserted that the number was attached to the
+  // thing being drawn. This is that assertion: every element the script writes
+  // a transform to must be an element the stylesheet also gives a
+  // transform-origin, or the rotation happens about the wrong point and the
+  // element travels instead of turning.
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8'),
+    css = readFileSync(new URL('../src/style.css', import.meta.url), 'utf8'),
+    js = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+
+  // 1. Every id the HUD script reaches for must exist in the markup.
+  const wanted = [...js.matchAll(/\$\('([a-z0-9-]+)'\)/gi)].map((m) => m[1]);
+  const missing = [...new Set(wanted)].filter((id) => !html.includes(`id="${id}"`));
+  assert.deepEqual(missing, [], `HUD ids referenced by the script but absent from index.html: ${missing}`);
+
+  // 2. The needle: the element the script rotates must be the element CSS
+  //    establishes the rotation frame for, and that frame must be the hub.
+  assert.ok(
+    /\$\('speedo-needle'\)|querySelector\('\.speedo-needle'\)/.test(js),
+    'the script must still rotate the needle group',
+  );
+  const needleRule = css.match(/\.speedo-needle\s*\{[^}]*\}/);
+  assert.ok(needleRule, '.speedo-needle needs its own rule -- rotating the line instead is the bug');
+  assert.ok(
+    /transform-box:\s*view-box/.test(needleRule[0]),
+    'the needle needs transform-box: view-box so its origin is in viewBox units',
+  );
+  assert.ok(
+    /transform-origin:\s*60px\s+62px/.test(needleRule[0]),
+    'the needle must rotate about the hub at 60,62 -- not about a box derived from its children',
+  );
+  // And the line must NOT still be rotated: two rotations on one needle is the
+  // shape of the original defect.
+  const lineRule = css.match(/\.speedo-needle line\s*\{[^}]*\}/);
+  assert.ok(lineRule, '.speedo-needle line needs a rule');
+  assert.ok(
+    !/transform:\s*rotate/.test(lineRule[0]),
+    'the LINE must not be rotated -- only the group is',
+  );
+
+  // 3. Every continuous meter is driven by the same custom property, so they
+  //    cannot disagree about how a fill is expressed.
+  for (const sel of ['#drive::after', '#chain-meter']) {
+    const block = css.match(new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\{[^}]*\\}'));
+    assert.ok(block, `${sel} needs a rule`);
+    assert.ok(/var\(--v/.test(block[0]) || /var\(--regen/.test(block[0]), `${sel} must read a shared fill variable`);
+  }
+  log('meter DOM/CSS', `${new Set(wanted).size} HUD ids all present · needle rotates the group about 60,62 · fills share --v`);
+});
+
+// 13 ───────────────────────────────────────────────────────────────────────
+test('test_hud_corner_does_not_overlap', () => {
+  // The dial is positioned at `--top + N`, and N was written when the top-right
+  // corner was a single 34px hull strip. This round grew that corner into a
+  // three-meter column, and the old offset put the top of the dial inside the
+  // bottom meter. So the offset is now CHECKED against the column the CSS
+  // actually declares, rather than against a comment about it.
+  const css = readFileSync(new URL('../src/style.css', import.meta.url), 'utf8');
+
+  const meterBlock = css.match(/\.meter > small,\s*\.meter-label\s*\{[^}]*\}/);
+  assert.ok(meterBlock, '.meter label rule missing');
+  const labelH = +(meterBlock[0].match(/font:\s*9px/) ? 9 : NaN);
+  assert.ok(labelH === 9, `label height expected 9px, parsed ${labelH}`);
+
+  const trackH = +(css.match(/#edge\s*\{[^}]*height:\s*(\d+)px/) || [])[1] ||
+    +(css.match(/\.hull i,\s*#edge i\s*\{[^}]*height:\s*(\d+)px/) || [])[1];
+  assert.ok(trackH > 0, `could not read the meter track height (got ${trackH})`);
+
+  const colGap = +(css.match(/\.meters\s*\{[^}]*gap:\s*(\d+)px/) || [])[1];
+  const rowGap = +(css.match(/\.meter\s*\{[^}]*gap:\s*(\d+)px/) || [])[1];
+  assert.ok(colGap > 0 && rowGap > 0, `gaps unreadable: ${colGap}, ${rowGap}`);
+
+  const ROWS = 3; // hull, edge, focus
+  const columnH = ROWS * (labelH + rowGap + trackH) + (ROWS - 1) * colGap;
+  const offset = +(css.match(/#speedo\s*\{[\s\S]*?top:\s*calc\(var\(--top\)\s*\+\s*(\d+)px\)/) || [])[1];
+  assert.ok(offset, 'the dial offset must be expressed relative to --top');
+  assert.ok(
+    offset >= columnH + 6,
+    `the dial starts at +${offset}px but the meter column is ${columnH}px tall -- they overlap`,
+  );
+  assert.ok(offset <= columnH + 20, `the dial is drifting too far from the meters (+${offset}px)`);
+  log('hud corner', `meter column ${columnH}px · dial starts +${offset}px · clear by ${offset - columnH}px`);
 });

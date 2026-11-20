@@ -12,7 +12,7 @@ import { drawSpecimen } from './field-guide.js';
 import { drawStrokePrint } from './print.js';
 import { SPEEDS, setSpeed, speedIndexOf, speed } from './pace.js';
 import { TIERS } from './motion.js';
-import { speedReadout } from './motion.js';
+import { speedReadout, meterReadout, dialGeometry } from './motion.js';
 import { MAX_SPEED } from './physics.js';
 const $ = (id) => document.getElementById(id),
   game = $('game'),
@@ -441,10 +441,6 @@ function updateHUD() {
   $('chain').hidden = !!s.opening || s.chain < 2;
   setText('chain-text', `${s.chain} HIT CHAIN`);
   setText('multiplier', `×${Math.min(8, s.chain) * (s.drive > 0 ? 2 : 1)}`);
-  // Divide by the window THIS chain was given, not by a constant. The window
-  // shrinks as the chain grows (run.js: chainWindow), so a constant divisor
-  // would draw a full bar when only a third of the window remained.
-  $('chain-meter').style.transform = `scaleX(${s.chainTime / (s.chainMax || CHAIN_TIME)})`;
   // ── FORM READOUT ────────────────────────────────────────────────────────
   //
   // The live half of the mastery read. It names what the run is BECOMING, and
@@ -485,8 +481,38 @@ function updateHUD() {
       }
     }
   }
-  Array.from($('hull').children).forEach((n, i) => n.classList.toggle('empty', i >= s.hp));
-  $('hull').setAttribute('aria-label', `${s.hp} hull remaining`);
+  // ── THE METERS ──────────────────────────────────────────────────────────
+  //
+  // Hull, Edge and Focus all come from one readout so they cannot disagree
+  // about what is empty or how much is owed. See `meterReadout` in motion.js.
+  const meters = meterReadout(s);
+  Array.from($('hull').children).forEach((n, i) => n.classList.toggle('empty', i >= meters.hp));
+  $('hull').setAttribute('aria-label', `${meters.hp} hull remaining`);
+  // EDGE. The pip count and the recharge timer both matter: three pips tell
+  // you whether you can cut, the timer tells you whether to bother lining one
+  // up. Without the second, an empty meter is indistinguishable from a broken
+  // one and the only feedback is the slash not happening.
+  const edgeEl = $('edge');
+  if (edgeEl.children.length !== meters.edgeMax)
+    edgeEl.replaceChildren(...Array.from({ length: meters.edgeMax }, () => document.createElement('i')));
+  Array.from(edgeEl.children).forEach((n, i) => {
+    if (n.tagName !== 'I') return;
+    n.classList.toggle('empty', i >= meters.edge);
+  });
+  edgeEl.setAttribute('aria-label', `${meters.edge} of ${meters.edgeMax} cuts remaining`);
+  edgeEl.style.setProperty('--regen', meters.regen.toFixed(3));
+  const edgeMeter = $('edge-meter');
+  edgeMeter.toggleAttribute('data-low', meters.edgeEmpty);
+  edgeMeter.toggleAttribute('data-regen', meters.regenDue);
+  // FOCUS. Draining is a state the player needs to see BEFORE it runs out --
+  // if the only signal is the slow-motion stopping, the resource has already
+  // been spent.
+  $('focus-fill').style.transform = `scaleX(${meters.focus.toFixed(3)})`;
+  const focusEl = $('focus');
+  focusEl.setAttribute('aria-label', `Focus ${meters.focusPct} percent`);
+  const focusMeter = $('focus-meter');
+  focusMeter.toggleAttribute('data-empty', meters.focusEmpty);
+  focusMeter.toggleAttribute('data-live', meters.focusLive);
   // Reactive HUD. Each of these is a one-frame attribute flip that a CSS
   // animation hooks, so the feedback costs no timers and cannot queue up
   // behind itself if the player is hit twice inside one animation.
@@ -550,13 +576,25 @@ function updateHUD() {
   // and the needle are physical dials and must stop at their own end -- without
   // this clamp a 667 km/h hyper shot drove strokeDashoffset to -567 and spun the
   // needle twenty full turns.
-  const dialShare = Math.min(1, readout.kmh / 100);
-  dial.querySelector('.speedo-fill').style.strokeDashoffset = 100 - dialShare * 100;
-  // -90deg is the needle at rest (pointing left across the dial); a full 0..100
-  // sweep is 180deg. Written as one expression so the geometry lives here
-  // rather than in two places that drift apart.
+  // Both encodings come from ONE function, so the arc and the needle cannot
+  // drift apart -- and so a test can assert the relationship without a browser.
+  const geo = dialGeometry(readout);
+  dial.querySelector('.speedo-fill').style.strokeDashoffset = 100 - geo.arcPct;
+  // The needle is NOT capped at the end of the scale. The arc stops at the top
+  // (a bar that leaves its track is a drawing error); the pointer keeps going
+  // for the top 15%, which is the only honest way to draw "past the end". The
+  // published geometry caps it at 1.15 for exactly that reason.
   const needle = dial.querySelector('.speedo-needle');
-  if (needle) needle.style.transform = `rotate(${-90 + dialShare * 180}deg)`;
+  if (needle) needle.style.transform = `rotate(${geo.needleDeg}deg)`;
+  dial.querySelector('.speedo-hub')?.classList.toggle('over', geo.over);
+  // HYPER names itself on the tier rail. It is the one tier that is an event
+  // rather than a reading, and the extra word is the only place the HUD says
+  // so in the dial's own colour.
+  const tierName = $('tier-name');
+  if (tierName) {
+    tierName.hidden = readout.band !== 'HYPER';
+    tierName.textContent = 'PAST MAX';
+  }
   // Speed tier pips. `readout.band` is already the tier name, so the pips and
   // the word under the dial can never disagree -- one source, two encodings.
   // The index comes from the ARRAY POSITION, not from the tier object: TIERS
@@ -578,7 +616,17 @@ function updateHUD() {
     }
   }
   $('drive').hidden = !!s.opening || s.drive <= 0;
-  $('drive-meter').style.transform = `scaleX(${s.drive / 175})`;
+  // Overdrive's fill is a ::after driven by `--v`, so the bar and every other
+  // continuous meter share one transform. Clamped: 175 is the bank it is
+  // filled from, and a stale 190 would draw past the end of its own track.
+  $('drive').style.setProperty('--v', Math.min(1, Math.max(0, s.drive / 175)).toFixed(3));
+  // The chain bar is a share of the window THIS chain was given, not of a
+  // constant: the window shrinks as the chain grows (run.js: chainWindow), so
+  // a fixed divisor drew a full bar when only a third of the window remained.
+  $('chain').style.setProperty(
+    '--v',
+    (s.chainMax ? Math.min(1, Math.max(0, s.chainTime / s.chainMax)) : 0).toFixed(3),
+  );
   // Nonvisual equivalents only. The proof strip itself never draws words.
   const desc={tap:'Tap a pennant, click it, or press Space to cut through the rack.',pull:'Pull back and release towards the next rack, or aim with arrows and press Space.',shell:'One plate over another. Cut the shell.',crack:'The first plate broke. Strike again.',rewind:'Returning to the launch point.',retry:'Try the marked shape again. Two tries left before this rack is conceded.',stock:'Wait for one cut to refill.',lane:'The triangle charges along its marked lane. Cut it or cross its path.',focus:'Hold a target in flight, or hold Shift to focus. Choose a new line and slash.',rise:'The marked floor is rising. Slash up.',net:'One net caught you. Your cuts are full. Launch up.'};
   setText('story-alt',desc[canvas.dataset.scene]||'');

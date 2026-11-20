@@ -158,9 +158,23 @@
           </div>
         </div>
         <div class="top-right">
-          <div class="hull">
-            <small>Hull</small
-            ><span id="hull" role="img" aria-label="3 hull remaining"><i></i><i></i><i></i></span>
+          <div class="meters" role="group" aria-label="Run meters">
+            <div class="meter hull">
+              <small>Hull</small
+              ><span id="hull" role="img" aria-label="3 hull remaining"><i></i><i></i><i></i></span>
+            </div>
+            <div class="meter edge" id="edge-meter">
+              <small>Edge</small
+              ><span id="edge" role="img" aria-label="3 cuts remaining"
+                ><i></i><i></i><i></i><b id="edge-regen"></b
+              ></span>
+            </div>
+            <div class="meter focus" id="focus-meter">
+              <small>Focus</small
+              ><span id="focus" role="img" aria-label="Focus full"
+                ><b id="focus-fill"></b
+              ></span>
+            </div>
           </div>
           <button id="pause-btn" class="tool" aria-label="Pause run">
             <svg class="icon"><use href="#i-pause" /></svg>
@@ -173,24 +187,36 @@
         <div id="speedo" role="img" aria-label="Speed 0">
           <svg class="speedo-dial" viewBox="0 0 120 74" aria-hidden="true">
             <path class="speedo-track" d="M10 62a50 50 0 0 1 100 0" />
+            <!-- The arc is the part that never overshoots: it is capped at the
+                 top of the scale on purpose, so HYPER reads as "past the end"
+                 without the bar leaving the dial. -->
             <path class="speedo-fill" d="M10 62a50 50 0 0 1 100 0" pathLength="100" />
             <g class="speedo-ticks">
-              <line x1="10" y1="62" x2="17" y2="62" />
-              <line x1="17" y1="35.5" x2="23" y2="38.9" />
-              <line x1="35.5" y1="15" x2="39.2" y2="20.3" />
-              <line x1="60" y1="8" x2="60" y2="15" />
-              <line x1="84.5" y1="15" x2="80.8" y2="20.3" />
-              <line x1="103" y1="35.5" x2="97" y2="38.9" />
-              <line x1="110" y1="62" x2="103" y2="62" />
+              <line x1="17.0" y1="62.0" x2="3.0" y2="62.0" />
+              <line x1="22.8" y1="40.5" x2="10.6" y2="33.5" />
+              <line x1="38.5" y1="24.8" x2="31.5" y2="12.6" />
+              <line x1="60.0" y1="19.0" x2="60.0" y2="5.0" />
+              <line x1="81.5" y1="24.8" x2="88.5" y2="12.6" />
+              <line x1="97.2" y1="40.5" x2="109.4" y2="33.5" />
+              <line x1="103.0" y1="62.0" x2="117.0" y2="62.0" />
             </g>
+            <!-- The SURGE threshold, marked. Without a mark on the dial the
+                 player has no way to learn where the lines appear; it is the
+                 single most useful number on this gauge and it was invisible. -->
+            <line class="speedo-gate" x1="87.2" y1="8.5" x2="91.3" y2="0.5" />
+            <!-- The zero pin, and the hub. -->
+            <circle class="speedo-pin" cx="10" cy="62" r="2" />
+            <circle class="speedo-hub" cx="60" cy="62" r="3.4" />
             <g class="speedo-needle" id="speedo-needle">
-              <line x1="60" y1="62" x2="60" y2="18" />
-              <circle cx="60" cy="62" r="4.5" />
+              <line x1="60" y1="54" x2="60" y2="18" />
             </g>
           </svg>
           <b id="speedo-value">0</b>
           <span id="speedo-band">DRIFT</span>
-          <div id="tier-pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+          <div id="tier-rail" aria-hidden="true">
+            <div id="tier-pips"><i></i><i></i><i></i><i></i><i></i></div>
+            <span id="tier-name" hidden></span>
+          </div>
         </div>
         <span id="story-alt" class="sr" role="status"></span>
       </section>

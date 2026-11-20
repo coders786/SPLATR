@@ -394,24 +394,121 @@ dd {
   align-items: center;
   gap: 18px;
 }
-.hull small {
+/* ══════════════════════════════════════════════════════════════════════════
+   THE METER FAMILY
+   ══════════════════════════════════════════════════════════════════════════
+   Six readouts, and until now every one of them was drawn by its own
+   unrelated set of rules: the hull was 12px skewed blocks, the chain meter
+   was a 2px rule, Overdrive was a coloured word, the form rank was 3px ticks,
+   and the speedometer was a dial. Nothing shared a height, a label position,
+   or an empty colour. The result read as six things that happened to be on
+   screen together rather than as one instrument panel.
+
+   So the family is defined once, here:
+
+     label   -- 9px, uppercase, letterspaced, ABOVE its readout, always
+     track   -- 6px tall, skewed 12deg, a dark well
+     fill    -- inside the track, in the meter's own colour
+     empty   -- one colour for "not available", never a second brand
+
+   Each meter then only declares what is genuinely different about it: its
+   colour, and how many segments it has. Anything else is inherited. */
+.meters {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 7px;
+}
+.meter {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+}
+.meter > small,
+.meter-label {
   display: block;
   text-align: right;
+  font: 9px/1 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: #d4becd;
 }
-.hull span {
+.meter-track,
+.hull span,
+#focus span {
+  position: relative;
   display: flex;
-  gap: 4px;
-  margin-top: 4px;
+  gap: 3px;
+  height: 7px;
 }
-.hull i {
-  width: 14px;
-  height: 12px;
+/* Segmented meters (hull, edge) are blocks in a rail; continuous ones
+   (focus) are a single well with a fill. Both are the same height so they
+   line up as a column. */
+.hull i,
+#edge i {
+  width: 16px;
+  height: 7px;
   display: inline-block;
-  transform: skewX(-14deg);
+  transform: skewX(-12deg);
+  background: var(--hot);
+  transition: background 160ms linear;
+}
+.hull i.empty,
+#edge i.empty {
+  background: #3b2a3c;
+}
+/* ── EDGE ────────────────────────────────────────────────────────────────
+   The cut charges. Three of them, spent on every slash and re-earned only by
+   staying airborne -- and there was NO readout for them anywhere in the HUD.
+   A player who ran out of cuts mid-run had no way to know why the slash
+   stopped working; the only feedback was the slash not happening.
+   Lime, because lime is what this game uses for "yours to spend". */
+#edge i {
+  background: var(--l);
+}
+/* The regenerate timer, drawn as a fill across the NEXT pip's slot. Without
+   it the meter would jump from empty to full with no warning, which on a
+   resource this load-bearing is the difference between planning and guessing.
+   `--regen` is set by the HUD each frame, 0..1. */
+#edge b {
+  position: absolute;
+  right: 0;
+  bottom: -2px;
+  height: 2px;
+  width: 100%;
+  transform: scaleX(var(--regen, 0));
+  transform-origin: right;
+  background: var(--l);
+  opacity: 0.55;
+}
+#edge-meter[data-low] > small {
+  color: var(--hot);
+}
+#edge-meter[data-regen] #edge i.empty:last-of-type {
+  background: #4a3a20;
+}
+/* ── FOCUS ───────────────────────────────────────────────────────────────
+   The bullet-time reserve. It drains while held, regenerates while not, and
+   is the entire risk/reward of aiming mid-flight. Also previously invisible. */
+#focus span {
+  width: 54px;
+  background: #3b2a3c;
+  transform: skewX(-12deg);
+  overflow: hidden;
+}
+#focus b {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform-origin: left;
+  background: #9bd8ff;
+  transition: background 160ms linear;
+}
+#focus-meter[data-empty] #focus b {
   background: var(--hot);
 }
-.hull i.empty {
-  background: #4c3449;
+#focus-meter[data-live] > small {
+  color: #9bd8ff;
 }
 /* Speedometer. A half-dial with a real needle, not just a filling arc: a
    needle gives the eye an angle to read at a glance, while a bar of colour
@@ -433,10 +530,13 @@ dd {
      is off for the whole HUD, so nothing here needs to be reachable. */
   position: absolute;
   right: var(--right);
-  /* Below `.top-right` (which is at `--top` and ~34px tall including its
-     padding) with room to breathe. The 78px dial then ends well clear of the
-     hull row instead of sitting under it. */
-  top: calc(var(--top) + 66px);
+  /* Below `.top-right`, with room to breathe. That row used to be a single
+     34px hull strip; it is now a three-meter column -- hull, edge, focus --
+     which measures 71px, so the old `+66px` put the top of the dial INSIDE
+     the bottom meter. The offset has to be derived from the meters, not from
+     the height the corner happened to have when the dial was written.
+     81 = 71 (the column) + 10 of air. */
+  top: calc(var(--top) + 81px);
   width: 124px;
   height: 78px;
   display: grid;
@@ -498,31 +598,64 @@ dd {
 }
 /* Fixed tick marks around the sweep. They are what makes a needle readable:
    an angle next to a known scale, rather than an angle in isolation. */
+/* Tick marks. These are placed on the arc by trigonometry, not by eye: the
+   dial is a semicircle of radius 50 centred on (60,62), so the tick at angle
+   a has its inner end at 50-7 units from the hub and its outer end at 50+0.
+   The previous marks were eyeballed and several of them sat INSIDE the arc
+   rather than crossing it, which is why the gauge never looked like it had a
+   scale -- a tick that does not touch its track cannot be read against it. */
 .speedo-ticks line {
   stroke: #6d5568;
   stroke-width: 2.5;
-  stroke-linecap: round;
+  stroke-linecap: butt;
 }
 .speedo-ticks line:first-child,
 .speedo-ticks line:last-child {
   stroke: #9c7d95;
 }
+/* The SURGE gate. The streaks appear at 65% of max travel; this is that
+   number made visible on the gauge, so the threshold can be learned instead
+   of guessed. */
+.speedo-gate {
+  stroke: #6d5568;
+  stroke-width: 2;
+  stroke-linecap: butt;
+}
+.speedo-pin {
+  fill: #6d5568;
+}
+.speedo-hub {
+  fill: #2a1f30;
+  stroke: #6d5568;
+  stroke-width: 1.5;
+}
+/* ── THE NEEDLE IS THE GROUP, NOT THE LINE ────────────────────────────────
+ *
+ * The rotation used to be declared on `.speedo-needle line` while the
+ * JavaScript rotated `.speedo-needle` -- two different elements. The <g>
+ * carried no transform at all, so it was a plain block box: a 100%-width strip
+ * at the top of the dial, and `transform-origin: bottom center` on the line
+ * meant nothing because the line was never the thing being turned.
+ *
+ * The visible result, from a screenshot of the running build: two long white
+ * bars above the gauge and NO needle anywhere near the hub. The dial has been
+ * reading as an arc plus a stray mark, not as a needle.
+ *
+ * The rotation now lives on the group the script actually rotates, with the
+ * origin pinned to the hub in viewBox units. `transform-box: view-box` is what
+ * makes `60px 62px` mean the hub rather than a box derived from the children.
+ */
+.speedo-needle {
+  transform-box: view-box;
+  transform-origin: 60px 62px;
+  transform: rotate(-90deg);
+  transition: transform 90ms linear;
+}
 .speedo-needle line {
   stroke: var(--w);
   stroke-width: 3.4;
   stroke-linecap: round;
-  /* The needle is drawn from the hub upward; rotating about the hub is what
-     turns it into a gauge. `transform-box: fill-box` + `transform-origin:
-     bottom center` makes that rotation independent of the viewBox scale, which
-     a bare `transform-origin: 60px 62px` does not survive on every engine. */
-  transform-box: fill-box;
-  transform-origin: bottom center;
-  transform: rotate(-90deg);
-  transition: transform 90ms linear, stroke 220ms linear;
-}
-.speedo-needle circle {
-  fill: var(--w);
-  transition: fill 220ms linear;
+  transition: stroke 220ms linear;
 }
 #speedo[data-band='SURGE'] .speedo-fill {
   stroke: #ffd166;
@@ -530,8 +663,8 @@ dd {
 #speedo[data-band='SURGE'] .speedo-needle line {
   stroke: #ffd166;
 }
-#speedo[data-band='SURGE'] .speedo-needle circle {
-  fill: #ffd166;
+#speedo[data-band='SURGE'] .speedo-hub {
+  stroke: #ffd166;
 }
 #speedo[data-band='EDGE'] .speedo-fill {
   stroke: var(--hot);
@@ -539,8 +672,8 @@ dd {
 #speedo[data-band='EDGE'] .speedo-needle line {
   stroke: var(--hot);
 }
-#speedo[data-band='EDGE'] .speedo-needle circle {
-  fill: var(--hot);
+#speedo[data-band='EDGE'] .speedo-hub {
+  stroke: var(--hot);
 }
 #speedo-value {
   position: relative;
@@ -560,11 +693,46 @@ dd {
 #speedo[data-band='HYPER'] .speedo-needle line {
   stroke: #9bf6ff;
 }
-#speedo[data-band='HYPER'] .speedo-needle circle {
-  fill: #9bf6ff;
+#speedo[data-band='HYPER'] .speedo-hub {
+  stroke: #9bf6ff;
 }
 #speedo[data-band='HYPER'] #speedo-value,
 #speedo[data-band='HYPER'] #speedo-band {
+  color: #9bf6ff;
+}
+/* The tier rail. Five pips under the band word say WHICH tier is live; the
+   word says what it is called. HYPER is the one tier that is an event rather
+   than a reading, so it also names itself here, in the dial's own colour,
+   for as long as it lasts. */
+#tier-rail {
+  position: absolute;
+  bottom: -13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#tier-pips {
+  display: flex;
+  gap: 3px;
+}
+#tier-pips i {
+  width: 10px;
+  height: 3px;
+  background: #4a3448;
+  transition: background 140ms linear, opacity 140ms linear;
+  opacity: 0.5;
+}
+#tier-pips i.on {
+  background: var(--tier, var(--l));
+  opacity: 1;
+}
+#tier-pips i.now {
+  height: 5px;
+  margin-top: -1px;
+}
+#tier-name {
+  font: 8px/1 var(--mono);
+  letter-spacing: 0.14em;
   color: #9bf6ff;
 }
 #speedo-band {
@@ -604,19 +772,44 @@ dd {
   color: #efcbd8;
   margin-top: 3px;
 }
+/* Chain and Overdrive join the family: same track height, same skew, same
+   empty well. Previously the chain meter was a 2px rule and Overdrive was a
+   coloured WORD -- two more heights and two more visual languages in the same
+   corner as the score. */
 #chain-meter {
   display: block;
-  height: 2px;
-  background: currentColor;
-  transform-origin: left;
+  height: 5px;
+  width: 100%;
+  background: linear-gradient(
+    to right,
+    currentColor calc(var(--v, 0) * 100%),
+    #3b2a3c 0
+  );
+}
+#chain {
+  min-width: 96px;
 }
 #drive {
-  width: max-content;
-  margin-top: 3px;
+  width: 100%;
+  min-width: 96px;
+  display: grid;
+  gap: 3px;
+  margin-top: 5px;
   color: var(--l);
-  font: 11px/1.25 var(--mono);
+  font: 9px/1 var(--mono);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.16em;
+}
+/* Overdrive's fill is drawn by the same `--v` custom property the other
+   continuous meters use, so one CSS transform drives all of them. */
+#drive::after {
+  content: '';
+  display: block;
+  height: 5px;
+  background: var(--l);
+  transform: scaleX(var(--v, 0));
+  transform-origin: left;
+  transition: transform 120ms linear;
 }
 #imprint {
   display: flex;
@@ -1133,8 +1326,9 @@ body:has(#panel[open]) #hud {
 }
 #form-pips i {
   display: block;
-  width: 10px;
-  height: 3px;
+  width: 12px;
+  height: 5px;
+  transform: skewX(-12deg);
   background: currentColor;
   /* Empty pips were at 0.22 and effectively invisible, so grade 2 and grade 3
    * looked identical at a glance. Rank has to be readable without counting
