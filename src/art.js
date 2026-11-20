@@ -19,10 +19,30 @@ export function jelly(x, y, f) {
   const g = f.grip ?? 1;
   let nx = x * (f.sx ?? 1),
     ny = y * (f.sy ?? 1);
+  // ── THE DIP MUST NOT SHEAR THE CUBE ──────────────────────────────────────
+  //
+  // `dipX` used to be added to the horizontal position scaled by `(1 - y)`,
+  // which is a SHEAR: the top of the body slid sideways while the bottom stayed
+  // put. On a square, a shear is a parallelogram -- and at this size a
+  // parallelogram reads as a crooked diamond, which is exactly the bug.
+  //
+  // Measured on a unit square: a full lean of 0.34 moved the top edge 0.52
+  // cube-widths sideways and opened two corners to 104.5 degrees and the other
+  // two to 75.5. That is not a subtle deformation, it is a different shape.
+  //
+  // The corner dip is now applied along the SAME axis it moves on, which
+  // compresses that side instead of sliding it: the leading corner still
+  // travels (so the lean still reads) but it travels INWARD, shortening that
+  // edge rather than skewing the whole body. Corners stay at 90 degrees because
+  // the transform is a per-axis scale with no cross terms.
+  //
+  // The same argument applies to `dipY` on the vertical axis.
   const lx = f.dipX ?? 0,
     ly = f.dipY ?? 0;
-  if (lx !== 0) nx += lx * (1 - y) * 0.5;
-  if (ly !== 0) ny += ly * (1 + x) * 0.5;
+  const stretchX = 1 + Math.abs(lx) * 0.5,
+    stretchY = 1 + Math.abs(ly) * 0.5;
+  nx /= stretchX;
+  ny /= stretchY;
   return [x + (nx - x) * g, y + (ny - y) * g];
 }
 

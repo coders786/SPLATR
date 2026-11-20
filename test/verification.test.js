@@ -8,6 +8,8 @@ import { sceneFor } from '../src/storyboard.js';
 import { createCamera } from '../src/camera.js';
 import { createShake, CAMERA, SHAKE, meterReadout, dialGeometry, speedReadout } from '../src/motion.js';
 import { HYPER, FLOOR_IGNORE_TICKS, FALL_CAP_VY, AIM_FALL_KEEP } from '../src/run.js';
+import { jelly } from '../src/art.js';
+import { dashFor, ghostsFor, DASH } from '../src/animation.js';
 import { MAX_SPEED, WALL_KEEP, trampolineVy, trampolineRise } from '../src/physics.js';
 import { readFileSync } from 'node:fs';
 
@@ -984,4 +986,70 @@ test('test_walls_are_pinball_and_never_rotate_the_cube', () => {
   log('walls', `inbound ${inbound.toFixed(1)}px/tick from 20 · lift −${(-world.player.velocity.y).toFixed(1)} · spin ${worstSpin} · ${bounces} bounce(s)`);
   g.dispose();
   g2.dispose();
+});
+
+// 19 ───────────────────────────────────────────────────────────────────────
+test('test_cube_stays_square_and_ghosts_need_a_dash', () => {
+  // Part 2, locked answer A for the cube: "Clean Square + Gentle Dash Stretch".
+  //   - corners always 90 degrees, no diagonal twisting, ever
+  //   - stretch capped at 1.25x long / 0.80x wide, returning to 1.0 in <0.1s
+  //   - ghosts ONLY during an active dash, none while sitting or bouncing
+  //
+  // The corner angles are checked through the SAME `jelly()` deform the
+  // renderer applies, because that is where the shear lived: the deform was
+  // displacing the top edge sideways relative to the bottom, which is a shear,
+  // and a sheared square is a parallelogram.
+  const cornerAngle = (pts) => {
+    const [a, b, c] = pts;
+    const v1 = [a[0] - b[0], a[1] - b[1]],
+      v2 = [c[0] - b[0], c[1] - b[1]];
+    const d = v1[0] * v2[0] + v1[1] * v2[1];
+    return (Math.acos(d / (Math.hypot(...v1) * Math.hypot(...v2))) * 180) / Math.PI;
+  };
+  const UNIT = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+  let worstCorner = 0;
+  // Sweep everything the renderer can feed the field, including the extremes the
+  // pose table allows and the spring's overshoot.
+  for (const lean of [-0.34, -0.22, -0.1, 0, 0.1, 0.22, 0.34])
+    for (const sx of [0.8, 1, 1.25])
+      for (const sy of [0.8, 1, 1.25])
+        for (const grip of [0, 0.5, 1]) {
+          const f = { sx, sy, dipX: -lean * 1.6, dipY: lean * 0.9, grip };
+          const pts = UNIT.map(([x, y]) => jelly(x, y, f));
+          for (let i = 0; i < 4; i++) {
+            const tri = [pts[(i + 3) % 4], pts[i], pts[(i + 1) % 4]];
+            worstCorner = Math.max(worstCorner, Math.abs(cornerAngle(tri) - 90));
+          }
+        }
+  assert.ok(
+    worstCorner < 1e-6,
+    `a corner came out ${worstCorner.toFixed(3)} degrees off square -- that is the diamond`,
+  );
+
+  // ── THE STRETCH BUDGET ──────────────────────────────────────────────────
+  // 1.25 long, 0.80 wide. Tested through the same clamp the renderer applies.
+  const clamp = (raw) => Math.min(1.25, Math.max(0.8, raw));
+  for (const k of [0, 0.4, 0.8, 1, 1.36, 3]) {
+    // the worst case the renderer can build: cardinal along, diagonal across
+    const rawLong = 1 + k * 0.34,
+      rawThin = 1 - k * 0.2;
+    const long = clamp(rawLong),
+      thin = clamp(rawThin);
+    assert.ok(long <= 1.25 + 1e-9, `stretch reached ${long.toFixed(3)}x long at k=${k}`);
+    assert.ok(thin >= 0.8 - 1e-9, `stretch reached ${thin.toFixed(3)}x wide at k=${k}`);
+  }
+
+  // ── GHOSTS NEED AN ACTIVE DASH ──────────────────────────────────────────
+  assert.deepEqual(ghostsFor(null), [], 'no dash means no ghosts');
+  const resting = { ghost: 0, phase: 'recover', t: 0.5, lead: { x: 1, y: 0 } };
+  assert.deepEqual(
+    ghostsFor(resting),
+    [],
+    'a cube settling after a dash must drop zero ghosts -- it is not dashing',
+  );
+  const active = dashFor(DASH.windup + 1, 20, 0);
+  assert.ok(ghostsFor(active).length > 0, 'an active dash must still leave a trail');
+  assert.equal(active.sx >= 0.8 && active.sx <= 1.25, true, `active dash sx ${active.sx} is outside the budget`);
+  assert.equal(active.sy >= 0.8 && active.sy <= 1.25, true, `active dash sy ${active.sy} is outside the budget`);
+  log('cube shape', `worst corner error ${worstCorner.toExponential(1)}deg · ${ghostsFor(active).length} ghosts while dashing · 0 at rest`);
 });

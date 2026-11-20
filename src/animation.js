@@ -697,7 +697,15 @@ export function dashFor(slashAge, vx, vy) {
     trail,
     leadGlow: 0.6 * (1 - t),
     trailBreak: 0.9 * Math.pow(1 - t, 1.6),
-    ghost: 1 - t,
+    // ── ZERO GHOSTS ONCE THE DASH IS OVER ────────────────────────────────
+    //
+    // This used to fade from 1 to 0 across recovery, so a cube that had
+    // finished dashing -- and was now just falling or sitting -- kept drawing
+    // after-images. The brief is explicit: ghost copies exist ONLY while a dash
+    // is actively flying, and a cube on the floor drops ZERO. Recovery is not
+    // the dash; it is the settle afterwards, and the settle is exactly when the
+    // player needs to read the cube's real position.
+    ghost: 0,
   }, dx, dy);
 }
 

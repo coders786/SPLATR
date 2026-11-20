@@ -21,6 +21,19 @@ import {
 } from './motion.js';
 import { sceneFor, drawStory } from './storyboard.js';
 import { createSmear, ghostFor, morphWedge } from './smear.js';
+
+/* ── THE CUBE'S SILHOUETTE BUDGET ────────────────────────────────────────────
+ *
+ * While dashing the cube may stretch to 1.25x along its travel and thin to
+ * 0.80x across it, and no further. The numbers are not style: they are the
+ * boundary between "a square being thrown" and "a shape the player has to
+ * identify", and past them the silhouette stops reading as the player.
+ *
+ * Kept here rather than in `motion.js` because they are a DRAWING limit, not a
+ * physical one: the physics never cares how long the sprite is.
+ */
+const STRETCH_ALONG = 1.25,
+  STRETCH_ACROSS = 0.8;
 import {
   cubePose,
   slashFor,
@@ -2209,7 +2222,21 @@ export function createRenderer(canvas) {
         // A purely diagonal travel splits the stretch between both axes.
         const wx = sx ? (sy ? 0.6 : 1) : 0,
           wy = sy ? (sx ? 0.6 : 1) : 0;
-        c.scale(1 + k * 0.34 * wx - k * 0.2 * wy, 1 + k * 0.34 * wy - k * 0.2 * wx);
+        // ── THE STRETCH HAS A STATED CEILING ──────────────────────────────
+        //
+        // The brief fixes these numbers: at most 1.25x long and 0.80x wide
+        // WHILE DASHING, returning to 1.0x1.0 in under a tenth of a second.
+        // The coefficients below used to run past both -- `k` is already the
+        // speed ramp (up to ~1.36), so 0.34 * k reached 1.46x long.
+        //
+        // Clamped rather than re-tuned: the curve is fine, it just was never
+        // bounded by anything but the speed cap, and the speed cap is lifted
+        // under hyper. `STRETCH_ALONG`/`STRETCH_ACROSS` are the promise.
+        const rawX = 1 + k * 0.34 * wx - k * 0.2 * wy,
+          rawY = 1 + k * 0.34 * wy - k * 0.2 * wx;
+        const sx2 = Math.min(STRETCH_ALONG, Math.max(STRETCH_ACROSS, rawX)),
+          sy2 = Math.min(STRETCH_ALONG, Math.max(STRETCH_ACROSS, rawY));
+        c.scale(sx2, sy2);
       }
       // ── THE BODY FRAME IS ROTATED BY `lean`, NOT BY `p.angle` ──────────
       //

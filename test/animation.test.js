@@ -716,9 +716,49 @@ test('the jelly field deforms every vertex of the body, and returns to rest', as
     tall.h > rest.h * 1.2,
     `the field did not reach the body: ${rest.h.toFixed(1)} -> ${tall.h.toFixed(1)}`,
   );
-  // And a lean must displace the corners asymmetrically rather than scale them.
+  // ── AND A LEAN MUST NOT WIDEN ANYTHING ──────────────────────────────────
+  //
+  // This assertion used to read `lean.w > rest.w` -- "the leaning field must
+  // widen the leading edge" -- which was testing for the SHEAR. Widening one
+  // edge in proportion to height is exactly what turns the square into a
+  // parallelogram, and a parallelogram is the "crooked diamond" in the report.
+  //
+  // The lean still has to DO something, or the pose channel is dead: it now
+  // compresses along the axis it moves on, so the body gets NARROWER rather
+  // than skewed. The corners stay 90 degrees because that is a scale.
   const lean = bodyBox({ eyes: 1, lift: 0, field: { grip: 1, dipX: -0.8 } });
-  assert.ok(lean.w > rest.w, 'the leaning field must widen the leading edge');
+  assert.ok(
+    lean.w < rest.w,
+    `the leaning field must compress, not shear: ${rest.w.toFixed(1)} -> ${lean.w.toFixed(1)}`,
+  );
+  // The proof that it is a SCALE and not a shear: the left and right edges must
+  // remain vertical. A shear tilts them; this must not move them at all.
+  rec.length = 0;
+  m = [1, 0, 0, 1, 0, 0];
+  stack.length = 0;
+  cube(ctx, 0, 0, 23, 0, 0, 1, { eyes: 1, lift: 0, field: { grip: 1, dipX: -0.8 } });
+  {
+    let best = null;
+    for (const p of rec) {
+      const xs = p.map((q) => q[0]), ys = p.map((q) => q[1]);
+      const w = Math.max(...xs) - Math.min(...xs), h = Math.max(...ys) - Math.min(...ys);
+      if (!best || w * h > best.w * best.h) best = { w, h, p };
+    }
+    // Group the corners by top/bottom; each pair must share an x, and the gap
+    // between the two rows must be the same on the left as on the right.
+    const ys = best.p.map((q) => q[1]);
+    const top = Math.min(...ys), bot = Math.max(...ys);
+    const nearTop = best.p.filter((q) => q[1] < (top + bot) / 2).map((q) => q[0]);
+    const nearBot = best.p.filter((q) => q[1] >= (top + bot) / 2).map((q) => q[0]);
+    if (nearTop.length >= 2 && nearBot.length >= 2) {
+      const topW = Math.max(...nearTop) - Math.min(...nearTop);
+      const botW = Math.max(...nearBot) - Math.min(...nearBot);
+      assert.ok(
+        Math.abs(topW - botW) < 1e-6,
+        `the top and bottom edges differ in width (${topW.toFixed(3)} vs ${botW.toFixed(3)}) -- that is a shear`,
+      );
+    }
+  }
 
   // The spring settles back to nothing, so a cube at rest is a cube.
   const s = createJelly();
