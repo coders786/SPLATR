@@ -93,7 +93,21 @@ export const TYPES = {
   rift: species(
     'Rift',
     'Star',
-    '#ffa47b',
+    // ── DANGER RED, NOT PRIZE GOLD ─────────────────────────────────────────
+    //
+    // This was #ffa47b, a warm peach-gold. In a game where every glowing
+    // star-shaped pickup has been a reward for forty years, that colour is an
+    // instruction to TOUCH it -- and the Rift marks your position and then
+    // blinks onto the mark. The report caught the result precisely: "the orange
+    // star flashes and shrinks and grows like a glowing prize... in every video
+    // game ever made, a glowing star makes players want to touch it, not run
+    // away from it."
+    //
+    // #e0123a is the same red the Red Line uses for danger, which is the one
+    // place this game already asks the player to read colour as hazard. It is
+    // the named exception to "red is only for the Red Line" -- the Rift is a
+    // hazard, not a pickup.
+    '#e0123a',
     star(5, 0.47),
     36,
     260,

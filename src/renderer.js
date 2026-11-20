@@ -896,6 +896,26 @@ export function createRenderer(canvas) {
   // a high refresh rate cannot make the cube wobble faster.
   const jelly = createJelly();
   let jellySeen = null;
+  /* ── THE HUD'S OWN MEASUREMENTS ────────────────────────────────────────────
+   *
+   * Read from the same custom properties the stylesheet uses, so the world clip
+   * and the interface it protects cannot drift apart. `--top` is the safe-area
+   * aware top inset and `--gutter` the side inset; both are defined on `:root`
+   * in style.css. The fallbacks match those definitions so a headless run (no
+   * stylesheet, no layout) still produces a sane rectangle rather than NaN.
+   */
+  function cssNumber(name, fallback) {
+    try {
+      const v = getComputedStyle(document.documentElement).getPropertyValue(name);
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? n : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+  const hudTop = () => cssNumber('--top', 32);
+  const hudGutter = () => cssNumber('--gutter', 20);
+
   function tick(run, motion) {
     const { state: s, world } = run;
     syncScene(run, s.story ? run.nearest() : null);
@@ -1451,6 +1471,43 @@ export function createRenderer(canvas) {
     }
     c.scale(v.scale, v.scale);
     c.translate(-v.x, -v.y);
+    // ── THE PLAY AREA IS NOT THE WHOLE CANVAS ─────────────────────────────
+    //
+    // Everything from here to the matching `restore()` is world-space, and the
+    // world was allowed to draw edge to edge. That is fine for the field, the
+    // walls and the floor, but it is not fine for the HUD's own boxes: the score
+    // and hull sit in the top-left corner and the meters, speed dial and radar
+    // sit in the top-right and bottom-right, with no protection at all. Any
+    // enemy that travelled under one of them was drawn on top of it.
+    //
+    // Reported three separate times: a huge spiky pink swirl flashing over the
+    // health bars, a purple diamond sitting behind them, and pink target circles
+    // spawning over the score and the speed meter. All three are the same
+    // omission.
+    //
+    // Fixed by clipping the world to the region the HUD does not occupy. The
+    // cut-outs are derived from the same CSS variables the HUD itself uses
+    // (`--top`, `--gutter`) rather than from magic numbers, so moving the HUD
+    // moves the hole with it.
+    //
+    // This is a CLIP, not a fade: an enemy sliding under the score disappears
+    // cleanly at the edge instead of ghosting through it.
+    {
+      const top = hudTop(),
+        gutter = hudGutter(),
+        cornerW = Math.min(w * 0.34, 300),
+        cornerH = top + 190;
+      c.beginPath();
+      // Full canvas, then subtract the two corner boxes and the top band they
+      // sit in. Even-odd fill turns the sub-paths into holes.
+      c.rect(0, 0, w, h);
+      c.rect(0, 0, w, top + 2); // the whole top strip
+      c.rect(0, 0, gutter + cornerW, cornerH); // score / hull / callout
+      c.rect(w - gutter - cornerW, 0, cornerW + gutter, cornerH); // meters, dial
+      // The bottom-right radar.
+      c.rect(w - gutter - cornerW, h - top - 230, cornerW + gutter, top + 230);
+      c.clip('evenodd');
+    }
     if (inView(v, SPAWN, 140)) pad(c);
     if (s.opening) {
       for (const pegs of s.opening.racks) rackInk(c, pegs, combat.enemies);

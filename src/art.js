@@ -539,7 +539,26 @@ export function foe(c, kind, x, y, r, angle = 0, opts = {}) {
       break;
     }
     case 'rift':
+      // ── A STAR WITH SPIKES, NOT A COIN ──────────────────────────────────
+      //
+      // The shape is drawn at 0.49 of the body so a five-point star fits, and it
+      // used to be a flat filled star with a dot in it -- a coin, essentially,
+      // in a colour that used to be gold. Both read as "pick me up".
+      //
+      // The colour is now danger red (see shapes.js), and the outline is drawn
+      // as SPIKES pointing outward: a ring of short barbs around the star, which
+      // is the universal read for "hazard" and costs nothing to draw.
       c.scale(0.49, 0.49);
+      // Barbs first, so they sit behind the body of the star.
+      c.save();
+      c.rotate(time * 0.009);
+      for (let i = 0; i < 5; i++) {
+        c.rotate(TAU / 5);
+        line(c, K, 0.22, 0, -0.62, 0, -1.22);
+        line(c, K, 0.1, 0, -1.02, -0.14, -1.16);
+        line(c, K, 0.1, 0, -1.02, 0.14, -1.16);
+      }
+      c.restore();
       poly(c, K, t.outline);
       disk(c, col, 0, 0, 0.2);
       break;

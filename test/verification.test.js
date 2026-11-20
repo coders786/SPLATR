@@ -4,6 +4,7 @@ import Matter from 'matter-js';
 const { Body } = Matter;
 import { createRun, MAX_EDGE, EMPTY_WATCHDOG_TICKS, WATCHDOG_REACH, pushMove, settleMove } from '../src/run.js';
 import { ARENA, bandAt } from '../src/levels.js';
+import { TYPES } from '../src/shapes.js';
 import { sceneFor } from '../src/storyboard.js';
 import { createCamera } from '../src/camera.js';
 import { createShake, CAMERA, SHAKE, ANIM, meterReadout, dialGeometry, speedReadout } from '../src/motion.js';
@@ -1253,4 +1254,66 @@ test('test_menus_hide_dead_options_and_describe_shake_honestly', () => {
     'the label must not count kills while the picture draws marks',
   );
   log('menus', 'fullscreen hidden · shake off stops motion · note names Full/Low/Off · no "banked" copy · card counts marks');
+});
+
+// 24 ───────────────────────────────────────────────────────────────────────
+test('test_rift_star_reads_as_danger_not_prize', () => {
+  // "The orange star flashes and shrinks/grows like a glowing prize. In every
+  //  video game ever made, a glowing star makes players want to touch it -- not
+  //  run away from it."
+  //
+  // The Rift marks your position and then blinks onto the mark, so mistaking it
+  // for a pickup is not cosmetic, it is the player walking into the hazard.
+  const rift = TYPES.rift;
+  const hex = rift.colour || rift.color;
+  assert.ok(hex, 'the Rift needs a colour');
+  // Red-dominant, and dark enough to read as danger rather than gold. Gold is
+  // roughly #ffa47b: high red, but GREEN and BLUE are both high too, which is
+  // what makes it warm. A danger red keeps the other channels low.
+  const r = parseInt(hex.slice(1, 3), 16),
+    g = parseInt(hex.slice(3, 5), 16),
+    b = parseInt(hex.slice(5, 7), 16);
+  assert.ok(r > 150, `the Rift must be strongly red, got ${hex}`);
+  assert.ok(r > g * 2.5, `the Rift must be red-dominant, got ${hex} (g=${g})`);
+  assert.ok(g < 90 && b < 110, `the Rift must not be warm/gold, got ${hex}`);
+  // And it must not be the old prize colour.
+  assert.notEqual(hex.toLowerCase(), '#ffa47b', 'the Rift is still the gold prize colour');
+  log('rift', `${hex} — r${r} g${g} b${b} · red-dominant by ${(r / Math.max(1, g)).toFixed(1)}x`);
+});
+
+// 25 ───────────────────────────────────────────────────────────────────────
+test('test_world_is_clipped_away_from_hud_boxes', () => {
+  // "A huge spiky pink swirl flashes right over your top-right health bars. At
+  //  00:30, a purple diamond sits directly behind your health bars. At 01:30,
+  //  pink target circles spawn right over your score and speed meter."
+  //
+  // Three reports, one omission: the world pass drew edge to edge and nothing
+  // protected the boxes the interface sits in. Enemies are world-space, so any
+  // shape that travelled under a corner was drawn on top of it.
+  const src = readFileSync(new URL('../src/renderer.js', import.meta.url), 'utf8');
+  // The clip must exist, and it must be inside the world transform (after the
+  // camera translate) or it would clip the HUD instead of the field.
+  const clipAt = src.indexOf("c.clip('evenodd')");
+  assert.ok(clipAt > 0, 'the world pass must clip itself away from the HUD boxes');
+  const translateAt = src.indexOf('c.translate(-v.x, -v.y);');
+  assert.ok(translateAt > 0, 'the camera transform must still be there');
+  assert.ok(
+    clipAt > translateAt,
+    'the clip must come after the camera transform, not before it',
+  );
+  // The holes have to be derived from the same values the HUD uses, not from
+  // numbers copied by hand.
+  // The helper parses a custom property by name; both names must be requested.
+  assert.ok(
+    /cssNumber\('--top'/.test(src),
+    'the clip must read --top from the stylesheet rather than guessing',
+  );
+  assert.ok(/--gutter/.test(src), 'the clip must read --gutter from the stylesheet');
+  // All four boxes the report names must be cut out: score, hull, meters/dial,
+  // and the radar.
+  const block = src.slice(translateAt, clipAt);
+  assert.ok(block.includes('c.rect(w - gutter - cornerW, 0'), 'the top-right meters must be cut out');
+  assert.ok(block.includes('c.rect(0, 0, gutter + cornerW'), 'the top-left score must be cut out');
+  assert.ok(block.includes('h - top - 230'), 'the bottom-right radar must be cut out');
+  log('world clip', 'score · hull · meters · dial · radar all masked');
 });
