@@ -3,7 +3,7 @@
 export const PLAYER_SIZE = 46,
   CELL_W = 1600,
   CELL_H = 1240,
-  BAND = CELL_H * 2;
+  BAND = CELL_H * 5;
 // THE BILLIARD TABLE.
 //
 // Deliberately much larger than the camera view (~1330x780 world units), so a
@@ -115,18 +115,8 @@ export function freshSeed(last) {
   return a[0] === last ? (a[0] + 1) >>> 0 : a[0];
 }
 export const bandAt = (y) => 1 + Math.floor(Math.max(0, -y) / BAND);
-const DISTRICTS = [
-  'Undercut',
-  'Static Bloom',
-  'Dead Channel',
-  'Razor Belt',
-  'Black Circuit',
-  'Aftershock',
-];
-// A seeded permutation of five biomes: neighbours never alias to the same
-// biome, but addresses and later enemy layouts are not a repeated five-room loop.
-export const districtIndex = (seed, band) =>
-  band === 1 ? 0 : 1 + (((hash(seed, 0, 5) % 5) + (band - 2) * (1 + (hash(seed, 0, 7) % 4))) % 5);
+const DISTRICTS = ['Undercut','Razor Belt','Black Circuit','Static Bloom','Dead Channel','Aftershock'];
+export const districtIndex = (seed, band) => (Math.max(1,Math.floor(band||1))-1)%DISTRICTS.length;
 export const district = (seed, band) => DISTRICTS[districtIndex(seed, band)];
 // Leave a clear lane BETWEEN formations, including across cell seams.
 // The long diagonal is a single stroke opportunity, not a cluster of foes.
@@ -150,11 +140,11 @@ const OPEN = [
   ['prism', 'pulse', 93, -153, 'fang', 'fork'],
 ];
 export function cellAt(p) {
-  return { cx: Math.floor(p.x / CELL_W + 0.5), cy: Math.max(0, Math.floor(-p.y / CELL_H)) };
+  return { cx: Math.floor(p.x / CELL_W + 0.5), cy: Math.floor(-p.y / CELL_H) };
 }
 export function makeCell(seed, cx, cy, staged = false) {
   const rng = randomSource(hash(seed, cx, cy)),
-    band = 1 + Math.floor(cy / 2),
+    band = Math.max(1, 1 + Math.floor(cy / 2)),
     id = `${cx}:${cy}`;
   const at = (kind, x, y, i) => ({
     kind,
@@ -227,7 +217,7 @@ export function makeCell(seed, cx, cy, staged = false) {
   // the five targets in the centre alone still put shooters on a tall screen.
   if (staged && cy < 8) {
     const first = [null, null, 'pulse', 'prism', null, 'fork', 'well', 'rift'];
-    const familiar = ['fang', 'fang', 'bastion', ...first.slice(0, cy).filter(Boolean)];
+    const familiar = ['fang', 'fang', 'bastion', ...first.slice(0, Math.max(0, cy)).filter(Boolean)];
     if (cy <= 2) spawns.length = 3;
     spawns.forEach((e, i) => {
       e.kind = i === 0 ? 'fang' : familiar[Math.floor(rng() * familiar.length)];
@@ -262,17 +252,16 @@ export function makeCell(seed, cx, cy, staged = false) {
   }
   return { id, cx, cy, pattern, spawns, link };
 }
-/** Live neighbourhood is at most 3×3 cells. Remember defeated primaries with
- * a bit mask until the lethal tide makes that row permanently unreachable. */
+/** A signed 3×3 neighbourhood follows climbs AND falls. Keep defeated-slot
+ * masks nearby, bounded to six rows/columns from the current neighbourhood. */
 export function createStream(seed, enter, leave, staged = false) {
   const live = new Map(),
     cleared = new Map();
   function sync(p, line) {
     const { cx, cy } = cellAt(p),
       wanted = new Set();
-    for (let y = Math.max(0, cy - 1); y <= cy + 1; y++)
+    for (let y = cy - 1; y <= cy + 1; y++)
       for (let x = cx - 1; x <= cx + 1; x++) {
-        if (-(y + 1) * CELL_H > line + 80) continue;
         // ── NOTHING IS GENERATED OUTSIDE THE TABLE ────────────────────────
         //
         // The grid is laid out by cell index and knew nothing about the arena,
@@ -289,7 +278,7 @@ export function createStream(seed, enter, leave, staged = false) {
           cellRight = x * CELL_W + CELL_W / 2,
           cellTop = -(y + 1) * CELL_H,
           cellBottom = -y * CELL_H;
-        if (cellRight < ARENA.x || cellLeft > ARENA.x + ARENA.w) continue;
+        if (cellRight < ARENA.x || cellLeft > ARENA.x + ARENA.w || cellTop > ARENA.y + ARENA.h) continue;
         // ── THE TOP WALL MUST NOT BE A REFUGE ──────────────────────────────
         //
         // The table is finite and the wall is at -78,000, so a player who
@@ -323,7 +312,10 @@ export function createStream(seed, enter, leave, staged = false) {
         leave(k);
         live.delete(k);
       }
-    for (const [k, rec] of cleared) if (-(rec.cy + 1) * CELL_H > line + 80) cleared.delete(k);
+    // The player can fall back below their peak. Keep nearby defeated slots,
+    // not an upward-only tide. Bound memory in BOTH axes as the stream moves.
+    for (const [k, rec] of cleared)
+      if (Math.abs(rec.cy - cy) > 6 || Math.abs(Number(k.split(':')[0]) - cx) > 6) cleared.delete(k);
   }
   function mark(e) {
     if (e.slot < 0 || !live.has(e.home)) return;

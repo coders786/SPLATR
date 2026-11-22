@@ -1,3 +1,10 @@
+// C-major pentatonic: C5 D5 E5 G5 A5. Long chains hold the top note.
+export function chainNote(chain = 1) {
+  return [523.25, 587.33, 659.25, 783.99, 880][
+    Math.min(4, Math.max(0, Math.floor(Number(chain) || 1) - 1))
+  ];
+}
+
 // Tiny procedural SFX bank. No audio files, decoding costs, autoplaying music,
 // or sound requests before the visitor supplies a real user gesture.
 export function createAudio() {
@@ -52,7 +59,8 @@ export function createAudio() {
         context.sampleRate,
       );
       const samples = noiseBuffer.getChannelData(0);
-      for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
+      for (let i = 0; i < samples.length; i++)
+        samples[i] = Math.random() * 2 - 1;
     }
     const src = context.createBufferSource(),
       filter = context.createBiquadFilter(),
@@ -95,15 +103,21 @@ export function createAudio() {
   ];
   let pending = null,
     heldTicks = 0;
-  function strike(material, chain = 1) {
+  function strike(material, chain = 1, style = 'razor') {
     if (!pending || rank.indexOf(material) >= rank.indexOf(pending.material))
-      pending = { material, chain };
+      pending = { material, chain, style };
   }
   function flush() {
     if (!pending) return;
-    const { material, chain } = pending;
+    const { material, chain, style } = pending;
     pending = null;
-    const note = [523.25, 659.25, 783.99, 987.77, 1046.5][Math.min(4, Math.max(0, chain - 1))];
+    if(style === 'glitch-fx') {tone(360,80,.07,'square',.018);rush(.035,1800,.025);}
+    if(style === 'confetti') {tone(1046,1046,.09,'sine',.025);tone(1568,1568,.1,'sine',.015,.025);}
+    if(style === 'comic') tone(160,60,.09,'triangle',.03);
+    if(style === 'pixel') tone(880,220,.055,'square',.015);
+    if(style === 'laser') tone(1450,260,.1,'sine',.025);
+    if(style === 'katana') { tone(2700,900,.12,'triangle',.018); rush(.045,6500,.025); }
+    const note = chainNote(chain);
     switch (material) {
       case 'chip':
         tone(680, 510, 0.044, 'triangle', 0.031);
@@ -139,7 +153,9 @@ export function createAudio() {
         tone(880, 1450, 0.085, 'sine', 0.071);
         break;
       case 'drive':
-        [392, 587, 784].forEach((f, i) => tone(f, f, 0.16, 'triangle', 0.057, i * 0.067));
+        [392, 587, 784].forEach((f, i) =>
+          tone(f, f, 0.16, 'triangle', 0.057, i * 0.067),
+        );
         break;
       case 'hurt':
         rush(0.16, 1290, 0.18);
@@ -147,7 +163,9 @@ export function createAudio() {
         break;
       case 'break':
         rush(0.23, 2300, 0.22);
-        [160, 122, 83].forEach((f, i) => tone(f, f * 0.42, 0.25, 'triangle', 0.12, i * 0.075));
+        [160, 122, 83].forEach((f, i) =>
+          tone(f, f * 0.42, 0.25, 'triangle', 0.12, i * 0.075),
+        );
         break;
     }
   }
@@ -166,7 +184,8 @@ export function createAudio() {
       if (enabled) {
         unlock();
         tone(430, 680, 0.1, 'sine', 0.04);
-      } else if (context?.state === 'running') context.suspend().catch(() => {});
+      } else if (context?.state === 'running')
+        context.suspend().catch(() => {});
     },
     launch(power) {
       rush(0.09 + power * 0.045, 1850 + power * 1400, 0.105);
@@ -197,8 +216,17 @@ export function createAudio() {
       // stop. Quiet: this fires many times a run.
       tone(880 + p * 220, 660, 0.035, 'triangle', 0.019, 0.055);
     },
+    seamHit() {
+      tone(360, 180, .07, 'triangle', .025);
+    },
+    shatter() {
+      rush(.12, 2700, .065);
+      [1100, 740, 420].forEach((f,i)=>tone(f, f*.55, .13, 'triangle', .035, i*.035));
+    },
     zone() {
-      [440, 660].forEach((f, i) => tone(f, f * 1.1, 0.18, 'triangle', 0.045, i * 0.1));
+      [440, 660].forEach((f, i) =>
+        tone(f, f * 1.1, 0.18, 'triangle', 0.045, i * 0.1),
+      );
     },
     lock() {
       // A sharp, quiet two-step tick. It confirms a magnet catch without
@@ -214,14 +242,17 @@ export function createAudio() {
     menu() {
       tone(345, 516, 0.07, 'triangle', 0.055);
     },
-    beat(step, drive) {
+    beat(step, drive, world = 'twilight') {
       // Tick-scheduled, gesture-unlocked original eight-step battle loop. No
       // interval survives pause or hidden tabs. Music can be muted separately.
+      if(world==='void'){if(step%8===0)tone(55,54,.12,'sine',.025);return;}
+      if(world==='manga'){if(step%4===0)rush(.035,1100,.025);return;}
+      if(world==='synth' && step%2===0)tone([220,277.18,329.63,440][Math.floor(step/2)%4],220,.13,'triangle',.025);
       const i = step % 8,
         bass = [55, 0, 65.4, 0, 55, 82.4, 0, 73.4][i];
       if (i % 2 === 0) tone(108, 39, 0.13, 'sine', 0.095);
       if (i === 2 || i === 6) rush(0.08, 2100, 0.08);
-      if (bass) tone(bass, bass * 0.99, 0.16, 'triangle', 0.065);
+      if (bass) tone(bass*(world==='foundry'?.5:1), bass*(world==='foundry'?.495:.99), world==='foundry'?.22:.16, 'triangle', 0.065);
       if (drive || i % 2) rush(0.04, 5800, 0.035);
     },
   };

@@ -39,7 +39,7 @@ test('the Cutting Room does not pay into Sector 01', () => {
   assert.equal(atOpen.chain, 0, 'no free multiplier');
   assert.equal(atOpen.drive, 0, 'no free Overdrive');
   assert.equal(atOpen.hyper, false, 'and not in hyper');
-  assert.equal(atOpen.band, 0, 'the sector counter starts at the bottom');
+  assert.equal(atOpen.band, 1, 'the sector counter starts at the bottom');
 
   g.dispose();
 });
@@ -81,7 +81,7 @@ test('parking against the top wall does not extinguish the field', () => {
   g.dispose();
 });
 
-test('the top of the table is sector 32, and that is where the wall is', () => {
+test('larger sector spacing puts the top wall in sector 13', () => {
   // "DEAD CHANNEL" was Sector 32 precisely because that is the highest band the
   // table can express: the wall sits at -78,000 and a band is 2,480. That is
   // also why the observed soft-lock happened there -- the wall was the last
@@ -90,7 +90,7 @@ test('the top of the table is sector 32, and that is where the wall is', () => {
   // `bandAt` is a plain function of altitude and does NOT clamp; the wall is
   // what bounds it in play. Both facts are asserted so a future change to
   // either one is caught.
-  assert.equal(bandAt(ARENA.y + 1), 32, 'the wall is the last sector');
+  assert.equal(bandAt(ARENA.y + 1), 13, 'the wall is the last sector');
   assert.equal(bandAt(-1000), 1, 'and the floor is the first');
   assert.ok(bandAt(-1e9) > 32, 'bandAt itself is unbounded; the WALL bounds it');
 });

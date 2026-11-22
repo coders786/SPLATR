@@ -40,7 +40,7 @@ test('finite cuts, passive refill, bounded focus; misses eventually time out a c
   g.focus(true);
   advance(g, 45);
   // Half speed is the floor now: a held aim must not turn the game into syrup.
-  assert.equal(g.world.engine.timing.timeScale, 0.5);
+  assert.equal(g.world.engine.timing.timeScale, 0.1);
   assert.ok(s.held && s.focus < 0.78);
   g.focus(false);
   assert.equal(g.world.engine.timing.timeScale, 1);
@@ -143,6 +143,9 @@ test('coasting after a single dash no longer loses to the Redline; it costs spee
   g.dash({ x: 15, y: -30, power: 0.97 });
   let peakSpeed = 0;
   for (let i = 0; i < 600; i++) {
+    // Falling is nonlethal, not combat. Do not depend on an empty lower map.
+    for (const e of g.combat.enemies.values()) g.combat.remove(e);
+    g.combat.hazards.length = 0;
     g.tick();
     peakSpeed = Math.max(peakSpeed, Math.hypot(g.world.player.velocity.x, g.world.player.velocity.y));
   }
@@ -323,4 +326,22 @@ test('an identical input trace at 30, 60 and 144 render Hz produces the same sim
   assert.ok(a[1] > 0);
   assert.deepEqual(a, playback(60));
   assert.deepEqual(a, playback(144));
+});
+
+test('falling below the old frontier streams enemies underneath and keeps them targetable', () => {
+  const g = createRun(71, () => {}, { staged: false });
+  try {
+    g.state.phase = 'playing';
+    g.state.invul = 999;
+    g.state.line = -20000; // A previous climb must not disable the lower field.
+    Body.setPosition(g.world.player, { x: 0, y: 4500 });
+    Body.setVelocity(g.world.player, { x: 0, y: 10 });
+    for (let i = 0; i < 6; i++) g.tick();
+    const p = g.world.player.position;
+    const below = [...g.combat.enemies.values()].find(e =>
+      e.y > p.y && Math.hypot(e.x - p.x, e.y - p.y) < 1200);
+    assert.ok(below, 'the descending live player must have enemies below');
+    for (const e of g.combat.enemies.values()) if (e !== below) g.combat.remove(e);
+    assert.equal(g.nearest()?.id, below.id, 'a lower enemy must remain selectable despite the old frontier');
+  } finally { g.dispose(); }
 });

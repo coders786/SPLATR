@@ -54,7 +54,7 @@ test('a paid cut buys a decision beat, not auto-aim, free focus, or a lockout on
   assert.equal(s.shots,1);assert.equal(s.focus,1);assert.equal(s.held,false);
   assert.ok(g.dash({x:15,y:-21}));assert.equal(s.breath,0);assert.equal(g.world.engine.timing.timeScale,1);
   g.tick();assert.ok(g.world.player.velocity.x>14);g.focus(true);for(let t=0;t<35;t++)g.tick();
-  assert.equal(g.world.engine.timing.timeScale,.5);assert.ok(s.focus<.85);
+  assert.equal(g.world.engine.timing.timeScale,.1);assert.ok(s.focus<.85);
 });
 
 test('one deliberate visible-target decision per second can cross the early field on phone and desktop',()=>{

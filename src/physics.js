@@ -1,9 +1,9 @@
+import { MOVEMENT } from './movement-model.js';
 import Matter from 'matter-js';
 import { PLAYER_SIZE } from './levels.js';
-import { speed } from './pace.js';
 
 const { Engine, Composite, Bodies, Body } = Matter;
-export const STEP_MS = 1000 / 60;
+export const STEP_MS = MOVEMENT.stepMs;
 // Matter velocity units: px / nominal 60 Hz step.
 //
 // 35 -> 42 is the "more speed" pass. Two measurements made this safe rather
@@ -16,22 +16,22 @@ export const STEP_MS = 1000 / 60;
 //    of letting the cube tunnel through them.
 // Everything downstream reads this one constant (aim, impact stretch, the
 // speedometer normalisation), so the whole game scales with it.
-export const MAX_SPEED = 42;
-export const MAX_PULL = 176; // world pixels, NOT CSS or backing-store pixels
-export const BASE_GRAVITY = 0.001;
-const GRAVITY_Y = 1.35;
+export const MAX_SPEED = MOVEMENT.maxSpeed;
+export const MAX_PULL = MOVEMENT.maxPull; // world pixels, NOT CSS or backing-store pixels
+export const BASE_GRAVITY = MOVEMENT.gravityScale;
+const GRAVITY_Y = MOVEMENT.gravityY;
 const MAX_SPIN = 0.18;
-const MAX_TRAVEL = 5; // maximum corner travel per collision sample
-// The floor on time. 0.15 made a held aim feel like a different, syrupy game.
-// The exact floor is the speed the PLAYER picked (see pace.js); 0.5 is the
-// default "Fast" setting, and no setting is allowed to crawl.
-export const SLOW_MIN = 0.5;
-/** The live floor: whatever speed the player has selected. A held aim never
- *  sinks below this, and it is what the gravity easing is normalised against. */
+const MAX_TRAVEL = MOVEMENT.maxTravel; // maximum corner travel per collision sample
+// Held aim deliberately slows simulation by 90%; release immediately restores
+// the committed launch. Automatic breath/panic still follow tempo preferences.
+export const SLOW_MIN = MOVEMENT.focusScale;
+/** Deliberate aim floor; also normalises the gravity easing. */
 export function slowFloor() {
-  return speed().floor;
+  // Deliberate held aim gets the requested 90% slowdown. Automatic breath
+  // and panic pacing still follow the selected tempo in pace.js.
+  return SLOW_MIN;
 }
-const DEAD_ZONE = 7;
+const DEAD_ZONE = MOVEMENT.deadZone;
 
 export function createPhysics(level) {
   const engine = Engine.create({
@@ -269,6 +269,7 @@ export function launch(world, velocity) {
   if (!Number.isFinite(length) || length < 0.001) return false;
   const k = Math.min(1, MAX_SPEED / length);
   setBulletTime(world, false, true);
+  Body.setVelocity(world.player, { x: 0, y: 0 });
   Body.setVelocity(world.player, { x: velocity.x * k, y: velocity.y * k });
   // ── THE CUBE DOES NOT SPIN. EVER. ────────────────────────────────────────
   //
@@ -436,20 +437,12 @@ export const GRAVITY_PX = 0.378;
 // ignores the cube afterwards. The 0.85 is deliberately below 1: a wall that
 // returns everything is a perpetual-motion rally, and the missing 15% is what
 // makes a wall bounce a repositioning move rather than free energy.
-export const WALL_KEEP = 0.85,
-  WALL_HOP = 4,
+export const WALL_KEEP = MOVEMENT.wallKeep,
+  WALL_HOP = MOVEMENT.wallHop,
   /** Seconds, in the clock units `railBounce` compares against. */
-  WALL_IGNORE = 0.25;
+  WALL_IGNORE = MOVEMENT.wallIgnore;
 
-const TRAMPOLINE_FRACTION = 1 / 3,
-  TRAMPOLINE_MIN = 8,
-  TRAMPOLINE_MAX = 60;
-
-export function trampolineVy(world, screenH) {
-  const h = (screenH || world?.viewH || 720) * TRAMPOLINE_FRACTION,
-    v = Math.sqrt(2 * GRAVITY_PX * h);
-  return Math.min(TRAMPOLINE_MAX, Math.max(TRAMPOLINE_MIN, v));
-}
+export function trampolineVy() { return MOVEMENT.floorKick; }
 
 /** How high a launch at `vy` actually peaks -- the inverse, for assertions. */
 export function trampolineRise(vy) {
@@ -459,6 +452,7 @@ export function trampolineRise(vy) {
 function railBounce(world) {
   const a = world.arena;
   if (!a) return;
+  const incomingX=world.player.velocity.x,incomingY=world.player.velocity.y;
   const p = world.player.position,
     v = world.player.velocity,
     RESTITUTION = 0.9,
@@ -534,7 +528,7 @@ function railBounce(world) {
   if (p.x < x0) {
     clampX = x0;
     if (v.x < 0) {
-      if (!(wallIgnore.left > 0)) {
+      if (!(wallIgnore.left > world.clock)) {
         if (-v.x < ARRIVE) v.x = 0;
         else {
           v.x = -v.x * WALL_KEEP;
@@ -554,7 +548,7 @@ function railBounce(world) {
   } else if (p.x > x1) {
     clampX = x1;
     if (v.x > 0) {
-      if (!(wallIgnore.right > 0)) {
+      if (!(wallIgnore.right > world.clock)) {
         if (v.x < ARRIVE) v.x = 0;
         else {
           v.x = -v.x * WALL_KEEP;
@@ -721,6 +715,7 @@ function railBounce(world) {
     depth: 0,
     surface: 'rail',
     side,
+    incomingX,incomingY,
     speed: Math.hypot(v.x, v.y),
   };
   world.struck = world.contact;
@@ -769,6 +764,10 @@ export function stepPhysics(world, beforeStep, pace=1) {
     const p = world.player,
       x = p.position.x,
       y = p.position.y;
+    // Equipment changes only the player, never the arena or enemy gravity.
+    if(world.playerGravityMultiplier != null && world.playerGravityMultiplier !== 1) {
+      p.force.y -= p.mass * world.engine.gravity.y * world.engine.gravity.scale * (1-world.playerGravityMultiplier);
+    }
     Engine.update(world.engine, STEP_MS / steps);
     catchCrossing(world, x, y, incoming);
     railBounce(world);
@@ -875,3 +874,24 @@ export function destroyPhysics(world) {
 }
 
 export const RELEASE_GRAVITY = GRAVITY_Y * BASE_GRAVITY * STEP_MS * STEP_MS;
+
+/** Collision-free release samples use Matter's semi-implicit substep order,
+ * including its speed cap. The analytic parabola is only a coarse hint. */
+export function releaseSamples(start, velocity, ticks = 190, {minVy=-Infinity,maxVy=Infinity,ceiling=MAX_SPEED} = {}) {
+  let x=start.x,y=start.y,vx=velocity.x,vy=velocity.y;
+  const initial=Math.hypot(vx,vy),k=initial>ceiling?ceiling/initial:1;
+  vx*=k;vy*=k;
+  const points=[{x,y}];
+  for(let t=1;t<=ticks;t++){
+    const steps=Math.max(1,Math.ceil((Math.hypot(vx,vy)+.5)/MAX_TRAVEL));
+    for(let i=0;i<steps;i++){
+      vy+=RELEASE_GRAVITY/steps;
+      x+=vx/steps;y+=vy/steps;
+      const speed=Math.hypot(vx,vy);
+      if(speed>ceiling){vx*=ceiling/speed;vy*=ceiling/speed;}
+    }
+    vy=Math.max(minVy,Math.min(maxVy,vy));
+    points.push({x,y});
+  }
+  return points;
+}

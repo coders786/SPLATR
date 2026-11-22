@@ -73,3 +73,11 @@ test('simultaneous contacts voice only the strongest cue; quick taps never play 
   for (let i = 0; i < 20; i++) a.focus(true);
   assert.deepEqual(notes, [450]);
 });
+
+
+test('chain cut pitches follow C-major pentatonic and saturate safely', async () => {
+  const { chainNote } = await import('../src/audio.js');
+  assert.deepEqual([1,2,3,4,5].map(chainNote),[523.25,587.33,659.25,783.99,880]);
+  assert.equal(chainNote(99),880);
+  assert.equal(chainNote(-1),523.25);
+});

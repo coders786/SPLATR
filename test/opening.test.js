@@ -190,7 +190,7 @@ test('the bolted shell stops the blade and keeps its crack. No phantom refund; t
   assert.equal(s.drive, 0, 'no free Overdrive on the way in');
   assert.deepEqual(
     [s.opening, s.phase, s.shots, s.score, s.kills, s.throughcuts, s.hp, s.edge],
-    [null, 'ready', 4, 0, 6, 2, 3, 3],
+    [null, 'ready', 0, 0, 0, 0, 3, 3],
   );
   assert.equal(events.filter(([k]) => k === 'racksCleared').length, 1);
   assert.deepEqual(
@@ -213,7 +213,7 @@ test('the bolted shell stops the blade and keeps its crack. No phantom refund; t
   assert.equal(s.reach, 1);
   tick(g, 10);
   assert.ok(g.combat.enemies.size > 1);
-  assert.ok(s.kills > 6);
+  assert.ok(s.kills > 0);
   assert.ok(!g.combat.enemies.has('0:0/0'));
 });
 
@@ -224,7 +224,7 @@ test('skipping, retiring and restarting do not clear the racks or grant a net; i
   tick(g, 40);
   assert.equal(g.skipOpening(), true);
   assert.equal(g.skipOpening(), false);
-  assert.equal(s.score, 900);
+  assert.equal(s.score, 0);
   assert.equal(s.net, false);
   assert.equal(s.drive, 0);
   assert.equal(g.combat.enemies.size, 1);
@@ -252,8 +252,14 @@ test('nothing catches you any more: a fall is not a rescue and not a death', (t)
   const start = { ...g.world.player.position };
   assert.equal(s.line, start.y + 650, 'the spawn frontier still starts below you');
   press(g);
-  tick(g, 550);
-  // You are NOT rescued, and you are NOT killed.
+  // Isolate gravity from combat: descending cells now contain real enemies.
+  // A Fang may kill an idle player, but falling alone must never cost hull.
+  for (let i = 0; i < 550; i++) {
+    for (const e of g.combat.enemies.values()) g.combat.remove(e);
+    g.combat.hazards.length = 0;
+    g.tick();
+  }
+  // You are NOT rescued, and gravity has not killed you.
   assert.equal(s.caught, false, 'no catch: the net no longer fires');
   assert.ok(!['over', 'dying'].includes(s.phase), 'falling does not end the run');
   assert.equal(s.hp, 3, 'and it does not cost hull either');

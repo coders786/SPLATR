@@ -360,7 +360,9 @@ test('the pose is actually rendered: squash, eyes and fall trail all change the 
     cube(ctx, 0, 0, 1, 0, 0, 1, { eyes, lift: 0 });
     // The eye polygons are the small light shapes in the upper-left of the face.
     const shapes = ctx.__ops
-      .filter((o) => (o.pts || []).length === 4)
+      // Select eye paint: side planes are now quadrilaterals too. Counting all
+      // four-point paths confuses the new cube geometry with the eyelids.
+      .filter((o) => (o.pts || []).length === 4 && String(o.paint).toLowerCase() === '#faffdb')
       .map((o) => {
         const ys = o.pts.map((q) => q[1]);
         return Math.max(...ys) - Math.min(...ys);
@@ -690,6 +692,12 @@ test('the jelly field deforms every vertex of the body, and returns to rest', as
     beginPath() { this._p = []; },
     moveTo(x, y) { this._p = [ap(x, y)]; },
     lineTo(x, y) { this._p.push(ap(x, y)); },
+    bezierCurveTo(x1,y1,x2,y2,x,y) {
+      const start=this._p.at(-1),a=ap(x1,y1),b=ap(x2,y2),end=ap(x,y);
+      for(let i=1;i<=12;i++){const u=i/12,v=1-u;this._p.push([v*v*v*start[0]+3*v*v*u*a[0]+3*v*u*u*b[0]+u*u*u*end[0],v*v*v*start[1]+3*v*v*u*a[1]+3*v*u*u*b[1]+u*u*u*end[1]]);}
+    },
+    arc(x,y,r,a,b) {for(let i=0;i<=12;i++){const t=a+(b-a)*i/12;this._p.push(ap(x+Math.cos(t)*r,y+Math.sin(t)*r));}},
+    clip() {},
     closePath() {},
     fill() { rec.push(this._p.map((p) => p.slice())); },
     stroke() {},

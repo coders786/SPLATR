@@ -1,0 +1,25 @@
+import puppeteer from 'puppeteer-core';
+import assert from 'node:assert/strict';
+import {mkdirSync,writeFileSync} from 'node:fs';
+const out='.arena/breach-input';mkdirSync(out,{recursive:true});const report=[];
+const browser=await puppeteer.launch({executablePath:process.env.CHROME_BIN||'/tmp/chromium',headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+try{for(const [width,height]of [[1280,720],[550,720],[390,680],[860,440]])for(const method of ['pointer','keyboard']){
+ const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(String(e)));await page.setViewport({width,height});
+ // Test-only closure access. Fetch the actual Vite-transformed module, append a
+ // getter in this browser response only; no production debug hooks/save writes.
+ await page.setRequestInterception(true);page.on('request',async r=>{if(new URL(r.url()).pathname==='/src/main.js'){const res=await fetch(r.url()),body=await res.text();await r.respond({status:200,contentType:'text/javascript',body:body+'\nObject.defineProperty(window,"qaRun",{get:()=>run});'});}else await r.continue();});
+ await page.goto('http://localhost:3000');await page.evaluate(()=>{localStorage.clear();localStorage.setItem('riot.started','1');});await page.reload();await page.click('#start-btn');await page.keyboard.press('Space');
+ await page.evaluate(async()=>{const physics=await import('/src/physics.js');window.qaPhysics=physics;const {placePlayer,stopPlayer}=physics,r=qaRun;r.state.phase='playing';r.state.invul=99999;for(let i=0;i<4;i++){for(const e of [...r.combat.enemies.values()])r.combat.remove(e);r.state.stop=0;r.tick();const q=r.state.wave.platform;placePlayer(r.world,{x:q.x+150,y:q.y-23});stopPlayer(r.world);for(let j=0;j<30&&r.state.wave.phase!=='choose';j++)r.tick();r.chooseWaveBuff(r.state.wave.offers[0].id);}r.state.wave.entry=0;});
+ // Clearing while an arena gesture is held must cancel it before a later release.
+ await page.mouse.move(width*.5,height*.65);await page.mouse.down();const snapshot=await page.evaluate(()=>{const r=qaRun;for(const e of [...r.combat.enemies.values()])r.combat.remove(e);r.state.stop=0;r.tick();return{shots:r.state.shots,credits:r.state.killLedger.credits};});await page.waitForSelector('.breach-skip:not([hidden])');await page.mouse.up();assert.equal(await page.evaluate(()=>qaRun.state.shots),snapshot.shots);
+ if(method==='pointer'){
+  const b=await page.$('.breach-skip'),box=await b.boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(width*.2,height*.75);await page.mouse.up();assert.equal(await page.evaluate(()=>qaRun.state.wave.phase),'breach','dragging away cancels a skip button tap');assert.equal(await page.evaluate(()=>qaRun.state.shots),snapshot.shots);await page.click('.breach-skip');
+ }else{await page.focus('.breach-skip');await page.keyboard.down('Space');assert.equal(await page.evaluate(()=>qaRun.state.wave.phase),'breach');await page.keyboard.up('Space');}
+ await page.waitForFunction(()=>{if(qaRun.state.wave.phase!=='return')return false;const q=qaRun.state.wave.platform;qaPhysics.placePlayer(qaRun.world,{x:q.x+150,y:q.y-260});qaPhysics.stopPlayer(qaRun.world);return true;});assert.equal(await page.evaluate(()=>qaRun.state.shots),snapshot.shots,'skip activation/release must not launch');assert.equal(await page.evaluate(()=>qaRun.state.shatters),0);assert.equal(await page.evaluate(()=>qaRun.state.killLedger.credits),snapshot.credits);
+ // Enter rest while Space is already down. Native repeats / release must not
+ // accept the first focused upgrade or become an arena launch after selection.
+ await page.focus('#arena');await page.keyboard.down('Space');const restShots=await page.evaluate(()=>qaRun.state.shots);
+ await page.evaluate(async()=>{const{placePlayer,stopPlayer}=await import('/src/physics.js'),r=qaRun,q=r.state.wave.platform;placePlayer(r.world,{x:q.x+150,y:q.y-23});stopPlayer(r.world);r.state.stop=0;for(let i=0;i<60&&r.state.wave.phase!=='choose';i++)r.tick();});await page.waitForSelector('.wave-upgrades[open]');await page.keyboard.down('Space');await page.keyboard.up('Space');assert.equal(await page.evaluate(()=>qaRun.state.wave.phase),'choose','held Space cannot pick an upgrade');
+ await page.screenshot({path:`${out}/rest-${width}-${method}.png`});await page.click('.wave-upgrade-cards button');await page.waitForFunction(()=>qaRun.state.wave.number===6);assert.equal(await page.evaluate(()=>qaRun.state.shots),restShots,'upgrade click cannot leak a shot');
+ await page.keyboard.press('Space');await page.waitForFunction(n=>qaRun.state.shots>n,{},restShots);assert.deepEqual(errors,[]);report.push({width,height,method,snapshot,restShots,wave:6,errors});await page.close();
+}console.log('PASS eight real-app input journeys: held-gesture clear cancellation, dragged-away skip, pointer/Space skip, reward preservation, held-Space rest rejection, fresh upgrade click, fresh arena launch; four sizes.');}finally{writeFileSync(`${out}/browser.json`,JSON.stringify(report,null,2));await browser.close();}

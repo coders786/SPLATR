@@ -1,6 +1,7 @@
+import {safeSpawn,inViewport} from './spawn-space.js';
 import Matter from 'matter-js';
 import { TYPES, TAU } from './shapes.js';
-import { clamp, PLAYER_SIZE, ARENA } from './levels.js';
+import { clamp, PLAYER_SIZE, ARENA as DEFAULT_ARENA } from './levels.js';
 const { Bodies, Body, Composite, Events, Vertices } = Matter;
 const E_OPTIONS = {
   isSensor: true,
@@ -76,6 +77,7 @@ export function sweepDistance(a, b, c, d) {
   );
 }
 export function createCombat(world, tell = () => {}) {
+  const ARENA=world.arena||DEFAULT_ARENA;
   const enemies = new Map(),
     contacts = new Set(),
     hazards = [],
@@ -107,7 +109,20 @@ export function createCombat(world, tell = () => {}) {
     return best;
   }
   function add(spec) {
+    // Portal doorway protection applies to every producer (stream, split, rescue).
+    const door=world.questDoor;
+    if(door && Math.hypot(spec.x-door.x,spec.y-door.y)<door.r+260) {
+      const angle=Math.atan2(ARENA.y+ARENA.h/2-door.y,ARENA.x+ARENA.w/2-door.x);
+      spec={...spec,x:door.x+Math.cos(angle)*(door.r+300),y:door.y+Math.sin(angle)*(door.r+300)};
+    }
     if (enemies.has(spec.id)) return enemies.get(spec.id);
+    const viewport=world.viewport;
+    if(viewport && !spec.pinned && !spec.wavePlaced && inViewport(spec,viewport)) {
+      const radius=(TYPES[spec.kind]?.r||32)*(spec.size||(spec.small?.6:1));
+      const point=safeSpawn(spec,radius,viewport,world.player.position,[...enemies.values()],!!spec.wave);
+      if(!point)return null;
+      spec={...spec,...point};
+    }
     const t = TYPES[spec.kind],
       a = spec.angle ?? (spec.kind === 'fang' ? Math.atan2(-spec.y, -spec.x) : 0);
     // ── THE LAST PLACE AN ENEMY CAN BE BORN ────────────────────────────────
@@ -131,6 +146,7 @@ export function createCombat(world, tell = () => {}) {
       postX: bornX, postY: bornY,
       r: t.r * (spec.size ?? (spec.small ? 0.6 : 1)),
       hp: t.hp,
+      enteredViewport: !!spec.pinned || (viewport ? inViewport({x:bornX,y:bornY},viewport) : true),
       x: bornX,
       y: bornY,
       px: bornX,
@@ -221,6 +237,9 @@ export function createCombat(world, tell = () => {}) {
       k = Math.min(1, 610 / (Math.hypot(dx, dy) || 1));
     e.tx = e.x + dx * k;
     e.ty = e.y + dy * k;
+    // A telegraphed destination belongs to world space, never the camera.
+    e.tx=clamp(e.tx,ARENA.x+e.r,ARENA.x+ARENA.w-e.r);
+    e.ty=clamp(e.ty,ARENA.y+e.r,ARENA.y+ARENA.h-e.r);
     if (announce) tell(e);
   }
   function move(dt, difficulty) {
@@ -235,13 +254,16 @@ export function createCombat(world, tell = () => {}) {
       e.flash = Math.max(0, e.flash - dt);
       e.age += dt;
       if (e.pinned) continue;
+      // Camera position affects rendering and NEW spawn presentation only.
+      // Existing entities must not be deleted or repositioned by a pan/zoom.
       const dx = p.x - e.x,
         dy = p.y - e.y,
         dist = Math.hypot(dx, dy) || 1,
         nx = dx / dist,
         ny = dy / dist;
       if (e.kind === 'crown' && dist > 1160) {
-        const q=crownPost(p, Math.cos(e.age)<0?-1:1,e);
+        const desired=crownPost(p, Math.cos(e.age)<0?-1:1,e);
+        const q=desired;
         e.x = e.px = clamp(q.x, ARENA.x + (e.r||0), ARENA.x + ARENA.w - (e.r||0));
         e.y = e.py = clamp(q.y, ARENA.y + (e.r||0), ARENA.y + ARENA.h - (e.r||0));
         e.mode = 'idle';
@@ -479,7 +501,7 @@ export function createCombat(world, tell = () => {}) {
    *  sweep. Chaos is only fun while it still answers to the player's input; a
    *  blade that swings itself is a cutscene.
    */
-  function sweepBlade(angle, reach = 1) {
+  function sweepBlade(angle, reach = 1, width = 1, closeWidth = 1) {
     const p = world.player.position,
       r = PLAYER_SIZE / 2,
       span = 3.6 * r * reach,
@@ -493,9 +515,13 @@ export function createCombat(world, tell = () => {}) {
       y: p.y + span * Math.sin(angle),
     };
     // Wide ray: the arc of the swing.
-    for (const hit of Matter.Query.ray(candidates, p, tip, r * 0.95 * reach)) {
+    for (const hit of Matter.Query.ray(candidates, p, tip, r * 0.95 * reach * width)) {
       const e = hit.body.parent.plugin.enemy;
       if (e) contacts.add(e);
+    }
+    if(closeWidth>1) for(const hit of Matter.Query.ray(candidates,p,tip,r*.95*reach*width*closeWidth)) {
+      const e=hit.body.parent.plugin.enemy;
+      if(e && Math.hypot(e.x-p.x,e.y-p.y)<=100)contacts.add(e);
     }
     // NOTE: there is deliberately NO radial "brushing" term here.
     //

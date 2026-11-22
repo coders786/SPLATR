@@ -48,10 +48,10 @@ test('encounters draw from all non-boss species in bounded, addressed formations
   }
   assert.equal(kinds.size, 7);
   assert.equal(forms.size, 5);
-  assert.equal(names.size, 5);
+  assert.equal(names.size, 6);
   assert.ok(links > 10);
 });
-test('stream visits at most a 3×3 neighbourhood, remembers defeated slots on return, prunes below tide', () => {
+test('stream visits at most a 3×3 neighbourhood, remembers defeated slots on return, prunes distant cells', () => {
   const active = new Map(),
     s = createStream(
       71,
@@ -92,4 +92,17 @@ test('a new opening can change lane, initial foe and follow-up composition, not 
   assert.equal(sides.size, 2);
   assert.ok(first.size >= 3);
   assert.ok(sequences.size >= 4);
+});
+
+test('descending below spawn loads signed grid rows all the way to the floor', () => {
+  const active=new Map(),stream=createStream(71,e=>active.set(e.id,e),home=>{
+    for(const [id,e] of active)if(e.home===home)active.delete(id);
+  });
+  for(const y of [400,1800,4200,7800,11000]) {
+    stream.sync({x:0,y},-20000); // peak's obsolete tide must NOT suppress descent
+    assert.ok(cellAt({x:0,y}).cy<0);
+    assert.ok(stream.live.size>0&&stream.live.size<=9);
+    assert.ok([...active.values()].some(e=>e.y>y&&Math.abs(e.x)<1000),`no shapes below falling player at y=${y}`);
+    for(const e of active.values())assert.ok(TYPES[e.kind],`invalid descending species ${e.kind}`);
+  }
 });

@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs';
 // This is a source-level guard because the failure is invisible in any test
 // that stubs the context: the assignment "succeeds" and nothing throws.
 
-const src = readFileSync(new URL('../src/renderer.js', import.meta.url), 'utf8');
+const src = readFileSync(new URL('../src/art/splatr-art-engine.js', import.meta.url), 'utf8');
 
 test('no canvas font is assigned with a CSS custom property', () => {
   const assignments = [...src.matchAll(/\.font\s*=\s*([`'"])([\s\S]*?)\1/g)];

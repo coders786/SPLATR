@@ -3,3 +3,9 @@ dist/
 coverage/
 *.log
 .DS_Store
+
+# Local QA captures and scratch files
+.arena/
+
+# Local tooling caches
+.cache/

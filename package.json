@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "An endless procedural 2D slash-action game for touch and keyboard.",
+  "description": "A wave-based 2D slash-action game with build-specific swords for touch and keyboard.",
   "scripts": {
     "prestart": "npm run build",
     "start": "vite preview --host 0.0.0.0 --port 5173 --strictPort",
@@ -22,6 +22,8 @@
     "matter-js": "0.20.0"
   },
   "devDependencies": {
+    "@napi-rs/canvas": "1.1.1",
+    "happy-dom": "21.0.4",
     "puppeteer-core": "24.43.1",
     "vite": "7.3.8",
     "vite-plugin-singlefile": "2.3.4"

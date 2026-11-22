@@ -26,7 +26,8 @@
 /** Stands in for an OffscreenCanvas/HTMLCanvasElement. */
 function makeSurface(width, height, made) {
   const surface = { width, height };
-  surface.getContext = () => (made.ctx ??= createRecordingContext(width, height, made));
+  surface.getContext = () =>
+    (made.ctx ??= createRecordingContext(width, height, made));
   return surface;
 }
 
@@ -52,10 +53,13 @@ export function createRecordingContext(width, height) {
   let m = [1, 0, 0, 1, 0, 0];
   const stack = [];
   const points = []; // current path, device space
-  const ops = [];    // pixel-producing ops this frame, device space
+  const ops = []; // pixel-producing ops this frame, device space
   const counts = Object.create(null);
 
-  const apply = (x, y) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+  const apply = (x, y) => [
+    m[0] * x + m[2] * y + m[4],
+    m[1] * x + m[3] * y + m[5],
+  ];
   const mul = (a, b) => [
     a[0] * b[0] + a[2] * b[1],
     a[1] * b[0] + a[3] * b[1],
@@ -109,6 +113,10 @@ export function createRecordingContext(width, height) {
       }
       note('restore');
     },
+    getTransform() {
+      const [a, b, c, d, e, f] = m;
+      return { a, b, c, d, e, f };
+    },
     setTransform(a, b, c, d, e, f) {
       m = [a, b, c, d, e, f];
     },
@@ -125,7 +133,8 @@ export function createRecordingContext(width, height) {
       m = mul(m, [x, 0, 0, y, 0, 0]);
     },
     rotate(a) {
-      const cos = Math.cos(a), sin = Math.sin(a);
+      const cos = Math.cos(a),
+        sin = Math.sin(a);
       m = mul(m, [cos, sin, -sin, cos, 0, 0]);
     },
     // --- path --------------------------------------------------------------
@@ -147,7 +156,8 @@ export function createRecordingContext(width, height) {
     },
     arc(x, y, r, a0, a1) {
       // Sample the arc so its device-space extent is comparable between frames.
-      const p = apply(x, y), s = Math.hypot(m[0], m[1]) * r;
+      const p = apply(x, y),
+        s = Math.hypot(m[0], m[1]) * r;
       points.push([p[0] - s, p[1] - s], [p[0] + s, p[1] + s]);
     },
     ellipse(x, y, rx, ry) {
@@ -193,7 +203,8 @@ export function createRecordingContext(width, height) {
     },
     drawImage(img, ...a) {
       points.length = 0;
-      if (a.length >= 4) points.push(apply(a[0], a[1]), apply(a[0] + a[2], a[1] + a[3]));
+      if (a.length >= 4)
+        points.push(apply(a[0], a[1]), apply(a[0] + a[2], a[1] + a[3]));
       else points.push(apply(a[0] ?? 0, a[1] ?? 0));
       emit('image', { src: img && img.__id });
       note('drawImage');
@@ -298,7 +309,8 @@ export function installDom({ width = 880, height = 710, dpr = 1 } = {}) {
     disconnect() {}
   };
   globalThis.devicePixelRatio = dpr;
-  globalThis.requestAnimationFrame = (fn) => setTimeout(() => fn(Date.now()), 0);
+  globalThis.requestAnimationFrame = (fn) =>
+    setTimeout(() => fn(Date.now()), 0);
   globalThis.cancelAnimationFrame = (id) => clearTimeout(id);
   return {
     surfaces: made,
@@ -324,7 +336,14 @@ export function createDisplay(width = 880, height = 710) {
     // the CSS and the draw share one source. A real element always has `dataset`.
     dataset: {},
     getContext: () => ctx,
-    getBoundingClientRect: () => ({ left: 0, top: 0, width, height, right: width, bottom: height }),
+    getBoundingClientRect: () => ({
+      left: 0,
+      top: 0,
+      width,
+      height,
+      right: width,
+      bottom: height,
+    }),
   };
   ctx.__vpWidth = width;
   return { canvas, ctx, width, height };
@@ -346,15 +365,23 @@ export function frameSignature(ctx) {
 /** Device-space centre of the largest fill/stroke on the frame that is NOT the
  *  full-screen backdrop. Used to locate the thing the player is chasing. */
 export function frameCentroid(ctx) {
-  let best = null, area = 0;
+  let best = null,
+    area = 0;
   for (const o of ctx.__ops) {
     if (!o.pts.length) continue;
-    const xs = o.pts.map((p) => p[0]), ys = o.pts.map((p) => p[1]);
-    const w = Math.max(...xs) - Math.min(...xs), h = Math.max(...ys) - Math.min(...ys);
+    const xs = o.pts.map((p) => p[0]),
+      ys = o.pts.map((p) => p[1]);
+    const w = Math.max(...xs) - Math.min(...xs),
+      h = Math.max(...ys) - Math.min(...ys);
     const a = w * h;
     if (a > area && w < (ctx.__vpWidth ?? 1e9) * 0.98) {
       area = a;
-      best = { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2, w, h };
+      best = {
+        x: (Math.min(...xs) + Math.max(...xs)) / 2,
+        y: (Math.min(...ys) + Math.max(...ys)) / 2,
+        w,
+        h,
+      };
     }
   }
   return best;

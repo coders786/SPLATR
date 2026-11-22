@@ -1,6 +1,19 @@
+import {contactVisual} from './contact-visual.js';
+import {launchSurge,bankBreakthrough,BREAKTHROUGH} from './breakthrough.js';
+import {createKillLedger,recordEnemyReward} from './kill-rewards.js';
+import {disturbDimension,stepDimensionField} from './dimension-field.js';
+import {stepCleanBanks,steerBank} from './clean-banks.js';
+import {swordProfile,effectiveSword,swordAttack,advanceSwordAttacks} from './swords.js';
+import {WAVE_ARENA,createWaveDirector} from './waves.js';
+import { MOVEMENT, flightEnvelope } from './movement-model.js';
+import { EQUIPMENT_LIMITS, nearestEquipmentTarget, aimPull, horizontalCutWidth } from './equipment-combat.js';
+import { normalizeEquipment, equipmentRules } from './equipment.js';
+import Matter from 'matter-js';
+import {inViewport} from './spawn-space.js';
 import {
   createPhysics,
   stopPlayer,
+  placePlayer,
   stepPhysics,
   launch,
   holdSpeed,
@@ -14,7 +27,7 @@ import {
 } from './physics.js';
 import { panicWindow, panicScale } from './aim.js';
 import { DASH, SPLAT } from './animation.js';
-import { SPAWN, PAD, ARENA, createStream, bandAt, district, clamp, PLAYER_SIZE } from './levels.js';
+import { SPAWN, PAD, ARENA as DEFAULT_ARENA, BAND, createStream, bandAt, district, clamp, PLAYER_SIZE } from './levels.js';
 import { createCombat } from './slasher.js';
 import { TYPES } from './shapes.js';
 import { createOpening } from './opening.js';
@@ -45,7 +58,7 @@ export const RALLY_CEIL = 58;
 
 export const MAX_EDGE = 3,
   /** Ticks (~133 ms at 1x) during which the shape you just cut cannot hurt you. */
-  CUT_GRACE = 8,
+  CUT_GRACE = 15,
   /**
    * Ticks (~500 ms at 1x) of safety after hitting ARMOUR instead of a body.
    *
@@ -105,7 +118,7 @@ export const MAX_EDGE = 3,
 // the hyper ceiling are untouched, so the game still feels fast. What it buys
 // is time -- the field gets to exist in front of the player before they have
 // flown past it.
-export const MAX_ASCENT_VY = 26;
+export const MAX_ASCENT_VY = MOVEMENT.ascent;
 
 // ── THE VIEWPORT WATCHDOG ──────────────────────────────────────────────────
 //
@@ -132,7 +145,7 @@ export const WATCHDOG_REACH = 1800;
  *  it kicks again, forever, and the player is pinned to a line they cannot
  *  leave. The window is the difference between a trampoline and a trap.
  */
-export const FLOOR_IGNORE_TICKS = 30;
+export const FLOOR_IGNORE_TICKS = MOVEMENT.floorIgnore;
 
 /** What fraction of a fall survives a held aim -- 10%, i.e. a 90% reduction.
  *
@@ -140,7 +153,7 @@ export const FLOOR_IGNORE_TICKS = 30;
  *  aim and moving down. Deliberately NOT routed through the focus meter: the
  *  brief is that aiming slows falling, and a player with an empty meter still
  *  has to be able to save themselves. */
-export const AIM_FALL_KEEP = 0.1;
+export const AIM_FALL_KEEP = MOVEMENT.aimFallKeep;
 
 /** The fall-speed cap: one screen height per 1.2 seconds.
  *
@@ -153,7 +166,7 @@ export const AIM_FALL_KEEP = 0.1;
  *  tunnel through a plate between two substeps, and the whole "falling" half of
  *  the game was one long blur with no readable speed.
  */
-export const FALL_CAP_VY = 720 / 1.2 / 60;
+export const FALL_CAP_VY = MOVEMENT.fall;
 
 export const HYPER = Object.freeze({
   speed: 280,
@@ -266,19 +279,22 @@ export function ballisticAim(from, to, speed) {
 export function createRun(
   seed,
   emit = () => {},
-  { warmup = false, staged = warmup } = {},
+  { warmup = false, staged = warmup, viewport = null, combatTrace = null, equipment = null, waveMode = false, controlPractice = false } = {},
 ) {
   // Stream the normal neighbourhood, but keep its other bodies off the
   // Hold the rest of the stream until the first live Fang is cut (or the
   // player leaves it). A strong launch gets one short decision beat after it
   // crosses empty sky. That is not a phantom hit: no score, freeze or refund.
+  const ARENA=waveMode?WAVE_ARENA:DEFAULT_ARENA;
+  const loadout = normalizeEquipment(equipment), rules = equipmentRules(loadout), edgeMax = rules.edgeMax;
+  let wingsUsed = false, focusRecovery = 0, needleCooldown = 0, bumpGuard = rules.bumpGuard, aimAngle = null;
   let solo = staged,
     glideAt = Infinity,
     // Identity of the physics contact already shown, so one collision does
     // not re-squash the pose on every substep of the same tick.
     lastContact = null;
   const waiting = [];
-  const world = createPhysics({ seed, spawn: SPAWN, pad: PAD, arena: ARENA }),
+  const world = createPhysics({ seed, spawn: SPAWN, pad: PAD, arena: waveMode ? WAVE_ARENA : ARENA }),
     origin = { ...SPAWN },
     combat = createCombat(world, (e) => emit('tell', e)),
     // ── NO ENEMY MAY ENTER OUTSIDE THE WALLS ──────────────────────────────
@@ -312,13 +328,14 @@ export function createRun(
     },
     stream = createStream(
       seed,
-      (spec) => (solo && !spec.sentry ? waiting.push(spec) : place(spec)),
+      (spec) => waveMode ? null : (solo && !spec.sentry ? waiting.push(spec) : place(spec)),
       combat.leave,
       staged,
     ),
     lesson = warmup ? createOpening(seed,world,combat) : null;
   const s = {
     phase: 'ready',
+    practice:!!controlPractice,killLedger:waveMode&&!controlPractice?createKillLedger():null,shatters:0,cleanBankTotal:0,bestCleanBankChain:0,
     opening: lesson?.state ?? null,
     staged,
     net: false,
@@ -402,6 +419,7 @@ export function createRun(
     cutGrace: 0,
     /** The id of the enemy just cut. Grace is against THIS one, not the field. */
     cutGraceFrom: null,
+    cutImmunity: new Map(),
     // Rail-bank shockwave. Separate from `impact` because it is a different
     // event with a different feeling: `impact` says "you touched something",
     // `boom` says "you bounced off a wall at speed". The renderer draws it big
@@ -429,7 +447,8 @@ export function createRun(
     splat: null,
     swingStart: 0,
     seed: seed >>> 0,
-    hp: 3,
+    hp: rules.healthMax,
+    hpMax: rules.healthMax,
     score: 0,
     kills: 0,
     chain: 0,
@@ -439,7 +458,19 @@ export function createRun(
     shots: 0,
     blade: 0,
     parry: 0,
-    edge: 3,
+    equipmentFx: {projectiles:[],echoes:[],bursts:[]},
+    equipment: loadout,
+    sword:swordProfile(loadout),
+    swordFx:[],
+    swordCharge:0,
+    swordContacts:0,
+    waveShield:0,
+    damageTaken:0,
+    flightRules: MOVEMENT,
+    launchGrace: 0,
+    dashSpeed: rules.dashSpeed,
+    edgeMax,
+    edge: edgeMax,
     recharge: 0,
     focus: 1,
     held: false,
@@ -479,13 +510,15 @@ export function createRun(
     // is measured from here, not from the start of the run.
     chainFrom: 0,
   };
-  if (!lesson) stream.sync(SPAWN, s.line);
+  if(viewport)world.viewport={...viewport};
+  const waveDirector=waveMode?createWaveDirector({seed,world,combat,state:s,emit,baseDashSpeed:rules.dashSpeed,controlPractice}):null;
+  if (!lesson && !waveMode) stream.sync(SPAWN, s.line);
   function nearest() {
     const p = world.player.position;
     let best = null,
       rank = Infinity;
     for (const e of combat.enemies.values()) {
-      if (!s.opening && (e.y > s.line - 50 || (s.caught && e.y > p.y - 70))) continue;
+      if (!s.opening && s.caught && e.y > p.y - 70) continue;
       const dx = e.x - p.x,
         dy = e.y - p.y,
         d = Math.hypot(dx, dy) + (dy > 65 ? 560 + dy : 0);
@@ -497,13 +530,15 @@ export function createRun(
     return best;
   }
   function solution(to, speed) {
+    const launchScale = s.opening || s.hyper ? 1 : s.dashSpeed;
+    speed *= launchScale;
     const p = world.player.position,
       lead = clamp(Math.hypot(to.x - p.x, to.y - p.y) / speed, 0, 11),
       q = { x: to.x + (to.vx || 0) * lead, y: to.y + (to.vy || 0) * lead };
     const v = ballisticAim(p, q, speed);
-    if (v) return v;
+    if (v) return {...v,x:v.x/launchScale,y:v.y/launchScale};
     const a = Math.atan2(q.y - p.y - 40, q.x - p.x);
-    return { x: Math.cos(a) * speed, y: Math.sin(a) * speed, power: speed / MAX_SPEED };
+    return { x: Math.cos(a) * speed/launchScale, y: Math.sin(a) * speed/launchScale, power: speed / MAX_SPEED };
   }
   function suggestion() {
     return solution(
@@ -550,6 +585,9 @@ export function createRun(
     }
     return best;
   }
+  function disturbRoom(kind,data){
+    if(s.dimension&&['combat','breach'].includes(s.wave?.phase)&&s.phase==='playing'&&!s.opening&&!s.tutorialActive)s.dimension=disturbDimension(s.dimension,kind,data);
+  }
   function focus(on) {
     if (on && s.panicTicks > 0) {
       s.panic = null;
@@ -567,17 +605,37 @@ export function createRun(
     setBulletTime(world, s.held && !s.depleted && s.focus > 0.01, !on);
   }
   function dash(v) {
-    const pv = world.player.velocity,
+    const pv = world.player.velocity, incomingVelocity={x:pv.x,y:pv.y},
       speedBeforeLaunch = Math.hypot(pv.x, pv.y);
+    // Do not drop a quick escape release before settled-deck recovery matures.
+    // Only a genuine upward launch from a stationary supported deck qualifies.
+    const deckEscape=s.wave?.phase==='combat'&&s.edge<=0&&world.grounded&&world.geometry.length>0&&speedBeforeLaunch<1&&v?.y<0;
     if (
       !['ready', 'playing'].includes(s.phase) ||
+      s.wave?.phase==='choose' ||
       !v ||
       (s.opening && !s.opening.rest) ||
-      (!s.opening?.free && s.edge <= 0) ||
+      (!s.opening?.free && s.edge <= 0 && !deckEscape) ||
       !launch(world, v)
     )
       return false;
+    if (!s.opening && !s.hyper && s.dashSpeed !== 1) {
+      const vel=world.player.velocity;
+      world.playerCeiling=Math.max(world.playerCeiling,MAX_SPEED*s.dashSpeed);
+      setPlayerVelocity(world,vel.x*s.dashSpeed,vel.y*s.dashSpeed);
+    }
     s.phase = 'playing';
+    if(s.breakthrough&&['combat','breach'].includes(s.wave?.phase)){
+      const surge=launchSurge(s.breakthrough);s.breakthrough=surge.state;
+      if(surge.boost){if(!s.hyper){const vv=world.player.velocity,sp=Math.hypot(vv.x,vv.y),next=Math.min(BREAKTHROUGH.ceiling,sp*BREAKTHROUGH.surgeFactor);world.playerCeiling=Math.max(world.playerCeiling,next);if(sp>0)setPlayerVelocity(world,vv.x*next/sp,vv.y*next/sp);}emit('hyperSurge',{...world.player.position});}
+    }
+    const sword=effectiveSword(s.sword,s.waveBuff);
+    if(!s.opening&&(!s.wave||s.wave.phase==='combat')){
+      if(sword.family==='echo')s.swordFx.push(swordAttack(sword,world.player.position,Math.atan2(v.y,v.x),s.shots+1));
+      if(sword.family==='pulse'&&s.swordCharge>=sword.chargeMax){s.swordFx.push(swordAttack(sword,world.player.position,Math.atan2(v.y,v.x),s.shots+1));s.swordCharge=0;emit('swordPulse',{...world.player.position});}
+      if(s.swordFx.length>3)s.swordFx.splice(0,s.swordFx.length-3);
+    }
+    s.launchGrace = MOVEMENT.launchGrace;
     s.caught = false;
     s.held = s.depleted = false;
     s.shots++;
@@ -592,6 +650,7 @@ export function createRun(
     s.panicGrants = [];
     glideAt = !s.opening && Math.hypot(v.x, v.y) > 22 ? world.clock + 13 : Infinity;
     s.parry = 10;
+    if(deckEscape)s.edge=1;
     if (!s.opening?.free) s.edge--;
     if (s.opening) lesson.launch();
     // A magnetised corridor makes THIS launch slightly wider, then forgets.
@@ -604,7 +663,7 @@ export function createRun(
     // could never announce itself.
     s.tier = tierOf(speedBeforeLaunch, MAX_SPEED).index;
     s.swingStart = world.clock;
-    s.blade = 16 + 15 * Math.min(1, Math.hypot(v.x, v.y) / MAX_SPEED);
+    s.blade = (16 + 15 * Math.min(1, Math.hypot(v.x, v.y) / MAX_SPEED)) / (s.opening ? 1 : s.dashSpeed) + (s.opening ? 0 : rules.bladeExtra+sword.ticks);
     // ── A DASH MUST NOT ERASE HYPER ────────────────────────────────────────
     //
     // `launch()` clamps its input to MAX_SPEED (physics.js line ~219), which is
@@ -642,6 +701,12 @@ export function createRun(
     // Hold the zero frame for one tick -- see the note at the animation clocks.
     s.freshSwing = true;
     s.stroke = beginStroke(world.player.position, s.slashAngle, s.shots);
+    s.stroke.equipment = loadout;
+    if(loadout.slash==='laser') {
+      const p=world.player.position,a=s.slashAngle;
+      s.equipmentScar={x:p.x,y:p.y,tx:p.x+Math.cos(a)*150,ty:p.y+Math.sin(a)*150,ticks:30};
+    }
+    disturbRoom('launch',{...world.player.position,speed:Math.hypot(world.player.velocity.x,world.player.velocity.y),angle:s.slashAngle,acceleration:Math.hypot(world.player.velocity.x-incomingVelocity.x,world.player.velocity.y-incomingVelocity.y)});
     emit('dash', {
       ...world.player.position,
       angle: s.slashAngle,
@@ -700,7 +765,7 @@ export function createRun(
       boostPlayer(world, HYPER.speed, HYPER.speed);
       // An edge back, so entering hyper does not strand you with nothing to
       // spend. This is feedback, not power -- the same refund a bank gives.
-      s.edge = Math.min(MAX_EDGE, s.edge + 1);
+      s.edge = Math.min(edgeMax, s.edge + 1);
       emit('hyper', {
         ...world.player.position,
         speed: Math.round(Math.hypot(world.player.velocity.x, world.player.velocity.y)),
@@ -757,16 +822,18 @@ export function createRun(
     if (!s.hyper) s.hyperLevel = 0;
   }
 
-  function end(cause) {
+  function end(cause,contact=null) {
     if (s.phase !== 'playing') return;
     s.cause = cause;
+    s.fatal = { ...world.player.position, name: cause };
     s.phase = 'dying';
     focus(false);
     s.death = 27;
     s.hp = 0;
     s.stop = 0;
     s.blade = 0;
-    emit('break', { ...world.player.position, angle: world.player.angle });
+    s.swordFx.length=0;s.swordCharge=0;
+    emit('break', { ...world.player.position, angle: world.player.angle,equipment:{...s.equipment},sword:s.sword,cut:contact?.angle??s.slashAngle,contact:contact||contactVisual(world.player,{x:world.player.position.x+1,y:world.player.position.y},0) });
   }
   /** Grant a breath and remember how long THIS one is, so the pace ramp can
    *  normalise against it. Dividing by the base constant made a long breath
@@ -776,9 +843,51 @@ export function createRun(
     s.breath = Math.max(s.breath, ticks);
     s.breathMax = Math.max(ticks, s.breath, s.breathMax || 0);
   }
-  function hurt(cause) {
-    if (s.opening || s.phase !== 'playing' || s.invul > 0) return false;
-    s.hp--;
+  function traceCombat(type,details={}) {
+    combatTrace?.record({type,tick:s.elapsed,worldClock:world.clock,shotId:s.shots,hp:s.hp,blade:s.blade,...details});
+  }
+  function equipmentBurst(at,style,from=null) {
+    const fx=s.equipmentFx.bursts;
+    fx.push({x:at.x,y:at.y,style,ticks:30,from:from?{x:from.x,y:from.y}:null});
+    if(fx.length>EQUIPMENT_LIMITS.bursts)fx.shift();
+  }
+  function tickEquipment(dt) {
+    const fx=s.equipmentFx;
+    for(const burst of fx.bursts)burst.ticks-=dt;
+    fx.bursts=fx.bursts.filter(b=>b.ticks>0);
+    for(const needle of fx.projectiles) {
+      needle.x+=needle.vx*dt;needle.y+=needle.vy*dt;needle.ticks-=dt;
+      const target=nearestEquipmentTarget(combat.enemies.values(),needle,28,null,true);
+      if(target){cut(target,true,true);needle.ticks=0;}
+    }
+    fx.projectiles=fx.projectiles.filter(p=>p.ticks>0);
+    for(const echo of fx.echoes) {
+      echo.ticks-=dt;
+      for(const enemy of [...combat.enemies.values()]) if(enemy.kind==='fang'&&!echo.hits.has(enemy.id)&&Math.hypot(enemy.x-echo.x,enemy.y-echo.y)<75) {
+        echo.hits.add(enemy.id);cut(enemy,true,true);
+      }
+    }
+    fx.echoes=fx.echoes.filter(e=>e.ticks>0);
+  }
+  function hurt(cause, source = null) {
+    const door=s.questPortal, p=world.player.position;
+    if(door && Math.hypot(p.x-door.x,p.y-door.y)<door.r+160) {if(combatTrace)traceCombat('damage-blocked',{cause,reason:'portal'});return false;}
+    if (s.opening || s.phase !== 'playing' || s.invul > 0) {if(combatTrace)traceCombat('damage-blocked',{cause,reason:s.opening?'practice':s.invul>0?'invulnerability':'inactive'});return false;}
+    if(bumpGuard && cause==='Bastion') {
+      bumpGuard=false;s.guardSpent=true;
+      const v=world.player.velocity;
+      if(source){
+        const p=world.player.position,dx=p.x-source.x,dy=p.y-source.y,d=Math.hypot(dx,dy)||1,nx=dx/d,ny=dy/d;
+        const distance=source.r+PLAYER_SIZE*.72+8;
+        placePlayer(world,{x:clamp(source.x+nx*distance,ARENA.x+PLAYER_SIZE,ARENA.x+ARENA.w-PLAYER_SIZE),y:clamp(source.y+ny*distance,ARENA.y+PLAYER_SIZE,ARENA.y+ARENA.h-PLAYER_SIZE)});
+        setPlayerVelocity(world,nx*14,ny*14);
+      }else setPlayerVelocity(world,-v.x*.7,-Math.max(8,Math.abs(v.y)));
+      equipmentBurst(world.player.position,'guard');return false;
+    }
+    const contact=contactVisual(world.player,source||{x:p.x+(world.player.velocity.x||1),y:p.y+world.player.velocity.y},s.slashAngle||0);
+    if(s.waveShield>0){s.waveShield--;s.invul=45;equipmentBurst(p,'guard');emit('waveBlock',{...p,contact,equipment:{...s.equipment},sword:s.sword});return false;}
+    s.hp--;s.damageTaken++;
+    if(combatTrace)traceCombat('damage',{cause,hpBefore:s.hp+1,hpAfter:s.hp});
     // Mercy is real-world reaction time. A faster game compresses world time
     // into fewer frames, so the window is stretched to keep the player's
     // actual recovery time unchanged.
@@ -789,13 +898,20 @@ export function createRun(
     s.panicTicks = s.panicWarm = 0;
     s.edge = Math.max(1, s.edge);
     s.stop = Math.max(s.stop, 3);
-    if (s.hp <= 0) end(cause);
-    else emit('hurt', { ...world.player.position, cause });
+    if (s.hp <= 0) end(cause,contact);
+    else emit('hurt', { ...world.player.position, cause,contact });
     return true;
   }
-  function cut(e, fromShear = false) {
-    if (e.lastSlash === s.shots) return;
-    e.lastSlash = s.shots;
+  function cut(e, fromShear = false, secondary = false, swordSource = null) {
+    if(!combat.enemies.has(e.id))return;
+    const contact=contactVisual(world.player,e,s.slashAngle||0);
+    if (!swordSource && e.lastSlash === s.shots) return;
+    if(!swordSource)e.lastSlash = s.shots;
+    if(!secondary&&!fromShear&&!s.opening&&s.sword.family==='pulse'&&(!s.wave||s.wave.phase==='combat')){
+      const was=s.swordCharge;s.swordCharge=Math.min(s.sword.chargeMax,s.swordCharge+1);s.swordContacts++;if(was<s.sword.chargeMax&&s.swordCharge===s.sword.chargeMax)emit('swordReady',{});
+    }
+    if(combatTrace)traceCombat('cut-contact',{entityId:e.id,kind:e.kind,targetHp:e.hp,fromShear});
+    s.cutImmunity.set(e.id, Math.max(s.cutImmunity.get(e.id)||0, CUT_GRACE));
     // ── POST-CUT GRACE ────────────────────────────────────────────────────
     //
     // A successful slice used to leave you inside the shape you just sliced.
@@ -826,7 +942,7 @@ export function createRun(
     // body. That is the part that fixes the recording's complaint, and it does
     // not touch the physics.
     if (!fromShear) {
-      s.cutGrace = Math.max(s.cutGrace, CUT_GRACE);
+      s.cutGrace = Math.max(s.cutGrace, CUT_GRACE+(s.waveBuff?.guard||0));
       s.cutGraceFrom = e.id;
     }
     glideAt = Infinity;
@@ -842,7 +958,11 @@ export function createRun(
     // blade meets a shape, which is what an impact cel is for.
     if (!fromShear) s.landAge = 0;
     const hpBefore = e.hp;
-    e.hp -= s.drive > 0 ? 3 : fromShear ? SHEAR.damage : 1;
+    e.hp -= secondary ? 1 : s.drive > 0 ? 3 : (!fromShear && ['crown','bastion'].includes(e.kind) ? rules.armorDamage+effectiveSword(s.sword,s.waveBuff).armor : fromShear ? SHEAR.damage : 1);
+    if(!secondary && rules.coil && !s.opening) {
+      const victim=nearestEquipmentTarget(combat.enemies.values(),e,160,e.id);
+      if(victim){equipmentBurst(victim,'spark',e);cut(victim,true,true);}
+    }
     e.flash = 16;
     s.swingStart = world.clock;
     if (s.opening) lesson.hit(e.hp > 0);
@@ -884,13 +1004,14 @@ export function createRun(
       const ceil = world.playerCeiling || MAX_SPEED,
         mag = Math.hypot(nx, ny) || 1,
         k = Math.min(1, ceil / mag);
-      setPlayerVelocity(world, nx * k, ny * k);
+      if(!secondary)setPlayerVelocity(world, nx * k, ny * k);
       s.cutGrace = Math.max(s.cutGrace, ARMOR_GRACE);
       s.cutGraceFrom = e.id;
       e.fault = s.slashAngle - e.angle;
-      emit('armor', { x: e.x, y: e.y, r: e.r, cut: s.slashAngle, hp: e.hp, kind: e.kind });
+      emit('armor', { entityId:e.id,x: e.x, y: e.y, r: e.r, cut: s.slashAngle, hp: e.hp, hpBefore, kind: e.kind,contact,upgrade:s.waveBuff?.id,equipment:{...s.equipment},sword:s.sword,armorRemoved:Math.min(hpBefore,Math.max(0,hpBefore-e.hp)),secondary:!!secondary||!!fromShear });
       return;
     }
+    if(!s.opening && !e.paper && e.kind==='crown' && s.hp===1) emit('challenge',{id:'oni'});
     combat.remove(e);
     stream.mark(e);
     s.kills++;
@@ -909,14 +1030,14 @@ export function createRun(
     // 36-tick window would show as a third-full bar). State carries it so the
     // meter always means "fraction of THIS chain's window remaining".
     s.chainMax = s.chainTime;
-    if (s.chain % 6 === 0) {
+    if (s.chain % rules.overdriveKills === 0) {
       const fresh = s.drive <= 0;
       s.drive = 175;
       if (fresh) emit('drive', {});
     }
     const mult = Math.min(8, s.chain) * (s.drive > 0 ? 2 : 1),
-      base = (e.small ? 45 : TYPES[e.kind].points) * mult,
-      stroke = s.stroke,
+      base = Math.floor((e.small ? 45 : TYPES[e.kind].points) * mult * rules.scoreMultiplier * (s.waveBuff?.score||1) * (s.hp===1 ? rules.lastHullBonus : 1)),
+      stroke = s.stroke || (s.bladeLedger ??= Object.assign(beginStroke(world.player.position,s.slashAngle,s.shots),{equipment:loadout})),
       // ── PRE-EXISTING CRASH, FLAGGED ────────────────────────────────────
       //
       // `s.stroke` is only ever assigned inside `dash()` and starts null, but
@@ -933,7 +1054,7 @@ export function createRun(
         // `released`/`points`/`kills` on the same object, so passing null was
         // never an option -- it just crashed further down the line.
         stroke || (s.bladeLedger ??= beginStroke(world.player.position, s.slashAngle, s.shots)),
-        e, base, fromShear, s.slashAngle, hpBefore,
+        e, base, fromShear, s.slashAngle, hpBefore, rules.scoreMultiplier * (s.waveBuff?.score||1) * (s.hp===1 ? rules.lastHullBonus : 1),
       ),
       { points, release } = ledger;
     // A small kill is still an impact: a short beat, never a free full
@@ -945,9 +1066,19 @@ export function createRun(
         s.firstAir ? breathFor(s, 'firstAir') : Math.round(breathFor(s, 'cut') * 1.35),
       );
     }
+    if(!secondary && !s.opening) {
+      if(rules.echo && s.chain%3===0) {
+        const p=world.player.position;
+        s.equipmentFx.echoes.push({x:p.x-Math.cos(s.slashAngle)*65,y:p.y-Math.sin(s.slashAngle)*65,ticks:30,hits:new Set()});
+        if(s.equipmentFx.echoes.length>EQUIPMENT_LIMITS.echoes)s.equipmentFx.echoes.shift();
+      }
+    }
+    equipmentBurst(e,loadout.slash);
+    focusRecovery = rules.focusRecoveryTicks;
     if (!s.bestStroke || stroke.points > s.bestStroke.points) s.bestStroke = stroke;
     s.score += points;
-    s.edge = Math.min(MAX_EDGE, s.edge + 1);
+    if(s.killLedger&&s.wave?.phase==='combat'&&!s.opening&&!s.tutorialActive)s.killLedger=recordEnemyReward(s.killLedger,{kind:e.kind,small:!!e.small,paper:!!e.paper,points});
+    s.edge = Math.min(edgeMax, s.edge + 1);
     s.focus = 1;
     s.blade = Math.min(38, s.blade + 7);
     const impact = impactFor(e.kind, e.small, release, e.paper);
@@ -959,9 +1090,11 @@ export function createRun(
         ux = e.x - world.player.position.x,
         uy = e.y - world.player.position.y,
         n = Math.hypot(ux, uy) || 1;
-      noteImpact(e.x - (ux / n) * e.r, e.y - (uy / n) * e.r, ux / n, uy / n, Math.max(sp, 8));
+      noteImpact(e.x - (ux / n) * e.r, e.y - (uy / n) * e.r, ux / n, uy / n, Math.max(sp, 8), 'cut');
     }
+    disturbRoom('cut',{x:e.x,y:e.y,speed:Math.hypot(world.player.velocity.x,world.player.velocity.y),angle:s.slashAngle,small:!!e.small,paper:!!e.paper,secondary:!!secondary||!!fromShear});
     emit('cut', {
+      entityId:e.id,contact,
       x: e.x,
       y: e.y,
       angle: e.angle,
@@ -969,6 +1102,7 @@ export function createRun(
       kind: e.kind,
       cut: s.slashAngle,
       hpBefore,
+      upgrade:s.waveBuff?.id,equipment:{...s.equipment},sword:s.sword,armorRemoved:['bastion','crown'].includes(e.kind)?hpBefore:0,secondary:!!secondary||!!fromShear,
       fault: e.fault,
       small: !!e.small,
       paper: !!e.paper,
@@ -981,7 +1115,7 @@ export function createRun(
       points,
       chain: s.chain,
     });
-    if (release) {
+    if (release && !secondary) {
       s.throughcuts++;
       const dx = Math.cos(s.slashAngle),
         dy = Math.sin(s.slashAngle),
@@ -993,17 +1127,17 @@ export function createRun(
       for (const victim of combat.forwardHits(e, end, SHEAR.width)) cut(victim, true);
     }
     if (e.kind === 'fork') combat.kids(e);
-    if (e.kind === 'crown' && s.hp < 3) {
+    if (e.kind === 'crown' && s.hp < rules.healthMax) {
       s.hp++;
       emit('repair', {});
     }
   }
   /** Record one contact: where, which way, how hard. `depth` is the closing
    *  speed along the normal; IMPACT turns that into a bend and a ring. */
-  function noteImpact(x, y, nx, ny, depth) {
+  function noteImpact(x, y, nx, ny, depth, source='surface') {
     if (!Number.isFinite(x) || !Number.isFinite(y)) return;
     if (!Number.isFinite(nx) || !Number.isFinite(ny) || (!nx && !ny)) return;
-    s.impact = { x, y, nx, ny, depth: Math.max(0, depth || 0), speed: world.player.speed };
+    s.impact = { x, y, nx, ny, source, depth: Math.max(0, depth || 0), speed: world.player.speed };
     s.impactAge = 0;
   }
   function freezePoses() {
@@ -1040,6 +1174,15 @@ export function createRun(
     );
   }
   function recharge(dt) {
+    // A settled solid deck can otherwise strand a zero-cut cube forever:
+    // airborne recharge is intentionally disabled there. Restore ONE escape
+    // cut after a short rest, never fill the rack or award anything.
+    if(s.wave?.phase==='combat'&&s.phase==='playing'&&s.edge===0&&world.grounded&&Math.hypot(world.player.velocity.x,world.player.velocity.y)<1&&world.geometry.length){
+      s.deckRecovery=(s.deckRecovery||0)+dt;
+      if(s.deckRecovery>=24){s.edge=1;s.deckRecovery=0;s.recharge=0;}
+      return;
+    }
+    s.deckRecovery=0;
     // ── THE DRIP ONLY RUNS IN THE AIR ──────────────────────────────────────
     //
     // A pip comes back every 76 dt-units. That timer is load-bearing: it is
@@ -1053,7 +1196,7 @@ export function createRun(
     // the rail block in tick), so you can never be soft-locked down there --
     // but the floor can no longer be a pip factory, because the only thing it
     // pays is the single edge that lets you leave.
-    if (s.edge >= MAX_EDGE) return void (s.recharge = 0);
+    if (s.edge >= edgeMax) return void (s.recharge = 0);
     // Refuse to drip while the cube is IN CONTACT RANGE of a rail, not merely
     // while `grounded` is set. `grounded` is a single-tick flag derived from a
     // contact that is published once per arrival, and a cube bouncing on the
@@ -1073,7 +1216,7 @@ export function createRun(
     if (s.floorCool > 0) return void (s.recharge = 0);
     if (world.grounded || railNear(world)) return void (s.recharge = 0);
     s.recharge += dt;
-    if (s.recharge >= 76) {
+    if (s.recharge >= MOVEMENT.recharge) {
       s.edge++;
       s.recharge = 0;
     }
@@ -1093,17 +1236,21 @@ export function createRun(
   //
   // Deliberately NOT reset:
   //   `best`   -- a run that beat the record and then quit still beat it.
-  //   `kills`  -- lifetime-of-the-run, so the form readout stays honest about
-  //               what the player actually cut.
   //   `hp`     -- the Cutting Room has no damage; rebuilding it would be a gift.
   function resetRunState() {
+    s.launchGrace = 0;
     s.score = 0;
+    s.bestStroke = s.stroke = s.bladeLedger = null;
+    s.shots = s.kills = s.throughcuts = 0;
+    s.moved = s.movedAvg = 0;
+    s.moveHist.fill(0);s.moveHistAt=0;
+    s._lastX=world.player.position.x;s._lastY=world.player.position.y;
     s.chain = s.chainTime = s.chainMax = 0;
     s.maxChain = 0;
     s.drive = 0;
     s.hyper = false;
     s.hyperAge = s.hyperChain = 0;
-    s.band = 0;
+    s.band = 1;
     s.peak = 0;
     s.tier = 0;
     s.blade = 0;
@@ -1112,12 +1259,11 @@ export function createRun(
     s.freshSwing = false;
     s.parry = 0;
     s.stop = 0;
-    // `throughcuts` is a lifetime STAT (it feeds the form grade), not an
-    // economy value, so it is kept alongside `kills`.
+    // Practice combat statistics are cleared along with the score.
     // Three clean pips and no dash in flight. `stopPlayer` is what the field
     // already used to put the cube at rest; it zeroes velocity properly rather
     // than leaving a launch the player cannot see.
-    s.edge = MAX_EDGE;
+    s.edge = edgeMax;
     s.recharge = 0;
     s.depleted = false;
     stopPlayer(world);
@@ -1150,19 +1296,21 @@ export function createRun(
     s.line = s.oldLine = origin.y + 650;
     s.peak = 0;
     s.reach = s.drive > 0 ? DRIVE_REACH : 1;
-    s.edge = MAX_EDGE;
+    s.edge = edgeMax;
     s.recharge = 0;
     s.focus = 1;
+    s.launchGrace = 0;
     s.blade = s.parry = s.stop = 0;
-    if (cleared) resetRunState();
+    resetRunState();
     // Let the player actually see the first live opponent before the tide
     // starts.
     s.phase = 'ready';
-    stream.sync(SPAWN, s.line - origin.y);
+    if(!waveMode)stream.sync(SPAWN, s.line - origin.y);
     emit('field', { cleared });
     return true;
   }
   function tick() {
+    if(waveDirector && s.wave.phase==='choose'){freezePoses();return;}
     if (s.phase === 'ready' || s.phase === 'over') return;
     if (s.phase === 'dying') {
       freezePoses();
@@ -1299,7 +1447,7 @@ export function createRun(
         s.depleted = true;
         setBulletTime(world, false);
       }
-    } else if (!s.held) s.focus = Math.min(1, s.focus + 1 / 250);
+    } else if (!s.held) s.focus = Math.min(1, s.focus + (focusRecovery > 0 ? 2 : 1) / 250);
     // One beat to choose the next line. A new launch is always immediate.
     if (world.clock >= glideAt) {
       glideAt = Infinity;
@@ -1341,12 +1489,8 @@ export function createRun(
       // impact, refund or freeze for missing the target.
       if (!world.grounded) grantBreath(breathFor(s, 'small'));
     }
-    // The lethal stripe should not first enter view a tenth of a second
-    // before impact. Telegraph a descent and give it a readable final beat.
-    const gap=s.line-world.player.position.y;
-    s.warning = s.opening
-      ? 0
-      : clamp((840 - gap) / 220, 0, 1) * clamp((world.player.velocity.y - 3) / 11, 0, 1);
+    // The old stripe is not lethal and no longer bounds the streamed field.
+    s.warning = 0;
     // At most two forward panic beats per launch, half a second each. They
     // never touch the focus meter: the grace is a pace limit, not a spend.
     if (s.panicTicks > 0) {
@@ -1370,6 +1514,9 @@ export function createRun(
         panicScale(s),
         focusFloor,
       );
+    if(s.equipmentScar?.ticks>0) s.equipmentScar.ticks--;
+    if(needleCooldown>0)needleCooldown--;
+    if(focusRecovery > 0) focusRecovery--;
     if(s.breath) s.breath--;
     if(!s.breath) s.breathMax=0;
     // ── THE ONE GATED CALL ────────────────────────────────────────────────
@@ -1389,8 +1536,13 @@ export function createRun(
         // substep after every trampoline launch. Measured: -13.5 in, -35.5 out,
         // and a 1,700px climb from a rule that promises one third of a screen.
         (dt) => {
+          world.playerGravityMultiplier = s.held && !s.depleted && world.player.velocity.y > 0 ? rules.aimFallGravity : 1;
           world.floorIgnore = s.floorIgnore;
-          combat.move(dt, s.band);
+          if(!s.wave||(s.wave.phase==='combat'&&s.wave.entry<=0))combat.move(dt, s.band);
+          if(rules.gravityPull && s.held) for(const enemy of combat.enemies.values()) {
+            const point=aimPull(enemy,world.player.position,aimAngle ?? s.slashAngle,dt);
+            if(point){enemy.x=point.x;enemy.y=point.y;Matter.Body.setPosition(enemy.body,point);}
+          }
         },
         pace,
       );
@@ -1437,23 +1589,12 @@ export function createRun(
     // `world.floorKick` is consumed by the floor paayer earlier in this tick, so
     // the exemption is latched on `s.floorIgnore`, which is exactly the half
     // second the floor owns after a kick.
-    if (!stopped && !s.hyper && !world.banked && !(s.floorIgnore > 0)) {
-      const vy = world.player.velocity.y;
-      if (vy < -MAX_ASCENT_VY) world.player.velocity.y = -MAX_ASCENT_VY;
+    if (!stopped) {
+      const limits=flightEnvelope(s,world.banked),velocity=world.player.velocity;
+      const y=Math.max(limits.minVy,Math.min(limits.maxVy,velocity.y));
+      if(y!==velocity.y)setPlayerVelocity(world,velocity.x,y);
+      if(s.launchGrace>0)s.launchGrace--;
     }
-    // ── THE FALL SPEED CAP ────────────────────────────────────────────────
-    //
-    // One screen height per 1.2 seconds, and it is a hard cap rather than a
-    // drag curve. The brief is about READABILITY as much as fairness: below
-    // this speed the arc is something the player can look at and time a save
-    // against, and above it the fall is a blur that ends in a wall.
-    //
-    // Exempt while aiming: a held aim is the player explicitly asking for time,
-    // and the aim damping above already owns that case (it reduces the fall to
-    // 10%, far below the cap). Also exempt on a trampoline tick, because the
-    // floor's kick owns the vertical speed for that half second.
-    if (!stopped && !s.hyper && world.player.velocity.y > FALL_CAP_VY)
-      world.player.velocity.y = FALL_CAP_VY;
     // ── WHAT ACTUALLY MOVED ──────────────────────────────────────────────
     //
     // Displacement over the tick, computed after physics and before anything
@@ -1484,7 +1625,7 @@ export function createRun(
       // averages floor jitter against the still frames between bounces.
       //
       // `MOVE_HIST` is 12 ticks -- 200ms at the 60Hz the simulation runs at.
-      pushMove(s, s.moved);
+      if (!stopped && s.moved > 0.001) pushMove(s, s.moved);
       // A cube resting on a rail or a deck, with no meaningful vertical speed,
       // is AT REST: whatever velocity the solver left behind is not motion the
       // player can see, so the effects that read "how fast is this thing"
@@ -1528,6 +1669,7 @@ export function createRun(
     // what guarantees that, because without it a trampoline that always kicks
     // would re-kick on the very next substep.
     if (world.floorKick) {
+      wingsUsed = false;
       const kick = world.floorKick;
       world.floorKick = null;
       if (s.phase === 'playing' && !(s.floorIgnore > 0)) {
@@ -1542,14 +1684,30 @@ export function createRun(
         // edges gets the bounce and the flash but not a fourth pip; a player
         // with none gets a way back into the game. This is the anti-farm: the
         // cap is the reward ceiling, not a cooldown.
-        if (s.edge < MAX_EDGE) {
+        if (s.edge < edgeMax) {
           s.edge++;
           s.edgeReturn = 14;
+        }
+        if(rules.floorBoost!==1) {
+          const v=world.player.velocity;setPlayerVelocity(world,v.x,v.y*rules.floorBoost);
+        }
+        if(rules.floorWave) {
+          const p=world.player.position;equipmentBurst(p,'floor');
+          for(const enemy of [...combat.enemies.values()])if(enemy.kind==='fang'&&Math.hypot(enemy.x-p.x,enemy.y-p.y)<=170)cut(enemy,true,true);
         }
         emit('floorKick', { vy: kick.vy, edge: s.edge });
       }
     }
     if (hitSurface && hitSurface !== lastContact && s.phase === 'playing') {
+      if(rules.wallRecharge && !wingsUsed && hitSurface.surface === 'rail' && Math.abs(hitSurface.nx) > .5) {
+        s.edge = Math.min(edgeMax,s.edge+1); wingsUsed = true; s.edgeReturn = 14;
+      }
+      if(rules.wallNeedles && needleCooldown<=0 && hitSurface.surface==='rail' && Math.abs(hitSurface.nx)>.5) {
+        needleCooldown=45;
+        const p=world.player.position;
+        for(const dx of [-1,1])s.equipmentFx.projectiles.push({x:p.x,y:p.y,vx:dx*2,vy:-9,ticks:45});
+        s.equipmentFx.projectiles=s.equipmentFx.projectiles.slice(-EQUIPMENT_LIMITS.projectiles);
+      }
       lastContact = hitSurface;
       noteImpact(hitSurface.x, hitSurface.y, hitSurface.nx, hitSurface.ny, hitSurface.depth);
       // ── A DASH INTO A WALL ──────────────────────────────────────────────
@@ -1610,7 +1768,7 @@ export function createRun(
         emit('recover', { edge: s.edge });
       }
       // (An earned bounce further down this block may add one more; the cap is
-      // MAX_EDGE either way, so a fast arrival can go 0 -> 2 but never 0 -> 3.)
+      // edgeMax either way, so a fast arrival can go 0 -> 2 but never 0 -> 3.)
       if (s.chain > 0) {
         s.chain = 0;
         s.chainTime = 0;
@@ -1761,7 +1919,7 @@ export function createRun(
       // it is the way OUT of trouble, not a reward for touching a wall.
       // The floor's own pip is paid in the trampoline block above; paying again
       // here would make one touch worth two pips.
-      if (earned && !floorKicked) s.edge = Math.min(MAX_EDGE, s.edge + 1);
+      if (earned && !floorKicked) s.edge = Math.min(edgeMax, s.edge + 1);
       s.banks++;
       s.blade = Math.max(s.blade, 14);
       // Publish the shockwave for the renderer. Only worth drawing at speed:
@@ -1776,6 +1934,10 @@ export function createRun(
         };
         s.boomAge = 0;
       }
+      if(earned && rules.reboundBoost!==1) {
+        const v=world.player.velocity,sp=Math.hypot(v.x,v.y),cap=world.playerCeiling||MAX_SPEED;
+        const k=Math.min(rules.reboundBoost,cap/Math.max(1,sp));if(k>1)setPlayerVelocity(world,v.x*k,v.y*k);
+      }
       emit('bank', {
         x: hitSurface.x,
         y: hitSurface.y,
@@ -1787,6 +1949,28 @@ export function createRun(
         banks: s.banks,
         combo: s.banks >= 3,
       });
+    }
+    // Wave-specific skill recognition is independent of the legacy rail refund.
+    // Observe each real physics arrival, never a cooldown repeatedly touching a wall.
+    if(s.wave?.cleanBanks){
+      const a=world.arena,p=world.player.position,v=world.player.velocity;
+      const side=s.wave.cleanBanks.lastSide;
+      const clearance=side==='left'?p.x-a.x:side==='right'?a.x+a.w-p.x:side==='top'?p.y-a.y:Infinity;
+      const result=stepCleanBanks(s.wave.cleanBanks,{dt:world.engine.timing.timeScale,
+        active:!stopped&&s.phase==='playing'&&['combat','breach'].includes(s.wave.phase)&&s.wave.entry<=0&&!s.opening&&!s.tutorialActive,
+        distance:s.moved,speed:Math.hypot(v.x,v.y),target:s.wave.pace.target,shot:s.shots,clearance,arena:a,
+        contact:hitSurface?.surface==='rail'?{...hitSurface,outgoingX:v.x,outgoingY:v.y}:null});
+      s.wave.cleanBanks=result.state;
+      if(result.event){
+        if(s.impact&&Math.hypot(s.impact.x-result.event.x,s.impact.y-result.event.y)<45)s.impact={...s.impact,source:'bank'};
+        if(s.boom&&Math.hypot(s.boom.x-result.event.x,s.boom.y-result.event.y)<45)s.boom={...s.boom,source:'bank'};
+        s.cleanBankTotal++;s.bestCleanBankChain=Math.max(s.bestCleanBankChain,result.state.best);
+        const before={x:v.x,y:v.y};
+        if(s.held&&aimAngle!==null){const steered=steerBank(before,{x:hitSurface.nx,y:hitSurface.ny},{x:Math.cos(aimAngle),y:Math.sin(aimAngle)});setPlayerVelocity(world,steered.x,steered.y);result.state.steered=Math.hypot(steered.x-before.x,steered.y-before.y)>.01;if(result.state.steered)s.launchGrace=Math.max(s.launchGrace,MOVEMENT.launchGrace);}
+        if(s.breakthrough){const reward=bankBreakthrough(s.breakthrough);s.breakthrough=reward.state;if(reward.sonic){if(!s.hyper){const vv=world.player.velocity,sp=Math.hypot(vv.x,vv.y),next=Math.min(BREAKTHROUGH.ceiling,sp*BREAKTHROUGH.sonicFactor);world.playerCeiling=Math.max(world.playerCeiling,next);if(sp>0)setPlayerVelocity(world,vv.x*next/sp,vv.y*next/sp);}emit('sonicBank',{...world.player.position});}}
+        disturbRoom('bank',{...result.event,x:result.event.x-result.event.nx*PLAYER_SIZE/2,y:result.event.y-result.event.ny*PLAYER_SIZE/2,normalSpeed:Math.max(0,-hitSurface.incomingX*hitSurface.nx-hitSurface.incomingY*hitSurface.ny),speed:result.event.incoming,angle:Math.atan2(hitSurface.ny,hitSurface.nx)});
+        emit('cleanBank',{...result.event,steered:result.state.steered});
+      }
     }
     // The pip-return flash is a short readout, not a state.
     if (s.edgeReturn > 0) s.edgeReturn--;
@@ -1804,8 +1988,8 @@ export function createRun(
       if (!(world.playerCeiling > floor)) world.playerCeiling = floor;
       else world.playerCeiling = Math.max(floor, world.playerCeiling - 0.6);
       s.ceiling = world.playerCeiling;
-    } else if (world.playerCeiling > MAX_SPEED) {
-      world.playerCeiling = Math.max(MAX_SPEED, world.playerCeiling - 0.22);
+    } else if (world.playerCeiling > MAX_SPEED * s.dashSpeed) {
+      world.playerCeiling = Math.max(MAX_SPEED * s.dashSpeed, world.playerCeiling - 0.22);
       s.ceiling = world.playerCeiling;
     }
     const dt = world.engine.timing.timeScale;
@@ -1815,9 +1999,15 @@ export function createRun(
     if (!s.opening) s.reach = (s.drive > 0 ? DRIVE_REACH : 1) + (s.locked ? 0.12 : 0);
     if (s.blade > 0) {
       s.slashAngle = Math.atan2(world.player.velocity.y, world.player.velocity.x);
-      combat.sweepBlade(s.slashAngle, s.reach);
+      combat.sweepBlade(s.slashAngle, s.reach*effectiveSword(s.sword,s.waveBuff).reach, horizontalCutWidth(s.slashAngle,rules)*s.sword.width, rules.closeWidth);
     }
-    for (const e of combat.contacts) {
+    // Resolve this step's contact batch using one attack eligibility snapshot.
+    // A presentation/refund from an earlier contact cannot change whether a
+    // later enemy in the same swept cluster is cut or treated as body damage.
+    const attackingThisStep=s.blade>0;
+    const contactBatch=[...combat.contacts];
+    if(combatTrace && contactBatch.length)traceCombat('contact-batch',{attacking:attackingThisStep,entities:contactBatch.map(e=>e.id).join(',')});
+    for (const e of contactBatch) {
       if (!combat.enemies.has(e.id) || s.phase !== 'playing') continue;
       // The shape you just cut cannot TOUCH you while you leave its body. This
       // is scoped by id on purpose -- see the note in `cut()`.
@@ -1828,18 +2018,22 @@ export function createRun(
       // swallowing that would turn a reward into a lockout. Measured with the
       // grace applied to both branches: the "second cut scores once" test lost
       // its second cut entirely.
-      if (s.blade > 0) cut(e);
-      else if (s.cutGrace > 0 && e.id === s.cutGraceFrom) continue;
-      else hurt(TYPES[e.kind].name);
+      if (attackingThisStep) cut(e);
+      else if ((s.cutImmunity.get(e.id)||0)>0 || (s.cutGrace > 0 && e.id === s.cutGraceFrom)) continue;
+      else hurt(TYPES[e.kind].name,e);
     }
     combat.contacts.clear();
+    if(!stopped&&(!s.wave||s.wave.phase==='combat'))s.swordFx=advanceSwordAttacks(s.swordFx,dt,
+      a=>combat.forwardHits({x:a.x,y:a.y},{x:a.tx,y:a.ty},a.width),
+      (enemy,a)=>{cut(enemy,true,true,a);emit('swordHit',{x:enemy.x,y:enemy.y,kind:a.kind});});
+    tickEquipment(dt);
     combat.attacks(dt, (h) => {
       const facing = h.kind === 'needle' && Math.cos(s.slashAngle - h.angle) < -0.2;
       if (s.blade <= 0 || !(facing || s.parry > 0))
         hurt(h.kind === 'ring' ? 'Pulse wave' : `${TYPES[h.source].name} needle`);
       else if (h.kind === 'needle') emit('parry', { x: h.x, y: h.y, angle: h.angle });
     });
-    combat.linkAttacks(stream.live, dt, () => {
+    combat.linkAttacks(waveDirector?waveDirector.cells:stream.live, s.wave?.entry>0?0:dt, () => {
       if (s.parry <= 0) hurt('Prism link');
     });
     if (s.phase !== 'playing') return;
@@ -1863,6 +2057,7 @@ export function createRun(
     //
     // So it is held while the entities are frozen. The window is spent on
     // motion, which is what it was for.
+    if(!stopped)for(const [id,left] of s.cutImmunity){if(left<=dt)s.cutImmunity.delete(id);else s.cutImmunity.set(id,left-dt);}
     if (s.cutGrace > 0 && !stopped) {
       s.cutGrace = Math.max(0, s.cutGrace - dt);
       if (!s.cutGrace) s.cutGraceFrom = null;
@@ -1875,7 +2070,7 @@ export function createRun(
       return;
     }
     if (
-      solo &&
+      !waveMode && solo &&
       (!combat.enemies.has('0:0/0') ||
         Math.hypot(world.player.position.x - origin.x, world.player.position.y - origin.y) > 410)
     ) {
@@ -1925,6 +2120,7 @@ export function createRun(
     hyperStep();
     const p = world.player.position;
     s.peak = Math.max(s.peak, origin.y - p.y);
+    if(waveDirector){s.dimension=stepDimensionField(s.dimension,{dt,active:!stopped&&s.phase==='playing'&&['combat','breach'].includes(s.wave.phase)&&!s.opening&&!s.tutorialActive,x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,distance:s.moved});waveDirector.tick(dt);if(s.wave.phase!=='combat'){s.swordFx.length=0;s.swordCharge=0;s.equipmentFx={projectiles:[],echoes:[],bursts:[]};s.drive=0;}return;}
     s.oldLine = s.line;
     s.line = Math.min(s.line - dt * (0.38 + Math.min(6, s.band) * 0.07), origin.y - s.peak + 1180);
     // The cut-room safety net is gone with the Redline.
@@ -1942,10 +2138,9 @@ export function createRun(
     // you recover from, not the end of a run -- which means the only way to
     // lose is enemy damage, and the game stops punishing you for gravity.
     //
-    // `s.line` is deliberately KEPT as the enemy spawn frontier. levels.js uses
-    // it to decide which cells may spawn, so deleting it outright would let the
-    // field grow without bound. It is now a boundary for the FIELD, not for the
-    // player: the field stops descending below it and nothing dies there.
+    // The stream follows the player in both directions. s.line remains only
+    // for legacy presentation; it must not gate spawning or target selection.
+    // A fixed 3x3 live neighbourhood bounds the field even during a long fall.
     stream.sync({ x: p.x - origin.x, y: p.y - origin.y }, s.line - origin.y);
     // ── THE WATCHDOG ───────────────────────────────────────────────────────
     //
@@ -1955,9 +2150,9 @@ export function createRun(
     {
       let near = 0;
       for (const e of combat.enemies.values()) {
-        if (Math.hypot(e.x - p.x, e.y - p.y) < WATCHDOG_REACH) { near++; break; }
+        if (world.viewport ? inViewport(e,world.viewport,120) : Math.hypot(e.x-p.x,e.y-p.y)<WATCHDOG_REACH) near++;
       }
-      if (near > 0) s.emptyTicks = 0;
+      if (near >= 2) s.emptyTicks = 0;
       else if (++s.emptyTicks >= EMPTY_WATCHDOG_TICKS) {
         s.emptyTicks = 0;
         s.watchdog++;
@@ -1983,17 +2178,18 @@ export function createRun(
         stream.sync({ x: p.x - origin.x, y: p.y - origin.y }, s.line - origin.y);
         let live2 = 0;
         for (const e of combat.enemies.values()) {
-          if (Math.hypot(e.x - p.x, e.y - p.y) < WATCHDOG_REACH) { live2++; break; }
+          if (world.viewport ? inViewport(e,world.viewport,120) : Math.hypot(e.x-p.x,e.y-p.y)<WATCHDOG_REACH) live2++;
         }
-        if (live2 === 0) spawnInView(p, origin);
+        if (live2 < 2) spawnInView(p, origin);
       }
     }
     const band = bandAt(-s.peak);
     if (band > s.band) {
       s.band = band;
-      s.edge = 3;
+      s.edge = edgeMax;
       s.focus = 1;
       emit('sector', { band, name: district(seed, band) });
+      if(band>=5 && !s.opening) emit('challenge',{id:'glass'});
       if (band % 3 === 0) {
         for (const e of combat.enemies.values()) if (e.kind === 'crown') combat.remove(e);
         combat.add({
@@ -2032,7 +2228,7 @@ export function createRun(
         x = p.x + (i === 0 ? -spread : spread),
         y = topY + i * 90,
         id = `rescue-${s.watchdog}-${i}`;
-      const e = combat.add({ kind, x, y, id, home: 'rescue', slot: -1, delay: 24 });
+      const e = combat.add({ kind, x:world.viewport?world.viewport.x+world.viewport.w*(i?.65:.4):x, y:world.viewport?world.viewport.y+world.viewport.h*.45:y, id, home: 'rescue', slot: -1, delay: 24, wave:true });
       if (e) n++;
     }
     if (n) emit('rescue', { n });
@@ -2050,6 +2246,23 @@ export function createRun(
     combat,
     stream,
     state: s,
+    /** Return once to the next band; the ticket itself remains spent. */
+    leaveQuestVault() {
+      if (!s.questPortal || s.questVaultReturned) return false;
+      s.questVaultReturned = true;
+      s.questPortal = null;
+      const p = world.player.position;
+      const y = Math.max(ARENA.y + 180, origin.y - s.band * BAND - 120);
+      placePlayer(world, { x: p.x, y });
+      stopPlayer(world);
+      s.edge = edgeMax;
+      s.focus = 1;
+      s.invul = Math.max(s.invul, 90);
+      s.peak = Math.max(s.peak, origin.y - y);
+      s.oldLine = s.line = Math.min(s.line, y + 1180);
+      stream.sync(world.player.position, s.line);
+      return true;
+    },
     /**
      * Publish the viewport height, which the floor's trampoline needs.
      *
@@ -2063,11 +2276,13 @@ export function createRun(
      * The renderer calls this on every resize, which is the only place that
      * knows the real height. It is also safe to call before the first frame.
      */
+    setView(view) {world.viewport={...view};},
     setViewport(w, h) {
       if (Number.isFinite(h) && h > 0) world.viewH = h;
       if (Number.isFinite(w) && w > 0) world.viewW = w;
       return world.viewH;
     },
+    setAim(v){aimAngle=v && Number.isFinite(v.x) && Number.isFinite(v.y) && Math.hypot(v.x,v.y)>.01 ? Math.atan2(v.y,v.x) : null;},
     tick,
     dash,
     hurt,
@@ -2090,7 +2305,10 @@ export function createRun(
       }),
     skipOpening: () => enterField(false),
     retire,
+    chooseWaveBuff:id=>waveDirector?.choose(id)||false,
+    skipBreach:()=>waveDirector?.skipBreach()||false,
     dispose() {
+      waveDirector?.dispose();s.swordFx.length=0;s.swordCharge=0;
       combat.dispose();
       destroyPhysics(world);
     },

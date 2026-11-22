@@ -33,7 +33,10 @@ import { installDom, createDisplay } from './support/display.js';
  */
 function bodyMatrix(ctx) {
   const op = ctx.__ops.find(
-    (o) => o.kind === 'fill' && o.pts.length === 6 && String(o.paint).toLowerCase() === '#fff8ec',
+    (o) =>
+      o.kind === 'fill' &&
+      o.pts.length === 6 &&
+      String(o.paint).toLowerCase() === '#fff8ec',
   );
   return op ? op.m : null;
 }
@@ -73,8 +76,16 @@ test('all eight directions are named the way the screen shows them', () => {
   // spelled out: `atan2` in math convention runs counter-clockwise, so the
   // naive index names run backwards on a display. Measured before the fix:
   // N and S, NE and SE, NW and SW were all swapped.
-  assert.equal(OCTANT_NAMES[octant(0, -1)], 'N', 'moving UP the screen is North');
-  assert.equal(OCTANT_NAMES[octant(0, 1)], 'S', 'moving DOWN the screen is South');
+  assert.equal(
+    OCTANT_NAMES[octant(0, -1)],
+    'N',
+    'moving UP the screen is North',
+  );
+  assert.equal(
+    OCTANT_NAMES[octant(0, 1)],
+    'S',
+    'moving DOWN the screen is South',
+  );
   assert.equal(OCTANT_NAMES[octant(1, -1)], 'NE');
   assert.equal(OCTANT_NAMES[octant(1, 1)], 'SE');
   assert.equal(OCTANT_NAMES[octant(-1, 1)], 'SW');
@@ -109,8 +120,16 @@ test('the leading and trailing walls are the walls travel is heading for and lea
     // but `Object.is(-0, 0)` is false, and `deepEqual` uses it -- so a correct
     // renderer with a -0 sign bit failed this assertion for a whole round.
     const norm = (v) => [v.x + 0, v.y + 0];
-    assert.deepEqual(norm(d.lead), lead[name], `${name} lights the wrong leading wall`);
-    assert.deepEqual(norm(d.trail), lead[name].map((n) => -n + 0), `${name} trail is wrong`);
+    assert.deepEqual(
+      norm(d.lead),
+      lead[name],
+      `${name} lights the wrong leading wall`,
+    );
+    assert.deepEqual(
+      norm(d.trail),
+      lead[name].map((n) => -n + 0),
+      `${name} trail is wrong`,
+    );
   }
 });
 
@@ -120,11 +139,22 @@ test('the dash runs anticipation, active and recovery in that order, then ends',
   const seen = [];
   for (let t = 0; t <= DASH.total; t++) {
     const f = dashFor(t, 120, 0);
-    assert.ok(f, `no dash pose at tick ${t} -- the animation must cover its whole life`);
+    assert.ok(
+      f,
+      `no dash pose at tick ${t} -- the animation must cover its whole life`,
+    );
     if (seen.at(-1) !== f.phase) seen.push(f.phase);
   }
-  assert.deepEqual(seen, ['windup', 'active', 'recover'], 'the three phases must be in order');
-  assert.equal(dashFor(DASH.total + 1, 120, 0), null, 'the dash must END, not linger');
+  assert.deepEqual(
+    seen,
+    ['windup', 'active', 'recover'],
+    'the three phases must be in order',
+  );
+  assert.equal(
+    dashFor(DASH.total + 1, 120, 0),
+    null,
+    'the dash must END, not linger',
+  );
   assert.equal(dashFor(-1, 120, 0), null, 'no dash before the counter starts');
 });
 
@@ -132,14 +162,23 @@ test('anticipation compresses BACKWARD and pulls the core all the way back', () 
   const a = dashFor(0, 120, 0);
   const b = dashFor(DASH.windup - 1, 120, 0);
   // Dashing right: thinner and taller, and it gets more so as the coil loads.
-  assert.ok(a.sx < 1 && a.sy > 1, 'the wind-up must squash along the dash axis, not across it');
+  assert.ok(
+    a.sx < 1 && a.sy > 1,
+    'the wind-up must squash along the dash axis, not across it',
+  );
   assert.ok(b.sx < a.sx, `the coil must deepen, not relax: ${a.sx} -> ${b.sx}`);
   // The core is pulled AWAY from the direction of travel -- toward the wall it
   // is about to leave. Sign errors here are invisible at rest and obvious in
   // motion, which is exactly the class of bug worth pinning down.
-  assert.ok(b.core.x < 0, `the core must be pulled back against an eastward dash, got ${b.core.x}`);
+  assert.ok(
+    b.core.x < 0,
+    `the core must be pulled back against an eastward dash, got ${b.core.x}`,
+  );
   // The leading edge is already glowing: the wind-up IS the telegraph.
-  assert.ok(a.leadGlow > 0.2 && b.leadGlow > a.leadGlow, 'the leading wall must flash during the wind-up');
+  assert.ok(
+    a.leadGlow > 0.2 && b.leadGlow > a.leadGlow,
+    'the leading wall must flash during the wind-up',
+  );
 });
 
 test('the active dash stretches along travel and slams the core against the front wall', () => {
@@ -150,12 +189,18 @@ test('the active dash stretches along travel and slams the core against the fron
   assert.ok(e.sy < 0.95, `an eastward dash must thin vertically, got ${e.sy}`);
   // South: the same deformation, swapped onto the other axis.
   const s = dashFor(DASH.windup + 2, 0, 120);
-  assert.ok(s.sy > 1.1 && s.sx < 0.95, 'a southward dash must be the transpose of an eastward one');
+  assert.ok(
+    s.sy > 1.1 && s.sx < 0.95,
+    'a southward dash must be the transpose of an eastward one',
+  );
   // Core pinned FORWARD, into the leading wall, under G-force.
   assert.ok(e.core.x > 0.2, `the core must slam forward, got ${e.core.x}`);
   assert.ok(s.core.y > 0.2, 'and downward on a southward dash');
   // The back of the body dematerialises: the trailing wall breaks into dashes.
-  assert.ok(e.trailBreak > 0.3, `the trailing wall must break apart, got ${e.trailBreak}`);
+  assert.ok(
+    e.trailBreak > 0.3,
+    `the trailing wall must break apart, got ${e.trailBreak}`,
+  );
   assert.ok(e.ghost > 0.9, 'the active phase must leave ghosts');
 });
 
@@ -173,8 +218,14 @@ test('recovery brakes, overshoots and settles back to exactly 1:1', () => {
     if (sx < 0.995) below = true;
     if (sx > 1.005) above = true;
   }
-  assert.ok(above && below, `recovery must cross rest, not glide into it (above=${above} below=${below})`);
-  assert.ok(settled && Math.abs(settled.sx - 1) < 0.02, `the body must return to 1:1, got ${settled.sx}`);
+  assert.ok(
+    above && below,
+    `recovery must cross rest, not glide into it (above=${above} below=${below})`,
+  );
+  assert.ok(
+    settled && Math.abs(settled.sx - 1) < 0.02,
+    `the body must return to 1:1, got ${settled.sx}`,
+  );
   assert.ok(Math.abs(settled.sy - 1) < 0.02, 'and on both axes');
   assert.ok(settled.core.x < 0.05, 'the core must re-centre');
 });
@@ -190,7 +241,10 @@ test('the recovery never moves the body faster than the eye can follow', () => {
     worst = Math.max(worst, Math.abs(f.sx - prev.sx), Math.abs(f.sy - prev.sy));
     prev = f;
   }
-  assert.ok(worst < 0.16, `the recovery pops: worst single-tick step ${worst.toFixed(3)}`);
+  assert.ok(
+    worst < 0.16,
+    `the recovery pops: worst single-tick step ${worst.toFixed(3)}`,
+  );
 });
 
 test('a diagonal does NOT stretch along one screen axis', () => {
@@ -204,12 +258,18 @@ test('a diagonal does NOT stretch along one screen axis', () => {
       Math.abs(d.sx - d.sy) < 1e-9,
       `${name} must deform uniformly, got sx=${d.sx.toFixed(3)} sy=${d.sy.toFixed(3)}`,
     );
-    assert.ok(d.sx > 1.02, `${name} should still read as pushing outward, got ${d.sx}`);
+    assert.ok(
+      d.sx > 1.02,
+      `${name} should still read as pushing outward, got ${d.sx}`,
+    );
   }
   // And the cardinal cases must still be anisotropic -- this is not a case of
   // "just make everything uniform".
   const e = dashFor(DASH.windup + 2, 120, 0);
-  assert.ok(Math.abs(e.sx - e.sy) > 0.2, 'a cardinal dash must still stretch one axis');
+  assert.ok(
+    Math.abs(e.sx - e.sy) > 0.2,
+    'a cardinal dash must still stretch one axis',
+  );
 });
 
 /* ── 3. ghosts, particles, splat ────────────────────────────────────────── */
@@ -224,14 +284,27 @@ test('ghost trails are three silhouettes BEHIND the body, spaced far enough to r
   // ghost at anything under 1.0 local units is drawn INSIDE the cube and reads
   // as a stripe rather than an echo.
   for (const gh of g) {
-    assert.ok(Math.hypot(gh.x, gh.y) >= 1, `ghost at ${Math.hypot(gh.x, gh.y).toFixed(2)} is inside the body`);
+    assert.ok(
+      Math.hypot(gh.x, gh.y) >= 1,
+      `ghost at ${Math.hypot(gh.x, gh.y).toFixed(2)} is inside the body`,
+    );
     assert.ok(gh.x < 0, 'an eastward dash must leave its ghosts to the west');
   }
   // Fading: nearer ghosts are stronger.
-  assert.ok(g[0].alpha > g[1].alpha && g[1].alpha > g[2].alpha, 'the trail must fade with age');
-  assert.ok(g[0].alpha < 0.5, 'a ghost must be an after-image, not a second solid body');
+  assert.ok(
+    g[0].alpha > g[1].alpha && g[1].alpha > g[2].alpha,
+    'the trail must fade with age',
+  );
+  assert.ok(
+    g[0].alpha < 0.5,
+    'a ghost must be an after-image, not a second solid body',
+  );
   // No ghosts before the body is moving, or once the dash is over.
-  assert.equal(ghostsFor(dashFor(0, 120, 0)).length, 0, 'no ghosts during the wind-up');
+  assert.equal(
+    ghostsFor(dashFor(0, 120, 0)).length,
+    0,
+    'no ghosts during the wind-up',
+  );
   assert.equal(ghostsFor(null).length, 0);
 });
 
@@ -243,7 +316,10 @@ test('the ghost trail is the same length in all eight directions', () => {
     return Math.hypot(g[1].x, g[1].y);
   });
   const spread = Math.max(...lens) - Math.min(...lens);
-  assert.ok(spread < 1e-9, `trail length varies by direction: ${lens.map((n) => n.toFixed(3))}`);
+  assert.ok(
+    spread < 1e-9,
+    `trail length varies by direction: ${lens.map((n) => n.toFixed(3))}`,
+  );
 });
 
 test('launch dust is thrown off the trailing wall and braking sparks off the leading one', () => {
@@ -256,8 +332,14 @@ test('launch dust is thrown off the trailing wall and braking sparks off the lea
   // stopped). Opposite signs are the whole distinction between the two events.
   const dustMean = dust.reduce((n, p) => n + p.dx, 0) / dust.length;
   const sparkMean = sparks.reduce((n, p) => n + p.dx, 0) / sparks.length;
-  assert.ok(dustMean < -0.2, `launch dust must be thrown backward, mean ${dustMean.toFixed(2)}`);
-  assert.ok(sparkMean > 0.2, `braking sparks must fly forward, mean ${sparkMean.toFixed(2)}`);
+  assert.ok(
+    dustMean < -0.2,
+    `launch dust must be thrown backward, mean ${dustMean.toFixed(2)}`,
+  );
+  assert.ok(
+    sparkMean > 0.2,
+    `braking sparks must fly forward, mean ${sparkMean.toFixed(2)}`,
+  );
   // Sparks are faster than dust -- that is what makes a brake snap.
   assert.ok(sparks[0].speed > dust[0].speed, 'sparks must outrun dust');
   // And the fan is symmetric about the axis, so the burst is not lopsided.
@@ -270,18 +352,27 @@ test('the wall splat flattens against the wall, then dazes back to square', () =
   // vertically and spreads horizontally, like a pancake on a ceiling.
   const hit = splatFor(0, { x: 0, y: -1 });
   assert.equal(hit.phase, 'pancake');
-  assert.ok(hit.sy < 0.5, `the body must flatten against the floor, got ${hit.sy}`);
+  assert.ok(
+    hit.sy < 0.5,
+    `the body must flatten against the floor, got ${hit.sy}`,
+  );
   assert.ok(hit.sx > 1.2, `and bulge along it, got ${hit.sx}`);
   // A side wall does the transpose.
   const wall = splatFor(0, { x: -1, y: 0 });
-  assert.ok(wall.sx < 0.5 && wall.sy > 1.2, 'a side hit must flatten horizontally');
+  assert.ok(
+    wall.sx < 0.5 && wall.sy > 1.2,
+    'a side hit must flatten horizontally',
+  );
   // The core is pressed INTO the wall, not left floating in the middle.
   assert.ok(wall.core.x > 0.3, 'the core must be pressed into the wall it hit');
   // It recovers, and it ends: no splat can outlive its own timeline.
   const daze = splatFor(SPLAT.total - 1, { x: 0, y: -1 });
   assert.equal(daze.phase, 'daze');
   assert.ok(daze.daze < 0.1, 'the daze must be over by the end');
-  assert.ok(Math.abs(daze.sy - 1) < 0.1, `the body must come back square, got ${daze.sy}`);
+  assert.ok(
+    Math.abs(daze.sy - 1) < 0.1,
+    `the body must come back square, got ${daze.sy}`,
+  );
   assert.equal(splatFor(SPLAT.total, { x: 0, y: -1 }), null);
   // A normal of zero is not a contact, and must not produce a deformed body.
   assert.equal(splatFor(0, { x: 0, y: 0 }), null);
@@ -350,12 +441,18 @@ test('the drawn body is never rotated: 8 directions, every dash tick', () => {
       if (!m) {
         failures.push(`${name}@${age}: body not drawn`);
       } else if (Math.abs(m[1]) > 1e-6 || Math.abs(m[2]) > 1e-6) {
-        failures.push(`${name}@${age}: b=${m[1].toFixed(4)} c=${m[2].toFixed(4)}`);
+        failures.push(
+          `${name}@${age}: b=${m[1].toFixed(4)} c=${m[2].toFixed(4)}`,
+        );
       }
       run.dispose();
     }
   }
-  assert.deepEqual(failures.slice(0, 5), [], `the cube rotated: ${failures.slice(0, 5).join('; ')}`);
+  assert.deepEqual(
+    failures.slice(0, 5),
+    [],
+    `the cube rotated: ${failures.slice(0, 5).join('; ')}`,
+  );
 });
 
 test('the drawn body stays axis-aligned through impacts, swings, splats and hyper', () => {
@@ -385,7 +482,9 @@ test('the drawn body stays axis-aligned through impacts, swings, splats and hype
       renderer.draw(run, 1, null, true, 'mouse');
       const m = bodyMatrix(ctx);
       if (!m || Math.abs(m[1]) > 1e-6 || Math.abs(m[2]) > 1e-6) {
-        failures.push(`${name}/${tag}: ${m ? `b=${m[1].toFixed(4)} c=${m[2].toFixed(4)}` : 'not drawn'}`);
+        failures.push(
+          `${name}/${tag}: ${m ? `b=${m[1].toFixed(4)} c=${m[2].toFixed(4)}` : 'not drawn'}`,
+        );
       }
       run.dispose();
     }
@@ -407,9 +506,16 @@ test('the ghosts the renderer draws are axis-aligned too', () => {
   ctx.__reset();
   renderer.draw(run, 1, null, true, 'mouse');
   const ghosts = ctx.__ops.filter(
-    (o) => o.kind === 'fill' && o.pts.length === 6 && String(o.paint).toLowerCase() === '#fff8ec' && o.alpha < 0.6,
+    (o) =>
+      o.kind === 'fill' &&
+      o.pts.length === 6 &&
+      String(o.paint).toLowerCase() === '#fff8ec' &&
+      o.alpha < 0.6,
   );
-  assert.ok(ghosts.length >= 3, `expected at least 3 ghost fills, found ${ghosts.length}`);
+  assert.ok(
+    ghosts.length >= 3,
+    `expected at least 3 ghost fills, found ${ghosts.length}`,
+  );
   for (const g of ghosts) {
     assert.ok(
       Math.abs(g.m[1]) < 1e-6 && Math.abs(g.m[2]) < 1e-6,
@@ -432,12 +538,18 @@ test('the ghosts the renderer draws are axis-aligned too', () => {
  */
 function bodyBox(ctx) {
   const op = ctx.__ops.find(
-    (o) => o.kind === 'fill' && o.pts.length === 6 && String(o.paint).toLowerCase() === '#fff8ec',
+    (o) =>
+      o.kind === 'fill' &&
+      o.pts.length === 6 &&
+      String(o.paint).toLowerCase() === '#fff8ec',
   );
   if (!op) return null;
   const xs = op.pts.map((q) => q[0]),
     ys = op.pts.map((q) => q[1]);
-  return { w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+  return {
+    w: Math.max(...xs) - Math.min(...xs),
+    h: Math.max(...ys) - Math.min(...ys),
+  };
 }
 
 test('the dash deformations are MOVING THE PIXELS, not just the pose', () => {
@@ -461,19 +573,37 @@ test('the dash deformations are MOVING THE PIXELS, not just the pose', () => {
 
   // EAST: wider and shorter than rest.
   const e = shot(120, 0, DASH.windup + 2);
-  assert.ok(e.w > rest.w * 1.1, `an eastward dash did not widen: ${rest.w.toFixed(1)} -> ${e.w.toFixed(1)}`);
-  assert.ok(e.h < rest.h * 0.95, `an eastward dash did not thin: ${rest.h.toFixed(1)} -> ${e.h.toFixed(1)}`);
+  assert.ok(
+    e.w > rest.w * 1.1,
+    `an eastward dash did not widen: ${rest.w.toFixed(1)} -> ${e.w.toFixed(1)}`,
+  );
+  assert.ok(
+    e.h < rest.h * 0.95,
+    `an eastward dash did not thin: ${rest.h.toFixed(1)} -> ${e.h.toFixed(1)}`,
+  );
 
   // SOUTH: the transpose. If the axis mapping is wrong these are the same
   // numbers as the east case, which is the bug that shipped once already.
   const s = shot(0, 120, DASH.windup + 2);
-  assert.ok(s.h > rest.h * 1.1, `a southward dash did not heighten: ${rest.h.toFixed(1)} -> ${s.h.toFixed(1)}`);
-  assert.ok(s.w < rest.w * 0.95, `a southward dash did not narrow: ${rest.w.toFixed(1)} -> ${s.w.toFixed(1)}`);
+  assert.ok(
+    s.h > rest.h * 1.1,
+    `a southward dash did not heighten: ${rest.h.toFixed(1)} -> ${s.h.toFixed(1)}`,
+  );
+  assert.ok(
+    s.w < rest.w * 0.95,
+    `a southward dash did not narrow: ${rest.w.toFixed(1)} -> ${s.w.toFixed(1)}`,
+  );
 
   // WIND-UP: the opposite of the dash, on the same axis. Thinner, taller.
   const w = shot(120, 0, DASH.windup - 1);
-  assert.ok(w.w < rest.w, `the wind-up must squish backward: ${rest.w.toFixed(1)} -> ${w.w.toFixed(1)}`);
-  assert.ok(w.h > rest.h, `and grow taller: ${rest.h.toFixed(1)} -> ${w.h.toFixed(1)}`);
+  assert.ok(
+    w.w < rest.w,
+    `the wind-up must squish backward: ${rest.w.toFixed(1)} -> ${w.w.toFixed(1)}`,
+  );
+  assert.ok(
+    w.h > rest.h,
+    `and grow taller: ${rest.h.toFixed(1)} -> ${w.h.toFixed(1)}`,
+  );
 
   // SPLAT against the floor: flat, and wide.
   const flat = shot(0, 0, -1, { age: 1, nx: 0, ny: 1 });
@@ -481,7 +611,10 @@ test('the dash deformations are MOVING THE PIXELS, not just the pose', () => {
     flat.h < rest.h * 0.55,
     `the wall splat never reached the glass: ${rest.h.toFixed(1)} -> ${flat.h.toFixed(1)} (this is what the wrong normal field looked like)`,
   );
-  assert.ok(flat.w > rest.w * 1.2, `and it must spread along the wall: ${rest.w.toFixed(1)} -> ${flat.w.toFixed(1)}`);
+  assert.ok(
+    flat.w > rest.w * 1.2,
+    `and it must spread along the wall: ${rest.w.toFixed(1)} -> ${flat.w.toFixed(1)}`,
+  );
 });
 
 test('the ghost after-images are drawn, behind the body, and fade out', () => {
@@ -496,20 +629,37 @@ test('the ghost after-images are drawn, behind the body, and fade out', () => {
   renderer.draw(run, 1, null, true, 'mouse');
   const body = bodyBox(ctx);
   const ghosts = ctx.__ops.filter(
-    (o) => o.kind === 'fill' && o.pts.length === 6 && String(o.paint).toLowerCase() === '#fff8ec' && o.alpha < 0.6,
+    (o) =>
+      o.kind === 'fill' &&
+      o.pts.length === 6 &&
+      String(o.paint).toLowerCase() === '#fff8ec' &&
+      o.alpha < 0.6,
   );
-  assert.ok(ghosts.length >= 3, `the ghosts were not drawn at all (found ${ghosts.length})`);
+  assert.ok(
+    ghosts.length >= 3,
+    `the ghosts were not drawn at all (found ${ghosts.length})`,
+  );
   // The body's centre, measured this frame. Ghosts of an EASTWARD dash must all
   // sit to the WEST of it -- drawn behind, never in front.
   const bodyOp = ctx.__ops.find(
-    (o) => o.kind === 'fill' && o.pts.length === 6 && String(o.paint).toLowerCase() === '#fff8ec' && o.alpha >= 0.6,
+    (o) =>
+      o.kind === 'fill' &&
+      o.pts.length === 6 &&
+      String(o.paint).toLowerCase() === '#fff8ec' &&
+      o.alpha >= 0.6,
   );
-  const bx = (Math.min(...bodyOp.pts.map((q) => q[0])) + Math.max(...bodyOp.pts.map((q) => q[0]))) / 2;
+  const bx =
+    (Math.min(...bodyOp.pts.map((q) => q[0])) +
+      Math.max(...bodyOp.pts.map((q) => q[0]))) /
+    2;
   assert.ok(body, 'the body must be on screen');
   for (const g of ghosts) {
     const xs = g.pts.map((q) => q[0]);
     const gx = (Math.min(...xs) + Math.max(...xs)) / 2;
-    assert.ok(gx < bx, `a ghost is in FRONT of the body: ${gx.toFixed(1)} vs ${bx.toFixed(1)}`);
+    assert.ok(
+      gx < bx,
+      `a ghost is in FRONT of the body: ${gx.toFixed(1)} vs ${bx.toFixed(1)}`,
+    );
   }
   run.dispose();
 });
@@ -529,28 +679,115 @@ test('the launch and the brake both throw particles onto the glass', () => {
     ctx.__reset();
     renderer.draw(run, 1, null, true, 'mouse');
     const b = ctx.__ops.find(
-      (o) => o.kind === 'fill' && o.pts.length === 6 && String(o.paint).toLowerCase() === '#fff8ec',
+      (o) =>
+        o.kind === 'fill' &&
+        o.pts.length === 6 &&
+        String(o.paint).toLowerCase() === '#fff8ec',
     );
-    const bx = (Math.min(...b.pts.map((q) => q[0])) + Math.max(...b.pts.map((q) => q[0]))) / 2;
-    const by = (Math.min(...b.pts.map((q) => q[1])) + Math.max(...b.pts.map((q) => q[1]))) / 2;
-    return ctx.__ops.filter((o) => o.kind === 'rect' && o.pts.length === 2).filter((o) => {
-      const P = o.pts;
-      const w = Math.abs(P[1][0] - P[0][0]),
-        h = Math.abs(P[1][1] - P[0][1]);
-      const cx = (P[0][0] + P[1][0]) / 2,
-        cy = (P[0][1] + P[1][1]) / 2;
-      return w < 60 && h < 60 && w > 0.5 && h > 0.5 && Math.hypot(cx - bx, cy - by) < 120;
-    }).length;
+    const bx =
+      (Math.min(...b.pts.map((q) => q[0])) +
+        Math.max(...b.pts.map((q) => q[0]))) /
+      2;
+    const by =
+      (Math.min(...b.pts.map((q) => q[1])) +
+        Math.max(...b.pts.map((q) => q[1]))) /
+      2;
+    return ctx.__ops
+      .filter((o) => o.kind === 'rect' && o.pts.length === 2)
+      .filter((o) => {
+        const P = o.pts;
+        const w = Math.abs(P[1][0] - P[0][0]),
+          h = Math.abs(P[1][1] - P[0][1]);
+        const cx = (P[0][0] + P[1][0]) / 2,
+          cy = (P[0][1] + P[1][1]) / 2;
+        return (
+          w < 60 &&
+          h < 60 &&
+          w > 0.5 &&
+          h > 0.5 &&
+          Math.hypot(cx - bx, cy - by) < 120
+        );
+      }).length;
   };
   body.velocity.x = 0;
   body.velocity.y = 0;
   const rest = count(-1);
   body.velocity.x = 120;
   const windup = count(1);
-  assert.equal(windup, rest, 'the wind-up is a coil: it must not throw debris yet');
+  assert.equal(
+    windup,
+    rest,
+    'the wind-up is a coil: it must not throw debris yet',
+  );
   const launch = count(DASH.windup);
   assert.ok(launch > rest + 3, `no dust on launch: ${rest} -> ${launch} rects`);
   const brake = count(DASH.windup + DASH.active);
-  assert.ok(brake > rest + 6, `no sparks on braking: ${rest} -> ${brake} rects`);
+  assert.ok(
+    brake > rest + 6,
+    `no sparks on braking: ${rest} -> ${brake} rects`,
+  );
   run.dispose();
+});
+
+test('drawn airborne cube stays within 1.25x and is square within five recovery ticks', () => {
+  installDom();
+  const { canvas, ctx } = createDisplay(1560, 866);
+  const renderer = createRenderer(canvas);
+  const run = boot();
+  const sample = (age, vx, vy, hyper = false) => {
+    Object.assign(run.state, {
+      slashAge: age,
+      landAge: -1,
+      impact: null,
+      splat: null,
+      hyper,
+      hyperLevel: hyper ? 3 : 0,
+    });
+    run.world.player.velocity.x = vx;
+    run.world.player.velocity.y = vy;
+    ctx.__reset();
+    renderer.draw(run, 1, null, true, 'mouse');
+    const op = ctx.__ops.find(
+      (o) =>
+        o.kind === 'fill' &&
+        o.pts.length === 6 &&
+        String(o.paint).toLowerCase() === '#fff8ec' &&
+        o.alpha >= 0.6,
+    );
+    assert.ok(op, 'opaque player body must be drawn');
+    const xs = op.pts.map((p) => p[0]),
+      ys = op.pts.map((p) => p[1]);
+    return {
+      w: Math.max(...xs) - Math.min(...xs),
+      h: Math.max(...ys) - Math.min(...ys),
+    };
+  };
+  try {
+    const rest = sample(-1, 0, 0);
+    for (const [vx, vy] of [
+      [120, 0],
+      [0, 120],
+      [85, 85],
+      [280, 0],
+      [198, -198],
+    ]) {
+      for (let age = 0; age <= 20; age++) {
+        const box = sample(age, vx, vy, true);
+        assert.ok(
+          box.w / rest.w <= 1.251 && box.h / rest.h <= 1.251,
+          `compounded body exceeded cap: age=${age} size=${box.w / rest.w},${box.h / rest.h}`,
+        );
+        if (age >= 12) {
+          assert.ok(
+            Math.abs(box.w / rest.w - 1) < 0.001 &&
+              Math.abs(box.h / rest.h - 1) < 0.001,
+            `body did not reset at age=${age}`,
+          );
+        }
+      }
+    }
+  } finally {
+    run.dispose();
+    renderer.dispose();
+  }
 });

@@ -1,24 +1,43 @@
-import { MAX_PULL, MAX_SPEED, dragVector } from './physics.js';
+import {dragArrowVisual} from './art/splatr-art-engine.js';
+import {readGesture} from './gesture.js';
+import { MAX_SPEED } from './physics.js';
+import {beginPull,movePull,resolvePull} from './pull-control.js';
 import { clamp } from './levels.js';
 import { magnetize } from './aim.js';
 
 /** Exactly one captured primary pointer. A hold remembers what was under the
  * finger at press, so camera motion doesn't steal a target before release.
- * A pull is relative to that press in display pixels, independent of zoom. */
+ * Drag direction follows the pointer in display pixels, independent of zoom. */
 export function createInput(canvas, { get, active, point, assist, engage, commit, lock }) {
+  const listeners=[];let disposed=false;
+  const listen=(target,type,handler,options)=>{target.addEventListener(type,handler,options);listeners.push(()=>target.removeEventListener?.(type,handler,options));};
+  const enabled=()=>!disposed&&active();
+  const overlay=canvas.ownerDocument?.createElementNS('http://www.w3.org/2000/svg','svg');
+  if(overlay){overlay.setAttribute('aria-hidden','true');overlay.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:100;display:none;overflow:visible';overlay.innerHTML='<circle fill="none" stroke-width="1.5"/><g class="drag-design"><path class="drag-tether" fill="none" stroke="#aaa0b5" stroke-width="1.2" stroke-dasharray="3 5"/><path class="drag-shaft" stroke="#15121e" stroke-width="1.2"/><path class="drag-head" stroke="#15121e" stroke-width="1.2"/><path class="drag-accent" fill="none" stroke-width="1.2"/></g>';canvas.parentElement?.append(overlay);}
+  function showGesture(){if(!overlay||!pointer)return;
+   const {gesture:g,vector}=resolvePull(pointer),ring=overlay.querySelector('circle'),group=overlay.querySelector('.drag-design');overlay.style.display='block';
+   const design=dragArrowVisual({dx:g.dx,dy:g.dy,power:vector?.power||0,equipment:get()?.state?.equipment||{},sword:get()?.state?.sword});overlay.dataset.element=design.element;
+   ring.setAttribute('cx',pointer.x);ring.setAttribute('cy',pointer.y);ring.setAttribute('r',g.dragged?g.cancelRadius:g.slop);ring.setAttribute('stroke',g.kind==='cancel'?'#ee8d93':g.kind==='pull'?design.color:'#bcb2cc');
+   group.style.display=g.kind==='pull'?'':'none';if(g.kind!=='pull')return;
+   group.setAttribute('transform',`translate(${pointer.x} ${pointer.y}) rotate(${design.angle*180/Math.PI})`);
+   const tether=overlay.querySelector('.drag-tether');tether.setAttribute('d',`M ${-Math.hypot(g.dx,g.dy)} 0 L 0 0`);
+   for(const [name,path]of [['shaft',design.shaftPath],['head',design.headPath],['accent',design.accentPath]]){const node=overlay.querySelector('.drag-'+name);node.setAttribute('d',path);node.setAttribute(name==='accent'?'stroke':'fill',name==='accent'?design.light:design.color);}
+  }
+
   let pointer = null,
     keyboard = null,
     last = null,
     shift = false;
   const keys = new Set();
   function cancel() {
+    buffered = null;
     const old = pointer;
     pointer = keyboard = null;
     shift = false;
     keys.clear();
     if (old && canvas.hasPointerCapture(old.id)) canvas.releasePointerCapture(old.id);
     get()?.focus(false);
-    canvas.style.cursor = '';
+    canvas.style.cursor = '';if(overlay)overlay.style.display='none';
   }
   /**
    * The last shot the player asked for that the game refused.
@@ -40,8 +59,10 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
   const BUFFER_MS = 140; // inside the 120-150ms the brief asks for
   let buffered = null;
   function fire(v) {
+    if (!v || !Number.isFinite(v.x) || !Number.isFinite(v.y) || !Number.isFinite(v.power) || v.power <= 0) { cancel(); return; }
+    if (!('lock' in v)) v = magnetic(v, true);
     cancel();
-    if (!active()) return;
+    if (!enabled()) return;
     if (commit(v)) {
       last = { x: v.x, y: v.y, power: v.power };
       buffered = null;
@@ -57,7 +78,7 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
       buffered = null;
       return;
     }
-    if (!active()) return void (buffered = null);
+    if (!enabled()) return void (buffered = null);
     const v = buffered.v;
     if (commit(v)) {
       buffered = null;
@@ -74,7 +95,7 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
   // the target, and the corridor still respects a nearer plate.
   function magnetic(v, focus) {
     const r = get();
-    if (!v?.power || !assist() || !r) return v;
+    if (!v?.power || !assist() || !r) return v ? {...v,lock:null} : v;
     // One corridor answer for this run: it widens with tempo, and a held aim
     // widens it further. The vector that is drawn is the vector that fires.
     const out = magnetize(r.world.player.position, v, r.combat, {
@@ -85,9 +106,11 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
     return out;
   }
   function pointerAim() {
-    const r = get(),
-      p = pointer,
-      v = dragVector({ x: 0, y: 0 }, { x: (p.toX - p.x) * p.gain, y: (p.toY - p.y) * p.gain });
+    const r = get(), p = pointer;
+    if (!r || !p) return null;
+    const {gesture,vector}=resolvePull(p);
+    if(gesture.kind==='cancel')return null;
+    const v=vector||{x:0,y:0,power:0};
     // While a finger or mouse is down the cube is in focus, which also
     // widens the corridor a little: an intentional aim is a declared shot.
     if (v.power) {
@@ -99,58 +122,59 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
       return shot;
     }
     const e = r.combat.enemies.get(p.target),
-      aimed = r.aimAt(e || p.world, !!e);
-    acquire(magnetize(r.world.player.position, aimed, r.combat, { focus: true }));
+      aimed = magnetic(r.aimAt(e || p.world, !!e), true);
     aimed.anchor = { x: p.world.x, y: p.world.y };
     return aimed;
   }
-  canvas.addEventListener('pointerdown', (e) => {
-    if (!active() || pointer || !e.isPrimary || e.button !== 0) return;
+  listen(canvas, 'pointerdown', (e) => {
+    if (!enabled() || pointer || !e.isPrimary || e.button !== 0) return;
     e.preventDefault();
     canvas.focus({ preventScroll: true });
     engage(e.pointerType==='touch'?'touch':'mouse');
+    buffered = null;
     keyboard = null;
     shift = false;
     keys.clear();
     const travel = clamp(Math.min(canvas.clientWidth, canvas.clientHeight) * 0.215, 62, 150),
       world = point(e.clientX, e.clientY);
     const r = get();
-    pointer = {
+    pointer = beginPull({
+      type:e.pointerType||'mouse',
       id: e.pointerId,
       x: e.clientX,
       y: e.clientY,
       toX: e.clientX,
       toY: e.clientY,
-      gain: MAX_PULL / travel,
+      travel,
       world,
       target: r.aimAt(world, assist()).target,
-    };
-    canvas.setPointerCapture(e.pointerId);
+    });
+    showGesture();canvas.setPointerCapture(e.pointerId);
     canvas.style.cursor = 'grabbing';
     r.focus(true);
   });
-  window.addEventListener('pointermove', (e) => {
+  listen(window, 'pointermove', (e) => {
     if (pointer?.id === e.pointerId) {
-      pointer.toX = e.clientX;
-      pointer.toY = e.clientY;
+      pointer=movePull(pointer,e.clientX,e.clientY);
+      showGesture();
     }
-  });
-  window.addEventListener('pointerup', (e) => {
+  },true);
+  listen(window, 'pointerup', (e) => {
     if (pointer?.id !== e.pointerId) return;
-    if (!active()) {
+    if (!enabled()) {
       cancel();
       return;
     }
-    pointer.toX = e.clientX;
-    pointer.toY = e.clientY;
+    pointer=movePull(pointer,e.clientX,e.clientY);
     fire(pointerAim());
-  });
+  },true);
   for (const name of ['lostpointercapture', 'pointercancel'])
-    canvas.addEventListener(name, (e) => {
+    listen(canvas, name, (e) => {
       if (pointer?.id === e.pointerId) cancel();
     });
-  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-  window.addEventListener('orientationchange', cancel);
+  listen(canvas, 'contextmenu', (e) => e.preventDefault());
+  listen(window, 'orientationchange', cancel);
+  listen(window, 'blur', cancel);
   // Eight directions or fine steering in focus. Only the first un-aimed Space
   // suggests a cut in the field. On the paper racks Space follows the sight.
   const dirs = {
@@ -177,13 +201,13 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
         !!shift,
       );
   }
-  window.addEventListener('keydown', (e) => {
-    if (!active() || e.target?.closest?.('button') || pointer || e.altKey || e.ctrlKey || e.metaKey)
+  listen(window, 'keydown', (e) => {
+    if (!enabled() || e.target?.closest?.('button') || pointer || e.altKey || e.ctrlKey || e.metaKey)
       return;
     const k = e.key.toLowerCase(),
       r = get();
     if (dirs[k]) {
-      if(!e.repeat)engage('keys');
+      if(!e.repeat){buffered=null;engage('keys');}
       keys.add(k);
       e.preventDefault();
       if (!shift) direction();
@@ -199,14 +223,17 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
       }
     } else if (k === 'shift' && !e.repeat) {
       e.preventDefault();
+      buffered = null;
       shift = true;
       engage('keys');
       r.focus(true);
       keyboard = keyboard || last || r.suggestion();
     }
   });
-  window.addEventListener('keyup', (e) => {
-    keys.delete(e.key.toLowerCase());
+  listen(window, 'keyup', (e) => {
+    const k=e.key.toLowerCase();
+    keys.delete(k);
+    if (dirs[k] && !shift) { keyboard=null; if(enabled() && keys.size) direction(); }
     if (e.key === 'Shift' && shift) {
       shift = false;
       get()?.focus(false);
@@ -223,7 +250,7 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
       return v?.power ? magnetic(v, true) : v;
     },
     tick() {
-      if (!shift || !keyboard || !active()) return;
+      if (!shift || !keyboard || !enabled()) return;
       const turn =
         Number(keys.has('d') || keys.has('arrowright')) -
         Number(keys.has('a') || keys.has('arrowleft'));
@@ -243,6 +270,7 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
     },
     /** Called once per frame. See BUFFER_MS. */
     retry,
+    dispose(){if(disposed)return;cancel();disposed=true;for(const remove of listeners)remove();listeners.length=0;overlay?.remove();},
     /** Exposed for tests: the same entry point a release uses. */
     fire,
   };

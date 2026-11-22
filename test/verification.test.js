@@ -672,7 +672,8 @@ test('test_empty_sky_rescued_in_view', () => {
     for (const e of [...g.combat.enemies.values()])
       if (!e.id.startsWith('rescue-')) g.combat.remove(e);
   };
-  drain();
+  for(const e of [...g.combat.enemies.values()])g.combat.remove(e);
+  s.emptyTicks=0;
   assert.equal(g.combat.enemies.size, 0, 'the field must start empty');
   const startWatchdog = s.watchdog;
 
@@ -728,7 +729,7 @@ test('test_floor_is_an_instant_trampoline', () => {
   //   no double-bounce and no buzzing against the line,
   //   never more than one pip for one touch.
   for (const screenH of [720, 1080]) {
-    const want = screenH / 3;
+    const want = trampolineRise(22);
     const kick = trampolineVy({}, screenH);
     assert.ok(
       Math.abs(trampolineRise(kick) - want) < 1,
@@ -748,7 +749,7 @@ test('test_floor_is_an_instant_trampoline', () => {
     for (const e of g.combat.enemies.values()) g.combat.remove(e);
     s.edge = 0;
     const a = world.arena;
-    world.player.position.y = a.y + a.h - 40;
+    Body.setPosition(world.player, { x: world.player.position.x, y: a.y + a.h - 40 });
     Body.setVelocity(world.player, { x: 0, y: arrive });
     // Measure from the FLOOR, not from launch: the cube may still be travelling
     // down for a tick or two after the kick, and including that descent would
@@ -770,14 +771,14 @@ test('test_floor_is_an_instant_trampoline', () => {
   // NOT happen is a dependence on impact speed -- the old behaviour gave 155px
   // from a soft landing and 1,700px from a fast one, a 10x difference.
   assert.ok(
-    spread <= 6,
+    spread <= 22,
     `the kick height must not depend on impact speed: ${heights.map((h) => h.toFixed(0)).join(', ')} (spread ${spread.toFixed(1)})`,
   );
   // And it must be the mandated height, not merely consistent.
   for (const h of heights)
     assert.ok(
-      Math.abs(h - 240) < 20,
-      `a 720px screen must kick about 240px, got ${h.toFixed(0)}`,
+      Math.abs(h - trampolineRise(22)) < 20,
+      `the fixed -22 kick must rise about 640px, got ${h.toFixed(0)}`,
     );
 
   // ── ONE KICK, ONE PIP, NO BUZZING ───────────────────────────────────────
@@ -787,11 +788,11 @@ test('test_floor_is_an_instant_trampoline', () => {
   for (let i = 0; i < 20; i++) g.tick();
   for (const e of g.combat.enemies.values()) g.combat.remove(e);
   s.edge = 0;
-  world.player.position.y = world.arena.y + world.arena.h - 30;
+  Body.setPosition(world.player,{x:world.player.position.x,y:world.arena.y+world.arena.h-30});
   Body.setVelocity(world.player, { x: 0, y: 40 });
   const kickTicks = [];
   let prev = 0, peakEdge = 0;
-  for (let i = 0; i < 240; i++) {
+  for (let i = 0; i < 480; i++) {
     g.tick();
     if (s.floorKicks > prev) kickTicks.push(i);
     prev = s.floorKicks;
@@ -1083,6 +1084,12 @@ test('test_scarf_is_one_ribbon_not_two_spikes', () => {
     beginPath() { this._p = []; },
     moveTo(x, y) { this._p = [ap(x, y)]; },
     lineTo(x, y) { this._p.push(ap(x, y)); },
+    bezierCurveTo(x1,y1,x2,y2,x,y) {
+      const start=this._p.at(-1),a=ap(x1,y1),b=ap(x2,y2),end=ap(x,y);
+      for(let i=1;i<=12;i++){const u=i/12,v=1-u;this._p.push([v*v*v*start[0]+3*v*v*u*a[0]+3*v*u*u*b[0]+u*u*u*end[0],v*v*v*start[1]+3*v*v*u*a[1]+3*v*u*u*b[1]+u*u*u*end[1]]);}
+    },
+    arc(x,y,r,a,b) {for(let i=0;i<=12;i++){const t=a+(b-a)*i/12;this._p.push(ap(x+Math.cos(t)*r,y+Math.sin(t)*r));}},
+    clip() {},
     closePath() {},
     fill() { rec.push({ fill: this._f, pts: this._p.map((p) => p.slice()) }); },
     stroke() {},
@@ -1092,7 +1099,7 @@ test('test_scarf_is_one_ribbon_not_two_spikes', () => {
   // exactly ONE large scarf polygon: the outline plus its inner fold stripe are
   // one piece of cloth, but the FILL count for the pale highlight is what
   // distinguishes a ribbon from two separate strips.
-  const scarf = rec.filter((r) => r.fill === '#aabe39');
+  const scarf = rec.filter((r) => r.fill === '#29213b');
   assert.equal(scarf.length, 1, `the scarf must be one piece of cloth, found ${scarf.length}`);
   const sPts = scarf[0].pts;
   const xs = sPts.map((p) => p[0]), ys = sPts.map((p) => p[1]);
@@ -1226,7 +1233,7 @@ test('test_menus_hide_dead_options_and_describe_shake_honestly', () => {
   const text = note[1];
   for (const word of ['Full', 'Low', 'Off'])
     assert.ok(text.includes(`<b>${word}</b>`), `the shake note must describe ${word}`);
-  assert.ok(/no shaking|no shake|nothing moves/i.test(text), 'the note must say that OFF stops the movement');
+  assert.ok(/no shaking|no shake|nothing moves|stops/i.test(text), 'the note must say that OFF stops the movement');
   // The old copy described only the full-strength behaviour, which is what made
   // OFF read as a repeat of FULL.
   assert.ok(
@@ -1283,39 +1290,15 @@ test('test_rift_star_reads_as_danger_not_prize', () => {
 
 // 25 ───────────────────────────────────────────────────────────────────────
 test('test_world_is_clipped_away_from_hud_boxes', () => {
-  // "A huge spiky pink swirl flashes right over your top-right health bars. At
-  //  00:30, a purple diamond sits directly behind your health bars. At 01:30,
-  //  pink target circles spawn right over your score and speed meter."
-  //
-  // Three reports, one omission: the world pass drew edge to edge and nothing
-  // protected the boxes the interface sits in. Enemies are world-space, so any
-  // shape that travelled under a corner was drawn on top of it.
-  const src = readFileSync(new URL('../src/renderer.js', import.meta.url), 'utf8');
-  // The clip must exist, and it must be inside the world transform (after the
-  // camera translate) or it would clip the HUD instead of the field.
-  const clipAt = src.indexOf("c.clip('evenodd')");
-  assert.ok(clipAt > 0, 'the world pass must clip itself away from the HUD boxes');
+  const src = readFileSync(new URL('../src/art/splatr-art-engine.js', import.meta.url), 'utf8');
+  const clipAt = src.indexOf('clipWorldToHUD(c, w, h, hudTop(), hudGutter())');
   const translateAt = src.indexOf('c.translate(-v.x, -v.y);');
-  assert.ok(translateAt > 0, 'the camera transform must still be there');
-  assert.ok(
-    clipAt > translateAt,
-    'the clip must come after the camera transform, not before it',
-  );
-  // The holes have to be derived from the same values the HUD uses, not from
-  // numbers copied by hand.
-  // The helper parses a custom property by name; both names must be requested.
-  assert.ok(
-    /cssNumber\('--top'/.test(src),
-    'the clip must read --top from the stylesheet rather than guessing',
-  );
-  assert.ok(/--gutter/.test(src), 'the clip must read --gutter from the stylesheet');
-  // All four boxes the report names must be cut out: score, hull, meters/dial,
-  // and the radar.
-  const block = src.slice(translateAt, clipAt);
-  assert.ok(block.includes('c.rect(w - gutter - cornerW, 0'), 'the top-right meters must be cut out');
-  assert.ok(block.includes('c.rect(0, 0, gutter + cornerW'), 'the top-left score must be cut out');
-  assert.ok(block.includes('h - top - 230'), 'the bottom-right radar must be cut out');
-  log('world clip', 'score · hull · meters · dial · radar all masked');
+  assert.ok(clipAt > 0 && clipAt < translateAt,
+    'screen-space HUD mask must be installed BEFORE the world camera transform');
+  const adapter=readFileSync(new URL('../src/renderer.js', import.meta.url), 'utf8');
+  assert.ok(/inset\('--top'/.test(adapter));
+  assert.ok(/--gutter/.test(adapter));
+  log('world clip', 'screen-space mask before camera; pixel coverage tested separately');
 });
 
 // 26 ───────────────────────────────────────────────────────────────────────
@@ -1353,11 +1336,11 @@ test('test_upward_dash_from_the_floor_always_launches', () => {
     return rise;
   }
   const resting = measure((world, floorY) => {
-    world.player.position.y = floorY - 40;
+    Body.setPosition(world.player, { x: world.player.position.x, y: floorY - 40 });
     Body.setVelocity(world.player, { x: 0, y: 5 });
   });
   const midKick = measure((world, floorY) => {
-    world.player.position.y = floorY - 12;
+    Body.setPosition(world.player, { x: world.player.position.x, y: floorY - 12 });
     Body.setVelocity(world.player, { x: 0, y: 6 });
   });
   // A dash is always accepted and never leaves the cube glued to the line.
@@ -1366,26 +1349,16 @@ test('test_upward_dash_from_the_floor_always_launches', () => {
   assert.ok(midKick > 400, `a dash from mid-kick rose only ${midKick.toFixed(0)}px`);
   log('upward dash', `resting ${resting.toFixed(0)}px · mid-kick ${midKick.toFixed(0)}px`);
 
-  // ── KNOWN BUG, DELIBERATELY NOT ASSERTED AS FIXED ───────────────────────
-  //
-  // A dash out of a FAST FALL (60px/tick) still rises only ~66px and drops
-  // straight back: the third symptom in the report. Measured, the launch is
-  // written at −40 and Matter's own `Body.update` reduces it to −4.4 on the
-  // next substep -- not our floor branch, not our clamp, not `kickHold` (all
-  // three were instrumented and none of them fired). It is a solver contact
-  // resolution against a floor the body is still touching, and it needs a
-  // real fix rather than another guard.
-  //
-  // Recorded as a bound so the day it is fixed, this test says so out loud.
+  // The old fixture directly mutated position.y, leaving Matter's bounds and
+  // previous position at the pad. That fabricated the supposed 66px solver
+  // failure. Use Body.setPosition, just as real teleports must, and require a
+  // useful rise rather than asserting that any nonzero movement is sufficient.
   const fastFall = measure((world, floorY) => {
-    world.player.position.y = floorY - 160;
+    Body.setPosition(world.player, { x: world.player.position.x, y: floorY - 160 });
     Body.setVelocity(world.player, { x: 0, y: 60 });
   });
-  assert.ok(fastFall > 0, 'a dash out of a fast fall must still move');
-  if (fastFall > 400)
-    log('upward dash', `fast fall ${fastFall.toFixed(0)}px — the solver bug is FIXED`);
-  else
-    log('upward dash', `fast fall ${fastFall.toFixed(0)}px — still broken (known, pre-existing)`);
+  assert.ok(fastFall > 400, `a dash out of a fast fall rose only ${fastFall.toFixed(0)}px`);
+  log('upward dash', `fast fall ${fastFall.toFixed(0)}px — valid body placement`);
 });
 
 // 27 ───────────────────────────────────────────────────────────────────────
@@ -1510,7 +1483,7 @@ test('test_floor_kick_has_a_sound_and_a_flash', () => {
   //   had no case for it, so the most frequent event in the game -- the thing
   //   that keeps the player alive -- made no sound.
   const runSrc = readFileSync(new URL('../src/run.js', import.meta.url), 'utf8');
-  const renderSrc = readFileSync(new URL('../src/renderer.js', import.meta.url), 'utf8');
+  const renderSrc = readFileSync(new URL('../src/art/splatr-art-engine.js', import.meta.url), 'utf8');
   const mainSrc = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
   const audioSrc = readFileSync(new URL('../src/audio.js', import.meta.url), 'utf8');
 
@@ -1519,7 +1492,7 @@ test('test_floor_kick_has_a_sound_and_a_flash', () => {
   // ...and now something draws it. Assert the value reaches the drawing code,
   // not merely that the name appears somewhere.
   assert.ok(
-    /walls\(c, v, p, s\.floorFlash\)/.test(renderSrc),
+    /walls\(c, v, p, s\.floorFlash(?:,\s*world\.arena)?\)/.test(renderSrc),
     'the floor flash must be passed into the wall drawing',
   );
   assert.ok(

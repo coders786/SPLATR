@@ -14,7 +14,7 @@ import {
   speedRgb,
   threatAhead,
 } from '../src/aim.js';
-import { MAX_SPEED, RELEASE_GRAVITY, projectilePoint } from '../src/physics.js';
+import { MAX_SPEED, RELEASE_GRAVITY, projectilePoint, releaseSamples } from '../src/physics.js';
 import { PLAYER_SIZE } from '../src/levels.js';
 
 const advance = (g, n) => {
@@ -39,7 +39,8 @@ test('the release parabola is the real ballistic curve and stops at the first su
     q = projectilePoint(start, v, t),
     want = { x: v.x * t, y: v.y * t + 0.5 * RELEASE_GRAVITY * t * t };
   assert.ok(Math.abs(q.x - want.x) < 1e-9 && Math.abs(q.y - want.y) < 1e-9);
-  assert.ok(open.points.some((p) => Math.abs(p.x - want.x) < 1e-9 && Math.abs(p.y - want.y) < 1e-9));
+  const integrated=releaseSamples(start,v,40)[40];
+  assert.ok(open.points.some(p=>Math.hypot(p.x-integrated.x,p.y-integrated.y)<1e-9));
   // A wall the cube's inscribed half-width would hit stops the arc AT it.
   const wall = { x: -200, y: -300, w: 400, h: 20 },
     blocked = arcPath(start, v, { geometry: [wall], line: 9000 });

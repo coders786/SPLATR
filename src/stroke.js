@@ -37,7 +37,7 @@ export function beginStroke(origin, angle, shot) {
 }
 // Keep a contact print, not a replay buffer growing with an endless run. The
 // ledger counts every hit even if the illustration runs out of sample slots.
-export function printKill(stroke, e, base, fromShear, cut, hpBefore) {
+export function printKill(stroke, e, base, fromShear, cut, hpBefore, bonusMultiplier = 1) {
   // TWO counters, because the release needs to know both how MANY contacts a
   // stroke made and how many of them were FULL-SIZE.
   //
@@ -61,7 +61,7 @@ export function printKill(stroke, e, base, fromShear, cut, hpBefore) {
   }
   const release = !stroke.released && stroke.primaries >= 1 && stroke.contacts >= 2;
   if (release) stroke.released = true;
-  const points = base + (release ? SHEAR.bonus : 0);
+  const points = base + (release ? Math.floor(SHEAR.bonus * bonusMultiplier) : 0);
   stroke.points += points;
   stroke.kills++;
   if (stroke.marks.length < 8)

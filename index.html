@@ -37,6 +37,7 @@
         max-width: 34em;
         margin: 0.5em 0;
       }
+      #boot>div{display:none}#boot::after{content:"";width:48px;height:4px;background:#dfff82}
     </style>
     <link
       rel="icon"
@@ -44,7 +45,7 @@
     />
   </head>
   <body>
-    <aside id="boot" role="status">
+    <aside id="boot" role="status" aria-label="Loading arena">
       <div>
         <strong>SPLATR: Shape Riot</strong>
         <p>Loading the arena…</p>
@@ -52,7 +53,7 @@
           If the title doesn’t appear, <a href="">reload the preview</a> or open the standalone game
           file (<code>dist/index.html</code>).
         </p>
-        <noscript>JavaScript must be enabled to play.</noscript>
+        <noscript><style>#boot>div{display:block}</style>JavaScript must be enabled to play.</noscript>
       </div>
     </aside>
     <svg class="defs" width="0" height="0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -88,11 +89,11 @@
         id="arena"
         tabindex="-1"
         aria-describedby="story-alt"
-        aria-label="Shape Riot arena. Tap a shape or pull backward and release to slash. Hold airborne to focus. Arrows or WASD aim, Space slashes, Escape pauses."
+        aria-label="Shape Riot arena. Tap a shape or pull back and release forward to slash. Hold airborne to focus. Arrows or WASD aim, Space slashes, Escape pauses."
       ></canvas>
       <section id="title-screen" aria-labelledby="brand-title">
         <div class="title-stack">
-          <div class="eyebrow"><i class="slashes"></i> Endless score attack</div>
+          <div class="eyebrow"><i class="slashes"></i> Wave slash action</div>
           <h1 id="brand-title" aria-label="SPLATR: Shape Riot">
             <svg id="wordmark" aria-hidden="true" viewBox="0 0 507 120">
               <defs>
@@ -121,6 +122,7 @@
             ><span class="subtitle"><b>//</b> Shape Riot</span>
           </h1>
           <nav id="main-nav" aria-label="Main menu">
+            <p class="first-run-cue">Pull back. Release forward.<br><small>Clear the wave → land on the glowing platform → choose an upgrade.</small></p>
             <button id="start-btn" class="choice primary">
               <svg class="icon"><use href="#i-play" /></svg><span>Start run</span
               ><kbd>↵</kbd></button
@@ -144,6 +146,7 @@
         </div>
       </section>
       <section id="hud" aria-label="Run HUD" hidden>
+        <span id="hybrid-title" hidden></span>
         <div class="score-lock">
           <span class="small"><i class="slashes"></i> Score</span><strong id="score">000000</strong>
           <div id="chain" hidden>
@@ -240,45 +243,19 @@
             ><button id="assist-opt">Aim assist <b>On</b></button
             ><button id="motion-opt">Motion effects <b>On</b></button
             ><button id="shake-opt" aria-describedby="shake-note">Screen shake <b>Full</b></button
-            ><button id="pace-opt" aria-describedby="pace-note">Game speed <b>Fast</b></button
+            ><button id="pace-opt" aria-describedby="pace-note">Reaction pace <b>Fast</b></button
             ><button id="opening-opt" aria-describedby="opening-note">
               Enemy mix <b>Gradual</b></button
             ><button id="full-opt" class="full">Fullscreen <b>Toggle</b></button>
           </div>
-          <p id="shake-note"><b>Full</b>: the world shakes, streaks and flashes with every hit. <b>Low</b>: the same, at a third of the strength. <b>Off</b>: nothing moves at all — no shake, no wobble, no flashing lines. The HUD never shakes at any setting.</p>
+          <p id="shake-note"><b>Full</b> shakes. <b>Low</b> softens. <b>Off</b> stops.</p>
           <p id="pace-note"></p>
           <p id="opening-note"></p>
           <button class="back">← Back</button>
         </section>
         <section id="manual-page" hidden>
-          <div class="manual-intro">
-            <p class="briefing">
-              <b>Tap a shape</b> or pull back and release. Hold in flight to slow time. Kills refill
-              the cuts under your cube. The walls never hurt you — the floor just costs speed.
-            </p>
-            <p class="move-rule">
-              <b>Throughcut</b> Split two full-size shapes in one dash: +300 and a forward cut
-              through two plates. Aim along the nick marks. Six chained kills across any number of
-              dashes trigger Overdrive.
-            </p>
-            <p class="keys">
-              Arrows / WASD aim · Space slash · Shift + ←/→ fine aim in focus · P pause
-            </p>
-          </div>
-          <article class="entry" aria-labelledby="foe-name">
-            <div class="specimen">
-              <button id="prev-foe" aria-label="Previous enemy">‹</button
-              ><canvas width="312" height="166" id="specimen" aria-hidden="true"></canvas
-              ><button id="next-foe" aria-label="Next enemy">›</button>
-            </div>
-            <div class="species-name">
-              <h3 id="foe-name" aria-live="polite"></h3>
-              <span id="foe-index" class="small"></span>
-            </div>
-            <p id="foe-tell"></p>
-            <p id="foe-counter"></p>
-          </article>
-          <button class="back">← Back</button>
+          <div class="visual-manual" aria-label="Animated controls and enemy guide"></div>
+          <button class="back" id="manual-back">BACK</button>
         </section>
         <section id="result-page" hidden>
           <div class="recap">
@@ -314,7 +291,7 @@
           <div class="bank">
             <dl class="result-stats">
               <div>
-                <dt>Slashed</dt>
+                <dt>Total kills</dt>
                 <dd id="result-kills"></dd>
               </div>
               <div>
@@ -322,7 +299,7 @@
                 <dd id="result-chain"></dd>
               </div>
               <div>
-                <dt>Sector</dt>
+                <dt id="result-stage-label">Wave</dt>
                 <dd id="result-sector"></dd>
               </div>
             </dl>
