@@ -1,0 +1,11 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {Window} from 'happy-dom';import{UI_ICONS,BUFF_ICONS,STAGE_ICONS,iconMarkup,iconNode,prependIcon,installIconSprite}from'../src/ui-icons.js';
+test('custom pictograms are immutable self-contained SVG paths, not emoji or remote assets',()=>{
+ assert.ok(Object.keys(UI_ICONS).length>=30);for(const name of Object.keys(UI_ICONS)){assert.ok(Object.isFrozen(UI_ICONS[name]));const svg=iconMarkup(name);assert.match(svg,/viewBox="0 0 24 24"/);assert.match(svg,/aria-hidden="true"/);assert.doesNotMatch(svg,/<text|<image|https:|<script|<foreignObject|<animate/);assert.ok(UI_ICONS[name].every(p=>p.length>5));}assert.throws(()=>iconMarkup('unknown'),RangeError);
+});
+test('icons decorate rather than replace readable action names, keyboard hints, click behavior and focus',()=>{
+ const w=new Window(),doc=w.document,b=doc.createElement('button');b.innerHTML='Play <kbd>Space</kbd>';doc.body.append(b);let clicks=0;b.onclick=()=>clicks++;prependIcon(b,'play');prependIcon(b,'retry');assert.equal(b.querySelectorAll('svg').length,1);assert.equal(b.textContent,'Play Space');assert.equal(b.querySelector('kbd').textContent,'Space');assert.equal(b.firstElementChild.getAttribute('focusable'),'false');b.click();assert.equal(clicks,1);assert.equal(iconNode('shop',doc).getAttribute('data-ui-icon'),'shop');w.happyDOM.abort();
+});
+test('currency/points and bank/landing cues remain distinct; existing sprite IDs are preserved',()=>{
+ assert.equal(BUFF_ICONS.bounty,'score');assert.notDeepEqual(UI_ICONS.coin,UI_ICONS.score);assert.equal(STAGE_ICONS.surge,'bank');assert.equal(STAGE_ICONS.land,'land');assert.equal(STAGE_ICONS.recharge,'retry');for(const id of Object.values(BUFF_ICONS))assert.ok(UI_ICONS[id]);
+ const w=new Window();w.document.body.innerHTML='<svg><symbol id="i-sound"></symbol><symbol id="i-mute"></symbol><symbol id="i-play"></symbol></svg>';installIconSprite(w.document);assert.ok(w.document.getElementById('i-sound').querySelector('path'));assert.notEqual(w.document.getElementById('i-sound').innerHTML,w.document.getElementById('i-mute').innerHTML);assert.equal(w.document.querySelectorAll('symbol').length,3);w.happyDOM.abort();
+});
