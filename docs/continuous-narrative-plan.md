@@ -1,0 +1,25 @@
+# Continuous silent narrative — implementation and remaining limits
+
+## Implemented
+
+- Normal runs use `createContinuousDirector` instead of the finite wave/return/choice loop. Practice and the legacy wave director still use their existing paths. Sector transitions happen in the same live simulation; the arena advances upward without teleporting the player or resetting input.
+- On the first tutorial completion or skip, the next run starts with an input-enabled Lockdown Break: a Crown silhouette descends, the field darkens, real Fangs are present, and a fracture is immediately sliceable. There is no mandatory wait for the animation. Tutorial completion is persisted; normal retries and replaying Learn do not repeat this first-time intro.
+- Each sector has three separately queryable lock sensors. The actual forward blade ray, including sword reach/width and applicable equipment rules, must intersect each lock; a passive overlapping Cube or a blade pointing away does not count. Each lock refills one EDGE. The overhead Seal is a real solid while locked; once all locks are broken it becomes vulnerable and nonblocking, but progression requires a live blade and an actual upward crossing. The new sector installs fresh locks and a Seal.
+- Sector 01 adds chained rooftops, 02 adds rotating gear/crane and a distant forge marking, 03 shows conduits dimming on actual lock or Prism destruction, and 04+ adds a warmer tint and stars. The chosen world backdrop remains underneath; combat and danger colors are drawn above the tint. The forge markings and Crown reactions are scenery, not extra enemy bodies. The first breach also spawns two actual delayed Prisms. The first three breaches show a brief nonblocking smug, alarmed, and splitting/fleeing Crown reaction respectively. Reduced motion freezes the ambient/silhouette movement.
+- A slim screen-edge track shows three lock states and Seal readiness; an edge chevron points toward the nearest lock or vulnerable Seal. The legacy wave panel and combat-status text are hidden during the continuous experience. Existing score, health, radar and pause controls remain.
+- Currency, enemy kill rewards, quests and sector progression continue to use existing accounting. **The old mandatory per-wave buff-choice system is intentionally not offered in normal continuous runs**: no automatic substitute buffs are granted. Sword and equipment effects still apply. Practice retains the legacy wave/upgrade behavior. The old speed-based fifth-wave breach is not used as the sector gate in normal runs.
+
+## Verification
+
+- `test/continuous-sectors.test.js` covers immediate launch, actual forward blade hits, locked solid, missing locks, downward crossing, three transitions to Sector 04, live Crown Prisms and event-driven sector-three conduit damage. Tests use positioned fixtures to isolate geometry; this is not a human playtest.
+- `scripts/pure-tutorial-browser-qa.mjs` completes the full real tutorial course and then uses native mouse/touch to launch through the first-time fracture; also checks returning and Learn replay behavior. Its tutorial bot is deterministic after the initial native input.
+- `scripts/continuous-narrative-browser-qa.mjs` tests tutorial skip, native opening pull, then uses a bot with actual aim/dash/physics APIs (no teleports, forced breaks, or invulnerability) to reach Sector 04, on desktop, phone and landscape in normal and reduced motion. Automated traversal does not establish novice comprehension or accessibility on physical devices.
+- Full suite passed 652 tests after the final solid-seal changes; build and Chromium regression also passed. Sensor purchase/equip and pointer trajectory Chromium regression also passed during this change.
+
+## Scope and evidence boundaries
+
+The sector backdrops and Crown are procedural stylized overlays rather than fully simulated destructible architecture or a persistent combat boss. The forge marking is not a functional production line; conduits are a shared three-stage state, not individually wired to named objects. Sector transitions shift the arena window upward, not generate an unlimited hand-authored map. The Crown split/flee is a visual reaction, not a new boss fight. No claim is made that a 2.5-second sequence improves retention or that players understand it without further testing.
+
+Platform guidance recommends an engaging playable opening but does not establish a universal abandonment threshold. The information-gap account is a theory of curiosity, not measured retention for this design. The claimed 2024 sample and Kuleshov-style game outcomes were not verified. Validate with player observation and an appropriately designed experiment before making causal claims.
+
+References: [CrazyGames basic launch metrics](https://docs.crazygames.com/resources/basic-launch-metrics/); [Poki on browser games](https://poki.com/blog/building-web-browser-games-2026); [Poki developer guidance](https://developers.poki.com/guide/what-we-look-for); [Loewenstein information-gap theory, DOI](https://doi.org/10.1037/0033-2909.116.1.75).

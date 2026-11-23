@@ -85,6 +85,7 @@
       <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M3 12h17m-6-7 7 7-7 7" /></symbol>
     </svg>
     <main id="game" data-screen="title" inert>
+      <div id="dev-badge" hidden>DEV SANDBOX · NO NORMAL PROGRESS</div>
       <canvas
         id="arena"
         tabindex="-1"
@@ -160,11 +161,13 @@
             <span id="stroke-name">Throughcut</span> <b id="stroke-award"></b>
           </div>
         </div>
+        <div id="combat-status" hidden><b id="combat-status-title"></b><span id="combat-status-detail"></span></div>
+        <div id="last-damage" hidden><b>LAST HIT</b><span id="last-damage-cause"></span></div>
         <div class="top-right">
           <div class="meters" role="group" aria-label="Run meters">
             <div class="meter hull">
-              <small>Hull</small
-              ><span id="hull" role="img" aria-label="3 hull remaining"><i></i><i></i><i></i></span>
+              <small><b class="health-heart" aria-hidden="true">♥</b> Health <b id="health-value">3/3</b></small
+              ><span id="hull" role="img" aria-label="Health: 3 of 3 remaining"><i></i><i></i><i></i></span>
             </div>
             <div class="meter edge" id="edge-meter">
               <small>Edge</small
@@ -223,15 +226,19 @@
         </div>
         <span id="story-alt" class="sr" role="status"></span>
       </section>
+      <div id="tutorial-objective" aria-hidden="true" hidden></div>
+      <button id="rack-skip" type="button" aria-label="Skip tutorial" hidden><span>SKIP</span><svg viewBox="0 0 18 14" aria-hidden="true"><path d="M1 1 8 7 1 13ZM9 1 16 7 9 13Z"/></svg></button>
     </main>
     <dialog id="panel" aria-labelledby="panel-heading">
       <div class="panel-inner">
-        <span class="small panel-brand"><i class="slashes"></i> SPLATR / Shape Riot</span>
+        <span class="small panel-brand"><i class="slashes"></i> SPLATR / Shape Riot <b id="dev-panel-badge" hidden> / DEV SANDBOX</b></span>
         <h2 id="panel-heading">Paused</h2>
         <section id="pause-page" hidden>
           <p id="pause-info"></p>
           <button id="resume-btn" class="choice primary">Resume run <kbd>↵</kbd></button
           ><button class="choice quiet" id="skip-room" hidden>Skip warmup</button
+          ><button class="choice quiet" id="dev-refill" hidden>Refill health / Edge / focus</button
+          ><button class="choice quiet" id="dev-trace" hidden>Download combat trace</button
           ><button class="choice quiet" id="pause-manual">Field manual</button
           ><button class="choice quiet" id="pause-options">Options</button
           ><button class="choice quiet" id="end-btn">End run</button>
@@ -246,15 +253,17 @@
             ><button id="pace-opt" aria-describedby="pace-note">Reaction pace <b>Fast</b></button
             ><button id="opening-opt" aria-describedby="opening-note">
               Enemy mix <b>Gradual</b></button
+            ><button id="dev-opt" aria-describedby="dev-note">Developer sandbox <b>Off</b></button
             ><button id="full-opt" class="full">Fullscreen <b>Toggle</b></button>
           </div>
+          <p id="dev-note"></p>
           <p id="shake-note"><b>Full</b> shakes. <b>Low</b> softens. <b>Off</b> stops.</p>
           <p id="pace-note"></p>
           <p id="opening-note"></p>
           <button class="back">← Back</button>
         </section>
         <section id="manual-page" hidden>
-          <div class="visual-manual" aria-label="Animated controls and enemy guide"></div>
+          <div class="visual-manual" aria-label="Interactive controls and enemy training"></div>
           <button class="back" id="manual-back">BACK</button>
         </section>
         <section id="result-page" hidden>

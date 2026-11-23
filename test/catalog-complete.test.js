@@ -10,7 +10,7 @@ import {drawEquipmentWorld,drawEquipmentSlash,drawEquipmentEffects} from '../src
 import Matter from 'matter-js';
 
 test('complete catalog has exact expanded slot counts and every hybrid part is real',()=>{
- assert.equal(ITEMS.length,53);assert.deepEqual(SLOTS.map(slot=>ITEMS.filter(x=>x.slot===slot).length),[9,7,10,7,7,7,6]);
+ assert.equal(ITEMS.length,73);assert.deepEqual(SLOTS.map(slot=>ITEMS.filter(x=>x.slot===slot).length),[9,7,10,7,7,7,8,4,4,4,6]);
  for(const recipe of HYBRIDS){for(const [slot,id] of Object.entries(recipe.parts))assert.ok(ITEMS.some(x=>x.slot===slot&&x.id===id));assert.equal(activeHybrid(normalizeEquipment(recipe.parts))?.id,recipe.id);}
 });
 test('aim pull is bounded, forward-only and never moves big Fangs or other species',()=>{
@@ -32,8 +32,8 @@ test('Coil selects one nearest victim, never chains recursively into a third tar
  const r=fixture({head:'coil'}),a=add(r,'first','fang'),b=add(r,'next','fang',240,-100),c=add(r,'last','fang',280,-100);
  a.hp=b.hp=c.hp=1;r.combat.contacts.add(a);r.tick();assert.ok(!r.combat.enemies.has(a.id));assert.ok(!r.combat.enemies.has(b.id));assert.ok(r.combat.enemies.has(c.id));assert.equal(r.state.kills,2);assert.ok(r.state.equipmentFx.bursts.some(x=>x.style==='spark'));r.dispose();
 });
-test('Iron blocks one Bastion bump, not needles, and grants no hidden immunity',()=>{
- const r=fixture({body:'iron'});r.state.invul=0;const hp=r.state.hp;assert.equal(r.hurt('Bastion'),false);assert.equal(r.state.hp,hp);assert.equal(r.state.invul,0);assert.equal(r.state.guardSpent,true);assert.equal(r.hurt('Bastion'),true);assert.equal(r.state.hp,hp-1);r.dispose();
+test('Iron blocks one Fang rush, not needles, and grants no hidden immunity',()=>{
+ const r=fixture({body:'iron'});r.state.invul=0;const hp=r.state.hp;assert.equal(r.hurt('Fang',null,{kind:'fang-rush'}),false);assert.equal(r.state.hp,hp);assert.equal(r.state.invul,0);assert.equal(r.state.guardSpent,true);assert.equal(r.hurt('Fang',null,{kind:'fang-rush'}),true);assert.equal(r.state.hp,hp-1);r.dispose();
  const q=fixture({body:'iron'});q.state.invul=0;assert.equal(q.hurt('Fang needle'),true);assert.ok(!q.state.guardSpent);q.dispose();
 });
 test('Echo spawns at every third direct chain kill and cannot recursively spawn more echoes',()=>{

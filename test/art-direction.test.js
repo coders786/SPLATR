@@ -20,5 +20,5 @@ test('hybrid integration leaves the same build eye pixels unchanged',()=>{
  }
 });
 test('expanded recipe membership and original item catalogue keep all worlds selectable',()=>{
- assert.equal(ITEMS.length,53);assert.equal(HYBRIDS.length,17);assert.equal(SPARKS.length,18);assert.equal(ITEMS.filter(x=>x.slot==='world').length,6);
+ assert.equal(ITEMS.length,73);assert.equal(HYBRIDS.length,17);assert.equal(SPARKS.length,18);assert.equal(ITEMS.filter(x=>x.slot==='world').length,6);
 });

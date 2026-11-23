@@ -1919,3 +1919,107 @@ body:has(#panel[open]) #hud {
 @media(max-width:600px){.wave-hud[data-phase=breach]{max-width:245px}.wave-hud[data-phase=breach] .pace-action{font-size:11px}.wave-hud[data-phase=breach] .pace-caption{font-size:8px}}
 /* Lucky is a roll label, not a longer upgrade name or another animation. */
 .wave-upgrade-cards .buff-lucky,.active-wave-upgrade .buff-lucky{display:inline-block;vertical-align:middle;margin-left:6px;padding:2px 4px;border:1px solid #c8b77b;color:#f3dda0;background:#342f26;font:700 8px/1.1 'Space Mono',monospace;letter-spacing:.5px;white-space:nowrap}.wave-upgrade-cards button[data-lucky=true]{border-color:#bca777;border-left-color:#ebd69a;background:linear-gradient(145deg,#302b35,#221e2d 68%)}.wave-upgrade-cards button[data-lucky=true]:focus-visible{outline-color:#ffe4a1}.wave-hud .active-wave-upgrade[data-lucky=true]{border-left-color:#e7d095}.active-wave-upgrade .buff-lucky{font-size:7px;padding:1px 3px;margin-left:4px}
+
+/* Intro practice uses the real arena, not a prerecorded demonstration. */
+.teaching-guide{box-sizing:border-box;width:min(1000px,calc(100vw - 20px));height:calc(100dvh - 20px);max-width:none;max-height:none;padding:12px 16px;background:#171520;color:#f1ecdf;border:1px solid #786a87;border-top:3px solid #d8f19c;overflow:auto}
+.teaching-guide[open]{display:grid;grid-template-rows:auto auto auto minmax(160px,1fr) auto auto;gap:8px}.teaching-guide::backdrop{background:#080a13ed}
+.teaching-guide header,.teaching-tools{display:flex;justify-content:space-between;align-items:center;gap:10px}.teaching-guide h2{font:900 italic 29px/1 'Barlow Condensed',sans-serif;margin:3px 0}.teaching-guide header small{font:9px 'Space Mono',monospace;color:#c5d7a1;letter-spacing:1px}
+.teaching-guide button,.teaching-guide select{min-height:36px;border:1px solid #867994;background:#302a39;color:#f5eee0;padding:6px 11px;font:700 10px 'Space Mono',monospace;cursor:pointer}.teaching-guide button:focus-visible,.teaching-guide select:focus-visible,.teaching-guide canvas:focus-visible{outline:2px solid #dbf7a0;outline-offset:2px}.teaching-guide .teaching-close{background:#d9ecac;color:#151b11;border-color:#e7f5c3}.teaching-tools label{display:flex;align-items:center;gap:8px;min-width:0;color:#bfb3ca;font:9px 'Space Mono',monospace}.teaching-tools select{max-width:240px;min-width:0}
+.teaching-directions{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:7px 10px;background:#262331;border-left:3px solid #c9e59a}.teaching-directions p{margin:0;font:12px/1.35 'Space Grotesk',sans-serif;color:#f0e9dc}.teaching-stage{min-height:160px;position:relative}.teaching-stage canvas{display:block;box-sizing:border-box;width:100%;height:100%;min-height:160px;border:1px solid #5a5067;touch-action:none;background:#100e19}
+.teaching-meters{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:3px 16px;padding:8px 10px;background:#24232e;border:1px solid #514b5d}.teaching-blade{grid-row:span 2;display:grid;grid-template-columns:auto 1fr;gap:3px 8px;align-items:center}.teaching-blade b{font:800 14px 'Barlow Condensed',sans-serif;color:#f5c3ba}.teaching-blade[data-active=true] b{color:#dff8a8}.teaching-blade progress{width:100%;height:9px;accent-color:#d5f290}.teaching-blade span{grid-column:1/-1;font:10px 'Space Mono',monospace;color:#d5cbdc}.teaching-stats,.teaching-enemy-state{margin:0;font:10px/1.4 'Space Mono',monospace;color:#e9dfd4}.teaching-enemy-state{color:#e1c3a7}
+.teaching-basics{border:1px solid #61566c;padding:6px 9px;max-height:180px;overflow:auto;font:11px/1.4 'Space Grotesk',sans-serif}.teaching-basics summary{cursor:pointer;color:#e2efc3;font:700 10px 'Space Mono',monospace}.teaching-basics p{margin:7px 0}.teaching-basics b{color:#d9f0ae}.teaching-announcement{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+#rack-guidance{position:absolute;z-index:8;bottom:12px;left:50%;transform:translateX(-50%);width:min(550px,calc(100% - 24px));box-sizing:border-box;display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;padding:8px 10px;background:#171520ed;border:1px solid #9aa977;border-left:3px solid #d8f19c;color:#f4efdf;pointer-events:none}#rack-guidance[hidden]{display:none}#rack-guidance b,#rack-guidance strong{font:800 13px 'Barlow Condensed',sans-serif;color:#e3f5bc}#rack-guidance p{margin:2px 0 0;font:11px/1.25 'Space Grotesk',sans-serif}.rack-window{display:grid;gap:2px}.rack-window progress{width:100%;height:7px;accent-color:#d7ee96}.rack-window small{font:9px 'Space Mono',monospace;color:#c5bcc9}#rack-guidance button{pointer-events:auto;min-height:36px;border:1px solid #d8f19c;background:#303929;color:#edf8d4;padding:6px;font:700 9px 'Space Mono',monospace;cursor:pointer}#rack-guidance button:focus-visible{outline:2px solid white}
+@media(max-width:600px){.teaching-guide{padding:8px}.teaching-guide[open]{gap:5px;grid-template-rows:auto auto auto minmax(150px,1fr) auto auto}.teaching-guide h2{font-size:24px}.teaching-guide button,.teaching-guide select{font-size:9px;padding:5px;min-height:33px}.teaching-directions{grid-template-columns:1fr;gap:3px;padding:5px 8px}.teaching-directions p{font-size:11px}.teaching-meters{grid-template-columns:1fr;gap:3px;padding:6px}.teaching-blade{grid-row:auto}.teaching-stats,.teaching-enemy-state,.teaching-blade span{font-size:9px}.teaching-stage,.teaching-stage canvas{min-height:150px}#rack-guidance{bottom:6px;grid-template-columns:1fr auto;gap:4px}#rack-guidance p{font-size:10px}.rack-window{grid-column:1}.rack-window small{font-size:8px}#rack-guidance button{grid-column:2;grid-row:1/3}}
+@media(max-height:500px){.teaching-guide{height:calc(100dvh - 8px);padding:6px 10px}.teaching-guide[open]{grid-template-rows:auto auto auto minmax(120px,1fr) auto auto;gap:4px}.teaching-guide h2{font-size:21px}.teaching-guide header small{display:none}.teaching-stage,.teaching-stage canvas{min-height:120px}.teaching-directions p{font-size:10px}.teaching-meters{padding:4px 7px}.teaching-basics{max-height:100px}.teaching-guide button,.teaching-guide select{min-height:28px}}
+
+.teaching-directions .teaching-controls{grid-column:1/-1;color:#d8e9b6;font:700 10px/1.3 'Space Mono',monospace}
+@media(max-width:600px){.teaching-directions .teaching-controls{font-size:9px}}
+#health-value{font:700 10px/1 var(--mono);letter-spacing:0;color:#f5dfdf;font-variant-numeric:tabular-nums}
+.teaching-directions .teaching-health-help{grid-column:1/-1;color:#f7d6d0;font:700 10px/1.3 'Space Mono',monospace}
+@media(max-width:600px){.teaching-directions .teaching-health-help{font-size:9px}}
+
+.health-heart{color:#ff748e;font-size:12px;letter-spacing:0}
+/* One live objective at a time; the arena stays the visual priority. */
+.teaching-directions{grid-template-columns:1fr;gap:3px}
+.teaching-directions .teaching-step-label{font:700 10px/1.3 'Space Mono',monospace;color:#d7efad}
+.teaching-directions .teaching-step-action{font-weight:700}
+.teaching-tools button:disabled{opacity:.45;cursor:default}
+@media(max-width:600px){.teaching-tools{gap:4px}.teaching-tools label{flex:1}.teaching-tools select{width:100%;max-width:150px}.teaching-directions .teaching-step-label{font-size:9px}}
+.teaching-step-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.teaching-step-row .teaching-step-label{font:700 10px/1.3 'Space Mono',monospace;color:#d7efad}
+.teaching-guide .teaching-step-next{flex:none;min-height:28px;background:#d9ecac;color:#151b11;border-color:#e7f5c3}
+.teaching-guide .teaching-step-next[hidden]{display:none}
+@media(max-width:600px){.teaching-step-row .teaching-step-label{font-size:9px}}
+/* The field manual opens the real drills, not looping illustrations. */
+#panel:has(#manual-page:not([hidden])){overflow:auto}
+#panel .visual-manual .manual-controls{grid-template-columns:repeat(2,minmax(0,1fr))}
+#panel .manual-drill{min-width:0;min-height:48px;text-align:left;background:#211d2b;border:1px solid #685c75;border-top:2px solid #d8f19c;color:#f1ecdf;padding:7px 9px;cursor:pointer}
+#panel .manual-drill b,#panel .manual-drill span{display:block}
+#panel .manual-drill b{font:700 11px 'Space Mono',monospace;color:#e7efce}
+#panel .manual-drill span{font:12px/1.3 'Space Grotesk',sans-serif;color:#d4c5da}
+#panel .manual-drill:focus-visible{outline:2px solid #d8f19c;outline-offset:2px}
+@media(max-width:600px){#panel .manual-drill{padding:6px;min-height:43px}#panel .manual-drill b{font-size:9px}#panel .manual-drill span{font-size:10px}}
+
+/* Explicitly distinguish test runs from normal play without intercepting input. */
+#dev-badge:not([hidden]){position:fixed;z-index:20;top:4px;left:50%;transform:translateX(-50%);pointer-events:none;padding:4px 9px;border:1px solid #f9c65c;background:#211b12;color:#ffe4a3;font:700 9px/1.2 monospace;letter-spacing:.08em;white-space:nowrap}
+#dev-note{color:#f6d692;font-size:12px;line-height:1.4}
+/* Last real health loss stays readable after the brief impact, without motion. */
+#last-damage:not([hidden]){position:absolute;left:var(--gutter);top:calc(var(--top) + 100px);max-width:min(190px,46vw);padding:5px 8px;background:#21101aef;border-left:3px solid #ff8c99;color:#fff2eb;display:flex;flex-direction:column;gap:2px;line-height:1.1;text-shadow:0 1px 1px #000}
+#last-damage b{font:700 9px var(--mono);color:#ffabb2;letter-spacing:.06em}
+#last-damage span{font:700 12px var(--mono)}
+.hull[data-critical] small,.hull[data-critical] #health-value{color:#ffadb1}
+.hull[data-critical] #hull{outline:1px solid #ffadb1;outline-offset:3px}
+#combat-status:not([hidden]){position:absolute;left:var(--gutter);bottom:86px;max-width:min(245px,55vw);display:flex;flex-direction:column;gap:3px;padding:6px 9px;background:#171321f2;border-left:3px solid #e5ebae;color:#fff6e8;line-height:1.2;text-shadow:0 1px 1px #000;pointer-events:none}
+#combat-status b{font:700 10px var(--mono);color:#e5ebae;letter-spacing:.04em}
+#combat-status span{font:600 11px/1.25 var(--mono)}
+@media(max-height:500px){#combat-status:not([hidden]){bottom:60px;padding:4px 7px}#combat-status span{font-size:10px}}
+
+/* Full-screen lessons: the real arena is the illustration. Only the current
+   objective stays visible; lesson selection and detailed rules are optional. */
+.teaching-guide,.control-practice{position:fixed;inset:0;margin:0;width:100vw;height:100dvh;max-width:none;max-height:none;padding:0;border:0;overflow:hidden;background:#100e19}
+.teaching-guide[open],.control-practice[open]{display:block}
+.teaching-stage,.control-practice>canvas{position:absolute;inset:0;width:100%;height:100%;min-height:0}
+.teaching-stage canvas,.control-practice>canvas{width:100%;height:100%;min-height:0;border:0}
+.teaching-guide header,.control-practice header{position:absolute;z-index:3;top:max(12px,env(safe-area-inset-top));left:max(14px,env(safe-area-inset-left));right:max(14px,env(safe-area-inset-right));display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+.teaching-guide header>*,.control-practice header>*{pointer-events:auto}
+.teaching-guide header>div,.control-practice header>div{background:#171520db;padding:7px 10px;border-left:2px solid #d8f19c}
+.teaching-guide h2,.control-practice h2{font-size:22px;margin:2px 0}
+.teaching-guide header small,.control-practice header small{font-size:9px}
+.teaching-guide .teaching-close,.control-practice header button{min-height:42px;padding:8px 14px;background:#d9ecac;color:#151b11;border-color:#e7f5c3}
+.teaching-menu{position:absolute;z-index:4;top:max(75px,calc(env(safe-area-inset-top) + 70px));right:max(14px,env(safe-area-inset-right));width:min(320px,calc(100vw - 28px));max-height:calc(100dvh - 90px);overflow:auto;color:#f5eee0}
+.teaching-menu>summary{display:block;width:max-content;margin-left:auto;list-style:none;cursor:pointer;padding:9px 12px;background:#252330ed;border:1px solid #8c8296;font:700 10px var(--mono);min-height:38px;box-sizing:border-box}
+.teaching-menu>summary::-webkit-details-marker{display:none}
+.teaching-menu[open]{background:#181621f5;border:1px solid #756b80;padding:8px;box-sizing:border-box}
+.teaching-menu[open]>summary{margin-bottom:8px}
+.teaching-tools{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.teaching-tools label{grid-column:1/-1}.teaching-tools select{flex:1;max-width:none}
+.teaching-directions{position:absolute;z-index:2;bottom:max(16px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(470px,calc(100% - 28px));box-sizing:border-box;display:grid;gap:6px;background:#171520ee;padding:10px 14px;pointer-events:none}
+.teaching-directions button{pointer-events:auto;min-height:40px}
+.teaching-directions .teaching-step-action{font:600 14px/1.3 'Space Grotesk',sans-serif}
+.teaching-illustration{display:flex;align-items:center;gap:10px;color:#d8f19c}
+.teaching-illustration .ui-icon{width:26px;height:26px}
+.teaching-menu .teaching-controls{margin:9px 0;color:#d8e9b6;font:10px/1.4 var(--mono)}
+.teaching-menu .teaching-meters{margin:8px 0}.teaching-menu .teaching-basics{max-height:240px}
+#rack-guidance:not([hidden]){width:min(420px,calc(100% - 28px));display:block;padding:8px 12px;bottom:max(14px,env(safe-area-inset-bottom))}
+#rack-skip:not([hidden]){position:absolute;z-index:9;top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));min-height:42px;padding:8px 12px;border:1px solid #a5a294;background:#171520db;color:#efe9da;font:700 10px var(--mono);cursor:pointer}
+.control-toolbar{position:absolute;z-index:2;top:max(75px,calc(env(safe-area-inset-top) + 70px));right:max(14px,env(safe-area-inset-right));padding:6px;background:#171520e8}
+.control-readout{position:absolute;z-index:2;bottom:max(16px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(440px,calc(100% - 28px));box-sizing:border-box;background:#171520ee;padding:8px 12px;pointer-events:none}
+.control-readout>.control-visual-cue{padding:5px 0;gap:15px}.control-visual-cue>.ui-icon{width:25px;height:25px}
+.control-help{display:none}
+@media(max-width:600px){.teaching-guide h2,.control-practice h2{font-size:20px}.teaching-directions{padding:8px 10px}.teaching-directions .teaching-step-action{font-size:12px}.teaching-illustration .ui-icon{width:22px;height:22px}.teaching-menu{top:72px}.control-toolbar{top:72px}.control-toolbar label{gap:4px}.control-toolbar select{max-width:135px}}
+@media(max-height:500px){.teaching-guide header small,.control-practice header small{display:none}.teaching-menu,.control-toolbar{top:60px}.teaching-directions,.control-readout{bottom:8px;padding:7px 10px}.teaching-illustration .ui-icon,.control-visual-cue>.ui-icon{width:19px;height:19px}.teaching-directions .teaching-step-action{font-size:12px}.teaching-menu{max-height:calc(100dvh - 70px)}}
+#rack-guidance:not([hidden]){top:max(14px,env(safe-area-inset-top));bottom:auto;left:max(14px,env(safe-area-inset-left));transform:none;width:min(330px,calc(100% - 155px))}
+@media(max-height:500px) and (min-width:601px){.teaching-directions,.control-readout{left:14px;transform:none;width:min(300px,36vw)}}
+#rack-skip:not([hidden]){opacity:.55;border-radius:999px;background:#14131d;color:#f4f7e2;border:1px solid #d8e8aa;min-height:40px;transition:opacity .2s}
+#rack-skip:hover,#rack-skip:focus-visible{opacity:1}
+#game[data-learning=true] :is(#hud,.wave-hud,.wave-announcement,.quest-toast,#callout,#imprint,#title-screen){display:none!important}
+#game[data-tutorial-reveal=true] #hud{animation:tutorial-hud-in .4s ease-out both}
+@keyframes tutorial-hud-in{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){#game[data-tutorial-reveal=true] #hud{animation:none}}
+
+#rack-skip:not([hidden]){display:inline-flex;align-items:center;gap:5px}
+#rack-skip svg{width:13px;height:11px;fill:currentColor;flex:none}
+
+/* A single, non-interactive edge caption; the action stays in the arena. */
+#tutorial-objective:not([hidden]){position:absolute;z-index:8;top:max(15px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);max-width:calc(100% - 155px);padding:9px 13px;background:#171520e8;border-left:3px solid #e4ff9c;color:#f8f8e8;font:700 12px/1.25 var(--mono);text-align:center;letter-spacing:.02em;pointer-events:none}
+@media(max-width:500px){#tutorial-objective:not([hidden]){left:max(12px,env(safe-area-inset-left));transform:none;max-width:calc(100% - 110px);font-size:11px}}

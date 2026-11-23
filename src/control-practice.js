@@ -14,7 +14,7 @@ export function controlDrill(id){return CONTROL_DRILLS.find(d=>d.id===id)||CONTR
  * Drill preloads are explicit practice setup, never carried into a real run. */
 export function createControlSession({drill='route',equipment=null,emit=()=>{},view=null}={}){
  drill=controlDrill(drill).id;let disposed=false,started=false;
- const run=createRun(841,emit,{waveMode:true,controlPractice:true,equipment});run.state.phase='playing';run.state.invul=999999;
+ const run=createRun(841,emit,{waveMode:true,controlPractice:true,equipment});run.state.phase='playing';run.state.invul=999999;run.state.teachingArena=true;
  placePlayer(run.world,{x:0,y:-650});stopPlayer(run.world);
  if(drill!=='route')run.state.breakthrough=stepBreakthrough(createBreakthrough(),{paceHeld:true});
  if(drill==='breach')run.state.breakthrough={...run.state.breakthrough,sonic:true};

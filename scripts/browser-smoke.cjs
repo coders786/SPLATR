@@ -180,7 +180,7 @@ if (captures) mkdirSync(captures, { recursive: true });
     await tick(pg, 360);
     A.equal(await screen(pg), 'result');
     A.equal(await focus(pg), 'retry-btn');
-    A.ok(/Redline|Broken/.test(await text(pg, 'cause')));
+    A.ok(/Redline|Last hit:/.test(await text(pg, 'cause')));
     const best = Number(await text(pg, 'result-score'));
     A.ok(best >= 1660);
     A.match(

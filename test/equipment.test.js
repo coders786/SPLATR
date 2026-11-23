@@ -7,8 +7,8 @@ import {createCanvas} from '@napi-rs/canvas';
 import {cube} from '../src/art.js';
 import {drawEquipmentWorld,drawEquipmentSlash} from '../src/equipment-art.js';
 
-test('equipment catalog: fifty-two designed items plus empty head, stable seven-slot defaults',()=>{
-  assert.equal(ITEMS.length,53);assert.equal(new Set(ITEMS.map(x=>x.id)).size,53);
+test('equipment catalog: unique items and stable slot defaults',()=>{
+  assert.equal(ITEMS.length,73);assert.equal(new Set(ITEMS.map(x=>x.id)).size,73);
   for(const slot of SLOTS) assert.ok(ITEMS.filter(x=>x.slot===slot).length>=3);
   assert.equal(DEFAULT_EQUIPMENT.head,'none');
 });

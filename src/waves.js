@@ -11,14 +11,14 @@ export const WAVE_BUFFS=Object.freeze([
  {id:'comet',title:'COMET DRIVE',stat:'DASH +25% / REACH −15%',note:'A faster launch with a shorter cutting line.',speed:1.25,reach:.85,category:'HANDLING'},
  {id:'cleaver',title:'HEAVY CLEAVER',stat:'+2 ARMOR / BLADE −4',note:'Break more armor with a shorter blade window.',armor:2,blade:-4,category:'ATTACK'},
  {id:'duelist',title:'GLASS EDGE',stat:'SCORE +50% / GRACE −4',note:'Higher score with less escape time after a cut.',score:1.5,guard:-4,category:'STAKES'},
- {id:'bastion',title:'TWIN WARD',stat:'BLOCK 2 / DASH −10%',note:'Block two enemy hits. Slower launches; no hull restored.',shield:2,speed:.9,category:'STAKES'},
+ {id:'bastion',title:'TWIN WARD',stat:'BLOCK 2 / DASH −10%',note:'Block two enemy hits. Slower launches; no health restored.',shield:2,speed:.9,category:'STAKES'},
  {id:'fleet',title:'SWIFT EDGE',stat:'DASH +15%',note:'Faster launches. Same blade travel.',speed:1.15,category:'HANDLING'},
  {id:'reach',title:'LONG EDGE',stat:'REACH +20%',note:'Reach targets farther along your cutting line.',reach:1.2,category:'ATTACK'},
  {id:'breaker',title:'ARMOR BREAK',stat:'+1 ARMOR DAMAGE',note:'Strip an extra armored plate.',armor:1,category:'ATTACK'},
  {id:'linger',title:'LASTING EDGE',stat:'BLADE +8 TICKS',note:'Keep cutting longer after release.',blade:8,category:'ATTACK'},
  {id:'bounty',title:'BOUNTY EDGE',stat:'SCORE +25%',note:'More points from enemy cuts.',score:1.25,category:'STAKES'},
  {id:'guard',title:'SAFE EDGE',stat:'CUT GRACE +8',note:'More escape time after contact.',guard:8,category:'HANDLING'},
- {id:'barrier',title:'ONE-HIT WARD',stat:'BLOCK 1 HIT',note:'One otherwise damaging enemy hit is blocked next wave. No hull is restored.',shield:1,category:'STAKES'},
+ {id:'barrier',title:'ONE-HIT WARD',stat:'BLOCK 1 HIT',note:'One otherwise damaging enemy hit is blocked next wave. No health is restored.',shield:1,category:'STAKES'},
 ].map(x=>Object.freeze(x)));
 export const waveBrief=encounterBrief;
 export function waveOffers(seed,wave){
@@ -49,11 +49,11 @@ export function createWaveDirector({seed,world,combat,state,emit=()=>{},baseDash
  function spawn(){
   const cycle=Math.floor((wave.number-1)/5);if(!state.dimension||state.dimension.cycle!==cycle)state.dimension=createDimensionField(cycle);
   if(!state.breakthrough||state.breakthrough.cycle!==cycle)state.breakthrough=createBreakthrough(cycle);
-  const plan=planEncounter(seed,wave.number,world.player.position);wave.total=controlPractice?0:plan.total;wave.brief=plan;wave.pace=createSpeedPace(wave.number);wave.cleanBanks=createCleanBanks();wave.age=0;wave.entry=controlPractice?0:60;wave.breach=null;wave.paceNotified=false;wave.shattered=false;wave.shatterFx=null;wave.shatterTrace=null;
+  const plan=planEncounter(seed,wave.number,world.player.position);wave.total=controlPractice?0:plan.total;wave.brief=plan;wave.pace=createSpeedPace(wave.number);wave.cleanBanks=createCleanBanks();wave.age=0;wave.entry=controlPractice?0:30;wave.breach=null;wave.paceNotified=false;wave.shattered=false;wave.shatterFx=null;wave.shatterTrace=null;
   start={elapsed:state.elapsed,kills:state.kills,shots:state.shots,score:state.score,damage:state.damageTaken||0,credits:state.killLedger?.credits||0};
   for(const spec of controlPractice?[]:plan.specs)combat.add(spec);
   cells.clear();(controlPractice?[]:plan.links).forEach((link,i)=>cells.set(`wave-link/${i}`,{link:{...link}}));
-  state.invul=Math.max(state.invul,60);
+  state.invul=Math.max(state.invul,30);
   wave.remaining=combat.enemies.size;emit('waveStart',{number:wave.number,total:wave.total});
  }
  function rest(){
@@ -138,5 +138,9 @@ export function createWaveDirector({seed,world,combat,state,emit=()=>{},baseDash
   emit('sector',{band:wave.number,name:`WAVE ${wave.number}`});spawn();return true;
  }
  spawn();
- return {tick,choose,cells,skipBreach(){if(wave.phase!=='breach'||state.phase!=='playing')return false;rest();return true;},dispose(){removePlatform();cells.clear();}};
+ return {tick,choose,cells,setPracticeLinks(links){
+  if(!controlPractice||!Array.isArray(links))return false;
+  const valid=links.every(l=>l&&l.a!==l.b&&combat.enemies.get(l.a)?.kind==='prism'&&combat.enemies.get(l.b)?.kind==='prism'&&Number.isFinite(l.period)&&l.period>=140);
+  if(!valid)return false;cells.clear();links.forEach((l,i)=>cells.set(`practice-link/${i}`,{link:{a:l.a,b:l.b,period:l.period,age:0}}));return true;
+ },skipBreach(){if(wave.phase!=='breach'||state.phase!=='playing')return false;rest();return true;},dispose(){removePlatform();cells.clear();}};
 }

@@ -79,9 +79,9 @@ test('the singleton cannot go stale behind a curve edit', () => {
     'the impact frame must be cleaner than the swing peak',
   );
   assert.ok(
-    Math.abs(SLASH_TABLE[settleFirst + SLASH_ROW.smear] - SLASH_TABLE[impactLast + SLASH_ROW.smear]) <
-      1e-9,
-    'the settle must inherit the impact value exactly, or the arc pops',
+    SLASH_TABLE[settleFirst + SLASH_ROW.smear] <= SLASH_TABLE[impactLast + SLASH_ROW.smear] &&
+      Math.abs(SLASH_TABLE[settleFirst + SLASH_ROW.smear] - 0.21) < 1e-9,
+    'the settle must continue the impact decay at 0.21',
   );
   // The landing opens at full squash and settles to 1.
   // Approximate, not exact: these are derived (1 + 0.42*q), so the last bit

@@ -15,7 +15,7 @@ import {createLabScene} from './lab-scene.js';
 const choreography=(time,mode)=>evaluatePreviewPose(mode,time).pose;
 import {labPoint,labPullTarget} from './lab-input.js';
 
-export function createCustomize({storage,wallet,ownedParts,purchase,resetInput,motion=()=>true,snap=()=>{}}){
+export function createCustomize({storage,unlimited=false,wallet,ownedParts,purchase,resetInput,motion=()=>true,snap=()=>{}}){
  let state=loadEquipment(storage.get('equipment','{}')),slot='head',selected=state.equipped.head,action='slice',openedAt=0,forgeAt=-Infinity,fusionAt=-Infinity,lastMutation='',selectedPreset=0,hovered=null,frameNo=0,lastTime=0,accumulator=0;
  let activePointer=null,press=null,renderedEquipment=null,recipePreview=null,pendingBuild=null;
  let demoPlaying=true,demoStarted=0,demoHeld=0,demoKey='';let cards=[],codexCards=[];const scene=createLabScene(),cursor={x:0,y:0},gaze={x:0,y:0};
@@ -54,7 +54,7 @@ export function createCustomize({storage,wallet,ownedParts,purchase,resetInput,m
  const view=root.querySelector('.custom-view-switch');view.append(button('SHOP',()=>root.dataset.pane='shop'),button('PREVIEW',()=>root.dataset.pane='preview'));root.dataset.pane='shop';prependIcon(view.firstElementChild,'shop');prependIcon(view.lastElementChild,'play');
  root.addEventListener('close',()=>{clearDrag();resetInput();scene.reset();});
  for(const dialog of [root,codex]){dialog.addEventListener('keydown',e=>e.stopPropagation());dialog.addEventListener('keyup',e=>e.stopPropagation());}
- for(const s of SLOTS){const b=button(s.toUpperCase(),()=>{recipePreview=null;slot=s;selected=state.equipped[s];root.querySelector('.custom-grid').scrollTop=0;render();});prependIcon(b,s==='slash'?'crescent':s);b.dataset.slot=s;root.querySelector('.custom-shop>nav').append(b);}
+ for(const s of SLOTS){const b=button(s==='trajectory'?'VECTOR':s.toUpperCase(),()=>{recipePreview=null;slot=s;selected=state.equipped[s];if(s==='dash')demoMode.value='dash';else if(s==='pointer')demoMode.value='arrow';else if(s==='radar'||s==='trajectory')demoMode.value='story';root.querySelector('.custom-grid').scrollTop=0;render();});prependIcon(b,s==='slash'?'crescent':s==='dash'?'bolt':['pointer','radar','trajectory'].includes(s)?'target':s);b.dataset.slot=s;if(s==='trajectory')b.setAttribute('aria-label','Trajectory viewer');root.querySelector('.custom-shop>nav').append(b);}
  for(const mode of ['slice','aim','dash','bounce','hit']){const b=button(mode.toUpperCase(),()=>{clearDrag();action=mode;openedAt=performance.now();scene.reset();updateModes();});prependIcon(b,{slice:'blade',aim:'target',dash:'bolt',bounce:'bank',hit:'shield'}[mode]);b.dataset.action=mode;root.querySelector('.custom-actions').append(b);}
  function updateModes(){for(const b of root.querySelectorAll('[data-action]'))b.setAttribute('aria-pressed',String(b.dataset.action===action));}
  const presets=root.querySelector('.custom-presets');
@@ -67,7 +67,7 @@ export function createCustomize({storage,wallet,ownedParts,purchase,resetInput,m
  presets.querySelector('.preset-store').setAttribute('aria-label','Save current build to selected preset');
  function storePreset(i){if(state.presets[i]&&!confirm(`Replace preset ${i+1}?`))return;state.presets[i]={...state.equipped};save();render();status(`PRESET ${i+1} STORED / Click its chip to recall this build.`);}
  function renderPills(eq){const host=root.querySelector('.equipped-pills');host.replaceChildren();const matches=mutationMatches(eq).filter(x=>x.complete),linked=new Set(matches.flatMap(x=>Object.keys(x.parts)));
-  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 560 48');svg.setAttribute('aria-hidden','true');
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox',`0 0 ${SLOTS.length*80} 48`);svg.setAttribute('aria-hidden','true');
   for(const h of matches){const indices=Object.keys(h.parts).map(s=>SLOTS.indexOf(s)).sort((a,b)=>a-b);for(let i=1;i<indices.length;i++){const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',`M${40+indices[i-1]*80} 10 V${32+(i%2)*6} H${40+indices[i]*80} V10`);svg.append(path);}}
   host.append(svg);for(const s of SLOTS){const pill=el('span',linked.has(s)?'linked':'',s.toUpperCase());pill.title=ITEMS.find(x=>x.id===eq[s]).name;host.append(pill);}
   for(const nav of root.querySelectorAll('[data-slot]'))nav.dataset.linked=String(linked.has(nav.dataset.slot));
@@ -75,7 +75,7 @@ export function createCustomize({storage,wallet,ownedParts,purchase,resetInput,m
  function render(){
   const savedScroll=root.querySelector('.custom-grid').scrollTop;
   for(const b of destinations.children)b.setAttribute('aria-pressed',String(b.classList.contains('destination-'+root.dataset.section)));
-  const eq=previewBuild(),palette=corePalette(eq.core);renderedEquipment=eq;root.dataset.motion=String(motion());root.style.setProperty('--core',palette.primary);root.style.setProperty('--core-secondary',palette.secondary);root.querySelector('.custom-wallet').textContent=`${wallet().toLocaleString()} CREDITS`;prependIcon(root.querySelector('.custom-wallet'),'coin');
+  const eq=previewBuild(),palette=corePalette(eq.core);renderedEquipment=eq;root.dataset.motion=String(motion());root.style.setProperty('--core',palette.primary);root.style.setProperty('--core-secondary',palette.secondary);root.querySelector('.custom-wallet').textContent=unlimited?'∞ SANDBOX CREDITS':`${wallet().toLocaleString()} CREDITS`;prependIcon(root.querySelector('.custom-wallet'),'coin');
   for(const b of root.querySelectorAll('[data-slot]'))b.setAttribute('aria-pressed',String(b.dataset.slot===slot));
   const trying=!!recipePreview||selected!==state.equipped[slot];root.dataset.preview=String(trying);root.querySelector('.custom-lab-label b').textContent=trying?'FREE PREVIEW':'YOUR EQUIPPED BUILD';root.querySelector('.custom-note').textContent=trying?'Trying a part is free. Buy to own it, then Equip to use it.':'Tap to cut. Pull back to launch forward. Your equipped parts are saved.';
   discoveryNotice.textContent=lastDiscovery?`DISCOVERED / ${lastDiscovery}`:'';discoveryNotice.hidden=!lastDiscovery;
@@ -100,7 +100,7 @@ export function createCustomize({storage,wallet,ownedParts,purchase,resetInput,m
    const back=button('BACK',()=>{recipePreview=null;selected=state.equipped[slot];render();},'power-info');const test=button('PRACTICE',()=>swordDesk.open(eq,state.equipped),'power-info');detail.append(copy,back,test,apply);
   }else{
    copy.append(el('small','',`${power.icon} ${power.title} / ${power.trigger}`),el('h3','',it.name));
-   const chips=el('p','power-quick');for(const text of power.chips)chips.append(el('b',text.includes('−')||text.includes('MAX HULL 1')?'power-cost':'',text));copy.append(chips);
+   const chips=el('p','power-quick');for(const text of power.chips)chips.append(el('b',text.includes('−')||text.includes('MAX HEALTH 1')?'power-cost':'',text));copy.append(chips);
    const owned=state.owned.includes(it.id);const equip=button(owned?'EQUIP':it.price===null?'CHALLENGE LOCKED':`BUY / ${it.price} CREDITS`,()=>{
     if(!state.owned.includes(selected)){const receipt=buyEquipment(state,selected,wallet());if(!receipt)return status('NOT ENOUGH CREDITS / Earn CREDITS every round. Quests and Vaults add bonuses.');if(!purchase(selected,it.price))return status('PURCHASE UNAVAILABLE / Reopen to refresh.');state=receipt.state;save();render();return status(pendingBuild?`${it.name} purchased. Return to your build to continue.`:'OWNED · EQUIP TO USE');}
     state.equipped=normalizeEquipment({...state.equipped,[slot]:selected},state.owned);save();snapTo();render();status('EQUIPPED');
@@ -134,9 +134,9 @@ export function createCustomize({storage,wallet,ownedParts,purchase,resetInput,m
  function clearDrag(){const id=activePointer;activePointer=null;press=null;scene.state.drag=null;if(id!==null&&canvas.hasPointerCapture(id))canvas.releasePointerCapture(id);}
  function adoptAutoPose(){if(!scene.state.manual)scene.adoptPose(choreography(motion()?(performance.now()-openedAt)/16.667:18,action));}
  canvas.onpointerdown=e=>{if(activePointer!==null||e.button!==0)return;const p=point(e);if(!p.inside)return;e.preventDefault();canvas.focus({preventScroll:true});activePointer=e.pointerId;press={x:e.clientX,y:e.clientY,toX:e.clientX,toY:e.clientY,type:e.pointerType,dragged:false};canvas.setPointerCapture(e.pointerId);adoptAutoPose();scene.aim(p.x,p.y);};
- canvas.onpointermove=e=>{const p=point(e);cursor.x=(p.x-320)/250;cursor.y=(p.y-200)/190;if(e.pointerId===activePointer){press.toX=e.clientX;press.toY=e.clientY;const g=readGesture(press);press.dragged=g.dragged;const scale=640/canvas.getBoundingClientRect().width;const target=g.kind==='tap'?p:labPullTarget(scene.state,g,scale);scene.aim(target.x,target.y);}};
+ canvas.onpointermove=e=>{const p=point(e);cursor.x=(p.x-320)/250;cursor.y=(p.y-200)/190;if(e.pointerId===activePointer){press.toX=e.clientX;press.toY=e.clientY;const g=readGesture(press);press.dragged=g.dragged;const bounds=canvas.getBoundingClientRect(),scale=1/Math.min(bounds.width/640,bounds.height/400);const target=g.kind==='tap'?p:labPullTarget(scene.state,g,scale);scene.aim(target.x,target.y);}};
  canvas.onpointerleave=()=>{cursor.x=cursor.y=0;};
- canvas.onpointerup=e=>{if(e.pointerId!==activePointer)return;const p=point(e);press.toX=e.clientX;press.toY=e.clientY;const g=readGesture(press),scale=640/canvas.getBoundingClientRect().width;const target=g.kind==='tap'?p:labPullTarget(scene.state,g,scale);const fired=g.kind!=='cancel'&&scene.fire(target.x,target.y);clearDrag();if(fired)status('MANUAL TEST / Drag again to redirect. Dummy cuts never earn score or CREDITS.');};
+ canvas.onpointerup=e=>{if(e.pointerId!==activePointer)return;const p=point(e);press.toX=e.clientX;press.toY=e.clientY;const g=readGesture(press),bounds=canvas.getBoundingClientRect(),scale=1/Math.min(bounds.width/640,bounds.height/400);const target=g.kind==='tap'?p:labPullTarget(scene.state,g,scale);const fired=g.kind!=='cancel'&&scene.fire(target.x,target.y);clearDrag();if(fired)status('MANUAL TEST / Drag again to redirect. Dummy cuts never earn score or CREDITS.');};
  canvas.onpointercancel=e=>{if(e.pointerId===activePointer)clearDrag();};
  canvas.onlostpointercapture=e=>{if(e.pointerId===activePointer)clearDrag();};
  canvas.onkeydown=e=>{if(e.code==='Space'){e.preventDefault();if(e.repeat)return;clearDrag();adoptAutoPose();scene.fire(scene.state.dummy.x,scene.state.dummy.y);}};
@@ -144,7 +144,7 @@ export function createCustomize({storage,wallet,ownedParts,purchase,resetInput,m
   const dt=Math.min(100,now-(lastTime||now));lastTime=now;frameNo++;
   if(root.open&&!codex.open&&!swordDesk.isOpen){accumulator+=dt;while(accumulator>=16.667){scene.tick();accumulator-=16.667;}gaze.x+=(cursor.x-gaze.x)*.1;gaze.y+=(cursor.y-gaze.y)*.1;
    canvas.dataset.hits=String(scene.state.hits);canvas.dataset.testMode=scene.state.drag?'aiming':scene.state.manual?'manual':action;canvas.dataset.playerX=String(scene.state.x);canvas.dataset.playerY=String(scene.state.y);root.dataset.motion=String(motion());
-   const storyIdle=root.dataset.tools!=='on'&&!scene.state.manual&&!scene.state.drag;const t=motion()?(now-openedAt)/16.667:0;if(!storyIdle)drawLabScene(canvas.getContext('2d'),renderedEquipment,t,action,scene,{cursor:gaze,motion:motion(),forgeAt,now,slot,fusionElapsed:now-fusionAt,sword:swordProfile(renderedEquipment)});
+   const storyIdle=root.dataset.tools!=='on'&&!scene.state.manual&&!scene.state.drag;const t=motion()?(now-openedAt)/16.667:0;if(!storyIdle)drawLabScene(canvas.getContext('2d'),renderedEquipment,t,action,scene,{cursor:gaze,motion:motion(),forgeAt,now,slot,fusionElapsed:now-fusionAt,sword:swordProfile(renderedEquipment),pressOrigin:press?{...labPoint(canvas.getBoundingClientRect(),press.x,press.y),power:Math.min(1,Math.hypot(press.toX-press.x,press.toY-press.y)/150),cancel:readGesture(press).kind==='cancel'}:null});
    if(storyIdle){
     const id=hovered||selected,key=slot+':'+id;if(key!==demoKey){demoKey=key;demoStarted=now;demoHeld=0;}
     const it=ITEMS.find(it=>it.id===id&&it.slot===slot);demoName.textContent=it?.name||'YOUR BUILD';demoPlay.disabled=!motion()||demoMode.value==='arrow';demoState.textContent=demoMode.value==='arrow'?'STATIC PREVIEW':!motion()?'STILL / REDUCED':demoPlaying?'LOOPING DEMO':'PAUSED';
@@ -160,5 +160,5 @@ export function createCustomize({storage,wallet,ownedParts,purchase,resetInput,m
   requestAnimationFrame(frame);
  }
  requestAnimationFrame(frame);
- return {unlock(id){if(!['oni','glass'].includes(id)||state.owned.includes(id))return false;state.owned.push(id);save();return true;},open(){recipePreview=null;pendingBuild=null;root.dataset.section='parts';root.dataset.pane='shop';root.dataset.tools='off';previewToggle.textContent='SHOW PRACTICE CONTROLS';previewToggle.setAttribute('aria-expanded','false');lastDiscovery='';sync();selected=state.equipped[slot];demoMode.value='dash';openedAt=performance.now();demoStarted=openedAt;demoKey='';demoPlaying=true;demoPlay.textContent='PAUSE';demoPlay.setAttribute('aria-pressed','true');scene.reset();render();resetInput();root.showModal();},snapshot(){sync();return normalizeEquipment(state.equipped,state.owned);},get isOpen(){return root.open||codex.open||swordDesk.isOpen;}};
+ return {unlock(id){if(!['oni','glass'].includes(id)||state.owned.includes(id))return false;state.owned.push(id);save();return true;},open(){recipePreview=null;pendingBuild=null;root.dataset.section='parts';root.dataset.pane='shop';root.dataset.tools='off';previewToggle.textContent='SHOW PRACTICE CONTROLS';previewToggle.setAttribute('aria-expanded','false');lastDiscovery='';sync();selected=state.equipped[slot];demoMode.value=slot==='pointer'?'arrow':'dash';openedAt=performance.now();demoStarted=openedAt;demoKey='';demoPlaying=true;demoPlay.textContent='PAUSE';demoPlay.setAttribute('aria-pressed','true');scene.reset();render();resetInput();root.showModal();},snapshot(){sync();return normalizeEquipment(state.equipped,state.owned);},get isOpen(){return root.open||codex.open||swordDesk.isOpen;}};
 }

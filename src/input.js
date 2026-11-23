@@ -1,4 +1,4 @@
-import {dragArrowVisual} from './art/splatr-art-engine.js';
+import {dragArrowVisual,pointerVisual} from './art/splatr-art-engine.js';
 import {readGesture} from './gesture.js';
 import { MAX_SPEED } from './physics.js';
 import {beginPull,movePull,resolvePull} from './pull-control.js';
@@ -12,11 +12,15 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
   const listeners=[];let disposed=false;
   const listen=(target,type,handler,options)=>{target.addEventListener(type,handler,options);listeners.push(()=>target.removeEventListener?.(type,handler,options));};
   const enabled=()=>!disposed&&active();
+  // A deliberately marked escape must not magnetise back toward the Rift.
+  const aimAssist=()=>assist()&&!(get()?.state?.visualTutorial?.stage===2&&!get()?.state?.visualTutorial?.dodged&&get()?.state?.visualTutorial?.guide?.kind==='dodge');
   const overlay=canvas.ownerDocument?.createElementNS('http://www.w3.org/2000/svg','svg');
-  if(overlay){overlay.setAttribute('aria-hidden','true');overlay.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:100;display:none;overflow:visible';overlay.innerHTML='<circle fill="none" stroke-width="1.5"/><g class="drag-design"><path class="drag-tether" fill="none" stroke="#aaa0b5" stroke-width="1.2" stroke-dasharray="3 5"/><path class="drag-shaft" stroke="#15121e" stroke-width="1.2"/><path class="drag-head" stroke="#15121e" stroke-width="1.2"/><path class="drag-accent" fill="none" stroke-width="1.2"/></g>';canvas.parentElement?.append(overlay);}
+  if(overlay){overlay.setAttribute('aria-hidden','true');overlay.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:100;display:none;overflow:visible';overlay.innerHTML='<circle fill="none" stroke-width="1.5"/><g class="pointer-origin"><path fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g><g class="drag-design"><path class="drag-tether" fill="none" stroke="#aaa0b5" stroke-width="1.2" stroke-dasharray="3 5"/><path class="drag-shaft" stroke="#15121e" stroke-width="1.2"/><path class="drag-head" stroke="#15121e" stroke-width="1.2"/><path class="drag-accent" fill="none" stroke-width="1.2"/></g>';canvas.parentElement?.append(overlay);}
   function showGesture(){if(!overlay||!pointer)return;
    const {gesture:g,vector}=resolvePull(pointer),ring=overlay.querySelector('circle'),group=overlay.querySelector('.drag-design');overlay.style.display='block';
-   const design=dragArrowVisual({dx:g.dx,dy:g.dy,power:vector?.power||0,equipment:get()?.state?.equipment||{},sword:get()?.state?.sword});overlay.dataset.element=design.element;
+   const actual=g.kind==='pull'?pointerAim():null;
+   const design=dragArrowVisual({dx:actual?.x??g.dx,dy:actual?.y??g.dy,power:actual?.power??vector?.power??0,equipment:get()?.state?.equipment||{},sword:get()?.state?.sword});overlay.dataset.element=design.element;
+   const mark=pointerVisual({equipment:get()?.state?.equipment||{},power:vector?.power||0,cancel:g.kind==='cancel'}),origin=overlay.querySelector('.pointer-origin');overlay.dataset.pointer=mark.id;origin.setAttribute('transform',`translate(${pointer.x} ${pointer.y})`);origin.firstElementChild.setAttribute('d',mark.path);origin.firstElementChild.setAttribute('stroke',mark.color);
    ring.setAttribute('cx',pointer.x);ring.setAttribute('cy',pointer.y);ring.setAttribute('r',g.dragged?g.cancelRadius:g.slop);ring.setAttribute('stroke',g.kind==='cancel'?'#ee8d93':g.kind==='pull'?design.color:'#bcb2cc');
    group.style.display=g.kind==='pull'?'':'none';if(g.kind!=='pull')return;
    group.setAttribute('transform',`translate(${pointer.x} ${pointer.y}) rotate(${design.angle*180/Math.PI})`);
@@ -95,7 +99,7 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
   // the target, and the corridor still respects a nearer plate.
   function magnetic(v, focus) {
     const r = get();
-    if (!v?.power || !assist() || !r) return v ? {...v,lock:null} : v;
+    if (!v?.power || !aimAssist() || !r) return v ? {...v,lock:null} : v;
     // One corridor answer for this run: it widens with tempo, and a held aim
     // widens it further. The vector that is drawn is the vector that fires.
     const out = magnetize(r.world.player.position, v, r.combat, {
@@ -114,7 +118,7 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
     // While a finger or mouse is down the cube is in focus, which also
     // widens the corridor a little: an intentional aim is a declared shot.
     if (v.power) {
-      const shot = magnetic(r.adjust(v, assist()), true);
+      const shot = magnetic(r.adjust(v, aimAssist()), true);
       // The tether is pinned to the WORLD point that was under the press. A
       // display-space anchor would drift off-screen as the lens widens during
       // a held aim, drawing a tether to nowhere.
@@ -147,7 +151,7 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
       toY: e.clientY,
       travel,
       world,
-      target: r.aimAt(world, assist()).target,
+      target: r.aimAt(world, aimAssist()).target,
     });
     showGesture();canvas.setPointerCapture(e.pointerId);
     canvas.style.cursor = 'grabbing';
@@ -197,7 +201,7 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
     const n = Math.hypot(x, y);
     if (n)
       keyboard = magnetic(
-        get().adjust({ x: (x / n) * MAX_SPEED, y: (y / n) * MAX_SPEED, power: 1 }, assist()),
+        get().adjust({ x: (x / n) * MAX_SPEED, y: (y / n) * MAX_SPEED, power: 1 }, aimAssist()),
         !!shift,
       );
   }
@@ -240,6 +244,7 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
     }
   });
   return {
+    get engaged() { return !!(pointer || keyboard); },
     get aim() {
       return pointer ? pointerAim() : keyboard;
     },

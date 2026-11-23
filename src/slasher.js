@@ -2,6 +2,7 @@ import {safeSpawn,inViewport} from './spawn-space.js';
 import Matter from 'matter-js';
 import { TYPES, TAU } from './shapes.js';
 import { clamp, PLAYER_SIZE, ARENA as DEFAULT_ARENA } from './levels.js';
+import {enemyAttackZone} from './art/splatr-art-engine.js';
 const { Bodies, Body, Composite, Events, Vertices } = Matter;
 const E_OPTIONS = {
   isSensor: true,
@@ -37,6 +38,7 @@ export function hazardHits(h, p, prev) {
     by = p.y - h.y,
     r = PLAYER_SIZE * 0.44;
   if (h.kind === 'needle') return closest(ax, ay, bx, by) <= r + 5;
+  if (h.kind === 'zone') return zoneHits(h.zone,p,prev,r);
   // Moving circle versus expanding annulus. Check both sides of the wave;
   // being inside a pulse that has ALREADY passed is safe.
   const pad = r + 3,
@@ -76,13 +78,27 @@ export function sweepDistance(a, b, c, d) {
     closest(c.x - b.x, c.y - b.y, d.x - b.x, d.y - b.y),
   );
 }
+/** Swept cube center against the exact warned zone, expanded by cube radius. */
+export function zoneHits(zone,p,prev,pad=PLAYER_SIZE*.44){
+ if(!zone)return false;
+ if(zone.radius&&closest(prev.x-zone.x,prev.y-zone.y,p.x-zone.x,p.y-zone.y)<=zone.radius+pad)return true;
+ const inside=(q,poly)=>{let yes=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+  const a=poly[i],b=poly[j];if((a.y>q.y)!==(b.y>q.y)&&q.x<(b.x-a.x)*(q.y-a.y)/(b.y-a.y)+a.x)yes=!yes;
+ }return yes;};
+ for(const poly of zone.polygons||[]){
+  if(inside(p,poly)||inside(prev,poly))return true;
+  for(let i=0;i<poly.length;i++)if(sweepDistance(prev,p,poly[i],poly[(i+1)%poly.length])<=pad)return true;
+ }
+ return false;
+}
 export function createCombat(world, tell = () => {}) {
   const ARENA=world.arena||DEFAULT_ARENA;
   const enemies = new Map(),
     contacts = new Set(),
+    rushContacts = new Set(),
     hazards = [],
     links = [];
-  let serial = 0, beat=0, slots=1, cadence=70, beamWaiting=false, lastWasBeam=false;
+  let serial = 0, attackSerial=0, beat=0, slots=1, cadence=70, beamWaiting=false, lastWasBeam=false;
   // Even late combinations enter on different beats. A Prism link shares a
   // turn with the actors; generating a new cell never starts a volley.
   function takeTurn(beam=false) {
@@ -181,13 +197,20 @@ export function createCombat(world, tell = () => {}) {
   function remove(e) {
     if (!enemies.delete(e.id)) return;
     Composite.remove(world.engine.world, e.body);
-    contacts.delete(e);
+    contacts.delete(e);rushContacts.delete(e);
+    // The new close-range zones belong to their source and cannot linger after a cut.
+    for(let i=hazards.length-1;i>=0;i--)if(hazards[i].kind==='zone'&&hazards[i].sourceId===e.id)hazards.splice(i,1);
+  }
+  function interrupt(e){
+    if(!['fork','bastion','rift','well'].includes(e.kind))return;
+    if(e.mode==='tell'||e.mode==='recover'){e.mode='idle';e.cool=Math.max(e.cool,100);e.attackZone=null;}
+    for(let i=hazards.length-1;i>=0;i--)if(hazards[i].kind==='zone'&&hazards[i].sourceId===e.id)hazards.splice(i,1);
   }
   const detect = ({ pairs }) => {
     for (const pair of pairs) {
       const { parentA: a, parentB: b } = pair.collision;
       const t = a === world.player ? b : b === world.player ? a : null;
-      if (t?.plugin.enemy) contacts.add(t.plugin.enemy);
+      if (t?.plugin.enemy) {const enemy=t.plugin.enemy;contacts.add(enemy);if(enemy.kind==='fang'&&enemy.mode==='rush')rushContacts.add(enemy);}
     }
   };
   Events.on(world.engine, 'collisionStart', detect);
@@ -199,6 +222,7 @@ export function createCombat(world, tell = () => {}) {
     hazards.push({
       kind: 'needle',
       source: e.kind,
+      sourceId:e.id,attackId:e.attackId,
       x,
       y,
       px: x,
@@ -215,6 +239,7 @@ export function createCombat(world, tell = () => {}) {
       hazards.push({
         kind: 'ring',
         source: 'pulse',
+        sourceId:e.id,attackId:e.attackId,
         x: e.x,
         y: e.y,
         px: e.x,
@@ -229,24 +254,36 @@ export function createCombat(world, tell = () => {}) {
     e.mode = 'tell';
     const lead = kind === 'prism' ? 9 : kind === 'fang' ? 5 : 0;
     e.aim = Math.atan2(p.y + v.y * lead - e.y, p.x + v.x * lead - e.x);
-    e.span = kind === 'rift' ? 90 : kind === 'crown' ? 84 : kind === 'fang' ? 66 : 76;
+    e.span = kind === 'rift' || kind === 'well' ? 90 : kind === 'crown' || kind === 'bastion' ? 84 : kind === 'fork' ? 78 : kind === 'fang' ? 66 : 76;
     if (e.gentle) e.span += 24;
+    // The training Rift targets the present position and gives a novice time
+    // to see the real warning and respond. Normal combat keeps predictive aim.
+    if (e.tutorialTargetPlayer) e.span = 165;
     e.clock = e.span;
-    const dx = p.x + v.x * 16 - e.x,
-      dy = p.y + v.y * 16 - e.y,
+    const leadTime = e.tutorialTargetPlayer ? 0 : 16;
+    const dx = p.x + v.x * leadTime - e.x,
+      dy = p.y + v.y * leadTime - e.y,
       k = Math.min(1, 610 / (Math.hypot(dx, dy) || 1));
     e.tx = e.x + dx * k;
     e.ty = e.y + dy * k;
     // A telegraphed destination belongs to world space, never the camera.
-    e.tx=clamp(e.tx,ARENA.x+e.r,ARENA.x+ARENA.w-e.r);
-    e.ty=clamp(e.ty,ARENA.y+e.r,ARENA.y+ARENA.h-e.r);
+    const attackBounds=world.tutorialEnemyBounds||ARENA;
+    e.tx=clamp(e.tx,attackBounds.x+e.r,attackBounds.x+attackBounds.w-e.r);
+    e.ty=clamp(e.ty,attackBounds.y+e.r,attackBounds.y+attackBounds.h-e.r);
+    e.attackId=`${e.id}:${++attackSerial}`;
+    e.attackZone=enemyAttackZone(kind,kind==='rift'?e.tx:e.x,kind==='rift'?e.ty:e.y,kind==='fork'?e.angle:e.aim,e.r);
     if (announce) tell(e);
   }
   function move(dt, difficulty) {
     const player=world.player,p=player.position,m=Math.min(1.38,1+(difficulty-1)*.055);
     cadence=difficulty<=2?76:54; beat=Math.max(0,beat-dt);
-    slots=(difficulty<=2?1:2)-links.length;
-    for(const e of enemies.values())if(e.mode!=='idle' && Math.hypot(e.x-p.x,e.y-p.y)<1120) slots--;
+    // Count an attack once across its tell, active projectile(s) and recovery.
+    // A Crown's ten needles are one volley, not ten independent turns.
+    const threats=new Set();
+    for(const e of enemies.values())if(e.mode!=='idle'&&Math.hypot(e.x-p.x,e.y-p.y)<1120)threats.add(e.attackId||`enemy:${e.id}`);
+    for(const h of hazards)if(!h.spent&&Math.hypot(h.x-p.x,h.y-p.y)<1120)threats.add(h.attackId||`hazard:${h.sourceId||h.source}`);
+    for(const link of links)threats.add(`link:${link.a.id}:${link.b.id}`);
+    slots=(difficulty<=2?1:2)-threats.size;
     for (const e of enemies.values()) {
       e.px = e.x;
       e.py = e.y;
@@ -288,8 +325,10 @@ export function createCombat(world, tell = () => {}) {
         e.y = clamp(e.y + Math.sin(e.aim) * (e.lungeSpeed||10.8) * dt, ARENA.y + er0, ARENA.y + ARENA.h - er0);
         if ((e.clock -= dt) <= 0) {
           e.mode = 'idle';
-          e.cool = 118;
+          e.cool = 92;
         }
+      } else if (e.mode === 'recover') {
+        if((e.clock-=dt)<=0){e.mode='idle';e.attackZone=null;}
       } else if (e.mode === 'tell') {
         if ((e.clock -= dt) <= 0) {
           e.mode = 'idle';
@@ -299,10 +338,10 @@ export function createCombat(world, tell = () => {}) {
             e.clock = 24;
           } else if (k === 'pulse') pulse(e);
           else if (k === 'prism') fire(e, e.aim, 6.8 * m);
-          else if (k === 'rift') {
-            e.x = e.px = e.tx;
-            e.y = e.py = e.ty;
-            e.cool = 101;
+          else if (['fork','bastion','rift','well'].includes(k)) {
+            if(k==='rift'){e.x=e.px=e.tx;e.y=e.py=e.ty;}
+            if(hazards.length<72&&e.attackZone)hazards.push({kind:'zone',source:k,sourceId:e.id,attackId:e.attackId,zone:e.attackZone,x:e.attackZone.x,y:e.attackZone.y,px:e.attackZone.x,py:e.attackZone.y,angle:e.aim,age:0,life:14});
+            e.mode='recover';e.clock=38;e.cool=145;
           } else if (k === 'crown') {
             for (let j = 0; j < 10; j++) fire(e, e.aim + (j * TAU) / 10, 5.4 * m);
             e.cool = 112;
@@ -311,16 +350,16 @@ export function createCombat(world, tell = () => {}) {
       } else {
         const speed =
           (k === 'bastion'
-            ? 1.45
+            ? 1.85
             : k === 'fork'
-              ? 0.95
+              ? 1.35
               : k === 'crown'
-                ? 1.85
+                ? 2.2
                 : k === 'fang'
                   ? e.small
-                    ? 2.5
-                    : 0.76
-                  : 0.28) * m;
+                    ? 2.9
+                    : 1.5
+                  : 0.6) * m;
         // Slow tracking between explicit attacks lets a player read each tell.
         const sway = Math.sin(e.age * 0.038 + (e.phase || 0)) * (k === 'fork' ? 1.55 : 0.2);
         // Guard a post rather than vacuuming the whole cell into one pile.
@@ -366,7 +405,7 @@ export function createCombat(world, tell = () => {}) {
           const pull = 1 - dist / CLOSING, // strongest nearby, zero at the edge
             home = Math.hypot(e.x - e.postX, e.y - e.postY),
             slack = clamp(1 - home / LEASH, 0, 1),
-            inflate = k === 'fang' ? 1.5 : k === 'bastion' ? 0.5 : 0.85,
+            inflate = k === 'fang' ? 2 : k === 'bastion' ? 0.7 : 1,
             force = pull * inflate * 2.0 * slack;
           vx += nx * force;
           vy += ny * force;
@@ -374,8 +413,9 @@ export function createCombat(world, tell = () => {}) {
         e.x+=vx*dt;e.y+=vy*dt;
         if (
           e.cool <= 0 &&
-          dist < (k === 'fang' ? 440 : k === 'pulse' ? 410 : 820) &&
-          ['fang', 'pulse', 'prism', 'rift', 'crown'].includes(k) && takeTurn()
+          dist < (k === 'fang' ? 10.8*m*24+e.r+PLAYER_SIZE*.5-20 : k === 'pulse' ? 410 : k === 'fork' ? 260 : k === 'bastion' ? 290 : k === 'well' ? 230 : 820) &&
+          ['fang', 'pulse', 'prism', 'fork', 'bastion', 'rift', 'well', 'crown'].includes(k) &&
+          takeTurn()
         ) {
           e.lungeSpeed=10.8*m;
           wind(e, k, p, player.velocity);
@@ -386,7 +426,10 @@ export function createCombat(world, tell = () => {}) {
         e.angle +=
           Math.atan2(Math.sin(target - e.angle), Math.cos(target - e.angle)) *
           Math.min(1, dt * 0.26);
-      } else if (k === 'well' || k === 'rift' || k === 'fork')
+      } else if (k === 'bastion' && e.mode === 'tell') {
+        const target=e.aim-Math.PI/2;
+        e.angle+=Math.atan2(Math.sin(target-e.angle),Math.cos(target-e.angle))*Math.min(1,dt*.24);
+      } else if (k === 'well' || k === 'rift' || (k === 'fork' && e.mode === 'idle'))
         e.angle += (k === 'well' ? 0.017 : 0.008) * dt;
       if (k === 'well' && dist < 234 && world.launched) {
         const f = (1 - dist / 234) * 0.92 * dt;
@@ -404,7 +447,7 @@ export function createCombat(world, tell = () => {}) {
       // One clamp for every enemy, by its own radius, at the single point where
       // a position is committed. The leash that walks it home is upstream and
       // untouched -- this only refuses to let it leave the table.
-      const lim = ARENA,
+      const lim = world.tutorialEnemyBounds||ARENA,
         er = e.r || 0;
       const cxq = clamp(e.x, lim.x + er, lim.x + lim.w - er),
         cyq = clamp(e.y, lim.y + er, lim.y + lim.h - er);
@@ -422,9 +465,10 @@ export function createCombat(world, tell = () => {}) {
       Body.setAngle(e.body, e.angle);
     }
   }
-  function attacks(dt, onHit) {
+  function attacks(dt, onHit, {freezeZones=false}={}) {
     for (let i = hazards.length - 1; i >= 0; i--) {
       const h = hazards[i];
+      if(freezeZones&&h.kind==='zone')continue;
       h.px = h.x;
       h.py = h.y;
       h.age += dt;
@@ -432,7 +476,7 @@ export function createCombat(world, tell = () => {}) {
       if (h.kind === 'needle') {
         h.x += h.vx * dt;
         h.y += h.vy * dt;
-      } else {
+      } else if(h.kind==='ring') {
         h.previousRadius = h.radius;
         h.radius += 3.45 * dt;
       }
@@ -476,7 +520,7 @@ export function createCombat(world, tell = () => {}) {
       }
       if (!l.spent && sweepDistance(prev, p, a, b) < PLAYER_SIZE * 0.48) {
         l.spent = true;
-        hit();
+        hit({a,b});
       }
     }
   }
@@ -563,12 +607,14 @@ export function createCombat(world, tell = () => {}) {
   return {
     enemies,
     contacts,
+    rushContacts,
     hazards,
     links,
     linkAttacks,
     crownPost,
     add,
     remove,
+    interrupt,
     kids,
     move,
     attacks,
@@ -580,7 +626,7 @@ export function createCombat(world, tell = () => {}) {
     dispose() {
       Events.off(world.engine, 'collisionStart', detect);
       Events.off(world.engine, 'collisionActive', detect);
-      contacts.clear();
+      contacts.clear();rushContacts.clear();
       enemies.clear();
       hazards.length = links.length = 0;
     },

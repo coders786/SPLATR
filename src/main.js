@@ -1,6 +1,9 @@
-import {drawEquipmentStory} from './art/splatr-art-engine.js';
 import {installIconSprite,prependIcon} from './ui-icons.js';
-import {createControlPracticeUI} from './control-practice-ui.js';
+import {isDevMode,modeURL,createProfileStorage,refillForTesting} from './dev-mode.js';
+import {createCombatTrace} from './combat-trace.js';
+import {createVisualTutorial,tutorialObjective,tutorialAnnouncement} from './visual-tutorial.js';
+import {healthDamageLabel,healthDeathMessage} from './health-ui.js';
+import {combatStatus} from './combat-status.js';
 import {runCoaching} from './run-coach.js';
 import {createWaveUI} from './wave-ui.js';
 import './lab.css';
@@ -22,7 +25,19 @@ import { SPEEDS, setSpeed, speedIndexOf, speed } from './pace.js';
 import { TIERS } from './motion.js';
 import { speedReadout, meterReadout, dialGeometry } from './motion.js';
 import { MAX_SPEED } from './physics.js';
-let questUI, customize, waveUI, controlPractice;let learningGround=false;
+let questUI, customize, waveUI, controlPractice, teaching;let learningGround=false,tutorial=null,lastTutorialHint=null,lastRiftObjective='';
+const tutorialHintSpeech=Object.freeze({
+ slice:'Slice the highlighted target. Tap it, or pull away and release toward it.',
+ bank:'Launch into the glowing wall. Pull away from the wall and release.',
+ approach:'Move closer to the Rift, then wait for its warning.',
+ watch:'Wait for the Rift warning to cover you, then launch out of it.',
+ dodge:'The Rift warning is on you. Pull back and release to launch out of it.',
+ gate:'The glowing gate can be broken. Launch into it.',
+ cross:'Travel through the open doorway.'
+});
+const devMode = isDevMode(location.href);
+const storage = createProfileStorage(() => localStorage, devMode);
+let combatTrace = null;
 const $ = (id) => document.getElementById(id),
   game = $('game'),
   canvas = $('arena'),
@@ -30,31 +45,18 @@ const $ = (id) => document.getElementById(id),
   hud = $('hud'),
   clock = createClock(),
   renderer = createRenderer(canvas),
-  audio = createAudio(),
-  poki = createPokiBridge({ fetchSDK: __LOAD_POKI_SDK__ });
+  audio = createAudio({ muteKey: devMode ? 'splatr.dev.muted' : 'splatr.muted' }),
+  poki = createPokiBridge({ getSDK: devMode ? () => null : undefined, fetchSDK: !devMode && __LOAD_POKI_SDK__ });
 void poki.init();
 enableMenuTaps();
 const setText = (id, txt) => {
   const el = $(id);
   if (el.textContent !== String(txt)) el.textContent = txt;
 };
-const storage = {
-  get(k, otherwise) {
-    try {
-      return localStorage.getItem(`riot.${k}`) ?? otherwise;
-    } catch {
-      return otherwise;
-    }
-  },
-  set(k, v) {
-    try {
-      localStorage.setItem(`riot.${k}`, String(v));
-    } catch {
-      /* optional in embeds */
-    }
-  },
-};
-const newcomer=storage.get('started','0')!=='1'&&Number(storage.get('best',0))===0&&Number(storage.get('rackClears',0))===0;
+let tutorialSeenThisSession=false;
+// A first visit is consumed when the course opens, not when it is finished.
+// Retry and interrupted reloads must not force players back into the course.
+const needsTutorial=()=>!tutorialSeenThisSession&&storage.get('tutorialStarted','0')!=='1'&&storage.get('tutorialCompleted','0')!=='1'&&storage.get('started','0')!=='1'&&!(Number(storage.get('best',0))>0)&&!(Number(storage.get('rackClears',0))>0);
 const coarse=matchMedia('(pointer:coarse)');
 let mix=storage.get('fieldMix',storage.get('opening','auto')==='off'?'full':'gradual');
 if(mix!=='full')mix='gradual';
@@ -94,7 +96,7 @@ let run = null,
   receiptTicks = 0,
   noticeTicks = 0;
 const active = () =>
-  run && !controlPractice?.isOpen && !waveUI?.open && !customize?.isOpen && !questUI?.vault && !dialog.open && !document.hidden && ['ready', 'playing'].includes(run.state.phase);
+  run && !teaching?.isOpen && !controlPractice?.isOpen && !waveUI?.open && !customize?.isOpen && !questUI?.vault && !dialog.open && !document.hidden && ['ready', 'playing'].includes(run.state.phase);
 const say = (s) => setText('announcement', s);
 function portal() {
   poki.setPlaying(!!active());
@@ -122,7 +124,7 @@ function record() {
   setText('result-score', score(s.score));
   setText('result-kills', s.kills);
   setText('result-chain', `${s.maxChain} hit${s.maxChain === 1 ? '' : 's'}`);
-  setText('result-stage-label',s.wave?'Wave reached':'Sector');
+  setText('result-stage-label',s.wave&&!s.narrative?'Wave reached':'Sector');
   setText('result-sector', s.opening ? '—' : two(s.band));
   setText(
     'cause',
@@ -140,7 +142,7 @@ function record() {
         : 'No stroke taken.'
       : s.cause === 'Floor'
         ? 'The floor took your speed.'
-        : `Broken by ${s.cause}.`,
+        : healthDeathMessage(s.cause,s.hpMax),
   );
   setText('debrief', s.wave?runCoaching(s).text:s.throughcuts?`${s.throughcuts} throughcut${s.throughcuts===1?'':'s'} in ${s.shots} dash${s.shots===1?'':'es'}.`:s.shots?`${s.shots} dash${s.shots===1?'':'es'} · ${s.kills} slashed.`:'');
   // ── THE FORM STAMP ──────────────────────────────────────────────────────
@@ -239,7 +241,7 @@ function event(type, d) {
     case 'hyperSurge': audio.strike('drive');break;
     case 'sonicBank': audio.strike('parry');break;
     case 'breachContact': audio.seamHit();break;
-    case 'dimensionBreak': input?.reset();audio.shatter();break;
+    case 'dimensionBreak': if(!run?.state.narrative)input?.reset();audio.shatter();break;
     case 'waveStart': audio.zone(); break;
     case 'waveClear': input?.reset();if(d.shattered)pop('SHATTERED',75,3);else{audio.zone();pop('CLEAR',60,3);}break;
     case 'waveRest': input?.reset();break;
@@ -289,7 +291,7 @@ function event(type, d) {
     case 'hurt':
       audio.strike('hurt');
       buzz(24);
-      pop(`Hull hit  /  ${d.cause}`, 48, 3);
+      pop(`HEALTH −1 / ${healthDamageLabel(d.cause)}`, 65, 3);
       break;
     case 'break':
       input.cancel();
@@ -299,6 +301,7 @@ function event(type, d) {
       break;
     case 'sector':
       audio.zone();
+      if(run?.state.narrative){say(`Sector ${d.band}`);break;}
       if(run?.state.wave){say(`Wave ${d.band}`);break;}
       if (d.band % 3 === 0) pop('Crown incoming', 72);
       else say(`Sector ${d.band}: ${d.name}`);
@@ -354,7 +357,7 @@ function event(type, d) {
       say(`${d.label}  ·  ×${d.multiplier}`);
       break;
     case 'repair':
-      pop('Crown split · Hull +1', 55, 3);
+      pop('Crown split · HEALTH +1', 55, 3);
       break;
     case 'over':
       record();
@@ -369,6 +372,7 @@ const input = createInput(canvas, {
   assist: () => opts.assist,
   engage(device) {
     lastDevice = device;
+    if(learningGround)tutorial?.interact();
     audio.unlock();
     audio.focus(false);
   },
@@ -407,6 +411,9 @@ function syncSettings() {
     opts.shake === 'off' ? 'Off' : opts.shake === 'low' ? 'Low' : 'Full';
   $('pace-opt').querySelector('b').textContent=speed().label;
   setText('pace-note','Changes automatic reaction windows, not launch direction or power.');
+  $('dev-opt').querySelector('b').textContent=devMode?'On':'Off';
+  $('dev-opt').setAttribute('aria-pressed',String(devMode));
+  $('dev-note').textContent=devMode?'Sandbox saves separately. Priced shop items are free; challenge items still require their challenges. Switching ends the current run.':'Enable a separate sandbox with unlimited shop credits. Switching ends the current run.';
   $('opening-opt').querySelector('b').textContent=mix==='full'?'Full field':'Gradual';
   setText('opening-note',mix==='full'?'All enemy types from the start.':'New enemy types introduced gradually.');
   for (const b of document.querySelectorAll('.sound')) {
@@ -435,6 +442,10 @@ function syncSettings() {
   if (fullOk)
     $('full-opt').querySelector('b').textContent = document.fullscreenElement ? 'Exit' : 'Enter';
 }
+$('dev-opt').onclick = () => {
+  if (run && !confirm('Switching mode ends this run. Continue?')) return;
+  location.assign(modeURL(location.href, !devMode));
+};
 $('pace-opt').onclick = () => {
   const next = SPEEDS[(speedIndexOf(speed().id) + 1) % SPEEDS.length];
   setSpeed(next.id);
@@ -511,6 +522,7 @@ let lastHp = null,
 function updateHUD() {
   if (!run) return;
   const s = run.state;
+  $('rack-skip').hidden=!learningGround;
   setText('score', score(s.score));
   hud.dataset.place = s.opening ? 'room' : 'field';
   $('chain').hidden = !!s.opening || s.chain < 2;
@@ -561,9 +573,16 @@ function updateHUD() {
   // Hull, Edge and Focus all come from one readout so they cannot disagree
   // about what is empty or how much is owed. See `meterReadout` in motion.js.
   const meters = meterReadout(s);
+  const status = s.narrative ? null : combatStatus(s);
+  $('combat-status').hidden = !status;
+  if(status){setText('combat-status-title',status.title);setText('combat-status-detail',status.detail);}
   if($('hull').children.length !== (s.hpMax || 3)) $('hull').replaceChildren(...Array.from({length:s.hpMax || 3},()=>document.createElement('i')));
   Array.from($('hull').children).forEach((n, i) => n.classList.toggle('empty', i >= meters.hp));
-  $('hull').setAttribute('aria-label', `${meters.hp} hull remaining`);
+  setText('health-value', `${meters.hp}/${s.hpMax}`);
+  $('hull').closest('.hull').toggleAttribute('data-critical',meters.hp === 1);
+  $('last-damage').hidden = !s.lastDamage || !!s.opening;
+  if(s.lastDamage) setText('last-damage-cause', healthDamageLabel(s.lastDamage.cause));
+  $('hull').setAttribute('aria-label', `Health: ${meters.hp} of ${s.hpMax} remaining. The run ends at zero health.`);
   // EDGE. The pip count and the recharge timer both matter: three pips tell
   // you whether you can cut, the timer tells you whether to bother lining one
   // up. Without the second, an empty meter is indistinguishable from a broken
@@ -621,8 +640,8 @@ function updateHUD() {
   lastHp = s.hp;
   lastScore = s.score;
   lastChain = s.chain;
-  setText('sector', s.wave?`WAVE ${two(s.wave.number)}`:s.opening ? 'Cutting room' : `Sector ${two(s.band)}`);
-  setText('district', s.wave?(s.wave.phase==='combat'?(s.wave.number%5===0?'BREAK WAVE / CLEAR TARGETS':'CLEAR THE FIELD'):s.wave.phase==='breach'?'LAUNCH INTO THE BREACH':'LAND TO UPGRADE'):s.opening ? `Rack ${two(s.opening.row + 1)} / 03` : district(seed, s.band));
+  setText('sector', s.narrative?`SECTOR ${two(s.narrative.sector)}`:s.wave?`WAVE ${two(s.wave.number)}`:s.opening ? 'Cutting room' : `Sector ${two(s.band)}`);
+  setText('district', s.narrative?'':s.wave?(s.wave.phase==='combat'?(s.wave.number%5===0?'BREAK WAVE / CLEAR TARGETS':'CLEAR THE FIELD'):s.wave.phase==='breach'?'LAUNCH INTO THE BREACH':'LAND TO UPGRADE'):s.opening ? `Rack ${two(s.opening.row + 1)} / 03` : district(seed, s.band));
   // Speedometer: the cube's own velocity, not the world's tempo, so the
   // number is about the player's flying rather than the game's difficulty.
   // The ceiling only lifts while hyper is live. Passing HYPER.speed always
@@ -728,16 +747,19 @@ function restoreField() {
   }
   portal();
 }
-function start({learningGround:learn=false}={}) {
-  if(customize?.isOpen||controlPractice?.isOpen) return;
+function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
+  if(customize?.isOpen||controlPractice?.isOpen||teaching?.isOpen) return;
   input.reset();
   poki.setPlaying(false);
-  run?.dispose();
+  if(tutorial)tutorial.dispose();else run?.dispose();tutorial=null;
   seed = freshSeed(seed);
-  learningGround=learn;game.dataset.learning=String(learn);storage.set('started',1);
-  const opening = {warmup:learn,staged:learn};
-  renderer.reset(seed, opening.warmup);
-  run = createRun(seed, event, {...opening,waveMode:!learn,viewport:renderer.questView(),equipment:customize?.snapshot()});
+  const wasLearning=learningGround;learningGround=learn;lastTutorialHint=null;lastRiftObjective='';$('tutorial-objective').hidden=true;game.dataset.learning=String(learn);game.dataset.tutorialReveal=String(wasLearning&&!learn);storage.set('started',1);if(learn){tutorialSeenThisSession=true;storage.set('tutorialStarted',1);}
+  renderer.reset(seed, false);
+  $('dev-refill').textContent='Refill health / Edge / focus';
+  combatTrace = devMode ? createCombatTrace(4096) : null;
+  if(learn){tutorial=createVisualTutorial(seed,(type,data)=>renderer.event(type,type==='cut'?{...data,points:0}:data,opts.motion));run=tutorial.run;}
+  else run = createRun(seed, event, {waveMode:true,continuous:true,lockdownIntro:lockdown,viewport:renderer.questView(),equipment:customize?.snapshot(),combatTrace});
+  renderer.field(run.world.player.position);run.setView(renderer.questView());
   game.dataset.world=run.state.equipment.world;
   if(!learn)questUI.start();
   const hybrid=activeHybrid(run.state.equipment)||activeSparks(run.state.equipment)[0];
@@ -759,22 +781,25 @@ function start({learningGround:learn=false}={}) {
   noticeTicks = receiptTicks = 0;
   $('imprint').hidden = true;
   $('callout').hidden = true;
+  $('last-damage').hidden = true;
   $('title-screen').hidden = true;
   hud.hidden = false;
   restoreField();
   nextHUD = 0;
   renderer.draw(run, 1, null, opts.motion,lastDevice);
   updateHUD();
-  say('New run.');
+  say(learn?'Practice: slice the targets, bank the wall, dodge and cut, then break the Crown.':'New run.');
 }
 function home() {
   questUI?.closePeek();
   input.reset();
-  run?.dispose();
-  run = null;
+  if(tutorial)tutorial.dispose();else run?.dispose();
+  run = null;tutorial=null;
+  combatTrace = null;
   learningGround=false;game.dataset.learning='false';questUI?.refresh();
   restoreField();
   hud.hidden = true;
+  $('rack-skip').hidden=true;$('tutorial-objective').hidden=true;
   $('title-screen').hidden = false;
   game.dataset.screen = 'title';
   setText('title-best', score(best));
@@ -783,10 +808,19 @@ function home() {
   portal();
 }
 function manual(){
- const host=document.querySelector('.visual-manual');if(host.children.length)return;const hint=document.createElement('small');hint.className='manual-replay-hint';hint.textContent='HOVER / TAP TO REPLAY';host.append(hint);
- for(const [group,lessons]of [['manual-controls',[['learn-aim','PULL · SLOW TIME'],['learn-cut','CUT = REFILL'],['learn-chain','CHAIN 6 = OVERDRIVE']]],['manual-enemies',[['foe-fang','FANG · CUT PATH'],['foe-prism','PRISM · BREAK LINK'],['foe-fork','FORK · SPLIT TARGETS'],['foe-bastion','BASTION · 2 HITS'],['foe-rift','RIFT · GET CLEAR'],['foe-crown','CROWN · BREAK ARMOR']]]]){
- const grid=document.createElement('div');grid.className=group;
- for(const [id,label]of lessons){const tile=document.createElement('figure'),canvas=document.createElement('canvas'),caption=document.createElement('figcaption');canvas.width=300;canvas.height=170;canvas.dataset.story=id;tile.tabIndex=0;tile.setAttribute('role','button');tile.setAttribute('aria-label','Replay '+label);const replay=()=>{canvas.storyStart=performance.now();};tile.onpointerenter=replay;tile.onfocus=replay;tile.onclick=replay;tile.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();replay();}};canvas.setAttribute('role','img');canvas.setAttribute('aria-label',label);caption.textContent=label;tile.append(canvas,caption);grid.append(tile);}host.append(grid);
+ const host=document.querySelector('.visual-manual');if(host.children.length)return;
+ const hint=document.createElement('p');hint.className='manual-replay-hint';hint.textContent='REPLAY THE VISUAL PRACTICE COURSE';host.append(hint);
+ for(const [group,lessons] of [
+  ['manual-controls', [['slash','LAUNCH & SLASH','Learn the blade window'],['pace','PACE & BREACH','Practice advanced movement']]],
+  ['manual-enemies', [['fang','FANG','Watch the charge'],['pulse','PULSE','Read the ring'],['prism','PRISM','Dodge the needle'],['link','LINKED PRISMS','Break the beam'],['fork','FORK','Swipe & split'],['bastion','BASTION','Slam & plates'],['rift','RIFT','Dodge the landing'],['well','WELL','Pull & compression'],['crown','CROWN','Read the volley']]]
+ ]){
+  const grid=document.createElement('div');grid.className=group;
+  for(const [id,title,detail] of lessons){
+   const button=document.createElement('button'),name=document.createElement('b'),sub=document.createElement('span');
+   button.type='button';button.className='manual-drill';button.dataset.lesson=id;name.textContent=title;sub.textContent=detail;button.append(name,sub);
+   button.onclick=()=>start({learningGround:true});grid.append(button);
+  }
+  host.append(grid);
  }
 }
 function open(next) {
@@ -841,9 +875,18 @@ dialog.addEventListener('cancel', (e) => {
   back();
 });
 document.querySelectorAll('.back').forEach((b) => (b.onclick = back));
-$('start-btn').onclick = $('retry-btn').onclick = start;
+$('start-btn').onclick = () => start();
+$('retry-btn').onclick = () => start({learningGround:false});
 $('home-btn').onclick = home;
 $('resume-btn').onclick = restoreField;
+$('dev-refill').hidden = $('dev-trace').hidden = !devMode;
+$('dev-refill').onclick = () => { if (devMode && refillForTesting(run)) { updateHUD(); say('Health, Edge and focus refilled.'); $('dev-refill').textContent='Refilled health / Edge / focus'; } };
+$('dev-trace').onclick = () => {
+  if (!devMode || !combatTrace) return;
+  const url = URL.createObjectURL(new Blob([combatTrace.json()], {type:'application/json'}));
+  const a = document.createElement('a'); a.href=url; a.download='splatr-combat-trace.json'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
 $('skip-room').onclick = () => {
   if (run?.skipOpening()) {
     restoreField();
@@ -855,9 +898,9 @@ $('pause-btn').onclick = () => {
 };
 $('manual-btn').onclick = $('pause-manual').onclick = () => open('manual');
 $('options-btn').onclick = $('pause-options').onclick = () => open('options');
-$('end-btn').onclick = () => learningGround?start():run?.retire();
+$('end-btn').onclick = () => learningGround?finishTutorial():run?.retire();
 window.addEventListener('keydown', (e) => {
-  if(customize?.isOpen||controlPractice?.isOpen) return;
+  if(customize?.isOpen||controlPractice?.isOpen||teaching?.isOpen) return;
   if (e.altKey || e.ctrlKey || e.metaKey) return;
   const k = e.key.toLowerCase();
   if (k === 'm' && !e.repeat) {
@@ -899,13 +942,13 @@ window.addEventListener('keydown', (e) => {
     } else if (k === 'p' && page === 'pause' && !e.repeat) restoreField();
     return;
   }
-  if ((k === 'escape' || k === 'p') && active() && !e.repeat) {
+  if ((k === 'escape' || k === 'p') && active() && !e.repeat && !learningGround) {
     e.preventDefault();
     open('pause');
   }
 });
 function suspend() {
-  if (run && !questUI.vault && ['playing', 'ready'].includes(run.state.phase) && !dialog.open) open('pause');
+  if (run && !learningGround && !questUI.vault && ['playing', 'ready'].includes(run.state.phase) && !dialog.open) open('pause');
   input.cancel();
   clock.reset();
   portal();
@@ -924,13 +967,12 @@ document.addEventListener('visibilitychange', () => {
 });
 function frame(now) {
   waveUI?.update();
-  if(page==='manual'&&dialog.open&&!document.hidden){for(const canvas of document.querySelectorAll('.visual-manual canvas')){const time=canvas.storyStart?Math.min(1100,now-canvas.storyStart):1100,key=opts.motion?Math.round(time):'still';if(canvas.lastStory===key)continue;canvas.lastStory=key;drawEquipmentStory(canvas.getContext('2d'),300,170,{id:canvas.dataset.story,time,motion:opts.motion});}}
   raf = 0;
   if (document.hidden) return;
   const redraw = dirty || renderer.revision !== lastRevision;
   if (!run) {
     if (redraw || (!page && opts.motion)) renderer.title(opts.motion ? now * 0.023 : 0);
-  } else if (!dialog.open && !questUI.vault && !controlPractice?.isOpen) {
+  } else if (!dialog.open && !questUI.vault && !controlPractice?.isOpen && !teaching?.isOpen) {
     const a = clock.frame(now, () => {
       if (dialog.open || questUI.vault || waveUI?.open || run.state.wave?.phase==='choose') return;
       // A refused shot gets one more chance before the tick consumes the frame.
@@ -941,7 +983,8 @@ function frame(now) {
       input.retry();
       run.setAim(input.aim);
       run.tick(); // owns the panic ray, grace and every other tick rule
-      questUI.tick();
+      if(learningGround&&tutorial){tutorial.tick(input.engaged);const objective=tutorialObjective(tutorial.visual,run.combat.enemies,lastDevice),label=$('tutorial-objective');label.hidden=!objective;const speech=objective?tutorialAnnouncement(tutorial.visual,objective,lastDevice):'',objectiveKey=objective+'|'+speech;if(objectiveKey!==lastRiftObjective){if(!objective)lastTutorialHint=null;lastRiftObjective=objectiveKey;setText('tutorial-objective',objective);if(speech)say(speech);}const hint=tutorial.visual.guide?.kind;if(!objective&&hint&&hint!==lastTutorialHint){lastTutorialHint=hint;say(tutorialHintSpeech[hint]);}if(tutorial.finished){queueMicrotask(()=>{if(learningGround&&tutorial?.finished)finishTutorial();});}}
+      else questUI.tick();
       audio.focus(run.state.phase === 'playing' && run.state.held && run.world.slow);
       audio.flush();
       // ── "SCREEN SHAKE: OFF" MUST MEAN OFF ────────────────────────────────
@@ -960,7 +1003,7 @@ function frame(now) {
       if (receiptTicks && !--receiptTicks) $('imprint').hidden = true;
       if (noticeTicks && !--noticeTicks) $('callout').hidden = true;
       const beat = Math.floor(run.world.clock / 15);
-      if (opts.music && !run.state.opening && run.state.phase === 'playing' && beat !== lastBeat) {
+      if (opts.music && !learningGround && !run.state.opening && run.state.phase === 'playing' && beat !== lastBeat) {
         audio.beat(beat, run.state.drive > 0, run.state.equipment?.world);
         lastBeat = beat;
       }
@@ -975,14 +1018,17 @@ function frame(now) {
   lastRevision = renderer.revision;
   raf = requestAnimationFrame(frame);
 }
-controlPractice=createControlPracticeUI({resetInput:()=>input.reset(),motion:()=>opts.motion,onOpen:()=>{clock.reset();poki.setPlaying(false);},onClose:()=>{clock.reset();dirty=true;portal();}});
-questUI = createQuestUI({practice:()=>controlPractice.open(),getRun:()=>run, storage, audio, motion:()=>opts.motion && opts.shake !== 'off', resetInput:()=>input.reset(), home,
+function finishTutorial(){const first=storage.get('tutorialCompleted','0')!=='1';storage.set('tutorialCompleted',1);start({learningGround:false,lockdown:first});}
+$('rack-skip').onclick=()=>{if(learningGround)finishTutorial();};
+questUI = createQuestUI({unlimited:devMode,startTutorial:()=>start({learningGround:true}),getRun:()=>run, storage, audio, motion:()=>opts.motion && opts.shake !== 'off', resetInput:()=>input.reset(), home,
   resume:(playing)=>{clock.reset();dirty=true;if(playing)canvas.focus({preventScroll:true});portal();}, view:()=>renderer.questView()});
-customize = createCustomize({storage,wallet:()=>questUI.wallet(),ownedParts:()=>questUI.ownedParts(),purchase:(id,cost)=>questUI.purchasePart(id,cost),resetInput:()=>input.reset(),motion:()=>opts.motion,snap:()=>audio.menu()});
+customize = createCustomize({storage,unlimited:devMode,wallet:()=>questUI.wallet(),ownedParts:()=>questUI.ownedParts(),purchase:(id,cost)=>questUI.purchasePart(id,cost),resetInput:()=>input.reset(),motion:()=>opts.motion,snap:()=>audio.menu()});
 const customButton=document.createElement('button');customButton.id='customize-btn';customButton.className='choice quiet';customButton.textContent='Shop';customButton.onclick=()=>customize.open();$('main-nav').append(customButton);
 waveUI=createWaveUI({getRun:()=>run,resetInput:()=>input.reset(),motion:()=>opts.motion});
 installIconSprite();
 for(const [id,name]of Object.entries({'start-btn':'play','manual-btn':'guide','options-btn':'settings','quests-btn':'learn','customize-btn':'shop','resume-btn':'play','pause-practice':'practice','pause-manual':'guide','pause-options':'settings','retry-btn':'retry','home-btn':'back','end-btn':'back'}))prependIcon($(id),name);
+game.dataset.dev = String(devMode);
+$('dev-badge').hidden = $('dev-panel-badge').hidden = !devMode;
 syncSettings();
 renderer.setShakeLevel(opts.shake);
 setText('title-best', score(best));
@@ -991,5 +1037,4 @@ renderer.title(0);
 game.removeAttribute('inert');
 $('boot').remove();
 poki.loadingFinished();
-if(newcomer)start({learningGround:true});
 if (!document.hidden) raf = requestAnimationFrame(frame);
