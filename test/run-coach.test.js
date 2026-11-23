@@ -11,7 +11,7 @@ test('invalid telemetry does not produce NaN/Infinity or fabricate diagnoses',()
 });
 test('rest recommendations use observed hits and launch counts, while urgent ward and armor counters retain priority',()=>{
  const find=id=>WAVE_BUFFS.find(b=>b.id===id);
- const report={hits:2,shots:20,cuts:5};const a=recommendWaveOffer(['reach','guard','bounty'].map(find),{hp:2,previous:report});assert.equal(a.id,'guard');assert.match(a.reason,/2 hull lost/);
+ const report={hits:2,shots:20,cuts:5};const a=recommendWaveOffer(['reach','guard','bounty'].map(find),{hp:2,previous:report});assert.equal(a.id,'guard');assert.match(a.reason,/2 health lost/);
  const b=recommendWaveOffer(['linger','fleet','bounty'].map(find),{hp:2,previous:report});assert.equal(b.id,'linger');assert.match(b.reason,/20 launches for 5 cuts/);
  assert.equal(recommendWaveOffer(['breaker','guard','barrier'].map(find),{hp:1,next:{counts:{bastion:2}},previous:report}).id,'barrier');
  assert.equal(recommendWaveOffer(['breaker','guard','bounty'].map(find),{hp:3,next:{counts:{bastion:2}},previous:report}).id,'breaker');

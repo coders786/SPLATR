@@ -788,3 +788,23 @@ test('the jelly field deforms every vertex of the body, and returns to rest', as
   }
   assert.ok(returned, 'the jelly never recovers -- it is a ramp, not a spring');
 });
+
+test('slash channels meet continuously at swing and impact boundaries', () => {
+  const epsilon = 1e-6;
+  for (const boundary of [SLASH.windup, SLASH.windup + SLASH.swing, SLASH.windup + SLASH.swing + SLASH.impact]) {
+    const before = slashFor(boundary - epsilon), after = slashFor(boundary);
+    for (const field of ['angle','smear','alpha','weight','counter']) {
+      assert.ok(Math.abs(before[field]-after[field]) < 0.001, `${field} pops at ${boundary}: ${before[field]} -> ${after[field]}`);
+    }
+    // A deliberate impact flash is the only discontinuous event.
+    if (boundary !== SLASH.windup + SLASH.swing) assert.ok(Math.abs(before.flash-after.flash)<0.001);
+  }
+});
+
+test('small movements blend continuously out of the held pose in every direction', () => {
+  for (let hold=0;hold<8;hold++) for(let i=0;i<8;i++){
+    const a=i*Math.PI/4, pose=s=>moveFor(Math.cos(a)*s,Math.sin(a)*s,hold);
+    const before=pose(.6-1e-6),after=pose(.6+1e-6);
+    for(const key of ['lean','wide','tall','eyes','twist','stretch'])assert.ok(Math.abs(before[key]-after[key])<1e-5,`${key} popped at movement threshold`);
+  }
+});

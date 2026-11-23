@@ -676,6 +676,7 @@ test('the launch and the brake both throw particles onto the glass', () => {
   const s = run.state;
   const count = (age) => {
     s.slashAge = age;
+    renderer.tick(run, true);
     ctx.__reset();
     renderer.draw(run, 1, null, true, 'mouse');
     const b = ctx.__ops.find(
@@ -790,4 +791,35 @@ test('drawn airborne cube stays within 1.25x and is square within five recovery 
     run.dispose();
     renderer.dispose();
   }
+});
+
+test('dash deformation and core remain continuous across phase transitions',()=>{
+ for(let direction=0;direction<8;direction++){
+  const a=direction*Math.PI/4,vx=42*Math.cos(a),vy=42*Math.sin(a);
+  for(const boundary of [DASH.windup,DASH.windup+DASH.active]){
+   const before=dashFor(boundary-1e-7,vx,vy),after=dashFor(boundary,vx,vy);
+   for(const key of ['sx','sy','leadGlow','trailBreak'])assert.ok(Math.abs(before[key]-after[key])<1e-4,`${key} pops at ${boundary}`);
+   for(const axis of ['x','y'])assert.ok(Math.abs(before.core[axis]-after.core[axis])<1e-4,`core.${axis} pops at ${boundary}`);
+  }
+ }
+});
+
+test('dash particles do not age or move when a frame is drawn repeatedly without a tick',()=>{
+ installDom();const {canvas,ctx}=createDisplay(1560,866),renderer=createRenderer(canvas),run=boot();
+ run.world.player.velocity.x=120;run.world.player.velocity.y=0;run.state.slashAge=DASH.windup;
+ renderer.tick(run,true);
+ const frame=()=>{ctx.__reset();renderer.draw(run,1,null,true,'mouse');return ctx.__ops.filter(o=>o.kind==='rect'&&(o.paint==='#deff52'||o.paint==='#fff8ec')&&o.pts.length===2).map(o=>({paint:o.paint,alpha:o.alpha,pts:o.pts}));};
+ try{const first=frame(),second=frame();assert.ok(first.length>3);assert.deepEqual(second,first);}finally{renderer.dispose();run.dispose();}
+});
+
+test('draw interpolates the dash pose between simulation ticks without rotating the body',()=>{
+ installDom();const {canvas,ctx}=createDisplay(1560,866),renderer=createRenderer(canvas),run=boot();
+ run.world.player.velocity.x=42;run.world.player.velocity.y=0;run.state.slashAge=3;
+ const sample=alpha=>{ctx.__reset();renderer.draw(run,alpha,null,true,'mouse');return bodyMatrix(ctx);};
+ try{
+  const start=sample(0),mid=sample(.5),end=sample(1);
+  assert.ok(start&&mid&&end);assert.ok(Math.abs(start[0]-end[0])>.01,'scale must progress within a tick');
+  assert.ok(mid[0]>Math.min(start[0],end[0])&&mid[0]<Math.max(start[0],end[0]),'intermediate frame must lie between endpoints');
+  for(const m of [start,mid,end]){assert.ok(Math.abs(m[1])<1e-9);assert.ok(Math.abs(m[2])<1e-9);}
+ }finally{renderer.dispose();run.dispose();}
 });

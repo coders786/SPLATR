@@ -25,7 +25,7 @@ for (const [kind, expected] of [
   ['pulse', 1],
   ['crown', 10],
   ['fang', 0],
-  ['rift', 0],
+  ['rift', 1],
 ])
   test(`${kind} warns before its specific attack and commits to the advertised aim`, (t) => {
     const { c, w, add } = field(t),
@@ -195,17 +195,18 @@ for (const [label, age, angle, expectHit] of [
     assert.equal(s.hp, expectHit ? 2 : 3);
     assert.ok(events.some(([k]) => k === (expectHit ? 'hurt' : 'parry')));
   });
-test('unarmed contact breaks the chain and grants temporary hull immunity; three separate hits end the run once', (t) => {
+test('Fang rush contact breaks the chain and grants temporary health immunity; three separate hits end the run once', (t) => {
   const { g, s, events, spawn } = isolated(t);
-  spawn('bastion', 0, -8);
+  const fang=spawn('fang', 0, -8);
   g.dash(up);
+  fang.mode='rush';fang.clock=24;fang.aim=0;
   s.blade = 0;
   s.chain = 4;
   s.chainTime = 90;
   g.tick();
   assert.equal(s.hp, 2);
   assert.equal(s.chain, 0);
-  assert.ok(!g.hurt('Bastion'));
+  assert.ok(!g.hurt('Fang'));
   s.invul = 0;
   g.hurt('Pulse wave');
   assert.equal(s.hp, 1);

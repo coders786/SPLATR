@@ -1,6 +1,6 @@
 /** Pure finite encounter plans. No renderer, physics, persistence or runtime mutation. */
 const themes=Object.freeze([
- {id:'breach',name:'OPENING CUT',lesson:'Pick a lane. Cut through light targets.',color:'#dfed94'},
+ {id:'breach',name:'OPENING CUT',lesson:'Fangs rush; Pulse sends a ring.',color:'#dfed94'},
  {id:'crossfire',name:'CROSSFIRE',lesson:'Break either Prism to cancel its link.',color:'#c5a5ed'},
  {id:'bastion',name:'IRON LINE',lesson:'Crack armor; leave room for a second pass.',color:'#f2bf81'},
  {id:'fracture',name:'FRACTURE',lesson:'Forks split. Keep an edge for their children.',color:'#f1a191'},
@@ -12,6 +12,7 @@ export function encounterBrief(number,seed){
  number=normalize(number);const theme=themes[(number-1)%5],cycle=Math.floor((number-1)/5),total=Math.min(30,12+(number-1)*3);
  const counts={fang:total};
  const add=(kind,n)=>{counts[kind]=n;counts.fang-=n;};
+ if(number===1)add('pulse',1);
  if(theme.id==='crossfire'){add('prism',cycle>=1?4:2);}
  if(theme.id==='bastion'){add('bastion',Math.min(5,3+cycle));add('prism',2);}
  if(theme.id==='fracture'){add('fork',Math.min(4,2+cycle));add('pulse',1);add('prism',2);}
@@ -51,7 +52,16 @@ export function planEncounter(seed,number,player={x:0,y:0}){
  // Mix the enemy roles through the formation instead of hiding all hard targets
  // in the last row. Seed changes placement, never increases the budget.
  for(let i=kinds.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[kinds[i],kinds[j]]=[kinds[j],kinds[i]];}
- const specs=kinds.map((kind,i)=>Object.freeze({id:`wave/${brief.number}/${i}`,kind,...positions[i],home:'wave',slot:i,wave:true,wavePlaced:true,delay:95+(i%6)*19,phase:random()*Math.PI*2}));
+ if(brief.number===1){
+  // Put the nearest safe Fang first, so its full wind-up is actually in reach.
+  // Place the single Pulse next closest, with a later cooldown for a second verb.
+  for(let i=0;i<2;i++){
+   let best=i;for(let j=i+1;j<positions.length;j++)if(Math.hypot(positions[j].x-player.x,positions[j].y-player.y)<Math.hypot(positions[best].x-player.x,positions[best].y-player.y))best=j;
+   [positions[i],positions[best]]=[positions[best],positions[i]];
+   const kind=i?'pulse':'fang',at=kinds.indexOf(kind,i);[kinds[i],kinds[at]]=[kinds[at],kinds[i]];
+  }
+ }
+ const specs=kinds.map((kind,i)=>Object.freeze({id:`wave/${brief.number}/${i}`,kind,...positions[i],home:'wave',slot:i,wave:true,wavePlaced:true,delay:brief.number===1&&i===0?25:brief.number===1&&i===1?120:70+(i%6)*16,phase:random()*Math.PI*2}));
  const prismIds=specs.filter(e=>e.kind==='prism').map(e=>e.id),links=[];
  for(let i=0;i+1<prismIds.length;i+=2)links.push(Object.freeze({a:prismIds[i],b:prismIds[i+1],period:300+i*30,age:0}));
  return Object.freeze({...brief,formation,specs:Object.freeze(specs),links:Object.freeze(links)});
@@ -59,9 +69,9 @@ export function planEncounter(seed,number,player={x:0,y:0}){
 export function recommendWaveOffer(offers,{next,sword,hp=3,previous}={}){
  const ranked=offers.map((buff,index)=>{
   let score=0,reason='A different approach for one wave.';
-  if(buff.id==='barrier'){score=hp<=1?12:hp===2?5:1;reason=hp<=1?'One hull left. Block one otherwise damaging hit.':'Insurance against the next wave’s first hit.';}
+  if(buff.id==='barrier'){score=hp<=1?12:hp===2?5:1;reason=hp<=1?'One health left. Block one otherwise damaging hit.':'Insurance against the next wave’s first hit.';}
   if(buff.id==='breaker'&&((next?.counts?.bastion||0)+(next?.counts?.crown||0))>0){score=8;reason='Armored targets are in the next formation.';}
-  if(buff.id==='guard'){score=hp<=1?6:2;reason='More escape time after a connected primary cut.';if(previous?.hits>0){score=Math.max(score,5);reason=`${previous.hits} hull lost. Extra escape time after cuts—not a shield.`;}}
+  if(buff.id==='guard'){score=hp<=1?6:2;reason='More escape time after a connected primary cut.';if(previous?.hits>0){score=Math.max(score,5);reason=`${previous.hits} health lost. Extra escape time after cuts—not a shield.`;}}
   if(buff.id==='reach'){score=['rapier','echo'].includes(sword?.family)?5:3;reason='Set up a cutting lane from farther away.';}
   if(buff.id==='linger'){score=['reaper','cleaver'].includes(sword?.family)?5:3;reason='More active time on a committed pass.';if(previous?.shots>previous?.cuts*2&&previous?.cuts>0){score=Math.max(score,4);reason=`${previous.shots} launches for ${previous.cuts} cuts. Longer blade window; aim is unchanged.`;}}
   if(buff.id==='fleet'){score=2;reason='Cross the field faster; your aim direction stays yours.';}

@@ -27,3 +27,12 @@ test('reduced motion suppresses release and lag, without erasing static intent',
  const canvas=createCanvas(200,200),c=canvas.getContext('2d');const images=[];
  for(const time of [10,80]){c.clearRect(0,0,200,200);drawCubeHero(c,{x:100,y:100,radius:45,time,motion:false,equipment:{body:'segmented',core:'magnet',tail:'thrusters',eyes:'visor'},pose:{attackProgress:.3}});images.push(canvas.toBuffer('image/png').toString('base64'));}assert.equal(images[0],images[1]);
 });
+
+test('release and recovery channels enter and leave at rest without animation pops',()=>{
+ const at=p=>resolveCharacterPerformance({attackProgress:p});
+ assert.ok(Math.abs(at(0).release)<1e-12);
+ assert.ok(at(.18).release>.7);
+ assert.ok(Math.abs(at(.62-1e-7).release-at(.62+1e-7).release)<1e-5);
+ assert.ok(Math.abs(at(.55-1e-7).recovery-at(.55+1e-7).recovery)<1e-5);
+ assert.ok(Math.abs(at(1).release)<1e-12);assert.ok(Math.abs(at(1).recovery)<1e-12);
+});

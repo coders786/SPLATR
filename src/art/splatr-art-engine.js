@@ -244,8 +244,8 @@ var TYPES = {
     regular(3, 0),
     33,
     100,
-    "Locks a bearing, then lunges along the dotted line.",
-    "Let it commit. Cut across its path."
+    "Locks a bearing, then charges. Only a charging Fang hurts on contact.",
+    "Leave its lane or cut it while your blade is active."
   ),
   pulse: species(
     "Pulse",
@@ -274,8 +274,8 @@ var TYPES = {
     cross,
     31,
     220,
-    "Bursts into two smaller Fangs when split.",
-    "Save a second slash for the offspring.",
+    "Telegraphs a cross swipe and splits into two smaller Fangs.",
+    "Leave the cross or interrupt it; save a slash for the offspring.",
     { concave: true }
   ),
   bastion: species(
@@ -285,8 +285,8 @@ var TYPES = {
     [[-0.85, -0.8], [0.85, -0.8], [0.92, 0.3], [0.5, 0.78], [0, 1], [-0.5, 0.78], [-0.92, 0.3]],
     41,
     300,
-    "Advances behind two plates. The first slash cracks its shell.",
-    "Hit again, or line up two softer shapes to shear both plates.",
+    "Two plates protect it; a marked wedge warns of its shield slam.",
+    "Leave the wedge or interrupt it; cut twice to break its plates.",
     { hp: 2 }
   ),
   rift: species(
@@ -310,8 +310,8 @@ var TYPES = {
     star(5, 0.47),
     36,
     260,
-    "Marks your position, then blinks onto the mark.",
-    "Leave the outline before it closes.",
+    "Marks a destination and landing strike, then blinks there.",
+    "Leave the marked landing circle or cut Rift before it blinks.",
     { concave: true }
   ),
   well: species(
@@ -332,8 +332,8 @@ var TYPES = {
     regular(5),
     36,
     260,
-    "Pulls the cube inward inside its field.",
-    "Spend a slash to escape or cut the core.",
+    "Pulls airborne cubes inward, then marks a close compression strike.",
+    "Leave the inner marked circle or cut the core before it strikes.",
     { hazard: true }
   ),
   crown: species(
@@ -344,7 +344,7 @@ var TYPES = {
     67,
     1200,
     "A sector hunter. Fires a radial volley and carries three plates.",
-    "Break the plates with separate cuts. Destroy it to repair one hull.",
+    "Break the plates with separate cuts. Destroy it to restore one health.",
     { hp: 3 }
   )
 };
@@ -468,14 +468,15 @@ function slashFor(age, dir = 0) {
   } else if (a < windup + swing) {
     const t = easeOutQuint((a - windup) / swing);
     angle = dir - SLASH.cock + (SLASH.sweep + SLASH.cock) * t;
-    smear = Math.sin(clamp01((a - windup) / swing) * Math.PI) * 1;
+    const u = clamp01((a - windup) / swing);
+    smear = Math.min(1, Math.sin(u * Math.PI) + 0.42 * u);
     alpha = 1;
     weight = 1;
     flash = 0;
   } else if (a < windup + swing + impact) {
     const t = (a - windup - swing) / impact;
     angle = dir + SLASH.sweep;
-    smear = 0.42 * (1 - 0.5 * t) - 0.21 * t;
+    smear = 0.42 - 0.21 * t;
     alpha = 1;
     weight = 1;
     flash = 1 - t * 0.5;
@@ -486,7 +487,7 @@ function slashFor(age, dir = 0) {
     smear = (1 - e) * 0.21;
     alpha = 1 - e;
     weight = 1 - e * 0.85;
-    flash = Math.max(0, 0.5 - t) * 2;
+    flash = 0.5 * (1 - e);
   }
   const counter = a < windup ? -SLASH.counter * easeInCubic(a / windup) : a < windup + swing ? -SLASH.counter + SLASH.counter * 1.6 * easeOutQuint((a - windup) / swing) : SLASH.counter * 0.6 * (1 - clamp01((a - windup - swing) / (impact + settle)));
   return {
@@ -627,7 +628,10 @@ function moveFor(vx, vy, hold = 0) {
   const i = (Math.floor(turns) % 8 + 8) % 8;
   const u = turns - Math.floor(turns);
   const a = DIRS[i], b = DIRS[(i + 1) % 8];
-  const lean = lerp(a.lean, b.lean, u);
+  // Ease out of the held pose over the first few pixels/tick. Without this,
+  // crossing 0.6px/tick jumps straight from a relaxed stop to a full run pose.
+  const held = DIRS[hold & 7], v = clamp01((speed - 0.6) / 5.4), weight = v * v * (3 - 2 * v);
+  const lean = lerp(held.lean * 0.25, lerp(a.lean, b.lean, u), weight);
   const scarf = lerp(a.scarf, b.scarf, u);
   const stress = clamp01((speed - 12) / 26);
   return {
@@ -637,14 +641,14 @@ function moveFor(vx, vy, hold = 0) {
     speed,
     moving: true,
     lean,
-    tall: lerp(a.tall, b.tall, u),
-    wide: lerp(a.wide, b.wide, u),
+    tall: lerp(lerp(held.tall, 1, 0.72), lerp(a.tall, b.tall, u), weight),
+    wide: lerp(lerp(held.wide, 1, 0.72), lerp(a.wide, b.wide, u), weight),
     scarf,
-    eyes: lerp(a.eyes, b.eyes, u),
+    eyes: lerp(held.eyes, lerp(a.eyes, b.eyes, u), weight),
     // The two channels that make a diagonal read as a turn and a fast cube read
     // as thrown rather than moved. Both are blended, so neither can pop.
-    twist: lerp(a.twist, b.twist, u) * clamp01(speed / 18),
-    stretch: lerp(a.stretch, b.stretch, u) * stress,
+    twist: lerp(held.twist * 0.3, lerp(a.twist, b.twist, u) * clamp01(speed / 18), weight),
+    stretch: lerp(held.stretch * 0.3, lerp(a.stretch, b.stretch, u) * stress, weight),
     stress
   };
 }
@@ -739,7 +743,7 @@ function dashFor(slashAge, vx, vy) {
   const lead = { x: dx, y: dy };
   const trail = { x: -dx, y: -dy };
   if (slashAge < DASH.windup) {
-    const t2 = (slashAge + 1) / DASH.windup;
+    const t2 = (slashAge + 1) / (DASH.windup + 1);
     const k = 0.16 * power * t2;
     return withAxes({
       phase: "windup",
@@ -757,21 +761,21 @@ function dashFor(slashAge, vx, vy) {
     }, dx, dy);
   }
   if (slashAge < DASH.windup + DASH.active) {
-    const t2 = (slashAge - DASH.windup) / (DASH.active - 1);
-    const ease = 1 - Math.pow(1 - t2, 2);
+    const t2 = clamp01((slashAge - DASH.windup) / (DASH.active - 1));
+    const ease = easeOutQuint(t2);
     return withAxes({
       phase: "active",
       dir,
       t: t2,
-      along: 1 + (0.3 * power + 0.08) * (0.35 + 0.65 * ease),
-      across: 1 - (0.16 * power + 0.04) * (0.35 + 0.65 * ease),
-      core: { x: dx * 0.34, y: dy * 0.34 },
+      along: lerp(1 - 0.16 * power, 1 + 0.3 * power + 0.08, ease),
+      across: lerp(1 + 0.16 * power * 0.62, 1 - 0.16 * power - 0.04, ease),
+      core: { x: dx * lerp(-0.42, 0.34, ease), y: dy * lerp(-0.42, 0.34, ease) },
       lead,
       trail,
-      leadGlow: 1,
+      leadGlow: lerp(0.85, 1, ease),
       // Ramps in and STAYS: the back of the body is dematerialised for the whole
       // dash, not just at the start of it.
-      trailBreak: 0.35 + 0.65 * Math.min(1, t2 * 2.2),
+      trailBreak: Math.min(1, t2 * 2.2),
       ghost: 1
     }, dx, dy);
   }
@@ -783,12 +787,12 @@ function dashFor(slashAge, vx, vy) {
     dir,
     t,
     along: 1 + peak * settle,
-    across: 1 - peak * 0.55 * settle,
+    across: 1 - (0.16 * power + 0.04) * settle,
     core: { x: dx * 0.34 * (1 - t), y: dy * 0.34 * (1 - t) },
     lead,
     trail,
-    leadGlow: 0.6 * (1 - t),
-    trailBreak: 0.9 * Math.pow(1 - t, 1.6),
+    leadGlow: 1 - t,
+    trailBreak: Math.pow(1 - t, 1.6),
     // ── ZERO GHOSTS ONCE THE DASH IS OVER ────────────────────────────────
     //
     // This used to fade from 1 to 0 across recovery, so a cube that had
@@ -984,11 +988,13 @@ function resolveCharacterPerformance(input={},time=0) {
   const moving=unit((input.speed||0)/35),aim=input.aiming?1:0;
   const progress=Number.isFinite(input.attackProgress)&&input.attackProgress>=0?unit(input.attackProgress):input.attack>0?1-unit(input.attack):-1;
   const reduced=input.reducedMotion===true;
-  const release=progress>=0&&!reduced?Math.sin(Math.PI*(.18+.82*Math.min(1,progress/.62))):0;
+  // Legacy attack strength also expresses a held attack pose at progress zero.
+  const attackFocus=Number.isFinite(input.attack)?unit(input.attack)*.5:0;
+  const release=progress>=0&&!reduced?Math.sin(Math.PI*Math.min(1,progress/.62)):0;
   const recovery=progress>.55&&!reduced?Math.sin((progress-.55)/.45*Math.PI):0;
   const contact=input.contact===true&&!reduced?1:0;
   const phase=aim?"aim":progress<0?"idle":progress<.55?"release":"recover";
-  return Object.freeze({phase,progress,focus:unit(aim*.85+release*.9+moving*.25+contact*.2),charge:aim,release:unit(release),recovery,contact,
+  return Object.freeze({phase,progress,focus:unit(aim*.85+release*.9+attackFocus+moving*.25+contact*.2),charge:aim,release:unit(release),recovery,contact,
     coreCompression:aim*.14-release*.10-contact*.04,tailLag:reduced?0:release*.14-recovery*.07,
     idleClock:(Number.isFinite(time)?time:0)*.28});
 }
@@ -2150,6 +2156,23 @@ function blend(a, b, t) {
   const ch = (sh) => Math.round((pa >> sh & 255) * (1 - t) + (pb >> sh & 255) * t);
   return `#${(1 << 24 | ch(16) << 16 | ch(8) << 8 | ch(0)).toString(16).slice(1)}`;
 }
+/** The art reads only actual combat state; it never invents a target or plate. */
+export function resolveEnemyMechanism(kind,opts={},angle=0){
+ const t=TYPES[kind];if(!t)return null;
+ const charging=opts.mode==='tell',active=!!opts.active||opts.mode==='rush';
+ const progress=charging&&Number.isFinite(opts.clock)&&Number.isFinite(opts.span)&&opts.span>0?clamp(1-opts.clock/opts.span,0,1):0;
+ const aim=Number.isFinite(opts.aim)?opts.aim-angle:0;
+ const plates=Number.isFinite(opts.hp)?clamp(Math.floor(opts.hp),0,t.hp):t.hp;
+ return {charging,active,progress,aim,plates,ports:kind==='crown'?10:kind==='prism'?1:0};
+}
+// The same broken gate is used in Rift's body and its real landing zone.
+function drawRiftGlyph(c,col='#e0123a'){
+ const dark='#1b1624',metal='#fff3df';
+ poly2(c,dark,[[0,-.66],[.56,-.20],[.40,.13],[.06,.02],[-.05,.57],[-.48,.12],[-.38,-.25]]);
+ poly2(c,metal,[[-.36,-.18],[-.13,-.47],[.03,-.25],[-.12,-.02]],dark,.04);
+ poly2(c,metal,[[.15,.02],[.39,.20],[.13,.48],[-.02,.27]],dark,.04);
+ line(c,col,.085,-.31,.35,.32,-.32);
+}
 function foe(c, kind, x, y, r, angle = 0, opts = {}) {
   const t = TYPES[kind], flash = typeof opts.flash === "number" ? opts.flash : opts.flash ? 1 : 0, col = flash > 0 ? blend(W, t.color, 1 - flash) : t.color, time = opts.time || 0;
   c.save();
@@ -2185,217 +2208,92 @@ function foe(c, kind, x, y, r, angle = 0, opts = {}) {
     return;
   }
   poly2(c, col, t.outline, K, 0.115);
-  if (t.hazard) {
-    const teeth = 11;
-    c.save();
-    c.beginPath();
-    for (let i = 0; i < teeth * 2; i++) {
-      const a = i / (teeth * 2) * Math.PI * 2 - Math.PI / 2, rad = i % 2 ? 0.72 : 1.02;
-      const px = Math.cos(a) * rad, py = Math.sin(a) * rad;
-      if (i) c.lineTo(px, py);
-      else c.moveTo(px, py);
-    }
-    c.closePath();
-    c.strokeStyle = K;
-    c.lineWidth = 0.085;
-    c.lineJoin = "miter";
-    c.stroke();
-    c.strokeStyle = blend(W, "#ff2f6b", 0.55);
-    c.lineWidth = 0.038;
-    c.stroke();
-    c.restore();
-  }
-  switch (kind) {
-    case "fang":
-      poly2(c, K, [
-        [-0.43, -0.56],
-        [0.71, -0.02],
-        [-0.38, 0.26],
-        [-0.13, 0.018]
-      ]);
-      poly2(c, W, [
-        [-0.23, -0.31],
-        [0.22, -0.06],
-        [-0.24, -0.09]
-      ]);
-      line(c, K, 0.065, -0.34, 0.49, -0.18, 0.42);
-      break;
-    case "pulse":
-      disk(c, K, 0, 0, 0.68);
-      arc(c, col, 0.075, 0, 0, 0.46, -2.78, 1.65);
-      disk(c, col, 0, 0, 0.185);
-      for (let i = 0; i < 3; i++) {
-        c.rotate(TAU / 3);
-        line(c, K, 0.095, 0, -0.96, 0, -0.77);
-      }
-      break;
-    case "prism":
-      poly2(c, K, [
-        [0, -0.79],
-        [0.5, 0],
-        [0, 0.63],
-        [-0.52, 0]
-      ]);
-      poly2(c, col, [
-        [0, -0.4],
-        [0.21, 0],
-        [0, 0.32],
-        [-0.22, 0]
-      ]);
-      line(c, K, 0.07, -0.35, 0.5, -0.05, 0.8);
-      break;
-    case "fork":
-      poly2(c, K, [
-        [-0.24, -0.59],
-        [0.04, -0.27],
-        [-0.1, -0.02],
-        [0.23, 0.24],
-        [0.06, 0.7],
-        [-0.05, 0.29],
-        [-0.31, 0.1],
-        [-0.1, -0.24]
-      ]);
-      line(c, K, 0.105, -0.81, -0.12, -0.49, -0.12);
-      line(c, K, 0.105, 0.49, 0.12, 0.81, 0.12);
-      break;
-    case "bastion": {
-      const hp = opts.hp ?? t.hp;
-      poly2(c, "#fff0b0", [[-0.66, -0.58], [0.66, -0.58], [0.63, 0.22], [0, 0.77], [-0.63, 0.22]]);
-      poly2(c, "#68431e", [[-0.4, -0.32], [0.4, -0.32], [0.4, 0.16], [0, 0.51], [-0.4, 0.16]]);
-      line(c, "#ffcc66", 0.12, -0.52, -0.74, 0.52, -0.74);
-      if (hp < t.hp) line(c, "#261c28", 0.1, 0.05, -0.72, -0.12, -0.2, 0.15, 0.1, -0.06, 0.71);
+  // Mechanisms are clipped to the actual collision silhouette. Normalized
+  // geometry scales with the same radius as the sensor, not decorative spikes.
+  c.save();c.beginPath();trace(c,t.outline);c.clip();
+  const {charging,active,progress,aim,plates}=resolveEnemyMechanism(kind,opts,angle);
+  const metal='#fff3df', dark='#1b1624';
+  switch(kind){
+    case 'fang': {
+      // Nose points along the real body axis; a compressed spring backs it.
+      poly2(c,dark,[[-.44,-.48],[.76,0],[-.44,.48],[-.32,0]]);
+      const compression=charging?progress*.08:0;
+      line(c,metal,.095,-.37,-.22,-.20+compression,-.11,-.36+compression,0,-.20+compression,.11,-.37,.22);
+      poly2(c,metal,[[.05,-.27],[.74,0],[.05,.27],[.18,0]],dark,.045);
+      if(active)line(c,'#ffb1a8',.07,.12,-.35,.72,0,.12,.35);
       break;
     }
-    case "crown": {
-      const plates = opts.hp ?? t.hp;
-      poly2(c, K, [
-        [-0.8, -0.21],
-        [-0.36, -0.45],
-        [0.27, -0.31],
-        [0.72, -0.49],
-        [0.82, -0.08],
-        [0.34, 0.2],
-        [-0.27, 0.29],
-        [-0.74, 0.12]
-      ]);
-      poly2(c, W, [
-        [-0.6, -0.16],
-        [-0.11, -0.055],
-        [-0.16, 0.07],
-        [-0.44, 0.04]
-      ]);
-      poly2(c, W, [
-        [0.12, -0.1],
-        [0.58, -0.28],
-        [0.49, -0.04],
-        [0.18, 0.04]
-      ]);
-      if (plates > 1) {
-        line(c, K, 0.085, -0.55, 0.37, 0.09, 0.47, 0.58, 0.28);
-        line(c, K, 0.075, -0.36, 0.56, 0.12, 0.65, 0.42, 0.52);
-        poly2(c, K, [
-          [-0.43, -0.59],
-          [-0.34, -0.73],
-          [0.42, -0.62],
-          [0.26, -0.51]
-        ]);
-      }
-      if (plates < t.hp) {
-        c.save();
-        c.beginPath();
-        trace(c, t.outline);
-        c.clip();
-        c.rotate(opts.fault ?? -1.42);
-        poly2(c, K, [
-          [-1.2, -0.08],
-          [-0.46, -0.07],
-          [-0.24, 0.045],
-          [0.02, -0.06],
-          [0.28, 0.03],
-          [1.2, -0.14],
-          [0.32, 0.13],
-          [0.05, 0.05],
-          [-0.28, 0.19],
-          [-0.52, 0.04],
-          [-1.2, 0.12]
-        ]);
-        line(c, "#ffdfba", 0.073, -1, 0.12, -0.52, 0.045, -0.28, 0.19, 0.05, 0.05, 0.32, 0.13, 0.93, -0.09);
-        line(c, K, 0.066, 0.36, 0.12, 0.49, 0.33, 0.66, 0.38);
-        c.restore();
-      }
-      if (kind === "crown") {
-        for (let i = 0; i < t.hp; i++) {
-          const px = (i - (t.hp - 1) / 2) * 0.42, live = i < plates;
-          c.save();
-          c.beginPath();
-          c.moveTo(px - 0.155, -0.86);
-          c.lineTo(px + 0.155, -0.86);
-          c.lineTo(px + 0.125, -1.06);
-          c.lineTo(px + 0.045, -0.955);
-          c.lineTo(px, -1.07);
-          c.lineTo(px - 0.045, -0.955);
-          c.lineTo(px - 0.125, -1.06);
-          c.closePath();
-          if (live) {
-            c.fillStyle = W;
-            c.fill();
-          }
-          c.strokeStyle = live ? K : blend(K, t.color, 0.45);
-          c.lineWidth = live ? 0.052 : 0.038;
-          if (!live) c.setLineDash([0.05, 0.045]);
-          c.stroke();
-          c.restore();
-        }
-        poly2(
-          c,
-          W,
-          [
-            [-0.46, -0.91],
-            [-0.35, -0.7],
-            [0.34, -0.7],
-            [0.48, -0.91],
-            [0.18, -0.82],
-            [0, -1.05],
-            [-0.15, -0.81]
-          ],
-          K,
-          0.055
-        );
-        for (let i = 0; i < 3; i++) {
-          const a = i * TAU / 3 - 0.95;
-          arc(c, i < plates ? col : "#664252", 0.067, 0, 0, 1.16, a, a + 1.3);
-        }
+    case 'pulse': {
+      // A drum with concentric membranes: the released rim expands outward.
+      disk(c,dark,0,0,.70);
+      arc(c,metal,.11,0,0,.53);
+      arc(c,metal,.085,0,0,.29-progress*.07);
+      disk(c,col,0,0,.12);
+      for(let i=0;i<4;i++){const a=i*TAU/4; c.save();c.rotate(a);poly2(c,metal,[[.73,0],[.59,-.10],[.59,.10]]);c.restore();}
+      break;
+    }
+    case 'prism': {
+      // Aperture at rest; during a genuine tell the barrel follows locked aim.
+      poly2(c,dark,[[0,-.78],[.78,0],[0,.78],[-.78,0]]);
+      if(charging||active){
+        c.save();c.rotate(aim);
+        poly2(c,metal,[[-.48,-.16],[.34,-.16],[.34,-.28],[.71,0],[.34,.28],[.34,.16],[-.48,.16]],dark,.045);
+        line(c,col,.06,-.3,0,.42,0);c.restore();
+      } else {
+        arc(c,metal,.10,0,0,.39);disk(c,metal,0,0,.12);
+        for(let i=0;i<4;i++){c.save();c.rotate(i*TAU/4);line(c,metal,.08,.48,0,.66,0);c.restore();}
       }
       break;
     }
-    case "rift":
-      c.scale(0.49, 0.49);
-      c.save();
-      c.rotate(time * 9e-3);
-      for (let i = 0; i < 5; i++) {
-        c.rotate(TAU / 5);
-        line(c, K, 0.22, 0, -0.62, 0, -1.22);
-        line(c, K, 0.1, 0, -1.02, -0.14, -1.16);
-        line(c, K, 0.1, 0, -1.02, 0.14, -1.16);
-      }
+    case 'fork': {
+      // Four cutting arms, with two Fang profiles separated by a break seam.
+      for(let i=0;i<4;i++){c.save();c.rotate(i*TAU/4);line(c,dark,.14,.43,0,.86,0);line(c,metal,charging?.065+progress*.05:.065,.56,-.17,.76,-.17);c.restore();}
+      poly2(c,dark,[[-.54,-.34],[0,-.46],[.54,-.34],[.54,.34],[0,.46],[-.54,.34]]);
+      poly2(c,metal,[[-.50,0],[-.12,-.24],[-.12,.24]],dark,.035);
+      poly2(c,metal,[[.50,0],[.12,-.24],[.12,.24]],dark,.035);
+      line(c,col,.07,0,-.36,-.06,-.11,.05,.08,0,.36);
+      break;
+    }
+    case 'bastion': {
+      const hp=plates;
+      // Actual remaining plates are the only filled armor blocks.
+      poly2(c,metal,[[-.70,-.62],[.70,-.62],[.70,.22],[0,.78],[-.70,.22]],dark,.07);
+      poly2(c,dark,[[-.51,-.41],[.51,-.41],[.49,.16],[0,.56],[-.49,.16]]);
+      poly2(c,col,[[-.35,-.25],[.35,-.25],[.33,.10],[0,.38],[-.33,.10]]);
+      for(let i=0;i<2;i++){const xx=(i-.5)*.48;c.fillStyle=i<hp?metal:'#624b38';c.fillRect(xx-.19,-.78,.38,.14);}
+      if(hp<2)line(c,dark,.10,.08,-.58,-.08,-.25,.10,-.04,-.08,.48);
+      // Only a real wind-up points in the committed slam direction.
+      if(charging){c.save();c.rotate(aim);poly2(c,metal,[[.04,-.16],[.48,-.16],[.48,-.29],[.80,0],[.48,.29],[.48,.16],[.04,.16]],dark,.04);c.restore();}
+      break;
+    }
+    case 'rift': {
+      // Two offset halves and broken gate, never a glowing collectible star.
+      c.save();c.rotate(-angle);drawRiftGlyph(c,col);if(charging)arc(c,metal,.06,0,0,.64,-1.57,-1.57+TAU*progress);c.restore();
+      break;
+    }
+    case 'well': {
+      // Inward teeth point toward the dark compression center.
+      disk(c,dark,0,0,.68);
+      arc(c,metal,.07,0,0,.58);
+      for(let i=0;i<4;i++){c.save();c.rotate(i*TAU/4);poly2(c,metal,[[.20,0],[.51,-.17],[.51,-.07],[.65,-.07],[.65,.07],[.51,.07],[.51,.17]],dark,.035);c.restore();}
+      disk(c,dark,0,0,.17);arc(c,col,.07,0,0,.19);
+      if(charging)arc(c,metal,.06,0,0,.25,-1.57,-1.57+TAU*progress);
+      break;
+    }
+    case 'crown': {
+      const hp=plates;
+      // Ten ports match the actual radial volley. Three slots represent armor.
+      disk(c,dark,0,0,.71);
+      c.save();if(charging)c.rotate(aim);
+      for(let i=0;i<10;i++){c.save();c.rotate(i*TAU/10);if(charging)poly2(c,metal,[[.88,0],[.62,-.08],[.62,.08]]);else {c.fillStyle=metal;c.fillRect(.62,-.055,.18,.11);}c.restore();}
       c.restore();
-      poly2(c, K, t.outline);
-      disk(c, col, 0, 0, 0.2);
+      disk(c,col,0,0,.43);arc(c,metal,.065,0,0,.43);
+      poly2(c,dark,[[-.35,-.11],[-.19,-.27],[0,-.14],[.19,-.27],[.35,-.11],[.25,.12],[-.25,.12]]);
+      for(let i=0;i<3;i++){const xx=(i-1)*.23;c.fillStyle=i<hp?metal:'#6a3543';c.fillRect(xx-.085,.17,.17,.12);}
       break;
-    case "well":
-      c.rotate(time * 0.013);
-      for (let i = 0; i < 3; i++) {
-        c.rotate(TAU / 3);
-        c.fillStyle = K;
-        c.beginPath();
-        c.moveTo(0, -0.72);
-        c.quadraticCurveTo(0.72, -0.35, 0.28, 0.24);
-        c.quadraticCurveTo(0.42, -0.18, 0, -0.72);
-        c.fill();
-      }
-      disk(c, K, 0, 0, 0.25);
-      break;
+    }
   }
+  c.restore();
   c.restore();
 }
 function bladeAlpha(left, life = 38, time = 0) {
@@ -3091,6 +2989,9 @@ function splitFang(c, x, y, r, t) {
   for (const side of [-1, 1]) fangHalf(c, x + side * t * 1.6, y + t * t * 0.015, r, side, side * t * 0.025);
 }
 function drawLabCard(c, w, h, eq, slot, t = 0, active = false, motion = true, sword = null) {
+  if (slot === "radar" || slot === "trajectory") { drawSensorPreview(c,w,h,{slot,level:sensorTier(eq[slot],slot),motion,time:t}); return; }
+  if (slot === "dash") { drawShopElementDash(c,w,h,{equipment:eq,time:motion?t*16.667:0,motion}); return; }
+  if (slot === "pointer") { drawDragArrowPreview(c,w,h,{equipment:eq}); return; }
   const accent = partAccent(eq, slot), palette = { ...corePalette(eq.core), primary: accent }, clock = motion ? t : 0;
   if (slot === "world") drawEquipmentWorld(c, w, h, eq.world, clock);
   else {
@@ -3149,7 +3050,8 @@ function drawLabScene(c, eq, t, mode, scene, { cursor = { x: 0, y: 0 }, motion =
     drawEquipmentSlash(c, p.x - 170, p.y + 65, dx + 35, dy - 24, eq.slash, Math.max(0.1, 1 - (auto.phase - 48) / 40),{progress:Math.max(0,(auto.phase-43)/40),time:t,equipment:eq,reducedMotion:!motion});
     if(auto.phase>=48)drawEquipmentImpact(c, dx, dy, eq.slash, Math.max(0, (auto.phase - 48) / 45));
   }
-  if (mode === "dash" && !manual) for (let i = 3; i > 0; i--) {
+  if (manual && !s.drag) drawCubeDashSmear(c,{x:p.x,y:p.y,vx:s.vx,vy:s.vy,age:s.age,radius:48,equipment:eq,motion});
+  if (mode === "dash" && !manual && motion) for (let i = 3; i > 0; i--) {
     c.save();
     c.globalAlpha = 0.06 * i;
     cube(c, p.x - i * 24, p.y, 45, 0, t - i * 4, 1, pose2);
@@ -3982,7 +3884,7 @@ function dialGeometry(readout) {
 
 // consolidated/camera.js
 function createCamera() {
-  let width = 1, height = 1, base = 1, x = 0, y = 0, zoom = 1;
+  let width = 1, height = 1, base = 1, x = 0, y = 0, zoom = 1, trainingScale = 1;
   let prevX = x, prevY = y, prevZoom = zoom;
   let home = { x: 0, y: 0 }, last = home, docked = true, room = false, forward = 1;
   function frameScale() {
@@ -4025,17 +3927,18 @@ function createCamera() {
     resize(w, h) {
       width = Math.max(1, w);
       height = Math.max(1, h);
-      base = frameScale();
+      base = frameScale() * trainingScale;
       snap(last, docked);
     },
     reset(p, facing = 1, onRack = false) {
       room = onRack;
-      base = frameScale();
+      base = frameScale() * trainingScale;
       forward = facing;
       home = { ...p };
       pin = 0;
       snap(p, true);
     },
+    setTrainingScale(value) {trainingScale=clamp(value,1,1.5);base=frameScale()*trainingScale;snap(last,docked);},
     snap,
     /** The lens does NOT dolly. A fixed scale, with only the faintest lean
      *  into speed, because a zoom that moves while you aim is the fastest way
@@ -4827,6 +4730,9 @@ __export(radar_exports, {
   overlayPoint: () => overlayPoint,
   radarRect: () => radarRect
 });
+/** Only explicitly equipped catalogue IDs can unlock sensor detail. */
+export function sensorTier(id,slot){return id===`${slot}-1`?1:id===`${slot}-2`?2:id===`${slot}-3`?3:0;}
+export function trajectorySamples(id){return [24,36,55,95][sensorTier(id,'trajectory')];}
 function radarRect(width, height) {
   const side = Math.min(width, height);
   const size = Math.min(160, Math.max(96, side * 0.23), width * 0.34);
@@ -4843,12 +4749,13 @@ var COLORS = {
   pulse: "#e178ed",
   well: "#928bff"
 };
-function localRadar(view, player, rect, enemies = [], portal = null) {
+function localRadar(view, player, rect, enemies = [], portal = null, {range = 1} = {}) {
+  range = Math.max(1, Math.min(2.2, Number.isFinite(range) ? range : 1));
   const inset = 8, left = rect.x + inset, right = rect.x + rect.w - inset, top = rect.y + inset, bottom = rect.y + rect.h - inset;
   const width = right - left, height = bottom - top, px = (left + right) / 2, py = top + height * 0.75;
   const project = (p, r = 4) => {
     const dx = p.x - player.x, dy = p.y - player.y;
-    const rawX = px + dx * width / (2 * view.w), rawY = py + dy * (dy < 0 ? height * 0.75 / (2 * view.h) : height * 0.25 / (0.5 * view.h));
+    const rawX = px + dx * width / (2 * view.w * range), rawY = py + dy * (dy < 0 ? height * 0.75 / (2 * view.h * range) : height * 0.25 / (0.5 * view.h * range));
     return {
       x: Math.max(left + r, Math.min(right - r, rawX)),
       y: Math.max(top + r, Math.min(bottom - r, rawY)),
@@ -4857,7 +4764,7 @@ function localRadar(view, player, rect, enemies = [], portal = null) {
   };
   const blips = [];
   for (const e of enemies) {
-    if (Math.abs(e.x - player.x) > view.w || e.y < player.y - view.h * 2 || e.y > player.y + view.h * 0.5)
+    if (Math.abs(e.x - player.x) > view.w * range || e.y < player.y - view.h * 2 * range || e.y > player.y + view.h * 0.5 * range)
       continue;
     const r = e.kind === "crown" ? 5 : 3;
     blips.push({
@@ -4865,6 +4772,7 @@ function localRadar(view, player, rect, enemies = [], portal = null) {
       r,
       id: e.id,
       kind: e.kind,
+      mode: e.mode,
       onScreen: e.x >= view.x && e.x <= view.x + view.w && e.y >= view.y && e.y <= view.y + view.h,
       color: COLORS[e.kind] || "#ff507b"
     });
@@ -5757,7 +5665,7 @@ function threatAhead(world, combat, velocity, { blade: blade2 = 0, line: line3 =
       const along = clamp(ax * ux + ay * uy, 0, speed * reach);
       if (Math.hypot(ax - ux * along, ay - uy * along) <= r + 15)
         consider(Math.max(0, along), "needle", h.x, h.y);
-    } else {
+    } else if (h.kind === "ring") {
       const d = Math.hypot(h.x - p.x, h.y - p.y);
       if (Math.abs(d - h.radius) <= r + 8 && d <= speed * reach)
         consider(Math.max(0, d - h.radius), "ring", h.x, h.y);
@@ -5815,7 +5723,7 @@ function impactPreview(start, velocity, combat, path2) {
   if (path2.end && path2.end.kind !== "wall") return null;
   const limit = path2.end ? Math.hypot(last.x - start.x, last.y - start.y) + PLAYER_SIZE * 0.6 : Infinity;
   let best = null;
-  for (const t of path2.points) {
+  for (const [index,t] of path2.points.entries()) {
     const d = Math.hypot(t.x - start.x, t.y - start.y);
     if (d > limit) break;
     for (const e of combat.enemies.values()) {
@@ -5823,7 +5731,7 @@ function impactPreview(start, velocity, combat, path2) {
       if (Math.hypot(t.x - e.x, t.y - e.y) > q) continue;
       const along = d;
       if (!best || along < best.along)
-        best = { x: e.x, y: e.y, r: e.r, kind: e.kind, id: e.id, along };
+        best = { x: e.x, y: e.y, r: e.r, kind: e.kind, id: e.id, along, ticks:(index+1)*ARC.step };
     }
     if (best) break;
   }
@@ -5831,10 +5739,16 @@ function impactPreview(start, velocity, combat, path2) {
 }
 function predictAim(run, velocity, { focus = false, magnetic = true, corridor = null } = {}) {
   if (!run || !velocity?.power) return null;
+  const arena=run.world.arena, walls=arena?[
+    {x:arena.x-100,y:arena.y-100,w:100,h:arena.h+200},
+    {x:arena.x+arena.w,y:arena.y-100,w:100,h:arena.h+200},
+    {x:arena.x,y:arena.y-100,w:arena.w,h:100},
+    {x:arena.x,y:arena.y+arena.h,w:arena.w,h:100},
+  ]:[];
   const start = { ...run.world.player.position }, lockOn = magnetic ? magnetize(start, velocity, run.combat, { focus, corridor }) : { ...velocity, lock: velocity.lock ?? null }, launchScale = run.state.opening || run.state.hyper ? 1 : run.state.dashSpeed || 1, fired = { ...lockOn, x: lockOn.x * launchScale, y: lockOn.y * launchScale }, path2 = arcPath(start, fired, {
     ceiling: MAX_SPEED * launchScale,
     limitAfterTicks: run.state.opening || run.state.hyper ? 0 : (run.state.flightRules?.launchGrace ?? 0),
-    geometry: run.world.geometry,
+    geometry: [...run.world.geometry,...walls],
     line: run.state.line,
     // Ordinary run limits are applied after each physical tick. Opening and
     // hyper retain their own trajectories; a floor kick owns its ascent.
@@ -5899,6 +5813,98 @@ function pad(c) {
     ]);
   for (let i = 0; i < 3; i++) line(c, "#afbf76", 2, x + w - 40 + i * 9, y + 15, x + w - 36 + i * 9, y + 10, x + w - 32 + i * 9, y + 15);
 }
+/** Quiet chalk diagrams belong to the background, never the collision layer. */
+export function drawTutorialWall(c,w,h,lesson) {
+ c.save();try{
+  c.globalAlpha=Number.isFinite(lesson.wallAlpha)?lesson.wallAlpha:.22;
+  c.strokeStyle='#e3f5c8';c.fillStyle='#e3f5c8';c.lineWidth=2.4;c.lineCap='round';c.lineJoin='round';
+  const size=Math.min(w*.22,h*.18,130),cx=w*.5-size*1.2,cy=Math.max(90,h*.22);c.translate(cx,cy);c.scale(size/100,size/100);
+  const stroke=(...p)=>{c.beginPath();p.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.stroke();};
+  const cube=(x,y)=>{c.strokeRect(x-12,y-12,24,24);};
+  const triangle=(x,y)=>stroke([x,y-14],[x+14,y+12],[x-14,y+12],[x,y-14]);
+  const pointer=(x,y,dx,dy)=>{stroke([x,y],[x+dx,y+dy]);const a=Math.atan2(dy,dx);stroke([x+dx-8*Math.cos(a-.6),y+dy-8*Math.sin(a-.6)],[x+dx,y+dy],[x+dx-8*Math.cos(a+.6),y+dy-8*Math.sin(a+.6)]);};
+  if(lesson.stage===0){cube(0,0);pointer(0,20,-24,14);pointer(38,3,31,-20);triangle(128,-12);triangle(155,-28);triangle(182,-44);pointer(200,0,30,0);for(let i=0;i<3;i++)c.fillRect(250+i*13,0,10,4);}
+  else if(lesson.stage===1){cube(0,0);pointer(25,0,48,0);stroke([90,-38],[90,35]);pointer(90,-3,-42,-25);stroke([155,-30],[155,30]);stroke([180,-30],[180,30]);pointer(205,0,35,0);stroke([260,-20],[275,0],[260,20]);}
+  else if(lesson.stage===2){c.beginPath();c.arc(0,0,22,0,Math.PI*2);c.stroke();stroke([-12,-12],[12,12]);stroke([12,-12],[-12,12]);pointer(38,0,32,0);cube(94,-25);pointer(94,0,0,32);pointer(132,0,32,0);triangle(194,0);stroke([218,12],[227,21],[246,-4]);}
+  else {triangle(0,0);for(let i=0;i<3;i++){pointer(38+i*48,0,25,0);}c.beginPath();c.arc(218,0,21,0,Math.PI*2);c.stroke();stroke([199,18],[236,-18]);}
+ }finally{c.restore();}
+}
+/** Wordless live cue: the input demonstration and ghost travel are separate
+ * from the real actor. Uses screen units, never intercepts pointer events, and
+ * freezes to an explanatory end-state when reduced motion is requested. */
+export function drawTutorialGuidance(c,v,lesson,p,motion=true,device='touch'){
+ const guide=lesson?.guide;if(!guide||!lesson.guideVisible||!v?.scale)return;
+ const width=v.width,height=v.height,scale=v.scale;
+ const from={x:(p.x-v.x)*scale,y:(p.y-v.y)*scale},target={x:(guide.x-v.x)*scale,y:(guide.y-v.y)*scale};
+ const dx=target.x-from.x,dy=target.y-from.y,d=Math.hypot(dx,dy)||1,ux=dx/d,uy=dy/d;
+ const clock=motion?(lesson.guideClock||0)%180/180:.65;
+ c.save();try{
+  c.lineCap='round';c.lineJoin='round';
+  // The live red warning is the only ring in the dodge lesson.
+  if(guide.kind==='watch'||guide.kind==='resolve'||guide.kind==='wait-next')return;
+  if(guide.kind==='dodge'){
+   // The bright diamond is a real tap/click destination outside the actual
+   // strike zone; draw it above the scene, not as a second warning ring.
+   c.globalAlpha=.95;arrow(c,'#dfff88',from.x+ux*32,from.y+uy*32,target.x-ux*22,target.y-uy*22,4,11);
+   const pulse=motion?1+.1*Math.sin(clock*Math.PI*4):1;
+   c.save();c.translate(target.x,target.y);c.scale(pulse,pulse);c.fillStyle='#16251d';c.strokeStyle='#e6ff9a';c.lineWidth=3;c.beginPath();c.moveTo(0,-17);c.lineTo(17,0);c.lineTo(0,17);c.lineTo(-17,0);c.closePath();c.fill();c.stroke();
+   c.strokeStyle='#e6ff9a';c.lineWidth=2;c.beginPath();c.moveTo(-5,0);c.lineTo(5,0);c.moveTo(0,-5);c.lineTo(0,5);c.stroke();c.restore();
+   const direction=Math.abs(dx)>=Math.abs(dy)?(dx<0?'←':'→'):(dy<0?'↑':'↓');
+   const label=device==='keys'?`${direction} + SPACE`:device==='mouse'?'CLICK':'TAP';
+   c.font='bold 11px monospace';c.textAlign='center';c.textBaseline='middle';const tw=c.measureText(label).width+12,ly=target.y>height-75?target.y-28:target.y+29;
+   c.fillStyle='#111922ed';c.fillRect(target.x-tw/2,ly-9,tw,18);c.fillStyle='#eaffbc';c.fillText(label,target.x,ly);return;
+  }
+  // A bright outgoing arrow is distinct from the backward finger movement.
+  const length=Math.min(Math.max(60,d-24),145,Math.min(width,height)*.34);
+  c.globalAlpha=.82;arrow(c,guide.kind==='dodge'?'#ffe3a1':'#dfff88',from.x+ux*32,from.y+uy*32,from.x+ux*length,from.y+uy*length,2.7,10);
+  if(d<Math.max(width,height)*1.3 && ['slice','gate'].includes(guide.kind)){
+   c.globalAlpha=.58;c.strokeStyle='#f3f5cf';c.lineWidth=2;const r=Math.max(17,(guide.r||20)*scale+9)+(motion?Math.sin(clock*Math.PI*2)*2:0);c.beginPath();c.arc(target.x,target.y,r,0,Math.PI*2);c.stroke();
+  }
+  // The opening caption teaches a tap. Illustrate that same action rather
+  // than showing an unrelated pull-back gesture alongside it.
+  if(lesson.stage===0&&guide.kind==='slice'&&device!=='keys'){
+   const down=!motion||clock>.28&&clock<.58;
+   c.globalAlpha=.94;hand(c,target.x+9,target.y+8+(motion&&!down?5:0),device==='touch'?'touch':'mouse',down,.85);
+   if(down){c.strokeStyle='#dfff88';c.lineWidth=2;c.beginPath();c.arc(target.x,target.y,22,Math.PI*1.08,Math.PI*1.8);c.stroke();}
+   return;
+  }
+  // Demonstrate press → pull backwards → release, near but not on the actor.
+  const pull=47,baseX=clamp(from.x-ux*39,25+Math.max(0,ux*pull),width-35+Math.min(0,ux*pull)),baseY=clamp(from.y-uy*39,35+Math.max(0,uy*pull),height-58+Math.min(0,uy*pull));
+  if(device==='keys'){
+   c.globalAlpha=.86;c.fillStyle='#f5edda';c.strokeStyle='#24212c';c.lineWidth=2;c.fillRect(baseX-13,baseY-12,26,24);c.strokeRect(baseX-13,baseY-12,26,24);
+   arrow(c,'#24212c',baseX-ux*6,baseY-uy*6,baseX+ux*7,baseY+uy*7,2,5);key(c,baseX,baseY+28,'space',clock>.45&&clock<.65);
+  }else{
+   const amount=motion?smooth((clock-.12)/.32):1;
+   c.globalAlpha=.6;c.strokeStyle='#f0ecd7';c.lineWidth=1.6;c.setLineDash([4,5]);c.beginPath();c.moveTo(baseX,baseY);c.lineTo(baseX-ux*pull,baseY-uy*pull);c.stroke();c.setLineDash([]);
+   c.beginPath();c.arc(baseX,baseY,5,0,Math.PI*2);c.stroke();
+   arrow(c,'#f0ecd7',baseX-ux*28,baseY-uy*28,baseX-ux*pull,baseY-uy*pull,1.8,6);
+   if(!motion||clock<.57){c.globalAlpha=.9;hand(c,baseX-ux*pull*amount,baseY-uy*pull*amount,device==='touch'?'touch':'mouse',clock<.5,1.05);}
+  }
+  // Dashed ghost silhouette previews the outgoing movement, never replaces
+  // the player or depicts an automatic hit. Its trail stops short of a target.
+  const progress=motion?smooth((clock-.48)/.33):.7;
+  if(!motion||clock>=.48&&clock<=.88){
+   const x=from.x+ux*(35+progress*Math.max(0,length-40)),y=from.y+uy*(35+progress*Math.max(0,length-40));
+   c.globalAlpha=.35*(motion?1-progress*.5:1);c.fillStyle='#fffbe7';c.fillRect(x-10,y-10,20,20);c.globalAlpha=.65*(motion?1-progress*.5:1);c.strokeStyle='#e8ffb5';c.lineWidth=2;c.setLineDash([4,4]);c.strokeRect(x-10,y-10,20,20);c.setLineDash([]);c.fillStyle='#24302c';c.fillRect(x-6,y-4,4,2);c.fillRect(x+2,y-4,4,2);
+  }
+ }finally{c.restore();}
+}
+function drawTutorialScene(c, lesson, combat, p, scale, motion, time){
+ c.save();try{
+  if(lesson.stage===0){
+   const rack=[...combat.enemies.values()].filter(e=>e.id.startsWith('tutorial/rack/'));
+   if(rack.length){const a=rack[0],b=rack[rack.length-1];c.strokeStyle='#d5e6b0';c.globalAlpha=.3;c.lineWidth=4/scale;c.beginPath();c.moveTo(a.x-40,a.y+23);c.lineTo(b.x+40,b.y-23);c.stroke();}
+
+  }
+  for(const wall of lesson.walls||[]){c.fillStyle='#353444';c.fillRect(wall.x,wall.y,wall.w,wall.h);c.strokeStyle='#77717b';c.lineWidth=2/scale;c.strokeRect(wall.x,wall.y,wall.w,wall.h);}
+  if(lesson.gateTarget&&!lesson.gateBroken){const q=lesson.gateTarget;c.save();c.translate(q.x,q.y);if(q.axis==='y')c.rotate(Math.PI/2);const w=q.axis==='x'?q.w:q.h,h=q.axis==='x'?q.h:q.w;c.globalAlpha=lesson.gateReady?.72:.44;c.fillStyle=lesson.gateReady?'#d6ffa9':'#acdcc7';c.fillRect(-w/2,-h/2,w,h);c.globalAlpha=.8;c.strokeStyle='#ecffdc';c.lineWidth=2/scale;c.strokeRect(-w/2,-h/2,w,h);c.beginPath();c.moveTo(5,-h/2+5);c.lineTo(-9,-h*.1);c.lineTo(9,h*.08);c.lineTo(-5,h/2-5);c.stroke();c.restore();}
+
+  if(lesson.stage===1&&lesson.wallX!=null){c.globalAlpha=.7;c.strokeStyle='#d9ff83';c.lineWidth=10/scale;c.shadowColor='#bfff69';c.shadowBlur=25/scale;c.beginPath();c.moveTo(lesson.wallX-5,p.y-210/scale);c.lineTo(lesson.wallX-5,p.y+210/scale);c.stroke();c.shadowBlur=0;}
+  if(lesson.gate){const a=lesson.gate.age/32;c.globalAlpha=(1-a)*.9;c.strokeStyle='#edffe3';c.lineWidth=3/scale;for(let i=0;i<7;i++){const angle=i*Math.PI*2/7,d=(20+a*100)/scale;c.beginPath();c.moveTo(lesson.gate.x+Math.cos(angle)*d,lesson.gate.y+Math.sin(angle)*d);c.lineTo(lesson.gate.x+Math.cos(angle)*(d+35/scale),lesson.gate.y+Math.sin(angle)*(d+35/scale));c.stroke();}}
+  if(lesson.bumpFlash>0){c.globalAlpha=lesson.bumpFlash/24*.8;c.strokeStyle='#ff6579';c.lineWidth=3/scale;c.beginPath();c.arc(p.x,p.y,(35+(24-lesson.bumpFlash)*2)/scale,0,Math.PI*2);c.stroke();}
+ }finally{c.restore();}
+}
+
 function drawArc(c, run, aim, alpha, scale, hint, time, view) {
   const a = predictAim(run, aim, {
     focus: true,
@@ -5912,11 +5918,12 @@ function drawArc(c, run, aim, alpha, scale, hint, time, view) {
     path2.push(q);
     if (!inView2(q) || stop && Math.hypot(q.x-a.start.x,q.y-a.start.y) >= (a.hit?.along ?? Math.hypot(stop.x-a.start.x,stop.y-a.start.y))) break;
   }
-  const horizon = Math.round(Math.min(path2.length, 20 + 8 * (1 - clamp(a.power, 0, 1))));
-  if (!stop) path2.length = Math.min(path2.length, horizon);
+  const level=sensorTier(run.state.equipment?.trajectory,"trajectory");
+  const horizon = Math.min(path2.length, trajectorySamples(run.state.equipment?.trajectory));
+  path2.length = Math.min(path2.length, horizon);
   const last = Math.max(1, path2.length - 1);
   c.save();
-  if (!hint) {
+  if (!hint && !aim.anchor) {
     const start=a.start,n=Math.hypot(a.velocity.x,a.velocity.y)||1,ux=a.velocity.x/n,uy=a.velocity.y/n;
     const rr=34/scale,tx=start.x+ux*64/scale,ty=start.y+uy*64/scale;
     // Fixed screen-size launch compass stays readable at every camera zoom.
@@ -5927,7 +5934,7 @@ function drawArc(c, run, aim, alpha, scale, hint, time, view) {
     poly2(c,INK.acid,[[tx+ux*8/scale,ty+uy*8/scale],[tx-ux*4/scale-uy*6/scale,ty-uy*4/scale+ux*6/scale],[tx-ux*4/scale+uy*6/scale,ty-uy*4/scale-ux*6/scale]]);
 
   }
-  if (aim.anchor) {
+  if (aim.anchor && hint) {
     const o = aim.anchor, tip = a.start;
     c.save();
     c.globalAlpha = 0.34 + 0.26 * a.power;
@@ -5943,15 +5950,17 @@ function drawArc(c, run, aim, alpha, scale, hint, time, view) {
     };
     const fade2 = (hint ? 0.62 : 0.94) * (1 - u) ** (stop ? 0.55 : 1.5);
     if (fade2 < 0.02) continue;
-    c.globalAlpha = fade2 * (hint ? 0.17 : 0.1);
-    line(c, `rgb(${rgb.join(",")})`, 6 / scale, prev.x, prev.y, q.x, q.y);
+    const pathInk=level?'#baf9e0':'#dcebb7';
+    c.globalAlpha = fade2 * (hint ? 0.17 : 0.24);
+    line(c, pathInk, 6 / scale, prev.x, prev.y, q.x, q.y);
     c.globalAlpha = fade2;
     const cutting = (i + 1) * ARC.step <= 16 + 15 * Math.min(1, a.power);
     if (!cutting) c.globalAlpha *= 0.35;
-    line(c, `rgb(${rgb.join(",")})`, (cutting ? 2.9 : 1.3) / scale, cutting ? prev.x : tail.x, cutting ? prev.y : tail.y, q.x, q.y);
+    line(c, pathInk, (cutting ? 2.5 : 1.4) / scale, cutting ? prev.x : tail.x, cutting ? prev.y : tail.y, q.x, q.y);
   }
   c.globalAlpha = 1;
-  if (end && !hint) {
+  const endVisible=end && inView2(end) && path2.length && Math.hypot(path2[path2.length-1].x-end.x,path2[path2.length-1].y-end.y)<60/scale;
+  if (endVisible && !hint) {
     const at = end.kind === "target" ? { x: end.x, y: end.y } : end, r = (end.kind === "target" ? a.hit?.r ?? 20 : 6) + 10 / Math.max(0.35, scale);
     c.save();
     c.translate(at.x, at.y);
@@ -5987,6 +5996,21 @@ function drawArc(c, run, aim, alpha, scale, hint, time, view) {
     c.stroke();
     c.restore();
   }
+  if(!hint&&level>=2){
+    // Time ticks are sampled from the exact trajectory, not a second aim line.
+    c.save();c.lineWidth=1.2/scale;c.strokeStyle='#e7f9ca';
+    for(let i=5;i<path2.length;i+=6){const q=path2[i],prev=path2[i-1],dx=q.x-prev.x,dy=q.y-prev.y,n=Math.hypot(dx,dy)||1;c.globalAlpha=.7;c.beginPath();c.moveTo(q.x-dy/n*4/scale,q.y+dx/n*4/scale);c.lineTo(q.x+dy/n*4/scale,q.y-dx/n*4/scale);c.stroke();}
+    c.restore();
+  }
+  if(!hint&&level>=3){
+    // A compact, bounded receipt. Static targets are snapshots; moving enemies
+    // and rebounds are not promises, so do not extrapolate after first impact.
+    const width=138/scale,height=42/scale,x=clamp(a.start.x+(a.velocity.x>=0?-width-34/scale:45/scale),view.x+8/scale,view.x+view.w-width-8/scale),y=clamp(a.start.y-82/scale,view.y+50/scale,view.y+view.h-height-12/scale);
+    c.save();c.fillStyle='#101620e8';c.fillRect(x,y,width,height);c.strokeStyle='#a9eddf';c.lineWidth=1/scale;c.strokeRect(x,y,width,height);c.fillStyle='#d9fff0';c.font=`${9/scale}px monospace`;c.textAlign='left';c.textBaseline='top';
+    const speed=Math.hypot(a.velocity.x,a.velocity.y)*(run.state.opening||run.state.hyper?1:run.state.dashSpeed||1),angle=Math.round(Math.atan2(a.velocity.y,a.velocity.x)*180/Math.PI),ticks=a.hit?.ticks??a.end?.ticks;
+    c.fillText(`SPD ${speed.toFixed(1)}PX/T ${angle}°`,x+6/scale,y+6/scale);
+    c.fillStyle='#a6c5be';c.fillText(ticks!=null?`IMPACT ~${(ticks/60).toFixed(2)}s · EST`:'FREE FLIGHT · SNAPSHOT',x+6/scale,y+22/scale);c.restore();
+  }
   const pair = sightPicture(
     a.start,
     a.velocity,
@@ -6016,41 +6040,193 @@ export function resolveFangAnticipation(e={},motion=true){
  return identity;
 }
 /** One lane and three fixed pressure gates replace stacked arrows/cone/dashes. */
-export function drawFangIntent(c,{x=0,y=0,r=22,aim=0,clock=66,span=66,lungeSpeed=10.8,scale=1}={}){
+export function drawFangIntent(c,{x=0,y=0,r=22,aim=0,clock=66,span=66,lungeSpeed=10.8,scale=1,arena=null}={}){
  if(![x,y,r,aim,clock,span,lungeSpeed].every(Number.isFinite)||r<=0||span<=0)return;
  const f=1-clamp(clock/span,0,1),length=24*Math.max(0,lungeSpeed)+r,half=r*.6;
+ if(arena){
+  // The simulation clamps x/y independently at each rail; after the first
+  // collision a diagonal charge can slide along the rail. Show both segments.
+  const vx=Math.cos(aim)*lungeSpeed,vy=Math.sin(aim)*lungeSpeed;
+  const loX=arena.x+r,hiX=arena.x+arena.w-r,loY=arena.y+r,hiY=arena.y+arena.h-r;
+  const tx=vx>0?(hiX-x)/vx:vx<0?(loX-x)/vx:Infinity,ty=vy>0?(hiY-y)/vy:vy<0?(loY-y)/vy:Infinity;
+  const t=clamp(Math.min(tx,ty),0,24),end={x:clamp(x+vx*24,loX,hiX),y:clamp(y+vy*24,loY,hiY)},bend={x:clamp(x+vx*t,loX,hiX),y:clamp(y+vy*t,loY,hiY)};
+  c.save();try{
+   c.lineCap='round';c.lineJoin='round';c.beginPath();c.moveTo(x,y);c.lineTo(bend.x,bend.y);c.lineTo(end.x,end.y);
+   c.strokeStyle='#f36e91';c.globalAlpha=.12+f*.07;c.lineWidth=2*(r+PLAYER_SIZE*.44);c.stroke();
+   c.setLineDash([8/Math.max(.1,scale),6/Math.max(.1,scale)]);c.strokeStyle='#ffd8df';c.globalAlpha=.75+f*.2;c.lineWidth=Math.max(1.5,2/Math.max(.1,scale));c.stroke();
+  }finally{c.restore();}return;
+ }
  c.save();try{c.translate(x,y);c.rotate(aim);c.lineJoin='miter';c.lineCap='butt';
- c.fillStyle='#f36e91';c.globalAlpha=.045+f*.045;
+ c.fillStyle='#f36e91';c.globalAlpha=.10+f*.06;
  c.beginPath();c.moveTo(r+5,-half);c.lineTo(length-13,-half*.6);c.lineTo(length,0);c.lineTo(length-13,half*.6);c.lineTo(r+5,half);c.closePath();c.fill();
- c.strokeStyle='#d77c98';c.lineWidth=Math.max(1,1/Math.max(.1,scale));c.globalAlpha=.32+f*.3;
+ c.strokeStyle='#d77c98';c.lineWidth=Math.max(1.5,2/Math.max(.1,scale));c.globalAlpha=.68+f*.25;
  for(const side of [-1,1]){c.beginPath();c.moveTo(r+8,side*half);c.lineTo(length-13,side*half*.6);c.lineTo(length,0);c.stroke();}
  // Gates fill at fixed locations: no marching chevrons or repeated flashing.
- for(let i=0;i<3;i++){c.globalAlpha=f>=(i+1)/3?.85:.18;c.strokeStyle=f>=(i+1)/3?'#ffd8df':'#bb7c94';c.lineWidth=Math.max(1,1.3/Math.max(.1,scale));const gx=r+17+i*14;c.beginPath();c.moveTo(gx,-4);c.lineTo(gx,4);c.stroke();}
+ for(let i=0;i<3;i++){c.globalAlpha=f>=(i+1)/3?.95:.44;c.strokeStyle=f>=(i+1)/3?'#ffd8df':'#bb7c94';c.lineWidth=Math.max(1,1.3/Math.max(.1,scale));const gx=r+17+i*14;c.beginPath();c.moveTo(gx,-4);c.lineTo(gx,4);c.stroke();}
  c.globalAlpha=.4+f*.4;c.strokeStyle='#f1b2c4';c.lineWidth=Math.max(1,1.2/Math.max(.1,scale));
  c.beginPath();c.moveTo(-r*.7,-r*.8);c.lineTo(-r-6,-r*.8);c.lineTo(-r-6,r*.8);c.lineTo(-r*.7,r*.8);c.stroke();
  }finally{c.restore();}
 }
 
-function warnings(c, e, p, time, scale=1) {
+/** The one geometry definition used by the combat simulation and rendering.
+ * A zone is fixed at wind-up: Fork's two cross bars, Bastion's forward wedge,
+ * Rift's landing circle, or Well's compression circle. Dimensions are world
+ * units; the cube's collision radius is applied separately in the simulation. */
+export function enemyAttackZone(kind,x,y,angle=0,r=32){
+ if(!['fork','bastion','rift','well'].includes(kind))return null;
+ const point=(a,b)=>Object.freeze({x:x+a*Math.cos(angle)-b*Math.sin(angle),y:y+a*Math.sin(angle)+b*Math.cos(angle)});
+ const polygon=(pts)=>Object.freeze(pts.map(([a,b])=>point(a,b)));
+ const polygons=kind==='fork'?[
+  polygon([[-126,-25],[126,-25],[126,25],[-126,25]]),
+  polygon([[-25,-126],[25,-126],[25,126],[-25,126]])
+ ]:kind==='bastion'?[polygon([[r*.65,-28],[r+136,-69],[r+136,69],[r*.65,28]])]:[];
+ return Object.freeze({kind,x,y,angle,radius:kind==='rift'?88:kind==='well'?112:0,polygons:Object.freeze(polygons)});
+}
+/** Dashed outlines are non-damaging tells; solid filled regions are active. */
+export function drawEnemyZone(c,zone,active=false,scale=1){
+ if(!zone)return;const unit=1/Math.max(.1,scale),color={fork:'#ffc19b',bastion:'#ffe1a0',rift:'#ffb5c7',well:'#ead3ff'}[zone.kind]||'#ffffff';
+ c.save();try{
+  c.lineJoin='round';c.lineWidth=(active?2.7:2)*unit;c.strokeStyle=color;
+  c.fillStyle=color;c.globalAlpha=active?.25:.08;
+  const path=()=>{c.beginPath();if(zone.radius)c.arc(zone.x,zone.y,zone.radius,0,TAU);for(const poly of zone.polygons||[]){if(!poly.length)continue;c.moveTo(poly[0].x,poly[0].y);for(const p of poly.slice(1))c.lineTo(p.x,p.y);c.closePath();}};
+  path();c.fill();c.globalAlpha=active?.95:.82;c.setLineDash(active?[]:[8*unit,6*unit]);path();c.stroke();
+  if(zone.kind==='rift'){c.save();c.translate(zone.x,zone.y);c.scale(14*unit,14*unit);c.globalAlpha=1;drawRiftGlyph(c,'#e0123a');c.restore();}
+  // A second, inset mark differentiates circular Rift and Well effects by shape.
+  if(zone.radius){c.setLineDash([]);c.globalAlpha=active?.85:.55;const d=zone.radius*.44;
+   if(zone.kind==='rift')for(let j=0;j<4;j++){const a=j*TAU/4+Math.PI/4;line(c,color,1.5*unit,zone.x+Math.cos(a)*d,zone.y+Math.sin(a)*d,zone.x+Math.cos(a)*(d+14*unit),zone.y+Math.sin(a)*(d+14*unit));}
+   else for(let j=0;j<4;j++){const a=j*TAU/4,ux=Math.cos(a),uy=Math.sin(a),tx=-uy,ty=ux;line(c,color,1.5*unit,zone.x+ux*(d+12*unit)+tx*5*unit,zone.y+uy*(d+12*unit)+ty*5*unit,zone.x+ux*d,zone.y+uy*d,zone.x+ux*(d+12*unit)-tx*5*unit,zone.y+uy*(d+12*unit)-ty*5*unit);}
+  }
+ }finally{c.restore();}
+}
+
+// Presentation only: the vocabulary describes the real attack, never an idle
+// enemy as actively dangerous. Progress is derived from its live wind-up clock.
+const INTENT_VERBS=Object.freeze({fang:'RUSH',pulse:'RING',prism:'SHOT',fork:'SWIPE / SPLIT',bastion:'SLAM',rift:'BLINK STRIKE',well:'PULL / CRUSH',crown:'VOLLEY'});
+export function enemyIntent(enemy, hazards=[], links=[]) {
+ const verb=INTENT_VERBS[enemy.kind];if(!verb||enemy.paper||enemy.pinned)return null;
+ const link=links.find(l=>(l.a.id===enemy.id||l.b.id===enemy.id)&&(l.mode==='tell'||l.mode==='live'));
+ if(link)return {label:'LINK / BEAM',state:link.mode==='tell'?'WINDUP':'ATTACK',progress:link.mode==='tell'?clamp(link.f,0,1):null};
+ if(enemy.mode==='tell')return {label:`${enemy.kind.toUpperCase()} / ${verb}`,state:'WINDUP',progress:clamp(1-enemy.clock/Math.max(1,enemy.span),0,1)};
+ if(enemy.mode==='rush'||hazards.some(h=>!h.spent&&h.sourceId===enemy.id))return {label:`${enemy.kind.toUpperCase()} / ${verb}`,state:'ATTACK',progress:null};
+ return {label:`${enemy.kind.toUpperCase()} / ${verb}`,state:enemy.mode==='recover'?'RECOVER':'IDLE',progress:null};
+}
+/** A few nearest, non-overlapping labels; urgent tells win over idle names. */
+export function enemyIntentBadges(v,combat,player,alpha=1){
+ const list=[],hero=toScreen(v,player);
+ for(const e of combat.enemies.values()){
+  const intent=enemyIntent(e,combat.hazards||[],combat.links||[]);if(!intent)continue;
+  const position={x:mix(Number.isFinite(e.px)?e.px:e.x,e.x,alpha),y:mix(Number.isFinite(e.py)?e.py:e.y,e.y,alpha)};
+  const p=toScreen(v,position);if(p.x<0||p.x>v.width||p.y<0||p.y>v.height)continue;
+  const distance=Math.hypot(e.x-player.x,e.y-player.y);
+  list.push({...intent,bodyX:p.x,bodyY:p.y,offset:Math.max(25,e.r*v.scale+18),distance});
+ }
+ list.sort((a,b)=>(a.state==='WINDUP'?0:a.state==='ATTACK'?1:2)-(b.state==='WINDUP'?0:b.state==='ATTACK'?1:2)||a.distance-b.distance);
+ const chosen=[];
+ for(const item of list){
+  const x=Math.max(72,Math.min(v.width-72,item.bodyX));
+  // Try above and below the body; HUD corners and the hero remain clear.
+  for(const y of [item.bodyY-item.offset,item.bodyY+item.offset]){
+   if(y<24||y>v.height-24||Math.hypot(x-hero.x,y-hero.y)<70)continue;
+   if(y<135&&(x<160||x>v.width-160))continue;
+   if(chosen.some(a=>Math.abs(a.x-x)<145&&Math.abs(a.y-y)<38))continue;
+   chosen.push({...item,x,y});break;
+  }
+  if(chosen.length===4)break;
+ }
+ return chosen;
+}
+export function drawEnemyIntentBadges(c,v,combat,player,alpha=1){
+ const badges=enemyIntentBadges(v,combat,player,alpha);c.save();try{
+  c.textAlign='center';c.textBaseline='middle';c.font='bold 11px monospace';
+  for(const b of badges){
+   const width=Math.max(96,Math.min(142,c.measureText(b.label).width+14)),active=b.state==='WINDUP'||b.state==='ATTACK';
+   c.fillStyle='#17101deb';c.fillRect(b.x-width/2,b.y-17,width,32);
+   c.strokeStyle=active?'#ffbbac':'#aa9eae';c.lineWidth=active?1.5:1;c.strokeRect(b.x-width/2,b.y-17,width,32);
+   c.fillStyle='#fff5ed';c.fillText(b.label,b.x,b.y-9,width-6);
+   c.font='bold 10px monospace';c.fillStyle=active?'#ffb2a8':'#c5b6c5';c.fillText(b.state==='WINDUP'?'CHARGING':b.state==='ATTACK'?'ATTACK':b.state==='RECOVER'?'RECOVER':'',b.x,b.y+3,width-6);
+   if(b.progress!==null){c.fillStyle='#61414b';c.fillRect(b.x-width/2+2,b.y+11,width-4,3);c.fillStyle='#ffcaad';c.fillRect(b.x-width/2+2,b.y+11,(width-4)*b.progress,3);}
+   c.font='bold 11px monospace';
+  }
+ }finally{c.restore();}return badges;
+}
+export function drawPlayerDamageReceipt(c,v,player,state){
+ const hit=state.lastDamage;if(!hit||state.elapsed-hit.tick>90||state.elapsed<hit.tick)return;
+ const p=toScreen(v,player),x=clamp(p.x,82,v.width-82),y=clamp(p.y-58,150,v.height-35);
+ c.save();try{
+  c.fillStyle='#280e18ed';c.fillRect(x-75,y-15,150,30);c.strokeStyle='#ffb5aa';c.lineWidth=2;c.strokeRect(x-75,y-15,150,30);
+  c.textAlign='center';c.textBaseline='middle';c.font='bold 12px monospace';c.fillStyle='#fff4e9';c.fillText(`−1 HEALTH · ${hit.hp}/${hit.hpMax}`,x,y-5);
+  c.font='bold 9px monospace';c.fillStyle='#ffb5aa';c.fillText(String(hit.cause==='Fang'?'Fang rush':hit.cause).toUpperCase(),x,y+7,142);
+ }finally{c.restore();}
+}
+
+/** Camera-only edge notices. They never affect AI or hit geometry. */
+export function enemyThreatIndicators(v,combat){
+ const out=[],seen=new Set(),w=v.width,h=v.height;
+ const add=(point,label,state,key,progress=null,verb=null)=>{
+  if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y)||seen.has(key))return;
+  const screen=toScreen(v,point);if(screen.x>=0&&screen.x<=w&&screen.y>=0&&screen.y<=h)return;
+  seen.add(key);const dx=screen.x-w/2,dy=screen.y-h/2,k=Math.min(Math.max(1,w/2-42)/Math.max(1,Math.abs(dx)),Math.max(1,h/2-34)/Math.max(1,Math.abs(dy)));
+  out.push({x:w/2+dx*k,y:h/2+dy*k,angle:Math.atan2(dy,dx),label,state,progress,verb,distance:Math.hypot(dx,dy)});
+ };
+ for(const e of combat.enemies.values())if(e.mode==='tell'||e.mode==='rush'){
+  add(e,e.kind.toUpperCase(),e.mode==='tell'?'TELL':'ATTACK',`enemy:${e.id}`,e.mode==='tell'&&Number.isFinite(e.clock)&&Number.isFinite(e.span)?clamp(1-e.clock/Math.max(1,e.span),0,1):null,INTENT_VERBS[e.kind]);
+  if(e.kind==='rift'&&e.mode==='tell'&&e.attackZone)add(e.attackZone,'RIFT','LANDING',`rift:${e.id}`,Number.isFinite(e.clock)&&Number.isFinite(e.span)?clamp(1-e.clock/Math.max(1,e.span),0,1):null,'STRIKE');
+ }
+ for(const h of combat.hazards||[])if(!h.spent)add(h,String(h.source||'ATTACK').toUpperCase(),'ATTACK',`hazard:${h.attackId||h.source}`);
+ for(const l of combat.links||[])if(l.mode==='tell'||l.mode==='live'){
+  add(l.a,'LINK',l.mode==='tell'?'TELL':'ATTACK',`link:${l.a.id}`,l.mode==='tell'?clamp(l.f,0,1):null,'BEAM');add(l.b,'LINK',l.mode==='tell'?'TELL':'ATTACK',`link:${l.b.id}`,l.mode==='tell'?clamp(l.f,0,1):null,'BEAM');
+ }
+ return out.sort((a,b)=>a.distance-b.distance).slice(0,5);
+}
+export function drawEnemyThreatIndicators(c,v,combat,{top=32,gutter=20}={}){
+ const items=enemyThreatIndicators(v,combat);c.save();try{
+  c.font='bold 9px monospace';c.textAlign='center';c.textBaseline='middle';
+  for(const item of items){const q=overlayPoint(v.width,v.height,item,{radius:34,top,gutter});c.save();c.translate(q.x,q.y);
+   c.fillStyle='#1b1420';c.strokeStyle='#fff1df';c.lineWidth=1.5;c.fillRect(-32,-12,64,24);c.strokeRect(-32,-12,64,24);
+   c.fillStyle='#ffe4ad';c.fillText(item.verb?`${item.label} / ${item.verb}`:item.label,0,-5,60);c.fillStyle='#fff1df';c.fillText(item.state==='TELL'?'CHARGING':item.state,0,4,60);
+   if(item.progress!==null){c.fillStyle='#6a4c4c';c.fillRect(-29,9,58,2);c.fillStyle='#ffcfac';c.fillRect(-29,9,58*item.progress,2);}
+   c.rotate(item.angle);c.beginPath();c.moveTo(39,0);c.lineTo(32,-4);c.lineTo(32,4);c.closePath();c.fill();c.restore();
+  }
+ }finally{c.restore();}return items;
+}
+
+export function drawEnemyWarning(c, e, p, time, scale=1, motion=true, arena=null) {
   const col = TYPES[e.kind].color;
   if (e.kind === "well") {
-    c.save();
-    c.globalAlpha = 0.23;
-    for (let j = 0; j < 3; j++)
-      arc(c, col, 2, p.x, p.y, 234, time * 0.018 + j * TAU / 3, time * 0.018 + j * TAU / 3 + 1);
+    // The real pull checks dist < 234 only while the cube is launched.
+    // Inward arrowheads distinguish this harmless field from Pulse's solid rim.
+    const unit=1/Math.max(.1,scale),r=234;
+    c.save();c.globalAlpha=.48;c.setLineDash([5*unit,7*unit]);
+    arc(c,col,Math.max(1,1.3*unit),p.x,p.y,r);c.setLineDash([]);
+    for(let j=0;j<4;j++){
+      const a=j*TAU/4+(motion?time*.004:0),ux=Math.cos(a),uy=Math.sin(a),tx=-uy,ty=ux;
+      const tip=r-19*unit,base=tip+10*unit;
+      line(c,'#e3dcff',Math.max(1,1.6*unit),p.x+ux*base+tx*5*unit,p.y+uy*base+ty*5*unit,p.x+ux*tip,p.y+uy*tip,p.x+ux*base-tx*5*unit,p.y+uy*base-ty*5*unit);
+    }
     c.restore();
   }
+  if (e.kind === "fang" && e.mode === "rush") {
+    // Active charge is marked at the real body, distinct from the lane tell.
+    c.save();c.translate(p.x,p.y);c.rotate(e.aim);c.strokeStyle='#fff0e2';c.lineWidth=Math.max(1.8,2/Math.max(.1,scale));
+    c.beginPath();c.moveTo(e.r*.25,-e.r*.78);c.lineTo(e.r*1.08,0);c.lineTo(e.r*.25,e.r*.78);c.stroke();c.restore();
+  }
   if (e.mode !== "tell") return;
+  if(e.attackZone)drawEnemyZone(c,e.attackZone,false,scale);
   const f = 1 - clamp(e.clock / e.span, 0, 1);
   c.save();
-  if(e.kind==='fang'){c.restore();drawFangIntent(c,{...e,...p,scale});return;}
+  if(e.kind==='fang'){c.restore();drawFangIntent(c,{...e,...p,scale,arena});return;}
   c.globalAlpha = (e.gentle ? 0.78 : 0.5) + (e.gentle ? 0.2 : 0.42) * f;
-  c.setLineDash([7, 8]);
-  if (e.kind === "prism" || e.kind === "crown") {
+  const unit=1/Math.max(.1,scale);
+  c.setLineDash([7*unit, 8*unit]);
+  if (e.kind === "pulse") {
+    // Dashed nested diaphragms are a wind-up, not the solid moving hit rim.
+    for(const radius of [e.r+10+(1-f)*12,e.r+19+(1-f)*12])
+      arc(c,'#ffd2df',Math.max(1.8,2*unit),p.x,p.y,radius);
+  } else if (e.kind === "prism" || e.kind === "crown") {
     const count = e.kind === "crown" ? 10 : 1, length = e.kind === "prism" ? 840 : 230;
     for (let j = 0; j < count; j++) {
       const a = e.aim + j * TAU / count, dx = Math.cos(a), dy = Math.sin(a);
-      line(c, col, e.kind === "crown" ? 3.2 : 1.7, p.x + dx * e.r, p.y + dy * e.r, p.x + dx * length, p.y + dy * length);
+      line(c, col, Math.max(e.kind === "crown" ? 3.2 : 1.7, 2*unit), p.x + dx * e.r, p.y + dy * e.r, p.x + dx * length, p.y + dy * length);
     }
   } else if (e.kind === "rift") {
     c.save();
@@ -6120,12 +6296,9 @@ function wallLine(c, v, x0, y0, x1, y1, a, nx, ny) {
 }
 function slashArc(c, x, y, r, age, dir, inv = 1, equipment = {}) {
   const slashPalette=corePalette(equipment.core);
-  const row = SLASH_ROW.width;
-  if (!(age >= 0) || age >= SLASH.total) return;
-  const o = age * row;
-  const angle0 = SLASH_TABLE[o + SLASH_ROW.angle];
-  if (angle0 < 0) return;
-  const smear = SLASH_TABLE[o + SLASH_ROW.smear], alpha = SLASH_TABLE[o + SLASH_ROW.alpha], weight = SLASH_TABLE[o + SLASH_ROW.weight], flash = SLASH_TABLE[o + SLASH_ROW.flash];
+  const sample = slashFor(age);
+  if (!sample) return;
+  const {angle: angle0, smear, alpha, weight, flash} = sample;
   if (alpha <= 0.01) return;
   const angle = angle0 + dir;
   const span = Math.min(SLASH.sweep, Math.abs(angle - dir) + 0.35) * (0.72 + 0.28 * smear);
@@ -6184,6 +6357,8 @@ function slashArc(c, x, y, r, age, dir, inv = 1, equipment = {}) {
 /** Presentation only. Elements describe equipment identity, never extra damage. */
 export const DASH_ELEMENTS=Object.freeze(['ink','fire','lightning','ice','water','void','echo']);
 export function dashElement(equipment={},sword=null){
+ const chosen=equipment?.dash?.startsWith('dash-')?equipment.dash.slice(5):'';
+ if(DASH_ELEMENTS.includes(chosen))return chosen;
  const id=sword?.build;
  if(['sun','forge','wyrm'].includes(id))return 'fire';
  if(id==='glacier')return 'ice';
@@ -6214,7 +6389,7 @@ export function drawElementalDash(c,{x=0,y=0,vx=0,vy=0,age=-1,element='ink',radi
  const shape=(pts,fill)=>{c.fillStyle=fill;c.beginPath();pts.forEach(([px,py],i)=>i?c.lineTo(px,py):c.moveTo(px,py));c.closePath();c.fill();};
  const line=(pts,width,col)=>{c.strokeStyle=col;c.lineWidth=width;c.beginPath();pts.forEach(([px,py],i)=>i?c.lineTo(px,py):c.moveTo(px,py));c.stroke();};
  // A two-tick directional smear connects poses, then yields to the clean hero.
- if(age<3)shape([[-length,0],[-r*.55,-r*.67],[r*.25,-r*.32],[r*.4,r*.24],[-r*.7,r*.65]],color);
+ if(age<4){c.save();c.globalAlpha*=((4-age)/4)**2;shape([[-length,0],[-r*.55,-r*.67],[r*.25,-r*.32],[r*.4,r*.24],[-r*.7,r*.65]],color);c.restore();}
  if(element==='fire'){
  for(let i=0;i<5;i++){const side=i%2?1:-1,off=(i-2)*r*.27,L=length*(.55+i*.1),w=r*(.28+i*.015);shape([[-r*.7,off-w],[-L*.55,off-w*.6],[-L,off+side*w],[-L*.62,off+w*.35],[-r*.7,off+w]],i%2?light:color);}
  }else if(element==='lightning'){
@@ -6233,6 +6408,54 @@ export function drawElementalDash(c,{x=0,y=0,vx=0,vy=0,age=-1,element='ink',radi
  }
  // Two speed slits narrow with cubic decay; avoid persistent scene-wide lines.
  c.globalAlpha=.35*fade;for(const side of[-1,1])line([[-r*1.3,side*r*1.05],[-r*1.3-length*(1-t)**3,side*r*1.05]],1,color);
+ }finally{c.restore();}
+}
+
+/** A hand-drawn smear cel made from three offset slices of the cube itself.
+ * Geometry is in hero radii, driven by the existing dash clock and velocity;
+ * no physics writes, random numbers, rotation or second animation clock. */
+export function resolveCubeDashSmear({vx=0,vy=0,age=-1,radius=22,motion=true}={}){
+ if(!motion||![vx,vy,age,radius].every(Number.isFinite)||radius<=0)return null;
+ const speed=Math.hypot(vx,vy);
+ if(!Number.isFinite(speed)||speed<6||age<=DASH.windup||age>=DASH.windup+DASH.active)return null;
+ const u=(age-DASH.windup)/DASH.active;
+ const envelope=Math.sin(Math.PI*u)**0.8, power=Math.min(1,speed/42);
+ const r=Math.min(radius,80),ux=vx/speed,uy=vy/speed;
+ // Three deliberately unequal slices stagger backward. Lag is bounded in world
+ // units, direction-normalized and tapers smoothly to zero at both ends.
+ const offsets=[.86,1.30,1.82].map(k=>r*k*power*envelope);
+ return {ux,uy,r,envelope,power,offsets,vertical:Math.abs(vy)>Math.abs(vx)};
+}
+export function drawCubeDashSmear(c,{x=0,y=0,vx=0,vy=0,age=-1,radius=22,equipment={},motion=true}={}){
+ if(!Number.isFinite(x)||!Number.isFinite(y))return;
+ const smear=resolveCubeDashSmear({vx,vy,age,radius,motion});if(!smear)return;
+ const {ux,uy,r,envelope,power,offsets,vertical}=smear;
+ equipment=equipment||{};
+ const body=resolveBodyConstruction(equipment.body),palette=corePalette(equipment.core);
+ const contour=SHAPE_MODIFIERS.find(item=>item.id===equipment.body)?.outline||HERO_SHELL;
+ const bands=[[-1.04,-.4],[-.4,.3],[.3,1.04]];
+ c.save();try{
+  for(let i=0;i<bands.length;i++){
+   const [lo,hi]=bands[i],back=offsets[i];c.save();
+   try{
+    c.translate(x-ux*back,y-uy*back);c.scale(r,r);
+    c.beginPath();if(vertical)c.rect(lo,-1.06,hi-lo,2.12);else c.rect(-1.06,lo,2.12,hi-lo);c.clip();
+    c.globalAlpha*=envelope*(.38+.16*power)*(1-i*.12);
+    // Flat cel colors preserve the equipped shell and core identity while
+    // avoiding the heavy detail and bloom of three fully opaque characters.
+    path(c,contour);c.fillStyle=body.light;c.fill();
+    c.strokeStyle=body.shadow;c.lineWidth=.065;c.stroke();
+    panel(c,[[-.76,-.42],[.08,-.34],[.92,-.50],[.84,.12],[.15,.08],[-.72,.14]],'#151321',0);
+    if(equipment.eyes==='visor'||equipment.eyes==='sniper'){
+     panel(c,[[-.65,-.23],[.73,-.26],[.69,-.08],[-.65,-.06]],palette.primary,0);
+    }else{
+     panel(c,[[-.67,-.26],[-.18,-.18],[-.14,-.07],[-.58,-.09]],palette.light,0);
+     panel(c,[[.15,-.08],[.22,-.20],[.70,-.28],[.61,-.08]],palette.light,0);
+    }
+    panel(c,[[-.26,.42],[0,.28],[.26,.42],[0,.64]],palette.primary,0);
+    seam(c,[[-.72,.78],[.64,.78]],body.shadow,.05);
+   }finally{c.restore();}
+  }
  }finally{c.restore();}
 }
 
@@ -6347,7 +6570,7 @@ function createRenderer(c, viewport) {
   const trail = [], shards = [], pops = [], beams = [], imprints = [], sparks = [];
   const dashDust = [];
   const wardBreaks=[],contactBursts=[];let cutExitSource=null;
-  let dashBurstAt = -1;
+  let dashBurstAt = -1, dashBurstSwing = null;
   let dashTravel = { age: null, x: 0, y: 0, along: 0 };
   let viewListener = null;
   function onViewport(fn) {
@@ -6382,11 +6605,11 @@ function createRenderer(c, viewport) {
     ghosts.clear();
     ghostClock = 0;
     dashDust.length = 0;wardBreaks.length=0;contactBursts.length=0;cutExitSource=null;
-    dashBurstAt = -1;
+    dashBurstAt = -1; dashBurstSwing = null;
   }
   function event(type, d, motion) {
     if(['cut','armor'].includes(type)&&!d.secondary&&d.entityId!=null)cutExitSource={id:d.entityId,x:d.x,y:d.y};
-    if(["cut","armor","hurt","break","waveBlock"].includes(type)){contactBursts.push({x:d.x,y:d.y,type,kind:d.kind,r:d.r,cut:d.cut,hpBefore:d.hpBefore,hp:d.hp,fromShear:d.fromShear,entityId:d.entityId,sword:d.sword,equipment:d.equipment,upgrade:d.upgrade,armorRemoved:d.armorRemoved,secondary:d.secondary,contact:d.contact||null,life:type==="break"?27:18});if(contactBursts.length>12)contactBursts.shift();}
+    if(["cut","armor","hurt","break","waveBlock"].includes(type)){contactBursts.push({x:d.x,y:d.y,type,kind:d.kind,r:d.r,cut:d.cut,hpBefore:d.hpBefore,hp:d.hp,fromShear:d.fromShear,entityId:d.entityId,sword:d.sword,equipment:d.equipment,upgrade:d.upgrade,armorRemoved:d.armorRemoved,secondary:d.secondary,contact:d.contact||null,attack:d.attack||null,life:type==="break"?27:18});if(contactBursts.length>12)contactBursts.shift();}
     if(type==="waveBlock"){wardBreaks.push({x:d.x,y:d.y,life:24,contact:d.contact,equipment:d.equipment,sword:d.sword});if(wardBreaks.length>4)wardBreaks.shift();return;}
     if (type === "armor" && motion) shake.ask(2.1, d.cut, 0.8);
     if (type === "cut" && !d.small && (d.throughcut || d.strokeKills>=2)) {
@@ -6486,6 +6709,31 @@ function createRenderer(c, viewport) {
     for(let i=contactBursts.length-1;i>=0;i--)if(--contactBursts[i].life<=0)contactBursts.splice(i,1);
     for(let i=wardBreaks.length-1;i>=0;i--)if(--wardBreaks[i].life<=0)wardBreaks.splice(i,1);
     frameDt = dt;
+    // Particle age belongs to simulation ticks, not the number of draws. A
+    // 144 Hz display must not make the same burst expire 2.4 times faster.
+    if (!motion) dashDust.length = 0;
+    else {
+      for (let i = dashDust.length - 1; i >= 0; i--) {
+        const d = dashDust[i];d.age++;d.x += d.vx;d.y += d.vy;
+        const drag = d.brake ? 0.84 : 0.92;d.vx *= drag;d.vy *= drag;
+        if (d.age >= d.life) dashDust.splice(i, 1);
+      }
+      if (s.swingStart !== dashBurstSwing || s.slashAge < 0) { dashBurstSwing = s.swingStart; dashBurstAt = -1; }
+      const dash = dashFor(s.slashAge, world.player.velocity.x, world.player.velocity.y);
+      if (s.phase === "playing" && dash && s.slashAge !== dashBurstAt) {
+        const launch = s.slashAge === DASH.windup, brake = s.slashAge === DASH.windup + DASH.active;
+        if (launch || brake) {
+          dashBurstAt = s.slashAge;
+          const src = brake ? dash.lead : dash.trail, p = world.player.position;
+          for (const b of dashBurst(dash, brake ? "brake" : "launch")) {
+            const n = Math.hypot(b.dx, b.dy) || 1;
+            dashDust.push({brake,x:p.x+src.x*R*.92,y:p.y+src.y*R*.92,vx:b.dx/n*b.speed,vy:b.dy/n*b.speed,
+              life:brake?9+rand()*5:15+rand()*8,age:0,len:brake?.22+rand()*.3:.07+rand()*.1,hot:b.hot});
+          }
+          if (dashDust.length > 90) dashDust.splice(0, dashDust.length - 90);
+        }
+      }
+    }
     ghosts.tick(1 / 60);
     const activeDash = s.phase === "playing" && s.slashAge >= DASH.windup && s.slashAge < DASH.windup + DASH.active;
     if (motion && activeDash && !world.grounded) {
@@ -6607,7 +6855,8 @@ function createRenderer(c, viewport) {
     const target = near ? 0.3 : 0.78, step = 0.84 / 6.2 * Math.max(frameDt, 1e-4);
     mapOpacity += Math.sign(target - mapOpacity) * Math.min(Math.abs(target - mapOpacity), step);
     const landing=state.wave?.phase==='return'&&state.wave.platform?{x:state.wave.platform.x+state.wave.platform.w/2,y:state.wave.platform.y}:null;
-    const radar = localRadar(v, p, rect, combat.enemies.values(), state.questPortal||state.wave?.breach||landing);
+    const level=sensorTier(state.equipment?.radar,"radar"),range=[1,1.35,1.7,2.2][level];
+    const radar = localRadar(v, p, rect, combat.enemies.values(), state.questPortal||state.wave?.breach||landing,{range});
     c2.save();
     c2.globalAlpha = mapOpacity;
     c2.fillStyle = "#07050d";
@@ -6615,10 +6864,19 @@ function createRenderer(c, viewport) {
     c2.strokeStyle = "#917ba9";
     c2.lineWidth = 1;
     c2.strokeRect(rect.x + 0.5, rect.y + 0.5, box - 1, box - 1);
-    c2.globalAlpha = 0.92;
+    c2.globalAlpha = mapOpacity * 0.92;
     c2.beginPath();
     c2.rect(rect.x + 2, rect.y + 2, box - 4, box - 4);
     c2.clip();
+    if(level){
+      c2.save();c2.strokeStyle='#72c9bc';c2.lineWidth=1;c2.globalAlpha=mapOpacity*.48;
+      for(let i=1;i<=level;i++){const rr=box*(.12+i*.105);c2.beginPath();c2.arc(radar.player.x,radar.player.y,rr,Math.PI,TAU);c2.stroke();}
+      // A small instrument bezel, entirely within the existing radar bounds.
+      c2.strokeStyle='#a2e7d2';c2.globalAlpha=mapOpacity*.7;c2.beginPath();c2.moveTo(rect.x+7,rect.y+20);c2.lineTo(rect.x+box-7,rect.y+20);c2.moveTo(rect.x+7,rect.y+box-7);c2.lineTo(rect.x+18,rect.y+box-7);c2.moveTo(rect.x+box-18,rect.y+box-7);c2.lineTo(rect.x+box-7,rect.y+box-7);c2.stroke();
+      c2.fillStyle='#c3f4da';c2.font='bold 7px monospace';c2.textAlign='left';c2.textBaseline='top';c2.fillText(`SCAN / 0${level}`,rect.x+8,rect.y+7);
+      for(let i=0;i<3;i++){c2.fillStyle=i<level?'#d5fba6':'#4b6260';c2.fillRect(rect.x+box-27+i*6,rect.y+9,4,3);}
+      c2.restore();
+    }
     const footprint = radar.viewport;
     c2.fillStyle = "#b6a2db18";
     c2.fillRect(footprint.x, footprint.y, footprint.w, footprint.h);
@@ -6641,7 +6899,9 @@ function createRenderer(c, viewport) {
       } else c2.arc(blip.x, blip.y, blip.r, 0, TAU);
       if (blip.onScreen) c2.fill();
       else c2.stroke();
+      if(level>=3&&blip.mode==='tell'){c2.strokeStyle='#ffb491';c2.setLineDash([2,2]);c2.beginPath();c2.arc(blip.x,blip.y,blip.r+4,0,TAU);c2.stroke();c2.setLineDash([]);}
     }
+    if(level>=2){for(const h of (combat.hazards||[]).slice(0,24)){if(h.spent||!Number.isFinite(h.x)||!Number.isFinite(h.y))continue;const q=radar.project(h,3);if(q.outside)continue;c2.strokeStyle='#ffb080';c2.lineWidth=1.3;c2.beginPath();if(h.kind==='ring'||h.kind==='zone')c2.arc(q.x,q.y,4,0,TAU);else{c2.moveTo(q.x,q.y-4);c2.lineTo(q.x+4,q.y+3);c2.lineTo(q.x-4,q.y+3);c2.closePath();}c2.stroke();}}
     if (radar.portal) {
       const q2 = radar.portal;
       c2.save();
@@ -6661,6 +6921,7 @@ function createRenderer(c, viewport) {
       }
     }
     const q = radar.player, speed = Math.hypot(world.player.velocity.x, world.player.velocity.y);
+    if(level>=3&&speed>.5){c2.strokeStyle='#c9ffb9';c2.globalAlpha=mapOpacity*.8;c2.beginPath();c2.moveTo(q.x,q.y);c2.lineTo(q.x+world.player.velocity.x/speed*18,q.y+world.player.velocity.y/speed*18);c2.stroke();}
     c2.fillStyle = "#deff52";
     c2.strokeStyle = "#07050d";
     c2.lineWidth = 2;
@@ -6680,10 +6941,61 @@ function createRenderer(c, viewport) {
     }
     c2.restore();
   }
+  function narrativeBackdrop(n, width, height, time, motion) {
+    if (!n) return;
+    const clock=motion?time:0, sector=n.sector;
+    c.save();
+    if(n.intro){
+      const q=Math.min(1,n.introAge/55);c.fillStyle=`rgba(8,7,20,${.12+q*.34})`;c.fillRect(0,0,width,height);
+    } else {
+      c.fillStyle=sector>=4?'rgba(221,137,83,.16)':sector===3?'rgba(34,99,102,.14)':sector===2?'rgba(123,48,38,.13)':'rgba(16,13,28,.20)';c.fillRect(0,0,width,height);
+      if(sector===1){
+        c.strokeStyle='#a89b9a44';c.lineWidth=2;for(const x of [width*.09,width*.89])for(let y=0;y<height*.48;y+=14){c.beginPath();c.ellipse(x,y,4,7,0,0,Math.PI*2);c.stroke();}
+      } else if(sector===2){
+        for(const [x,y,r] of [[width*.14,height*.27,54],[width*.82,height*.39,36]]){
+          c.save();c.translate(x,y);c.rotate(clock*.008);c.strokeStyle='#ba8b7955';c.lineWidth=7;c.beginPath();c.arc(0,0,r,0,Math.PI*2);c.stroke();for(let j=0;j<8;j++){c.rotate(Math.PI/4);c.beginPath();c.moveTo(r-5,0);c.lineTo(r+13,0);c.stroke();}c.restore();
+        }
+        c.strokeStyle='#ac8b7866';c.lineWidth=4;c.beginPath();c.moveTo(width*.6,0);c.lineTo(width*.6,height*.2);c.lineTo(width*.77,height*.2);c.lineTo(width*.77,height*.31);c.stroke();
+        // Silhouettes in the distant machine are forge markings, not live targets.
+        c.save();c.translate(width*.45,height*.25);c.globalAlpha=.3;c.strokeStyle='#f0a37d';c.fillStyle='#6f3a39';c.lineWidth=3;c.strokeRect(-52,-35,104,70);c.beginPath();c.moveTo(-36,-12);c.lineTo(-16,-12);c.lineTo(-26,10);c.closePath();c.fill();c.stroke();c.beginPath();c.moveTo(24,-16);c.lineTo(39,0);c.lineTo(24,16);c.lineTo(9,0);c.closePath();c.stroke();c.restore();
+      } else if(sector===3){
+        for(let i=0;i<3;i++){const on=i<n.conduits;c.strokeStyle=on?'#a4f6c770':'#64615f55';c.lineWidth=3;c.beginPath();c.moveTo(i*width*.3,0);c.lineTo(i*width*.3,height*.34);c.lineTo(i*width*.3+width*.12,height*.46);c.stroke();if(!on&&motion&&n.sparkAge>0){c.fillStyle='#ffe79a';c.globalAlpha=.3+.4*Math.abs(Math.sin(clock*.14+i));c.fillRect(i*width*.3+width*.12,height*.46,4,4);c.globalAlpha=1;}}
+      } else if(sector>=4){for(let i=0;i<22;i++){c.fillStyle=i%4?'#ffe8b466':'#fff6d3aa';c.fillRect((i*179+23)%width,(i*79+31)%(height*.55),i%4?2:3,i%4?2:3);}}
+    }
+    // A small independent story silhouette never intercepts input or pauses play.
+    if(n.intro||n.reaction){
+      const reaction=n.reaction,age=reaction?.age||0,split=reaction?.kind==='split',alarm=reaction?.kind==='alarm';
+      const scale=Math.min(width,height)*.00075, x=width*.78,y=height*.15+(n.intro?(motion?Math.min(1,n.introAge/40):1)*height*.07:0);
+      c.translate(x,y);c.scale(scale,scale);if(alarm){c.globalAlpha=.25;c.fillStyle='#fb3650';c.beginPath();c.arc(0,0,105,0,Math.PI*2);c.fill();c.globalAlpha=1;}
+      for(const side of [-1,1]){c.save();if(split)c.translate(side<0?0:(motion?age*2:40),side<0?(motion?age*1.2:24):(motion?-age:0));c.fillStyle='#171323';c.strokeStyle=alarm?'#ff5368':'#e1b85e';c.lineWidth=7;c.beginPath();c.moveTo(side*4,54);c.lineTo(side*90,54);c.lineTo(side*92,-55);c.lineTo(side*62,-30);c.lineTo(side*35,-91);c.lineTo(side*4,-46);c.closePath();c.fill();c.stroke();c.fillStyle=alarm?'#ffdbcb':'#dff58c';c.fillRect(side<0?-69:24,-7,45,9);c.restore();}
+    }
+    c.restore();
+  }
+  function narrativeWorld(n, scale, time, motion){
+    if(!n)return;c.save();c.lineWidth=3/scale;
+    if(n.intro&&n.fracture){const q=n.fracture;c.translate(q.x,q.y);c.strokeStyle='#332c3b';c.lineWidth=13;c.beginPath();c.moveTo(-760,0);c.lineTo(760,0);c.stroke();c.strokeStyle='#ddff89';c.lineWidth=3;c.beginPath();c.moveTo(-65,-20);c.lineTo(-23,-9);c.lineTo(-8,-22);c.lineTo(7,12);c.lineTo(24,1);c.lineTo(65,18);c.stroke();c.restore();return;}
+    const seal=n.seal;if(!seal){c.restore();return;}
+    c.strokeStyle=seal.ready?'#e6ff70':'#8b617b';c.lineWidth=seal.ready?9:6;c.beginPath();c.moveTo(seal.x-seal.w/2,seal.y);c.lineTo(seal.x+seal.w/2,seal.y);c.stroke();
+    c.strokeStyle=seal.ready?'#fff7b0':'#403245';c.lineWidth=2;c.beginPath();c.moveTo(seal.x-seal.w/2,seal.y-6);c.lineTo(seal.x+seal.w/2,seal.y-6);c.stroke();
+    for(const lock of n.locks){
+      c.save();c.translate(lock.x,lock.y);c.strokeStyle=lock.broken?'#544751':'#c0a6a8';c.lineWidth=3;c.beginPath();c.moveTo(0,-34);c.lineTo(0,seal.y-lock.y);c.stroke();
+      if(lock.broken){c.strokeStyle='#e7e7a0';c.beginPath();c.moveTo(-24,-8);c.lineTo(-8,4);c.moveTo(8,-4);c.lineTo(25,8);c.stroke();}
+      else{c.rotate(Math.PI/4);c.fillStyle='#352634';c.strokeStyle='#e1b878';c.lineWidth=4;c.fillRect(-25,-25,50,50);c.strokeRect(-25,-25,50,50);c.fillStyle='#f7df94';c.fillRect(-5,-5,10,10);}
+      c.restore();
+    }
+    c.restore();
+  }
+  function narrativeTrack(n,width,height){
+    if(!n||n.intro)return;const x=width-18,y=Math.max(95,height*.26),h=Math.min(180,height*.34);
+    c.save();c.strokeStyle='#80786f';c.lineWidth=2;c.beginPath();c.moveTo(x,y);c.lineTo(x,y+h);c.stroke();
+    for(let i=0;i<3;i++){c.fillStyle=n.locks[i]?.broken?'#e6ff78':'#64515d';c.beginPath();c.arc(x,y+h-(i+1)*h/4,4,0,Math.PI*2);c.fill();}
+    c.fillStyle=n.seal?.ready?'#efff8f':'#9b7a81';c.beginPath();c.moveTo(x,y-7);c.lineTo(x+5,y);c.lineTo(x,y+7);c.lineTo(x-5,y);c.closePath();c.fill();c.restore();
+  }
   function draw(run, alpha, aim, motion, device = "mouse") {
     transform();
     const { world, state: s, combat } = run, v = lastView = camera.view(alpha), p = bodyPose(world.player, alpha), nearest = run.nearest(), time = mix(world.previousClock, world.clock, alpha);
-    const dash = dashFor(s.slashAge, world.player.velocity.x, world.player.velocity.y);
+    const animationAge = age => age > 0 ? age - 1 + Math.max(0, Math.min(1, alpha)) : age;
+    const dash = dashFor(animationAge(s.slashAge), world.player.velocity.x, world.player.velocity.y);
     if (dash && dash.phase !== "windup") {
       if (dashTravel.age === null || s.slashAge < dashTravel.age)
         dashTravel = { age: 0, x: p.x, y: p.y, along: 0 };
@@ -6715,6 +7027,23 @@ function createRenderer(c, viewport) {
     if (s.opening) back.bench(v);
     else if (["tokyo", "foundry", "manga", "synth", "void"].includes(s.equipment?.world)) drawEquipmentWorld(c, w, h, s.equipment.world, motion ? time : 0,{x:v.panX*v.scale,y:v.panY*v.scale,scale:v.scale});
     else back.world(v, s.seed, s.band,motion?time:0);
+    narrativeBackdrop(s.narrative,w,h,time,motion);
+    narrativeTrack(s.narrative,w,h);
+    if(s.narrative&&!s.narrative.intro&&s.narrative.seal){
+      const n=s.narrative,live=n.locks.filter(lock=>!lock.broken),q=live.length?live.reduce((best,lock)=>Math.hypot(lock.x-p.x,lock.y-p.y)<Math.hypot(best.x-p.x,best.y-p.y)?lock:best,live[0]):n.seal;
+      const sx=(q.x-v.x)*v.scale,sy=(q.y-v.y)*v.scale;
+      if(sx<35||sx>w-35||sy<70||sy>h-35){const dx=sx-w/2,dy=sy-h/2,k=Math.min((w/2-30)/Math.max(1,Math.abs(dx)),(h/2-70)/Math.max(1,Math.abs(dy)));c.save();c.translate(w/2+dx*k,h/2+dy*k);c.rotate(Math.atan2(dy,dx));c.fillStyle=n.seal.ready?'#e6ff78':'#dfb977';c.globalAlpha=.8;c.beginPath();c.moveTo(11,0);c.lineTo(-7,-6);c.lineTo(-3,0);c.lineTo(-7,6);c.closePath();c.fill();c.restore();}
+    }
+    if(s.visualTutorial){
+      if(s.visualTutorial.guide?.kind!=='dodge')drawTutorialGuidance(c,v,s.visualTutorial,p,motion,device);
+      // A quiet edge chevron points toward the real rail or unlocked exit when
+      // it lies beyond the camera, without adding another HUD panel.
+      const lesson=s.visualTutorial,q=!['watch','dodge','resolve','wait-next'].includes(lesson.guide?.kind)?lesson.guide:null;
+      if(q){const sx=(q.x-v.x)*v.scale,sy=(q.y-v.y)*v.scale;if(sx<26||sx>w-26||sy<35||sy>h-26){
+        const dx=sx-w/2,dy=sy-h/2,k=Math.min((w/2-28)/Math.max(1,Math.abs(dx)),(h/2-42)/Math.max(1,Math.abs(dy)));
+        c.save();c.translate(w/2+dx*k,h/2+dy*k);c.rotate(Math.atan2(dy,dx));c.globalAlpha=.72;c.fillStyle='#d9ff83';c.beginPath();c.moveTo(12,0);c.lineTo(-7,-7);c.lineTo(-3,0);c.lineTo(-7,7);c.closePath();c.fill();c.restore();
+      }}
+    }
     if (s.held || s.panicTicks > 0 && s.phase === "playing") {
       const g = c.createRadialGradient(w / 2, h * 0.52, Math.min(w, h) * 0.16, w / 2, h * 0.52, Math.max(w, h) * 0.7);
       g.addColorStop(0, "rgba(10,8,18,0)");
@@ -6727,7 +7056,7 @@ function createRenderer(c, viewport) {
     }
     c.save();
     const shakeScale = shakeLevel === "off" ? 0 : shakeLevel === "low" ? 0.34 : 1, shakeX = motion && shakeScale ? shake.x * shakeScale : 0, shakeY = motion && shakeScale ? shake.y * shakeScale : 0, shakeRoll = motion && shakeScale && shakeLevel === "full" ? shake.rollDeg : 0;
-    clipWorldToHUD(c, w, h, hudTop(), hudGutter());
+    if(!s.visualTutorial)clipWorldToHUD(c, w, h, hudTop(), hudGutter());
     if (shakeX || shakeY) c.translate(shakeX, shakeY);
     if (shakeRoll) {
       c.translate(w / 2, h / 2);
@@ -6736,11 +7065,13 @@ function createRenderer(c, viewport) {
     }
     c.scale(v.scale, v.scale);
     c.translate(-v.x, -v.y);
-    if(s.dimension)drawDimensionField(c,s.dimension,v,motion,{separation:shakeLevel!=='off'});
+    if(s.visualTutorial)drawTutorialScene(c,s.visualTutorial,combat,p,v.scale,motion,time);
+    if(s.narrative)narrativeWorld(s.narrative,v.scale,time,motion);
+    if(s.dimension&&!s.visualTutorial)drawDimensionField(c,s.dimension,v,motion,{separation:shakeLevel!=='off'});
     if(motion&&shakeLevel!=='off')for(const hit of contactBursts.slice(-3))drawHitRegistration(c,hit,18-hit.life,motion);
     if(s.wave?.shatterTrace&&!s.wave.shatterFx)drawSettledSeam(c,s.wave.shatterTrace,s.equipment);
     if(s.wave?.breach||s.wave?.shatterFx)drawDimensionBreach(c,s.wave.breach,s.dimension,motion,s.wave.shatterFx,s.equipment);
-    if (!s.wave?.spawnPadGone && inView(v, SPAWN, 140)) pad(c);
+    if (!s.wave?.spawnPadGone && inView(v, s.visualTutorial?{x:-400,y:0}:SPAWN, 140)){if(s.visualTutorial){c.save();c.translate(-400,0);pad(c);c.restore();}else pad(c);}
     if(s.wave?.platform){
       const q=s.wave.platform;
       if(s.wave.shattered)drawPlatformSettlement(c,q,{age:s.wave.restAge||0,motion});
@@ -6842,7 +7173,7 @@ function createRenderer(c, viewport) {
     if (motion) speedField(c, world, v, time, run.state);
     if (motion && s.phase === "playing") {
       // Element shapes replace the generic ribbon during a launch; no stacking.
-      if(s.slashAge>=0&&s.slashAge<=20)drawElementalDash(c,{x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,age:s.slashAge,element:dashElement(s.equipment,s.sword),equipment:s.equipment,sword:s.sword,buff:s.waveBuff,radius:R,motion});
+      if(s.slashAge>=0&&s.slashAge<=20)drawElementalDash(c,{x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,age:animationAge(s.slashAge),element:dashElement(s.equipment,s.sword),equipment:s.equipment,sword:s.sword,buff:s.waveBuff,radius:R,motion});
       else streak(c, trail, p, s.blade > 0);
     }
     if (motion && s.impact && s.impact.source!=='cut'&&s.impact.source!=='bank') {
@@ -6944,7 +7275,7 @@ function createRenderer(c, viewport) {
       c.restore();
     }
     for (const e of combat.enemies.values())
-      if (inView(v, e, 870)) warnings(c, e, { ...pose(e, alpha), r: e.r }, time,v.scale);
+      if (inView(v, e, 870)) drawEnemyWarning(c, e, { ...pose(e, alpha), r: e.r }, time,v.scale,motion,world.arena);
     for (const l of combat.links) {
       const a = pose(l.a, alpha), b = pose(l.b, alpha);
       c.save();
@@ -6978,7 +7309,7 @@ function createRenderer(c, viewport) {
       c.stroke();
       c.restore();
     }
-    for (const m of pops) {
+    for (const m of (s.visualTutorial?[]:pops)) {
       const u = 1 - m.life / 40, rise = motion ? u * 26 : 0;
       const beat = m.beat ? 1 + 0.18 * m.beat : 1;
       c.save();
@@ -7025,7 +7356,7 @@ function createRenderer(c, viewport) {
       }
       c.restore();
     }
-    if (aim?.power || s.story && s.opening?.rest && s.edge > 0 && !s.opening.finishing) {
+    if ((aim?.power && !s.visualTutorial) || (aim?.power && !aim.anchor) || s.story && s.opening?.rest && s.edge > 0 && !s.opening.finishing) {
       const shot = drawArc(
         c,
         run,
@@ -7085,13 +7416,17 @@ function createRenderer(c, viewport) {
         // two frames, which on a moving target reads as a stutter.
         flash: e.flash > 0 ? fade("flash", ANIM.flash.life - e.flash)*(reaction?.55:1) : 0,
         fault: e.fault,
-        time
+        mode:e.mode,clock:e.clock,span:e.span,aim:e.aim,
+        active:e.mode==='rush'||combat.hazards.some(h=>!h.spent&&h.sourceId===e.id),
+        time:motion?time:0
       });c.restore();
       if (s.equipment?.world === "manga") c.restore();
     }
     for (const a of combat.hazards) {
       const x = mix(a.px, a.x, alpha), y = mix(a.py, a.y, alpha);
-      if (a.kind === "ring") {
+      if (a.kind === "zone") {
+        drawEnemyZone(c,a.zone,true,v.scale);
+      } else if (a.kind === "ring") {
         c.save();
         c.globalAlpha = a.spent ? 0.26 : 1;
         arc(c, "#b93863", 6, x, y, mix(a.previousRadius, a.radius, alpha));
@@ -7101,18 +7436,18 @@ function createRenderer(c, viewport) {
         c.save();
         c.translate(x, y);
         c.rotate(a.angle);
+        // Keep the projectile legible at phone zoom without changing collision.
+        const markerScale=Math.min(1.8,Math.max(1,.85/v.scale));
+        c.scale(markerScale,markerScale);
         poly2(
           c,
-          "#ffa6ce",
-          [
-            [10, 0],
-            [-9, -4],
-            [-18, 0],
-            [-9, 4]
-          ],
+          a.source === "crown" ? "#ffc27f" : "#d5adff",
+          a.source === "crown" ? [[10,0],[-5,-6],[-3,-2],[-17,-5],[-12,0],[-17,5],[-3,2],[-5,6]]
+            : [[10,0],[-9,-4],[-18,0],[-9,4]],
           INK.black,
-          1.8
+          Math.max(1.8,1.4/v.scale/markerScale)
         );
+        line(c,'#fff7ef',Math.max(1.5,1.6/v.scale/markerScale),-8,0,7,0);
         c.restore();
       }
     }
@@ -7168,42 +7503,7 @@ function createRenderer(c, viewport) {
           s.opening?.reach ?? s.reach
         );
       }
-      if (motion && dash && s.slashAge !== dashBurstAt) {
-        const launch = s.slashAge === DASH.windup, brake = s.slashAge === DASH.windup + DASH.active;
-        if (launch || brake) {
-          dashBurstAt = s.slashAge;
-          const src = brake ? dash.lead : dash.trail;
-          for (const b of dashBurst(dash, brake ? "brake" : "launch")) {
-            const n = Math.hypot(b.dx, b.dy) || 1;
-            dashDust.push({
-              brake,
-              x: p.x + src.x * R * 0.92,
-              y: p.y + src.y * R * 0.92,
-              vx: b.dx / n * b.speed,
-              vy: b.dy / n * b.speed,
-              // Sparks die fast and shoot far; dust hangs and drifts.
-              life: brake ? 9 + rand() * 5 : 15 + rand() * 8,
-              age: 0,
-              // Streak length as a fraction of R. Sparks are long, dust is grit.
-              len: brake ? 0.22 + rand() * 0.3 : 0.07 + rand() * 0.1,
-              hot: b.hot
-            });
-          }
-          if (dashDust.length > 90) dashDust.splice(0, dashDust.length - 90);
-        }
-      }
-      if (dashDust.length) {
-        if (motion)
-          for (let i = dashDust.length - 1; i >= 0; i--) {
-            const d = dashDust[i];
-            d.age++;
-            d.x += d.vx;
-            d.y += d.vy;
-            const drag = d.brake ? 0.84 : 0.92;
-            d.vx *= drag;
-            d.vy *= drag;
-            if (d.age >= d.life) dashDust.splice(i, 1);
-          }
+      if (motion && dashDust.length) {
         for (const d of dashDust) {
           const u = d.age / d.life, a = (1 - u) * (1 - u);
           if (a < 0.02) continue;
@@ -7215,6 +7515,8 @@ function createRenderer(c, viewport) {
         }
         c.globalAlpha = 1;
       }
+      if (s.phase === "playing" && !s.splat)
+        drawCubeDashSmear(c,{x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,age:animationAge(s.slashAge),radius:R,equipment:s.equipment,motion});
       c.save();
       if (s.invul > 0 && motion) c.globalAlpha = 0.86 + 0.14 * Math.abs(Math.sin(s.invul * 0.12));
       c.translate(p.x, p.y);
@@ -7235,14 +7537,14 @@ function createRenderer(c, viewport) {
       const poseAnim = cubePose({
         vx: world.player.velocity.x,
         vy: world.player.velocity.y,
-        slashAge: s.slashAge,
+        slashAge: animationAge(s.slashAge),
         fallAge: s.fallAge,
-        landAge: s.landAge,
+        landAge: animationAge(s.landAge),
         hold: holdDir,
         facing
       });
-      if (poseAnim.move.moving) holdDir = poseAnim.move.index;
-      const splat = splatFor(s.splat ? s.splat.age : -1, s.splat && { x: s.splat.nx, y: s.splat.ny });
+      if (poseAnim.move.speed >= 6) holdDir = poseAnim.move.index;
+      const splat = splatFor(s.splat ? animationAge(s.splat.age) : -1, s.splat && { x: s.splat.nx, y: s.splat.ny });
       const dWide = (poseAnim.wide ?? 1) * (splat ? splat.sx : dash ? dash.sx : 1);
       const dTall = (poseAnim.tall ?? 1) * (splat ? splat.sy : dash ? dash.sy : 1);
       if (dWide !== 1 || dTall !== 1) c.scale(dWide, dTall);
@@ -7333,7 +7635,7 @@ function createRenderer(c, viewport) {
       }
       {
         const speed = s.railSettle ? 0 : s.moved ?? Math.hypot(world.player.velocity.x, world.player.velocity.y), g = ghostFor(speed, MAX_SPEED);
-        if (motion && g.count && s.slashAge >= DASH.windup && s.slashAge < DASH.windup + DASH.active + 6) {
+        if (motion && dash?.phase !== "active" && g.count && s.slashAge >= DASH.windup && s.slashAge < DASH.windup + DASH.active + 6) {
           c.save();
           let n = 0;
           ghosts.each((gx, gy, ga, gf, age) => {
@@ -7369,7 +7671,7 @@ function createRenderer(c, viewport) {
           c.restore();
         }
       }
-      if (motion && !world.grounded) {
+      if (motion && !world.grounded && dash?.phase !== "active") {
         const vx = world.player.velocity.x, vy = world.player.velocity.y, speed = Math.hypot(vx, vy), smear = stretchFor(speed, MAX_SPEED, s.hyper ? HYPER_SPEED : MAX_SPEED).blur;
         if (smear > 1) {
           const along = Math.atan2(vy, vx), steps = smear > 12 ? 3 : 2;
@@ -7415,7 +7717,7 @@ function createRenderer(c, viewport) {
       let look = null;
       if (dash) look = [dash.core.x, dash.core.y];
       if (splat) look = [splat.core.x, splat.core.y];
-      else if (nearest) {
+      else if (!dash && nearest) {
         const dx = nearest.x - p.x, dy = nearest.y - p.y, d = Math.hypot(dx, dy) || 1;
         if (d < 900) {
           const ca = Math.cos(-p.angle), sa = Math.sin(-p.angle);
@@ -7425,12 +7727,12 @@ function createRenderer(c, viewport) {
           ];
         }
       }
-      if (dash) {
+      if (motion && dash && !s.splat) {
         for (const g of ghostsFor(dash, dashTravel.along)) {
           c.save();
           c.translate(g.x * R, g.y * R);
           c.scale(g.scale, g.scale);
-          c.globalAlpha = g.alpha;
+          c.globalAlpha = g.alpha * 0.28;
           c.fillStyle = INK.paper;
           c.beginPath();
           c.moveTo(-R * 0.96, -R);
@@ -7517,7 +7819,7 @@ function createRenderer(c, viewport) {
       const boundedBody = bodyBase && Number.isFinite(bodyBase.a) && !splat;
       if (boundedBody) {
         c.setTransform(bodyBase.a, bodyBase.b, bodyBase.c, bodyBase.d, bodyBase.e, bodyBase.f);
-        const age = s.slashAge;
+        const age = animationAge(s.slashAge);
         const settle = age >= 7 ? Math.max(0, 1 - (age - 7) / 5) : 1;
         const bx = dash ? 1 + (dash.sx - 1) * settle : 1;
         const by = dash ? 1 + (dash.sy - 1) * settle : 1;
@@ -7617,7 +7919,7 @@ function createRenderer(c, viewport) {
         for (let i = 0; i < 5; i++) disk(c, corePalette(s.equipment.core).primary, p.x - 20 - i * 8, p.y + 15 + Math.sin(time * 0.2 + i) * 12, 2);
       }
       if (s.equipment?.slash && s.equipment.slash !== "razor" && s.blade > 0) drawEquipmentSlash(c, p.x - Math.cos(s.slashAngle) * 45, p.y - Math.sin(s.slashAngle) * 45, p.x + Math.cos(s.slashAngle) * 80, p.y + Math.sin(s.slashAngle) * 80, s.equipment.slash, Math.min(1, s.blade / 12),{progress:1-Math.min(1,s.blade/12),time,equipment:s.equipment,reducedMotion:!motion});
-      if (!s.sword && motion && s.slashAge >= 0) slashArc(c, p.x, p.y, R, s.slashAge, s.slashAngle, 1 / v.scale,s.equipment);
+      if (!s.sword && motion && s.slashAge >= 0) slashArc(c, p.x, p.y, R, animationAge(s.slashAge), s.slashAngle, 1 / v.scale,s.equipment);
       if (s.held || aim?.power) {
         const val = s.held ? s.focus : aim.power;
         arc(
@@ -7679,12 +7981,18 @@ function createRenderer(c, viewport) {
       c.globalAlpha = 1;
       c.restore();
     }
+    // Attack-specific hit marks stay on top of the cube and enemy silhouettes.
+    for(const impact of contactBursts)if(impact.attack){
+      const age=(impact.type==='break'?27:18)-impact.life;
+      drawEnemyAttackImpact(c,{...impact,age,motion,scale:v.scale});
+    }
     c.restore();
+    if(s.visualTutorial?.guide?.kind==='dodge')drawTutorialGuidance(c,v,s.visualTutorial,p,motion,device);
     {
-      const ux = 1 / v.scale, sp = toScreen(v, p);
-      if (!s.opening?.free && s.phase !== "ready")
+      const ux = s.visualTutorial ? 1 : 1 / v.scale, sp = toScreen(v, p);
+      if (!s.opening?.free && (s.phase !== "ready" || s.visualTutorial))
         for (let i = 0; i < 3; i++) {
-          const x = sp.x + (i - 1) * 9 * ux, y = sp.y + (R * Math.SQRT2 + 9) * ux;
+          const x = sp.x + (i - 1) * 9 * ux, y = s.visualTutorial ? sp.y + R * Math.SQRT2 * v.scale + 8 : sp.y + (R * Math.SQRT2 + 9) * ux;
           c.fillStyle = INK.black;
           c.fillRect(x - 4.6 * ux, y - ux, 9.2 * ux, 6 * ux);
           c.fillStyle = i < s.edge ? INK.acid : "#766978";
@@ -7695,7 +8003,7 @@ function createRenderer(c, viewport) {
           }
         }
     }
-    if ((s.phase === "playing" || s.caught) && !s.opening?.finishing) pointer(c, v, p, nearest);
+    if (!s.visualTutorial && (s.phase === "playing" || s.caught) && !s.opening?.finishing) pointer(c, v, p, nearest);
     if (s.warning > 0 && s.phase === "playing") {
       c.save();
       const base = h - 20, k = clamp(s.warning, 0, 1), gap = 46 - 30 * k, len = 5 + 9 * k;
@@ -7746,7 +8054,14 @@ function createRenderer(c, viewport) {
       c.restore();
       c.restore();
     }
-    if (scene) drawStory(c, { v, p, e: nearest && { ...pose(nearest, alpha), r: nearest.r }, shot: run.suggestion(), scene, device, age: sceneTicks + alpha, motion, aim: !!aim?.power });
+    if(!s.opening&&!s.visualTutorial){c.save();c.setTransform(viewport.width/w,0,0,viewport.height/h,0,0);for(const item of enemyThreatIndicators(v,combat)){const q=overlayPoint(v.width,v.height,item,{radius:16,top:hudTop(),gutter:hudGutter()});c.save();c.translate(q.x,q.y);c.rotate(item.angle);c.fillStyle="#ffb7a7";c.beginPath();c.moveTo(10,0);c.lineTo(-7,-6);c.lineTo(-7,6);c.closePath();c.fill();c.restore();}drawPlayerDamageReceipt(c,v,p,s);c.restore();}
+    if (scene && !s.visualTutorial) drawStory(c, { v, p, e: nearest && { ...pose(nearest, alpha), r: nearest.r }, shot: run.suggestion(), scene, device, age: sceneTicks + alpha, motion, aim: !!aim?.power });
+    if(s.visualTutorial?.stage===4 && s.visualTutorial.finishDelay>0){
+      const age=42-s.visualTutorial.finishDelay, fade=Math.max(0,1-age/32);
+      c.save();c.setTransform(viewport.width/w,0,0,viewport.height/h,0,0);
+      c.globalAlpha=motion?fade*.9:Math.min(.5,fade*.7);c.strokeStyle='#fff';c.lineCap='round';c.lineWidth=Math.max(4,Math.min(w,h)*(motion?.045:.018));
+      c.beginPath();c.moveTo(-w*.08,h*.88);c.lineTo(w*1.08,h*.1);c.stroke();c.restore();
+    }
     if (stain > 0) {
       c.save();
       c.globalAlpha = stain * 0.7;
@@ -7780,7 +8095,7 @@ function createRenderer(c, viewport) {
       c.save();c.setTransform(viewport.width / w,0,0,viewport.height / h,0,0);
       const darkness=Math.min(.28,(27-s.death)/90);c.fillStyle=`rgba(16,11,20,${Math.max(0,darkness)})`;c.fillRect(0,0,w,h);c.restore();
     }
-    if (!s.opening) {
+    if (!s.opening && !s.teachingArena) {
       c.save();
       minimap(c, world, combat, v, s, motion);
       c.restore();
@@ -7797,6 +8112,7 @@ function createRenderer(c, viewport) {
     viewSnapshot: () => ({ ...camera.view(1), hudTop: hudTop(), hudGutter: hudGutter() }),
     // OFF / LOW / FULL. Pulled from options rather than passed every frame so
     // a mid-run change takes effect on the very next frame.
+    setTrainingScale(value) {camera.setTrainingScale(value);lastView=camera.view(1);},
     setShakeLevel(level) {
       shakeLevel = level === "off" || level === "low" ? level : "full";
     },
@@ -7852,14 +8168,14 @@ __export(catalog_exports, {
   ITEMS: () => ITEMS,
   SLOTS: () => SLOTS
 });
-var SLOTS = Object.freeze(["head", "eyes", "body", "core", "tail", "slash", "world"]);
+var SLOTS = Object.freeze(["head", "eyes", "body", "core", "tail", "slash", "dash", "pointer", "radar", "trajectory", "world"]);
 var item = (id, slot, name, price, tag, detail) => Object.freeze({ id, slot, name, price, tag, detail });
 var ITEMS = Object.freeze([
   item("none", "head", "Bare Head", 0, "Original Cut", "No headgear. Clean silhouette."),
   item("halo", "head", "Gold Halo", 250, "Focus Float", "While holding aim and falling, gravity is 15% lighter."),
   item("neko", "head", "Cyber Ears", 200, "Neon Paws", "Pink ears perk on launch. Cosmetic wall sparks."),
   item("viper", "head", "Viper Horns", 300, "Fast Narrow", "20% faster launch, 15% thinner cut. Blade lifetime scales down to preserve straight-line active reach; ballistic landing distance can change."),
-  item("oni", "head", "Broken Oni", null, "Last Hull", "Defeat a Crown on your last HULL to unlock. Last-HULL kills earn half again the score."),
+  item("oni", "head", "Broken Oni", null, "Last Health", "Defeat a Crown at 1 HEALTH to unlock. Kills at 1 HEALTH earn 50% more score."),
   item("ninja", "eyes", "Ninja Slits", 0, "Sharp Focus", "Classic expressive eyes."),
   item("visor", "eyes", "Cyber Visor", 200, "Scan Line", "Sweeping cyan visor. Appearance only."),
   item("blaze", "eyes", "SSJ Blaze", 150, "Golden Gaze", "Gold-white eyes with small light streaks while aiming. Appearance only."),
@@ -7869,7 +8185,7 @@ var ITEMS = Object.freeze([
   item("standard", "core", "Standard Heart", 0, "Balanced Build", "Balanced movement. Three EDGE bars."),
   item("time", "core", "Time Crystal", 400, "Focus Recovery", "Kills start a 120-tick window of twice-normal passive FOCUS recovery."),
   item("riot", "core", "Riot Reactor", 500, "Quick Overdrive", "Overdrive activates every four consecutive kills instead of six (1.5x faster). Maximum two EDGE bars."),
-  item("glass", "core", "Glass Cannon", null, "Double Score", "Challenge: reach SECTOR 05. Double score; maximum 1 HULL, including Crown repairs."),
+  item("glass", "core", "Glass Cannon", null, "Double Score", "Challenge: reach SECTOR 05. Double score; maximum 1 HEALTH, including Crown repairs."),
   item("ribbon", "tail", "Ninja Ribbon", 0, "Folded Cloth", "Yellow-green ribbon that follows your movement."),
   item("wings", "tail", "Prism Wings", 400, "Wall Recharge", "First side-wall contact per airborne streak restores one EDGE. Floor contact resets it."),
   item("ghost", "tail", "Ghost Scarf", 350, "Lingering Blade", "Twin spectral ribbons. Adds six simulation ticks to each launch blade; never repeats a hit on the same enemy in one shot."),
@@ -7882,13 +8198,13 @@ var ITEMS = Object.freeze([
   item("crown", "head", "Cube Crown", 600, "Armor Break", "Removes two Crown/Bastion plates per hit. Launch speed is 8% lower; no effect on Hyper steering."),
   item("samurai", "head", "Samurai Crest", 350, "Wide Horizontal", "Within 25 degrees of horizontal, cuts are 20% wider."),
   item("coil", "head", "Lightning Coil", 400, "Chain Spark", "A direct slice zaps one enemy within 160 pixels for one plate. Sparks cannot trigger more sparks."),
-  item("beacon", "head", "Danger Beacon", 250, "Early Warning", "Shows an amber threat bracket when a Fang begins winding its attack, before its laser fires."),
+  item("beacon", "head", "Danger Beacon", 250, "Early Warning", "Shows an amber threat bracket when a Fang begins winding up, before its charge."),
   item("glitch", "eyes", "Glitch X-Eyes", 250, "Signal Error", "Mismatched X and ring eyes with stepped cyan/pink color changes. No full-screen flashes."),
   item("smug", "eyes", "Smug Half-Lid", 150, "Cool Stare", "Half-lidded eyes open gold in Overdrive."),
   item("hypno", "eyes", "Hypno Spiral", 300, "Rift Gaze", "Twin animated purple spirals."),
   item("sniper", "eyes", "Sniper Dot", 250, "Single Sight", "One crimson sight inside a black band."),
   item("prism", "body", "Prism Shell", 550, "Wall Needles", "Faceted crystal. Side-wall contact launches two upward needles; each removes one Fang plate. 45-tick cooldown."),
-  item("iron", "body", "Bastion Iron", 450, "Bump Guard", "Blocks one Bastion body bump per run and pushes you clear. Arena walls already do no Hull damage."),
+  item("iron", "body", "Bastion Iron", 450, "Rush Guard", "Blocks one Fang rush per run and pushes you clear. Arena walls already do no health damage."),
   item("lava", "body", "Lava Cracked", 350, "Combo Heat", "Charcoal shell with magma seams that brighten as the chain grows."),
   item("gold", "body", "Gold Foil", 800, "Mirror Finish", "Polished gold facets and a white star glint while nearly still."),
   item("grav", "core", "Grav Core", 450, "Aim Pull", "While aiming, pulls small Fangs within 220 pixels gently toward the aim line. Maximum 0.35 pixels per simulation tick."),
@@ -7907,6 +8223,26 @@ var ITEMS = Object.freeze([
   item("chamfer","body","Chamfer Frame",280,"Cut Corners","Eight beveled corners and CORE-linked edge caps. Cosmetic profile only; hitbox and movement unchanged."),
   item("notched","body","Notched Frame",320,"Vented Shape","Inward-cut side vents repeat your CORE chevron. Cosmetic only; no collision or combat changes."),
   item("segmented","body","Segmented Frame",380,"Linked Plates","Layered side plates share CORE conduits and world rim light. Cosmetic only; no extra armor."),
+  item("dash-auto", "dash", "Adaptive Dash", 0, "Build Resonance", "Dash trails follow your equipment and sword. Cosmetic only."),
+  item("dash-ink", "dash", "Ink Dash", 150, "Brush Wake", "A sharp ink-brush wake. Cosmetic only; movement is unchanged."),
+  item("dash-fire", "dash", "Ember Dash", 250, "Flame Wake", "Layered flame ribbons trail your launch. Cosmetic only."),
+  item("dash-lightning", "dash", "Volt Dash", 300, "Electric Wake", "Angular electric streaks follow your launch. Cosmetic only."),
+  item("dash-ice", "dash", "Frost Dash", 300, "Crystal Wake", "Crystalline shards mark your launch. Cosmetic only."),
+  item("dash-water", "dash", "Tide Dash", 250, "Flowing Wake", "Sweeping water ribbons follow your launch. Cosmetic only."),
+  item("dash-void", "dash", "Void Dash", 350, "Orbital Wake", "Broken orbital rings trail your launch. Cosmetic only."),
+  item("dash-echo", "dash", "Echo Dash", 350, "Afterimage Wake", "Geometric afterimages trace your launch. Cosmetic only."),
+  item("pointer-reticle", "pointer", "Field Reticle", 0, "Clean Aim", "A segmented reticle marks the point where you press. Cosmetic only."),
+  item("pointer-diamond", "pointer", "Prism Pointer", 200, "Cut Crystal", "A faceted diamond marks your drag origin. Cosmetic only."),
+  item("pointer-orbit", "pointer", "Orbit Pointer", 250, "Twin Orbits", "Broken orbital arcs frame your drag origin. Cosmetic only."),
+  item("pointer-cross", "pointer", "Crosshair Pointer", 200, "Precision Mark", "Four precision brackets mark your drag origin. Cosmetic only."),
+  item("radar-base", "radar", "Field Radar", 0, "Local Scan", "The standard local radar tracks nearby enemies and objectives."),
+  item("radar-1", "radar", "Long-Range Array", 1200, "Range +35%", "See 35% farther on the radar. Existing enemy and objective markers remain visible."),
+  item("radar-2", "radar", "Threat Array", 3000, "Range +70%", "See 70% farther and mark nearby active projectiles and danger zones."),
+  item("radar-3", "radar", "Oracle Array", 6500, "Range +120%", "See 120% farther, active hazards and live enemy wind-ups, plus your current heading."),
+  item("trajectory-base", "trajectory", "Field Trajectory", 0, "Launch Preview", "A short calculated launch path appears while aiming. Stops at the first solid surface."),
+  item("trajectory-1", "trajectory", "Vector Lens", 1200, "Extended Path", "Shows more of the calculated launch path while aiming."),
+  item("trajectory-2", "trajectory", "Impact Lens", 3000, "Impact Markers", "A longer path adds time ticks and a first-impact marker for the current field snapshot."),
+  item("trajectory-3", "trajectory", "Oracle Lens", 6500, "Flight Analysis", "Shows the longest visible path, impact marker and live speed, angle and estimated time. Enemies can move; it does not predict bounces."),
   item("void", "world", "Pro Void", 1e3, "Clean Space", "Pitch-black background, restrained white boundary detail and sparse audio. Danger colors remain visible.")
 ]);
 
@@ -8379,6 +8715,7 @@ function drawSwordChamber(c,spec={}) {
   for(const e of enemies){drawEnemyShape(c,{kind:e.kind,x:e.x,y:e.y,radius:e.r,angle:e.angle,options:{hp:e.hp,flash:e.flash,mode:'idle'}});c.fillStyle='#e9dfec';c.font=`${16*labelScale}px monospace`;c.textAlign='center';c.fillText(`${e.hp} HP`,e.x,e.y+e.r+28);}
   for(const a of s.swordFx)drawSwordAttack(c,a,s.sword,!motion);
   drawElementalDash(c,{x:p.x,y:p.y,vx:p.vx||0,vy:p.vy||0,age:s.slashAge,element:dashElement(equipment,s.sword),equipment,sword:s.sword,buff:s.waveBuff,radius:24,motion});
+  if(!s.impact)drawCubeDashSmear(c,{x:p.x,y:p.y,vx:p.vx||0,vy:p.vy||0,age:s.slashAge,radius:24,equipment,motion});
   drawCubeHero(c,{x:p.x,y:p.y,radius:24,angle:0,equipment,motion:motion,time:age,face:1});
   drawSwordWeapon(c,{x:p.x,y:p.y,radius:24,angle:s.slashAngle,active:s.blade>0,sword:s.sword,reach:(s.reach||1)*s.sword.reach,charge:s.swordCharge,motion:motion,time:age});c.restore();
   }finally{c.restore();}
@@ -8390,6 +8727,7 @@ function drawPreviewScene(ctx, spec = {}) {
   ctx.save();
   try {
     drawLabScene(ctx, equipment, time, mode, scene, options);
+    if(options.pressOrigin)drawPointerMark(ctx,options.pressOrigin.x,options.pressOrigin.y,equipment,options.pressOrigin.power,options.pressOrigin.cancel);
     const f = options.fusionElapsed;
     if (options.motion !== false && f >= 0 && f < 260) {
       ctx.globalAlpha = (1 - f / 260) * 0.18;
@@ -8535,7 +8873,7 @@ export function drawWaveUpgradePreview(c,w,h,{equipment={},sword=null,buff=null,
  const px=contact?x+28:290-u*200;c.fillStyle='#f88fa5';if(!contact){c.beginPath();c.moveTo(px-10,y);c.lineTo(px+8,y-6);c.lineTo(px+8,y+6);c.closePath();c.fill();}
  if(contact&&boosted)drawWardFracture(c,{x:x+23,y,age:4+(u-.65)*30,equipment,sword,motion});
  const count=contact&&!boosted?2:3;for(let i=0;i<3;i++){c.fillStyle=i<count?'#dfedb0':'#4a4052';c.fillRect(18+i*13,y+32,9,4);}
- c.fillStyle=color;c.font='bold 12px monospace';c.fillText(contact?(boosted?'BLOCKED':'HULL −1'):'',220,y+7);
+ c.fillStyle=color;c.font='bold 12px monospace';c.fillText(contact?(boosted?'BLOCKED':'HEALTH −1'):'',220,y+7);
  }else if(fast){
  const element=dashElement(equipment,sword),baseReach=3.6*r*(sword?.reach||1),localBuff=boosted?buff:null;
  // Ghost-free local wake: the actual elemental renderer with the same boost envelope.
@@ -8714,12 +9052,43 @@ export function drawEquipmentStory(c,w,h,{id='standard',slot='core',equipment={}
  }finally{c.restore();}
 }
 
+/** Stylized, illustrative sensor schematic used in both card and demo. */
+export function drawSensorPreview(c,w,h,{slot='radar',level=0,time=0,motion=true}={}){
+ level=Math.max(0,Math.min(3,Math.floor(level)||0));c.save();try{
+ c.clearRect(0,0,w,h);c.scale(w/300,h/170);c.fillStyle='#111721';c.fillRect(0,0,300,170);
+ const grad=c.createLinearGradient(0,0,300,170);grad.addColorStop(0,'#173438');grad.addColorStop(.55,'#161d2a');grad.addColorStop(1,'#251d31');c.fillStyle=grad;c.fillRect(0,0,300,170);
+ c.strokeStyle='#a3d9c51c';c.lineWidth=.6;for(let x=0;x<=300;x+=20){c.beginPath();c.moveTo(x,0);c.lineTo(x,170);c.stroke();}for(let y=0;y<=170;y+=20){c.beginPath();c.moveTo(0,y);c.lineTo(300,y);c.stroke();}
+ c.fillStyle='#b9d7c9';c.font='bold 9px monospace';c.textAlign='left';c.fillText(slot==='radar'?'FIELD / SENSOR ARRAY':'FIELD / VECTOR LENS',14,17);
+ c.textAlign='right';c.fillStyle='#e6f89d';c.fillText(level?`TIER 0${level}`:'STANDARD',286,17);
+ c.strokeStyle='#a6f2dc';c.globalAlpha=.7;c.lineWidth=1;c.beginPath();c.moveTo(14,24);c.lineTo(286,24);c.stroke();c.globalAlpha=1;
+ if(slot==='radar'){
+   const x=150,y=100,r=60;c.fillStyle='#07131c';c.beginPath();c.arc(x,y,r,0,TAU);c.fill();
+   c.strokeStyle='#8ee1c8';c.lineWidth=1.5;c.beginPath();c.arc(x,y,r,0,TAU);c.stroke();
+   c.globalAlpha=.3;for(let i=1;i<=3;i++){c.beginPath();c.arc(x,y,r*i/3,0,TAU);c.stroke();}c.beginPath();c.moveTo(x-r,y);c.lineTo(x+r,y);c.moveTo(x,y-r);c.lineTo(x,y+r);c.stroke();c.globalAlpha=1;
+   const sweep=motion?time*.001: -.7;c.strokeStyle='#b7ffd7';c.globalAlpha=.5;c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.cos(sweep)*r,y+Math.sin(sweep)*r);c.stroke();c.globalAlpha=1;
+   for(const [i,dx,dy] of [[0,-23,-18],[1,26,-31],[2,42,8],[3,-40,20]]){if(i>level+1)continue;c.fillStyle=i===3?'#ffba83':'#ff7899';c.beginPath();c.arc(x+dx,y+dy,i===1?3.7:2.8,0,TAU);c.fill();if(level>=3&&i===1){c.strokeStyle='#ffd5ae';c.setLineDash([2,2]);c.beginPath();c.arc(x+dx,y+dy,8,0,TAU);c.stroke();c.setLineDash([]);}}
+   c.fillStyle='#e3ff9d';c.beginPath();c.moveTo(x,y-5);c.lineTo(x+5,y+4);c.lineTo(x-5,y+4);c.closePath();c.fill();
+   for(let i=0;i<level;i++){c.fillStyle='#c9ebac';c.fillRect(18+i*9,139,6,4);}
+   c.fillStyle='#abc2bd';c.font='8px monospace';c.textAlign='left';c.fillText(['LOCAL','RANGE +35%','RANGE +70% / HAZARDS','RANGE +120% / LIVE TELLS'][level],14,158);
+ }else{
+   const pts=[];for(let i=0;i<=30;i++){const t=i/30;pts.push({x:45+211*t,y:128-138*t+50*t*t});}
+   const count=[11,16,23,31][level];c.strokeStyle='#425d64';c.lineWidth=8;c.lineCap='round';c.beginPath();pts.slice(0,count).forEach((p,i)=>i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y));c.stroke();
+   c.strokeStyle='#d7ffac';c.lineWidth=2.2;c.beginPath();pts.slice(0,count).forEach((p,i)=>i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y));c.stroke();
+   c.fillStyle='#ecffd5';for(let i=3;i<count;i+=4){const p=pts[i];c.beginPath();c.arc(p.x,p.y,2,0,TAU);c.fill();}
+   c.save();c.translate(45,128);c.rotate(-.65);c.fillStyle='#f8f4e4';c.fillRect(-9,-9,18,18);c.strokeStyle='#14151d';c.lineWidth=2;c.strokeRect(-9,-9,18,18);c.restore();
+   if(level>=2){const p=pts[count-1];c.strokeStyle='#ffd79c';c.lineWidth=1.4;for(let j=0;j<4;j++){c.beginPath();c.arc(p.x,p.y,11,j*Math.PI/2+.12,j*Math.PI/2+1);c.stroke();}}
+   if(level>=3){c.fillStyle='#10272d';c.fillRect(145,102,130,30);c.strokeStyle='#9de3ca';c.strokeRect(145,102,130,30);c.fillStyle='#d9f6df';c.font='8px monospace';c.textAlign='left';c.fillText('SPD 32.0  ANG -38°',151,113);c.fillText('IMPACT ~0.60s',151,124);}
+   c.textAlign='left';c.fillStyle='#abc2bd';c.font='8px monospace';c.fillText(['SHORT PATH','EXTENDED PATH','TIME TICKS / IMPACT','LIVE FLIGHT ANALYSIS'][level],14,158);
+ }
+ }finally{c.restore();}
+}
+
 /** Letterboxed shop story; canvas operations belong to the portable engine. */
 export function drawShopDemo(ctx,width,height,{veil=0,demoMode='story',...story}={}){
  const scale=Math.min(width/300,height/170);
  ctx.save();ctx.fillStyle='#181824';ctx.fillRect(0,0,width,height);
  ctx.translate((width-300*scale)/2,(height-170*scale)/2);ctx.scale(scale,scale);
- if(demoMode==='dash')drawShopElementDash(ctx,300,170,story);else if(demoMode==='slash')drawShopElementSlash(ctx,300,170,story);else if(demoMode==='arrow')drawDragArrowPreview(ctx,300,170,{equipment:story.equipment,sword:story.sword});else drawEquipmentStory(ctx,300,170,story);ctx.restore();
+ if(demoMode==='story'&&['radar','trajectory'].includes(story.slot))drawSensorPreview(ctx,300,170,{slot:story.slot,level:sensorTier(story.equipment?.[story.slot],story.slot),motion:story.motion,time:story.time});else if(demoMode==='dash')drawShopElementDash(ctx,300,170,story);else if(demoMode==='slash')drawShopElementSlash(ctx,300,170,story);else if(demoMode==='arrow')drawDragArrowPreview(ctx,300,170,{equipment:story.equipment,sword:story.sword});else drawEquipmentStory(ctx,300,170,story);ctx.restore();
  if(veil&&demoMode!=='arrow'){ctx.save();ctx.fillStyle=`rgba(24,24,36,${veil})`;ctx.fillRect(0,0,width,height);ctx.restore();}
 }
 
@@ -8735,6 +9104,31 @@ export function drawPlatformMagnet(c,q,{active=false,time=0,motion=true}={}){
  }finally{c.restore();}
 }
 
+/** Bounded, screen-space press mark. Every spoke is calculated from equal angles;
+ * power grows the inner diamond without changing the gesture's actual dead zone. */
+export function pointerVisual({equipment={},power=0,cancel=false}={}){
+ const id=['pointer-reticle','pointer-diamond','pointer-orbit','pointer-cross'].includes(equipment.pointer)?equipment.pointer:'pointer-reticle';
+ const color=cancel?'#ee8d93':({'pointer-reticle':'#d8efa9','pointer-diamond':'#a9e8f4','pointer-orbit':'#d4b6f4','pointer-cross':'#ffc48e'}[id]);
+ const p=Number.isFinite(power)?Math.max(0,Math.min(1,power)):0;
+ const paths=[];
+ if(id==='pointer-diamond'){
+   paths.push([[0,-17],[17,0],[0,17],[-17,0],[0,-17]]);
+   paths.push([[0,-12],[12,0],[0,12],[-12,0],[0,-12]]);
+ }else if(id==='pointer-orbit'){
+   for(let k=0;k<4;k++){const pts=[];for(let i=0;i<=8;i++){const a=k*Math.PI/2+.18+i*(Math.PI/2-.36)/8;pts.push([Math.cos(a)*16,Math.sin(a)*16]);}paths.push(pts);}
+ }else if(id==='pointer-cross'){
+   for(let k=0;k<4;k++){const a=k*Math.PI/2,cs=Math.cos(a),sn=Math.sin(a);paths.push([[11,-5],[17,-5],[17,5],[11,5]].map(([x,y])=>[x*cs-y*sn,x*sn+y*cs]));}
+ }else{
+   for(let k=0;k<4;k++){const a=k*Math.PI/2,cs=Math.cos(a),sn=Math.sin(a);paths.push([[10,0],[16,0]].map(([x,y])=>[x*cs-y*sn,x*sn+y*cs]));}
+ }
+ const r=3+3*p;paths.push([[0,-r],[r,0],[0,r],[-r,0],[0,-r]]);
+ const path=paths.map(pts=>pts.map(([x,y],i)=>`${i?'L':'M'} ${x.toFixed(2)} ${y.toFixed(2)}`).join(' ')).join(' ');
+ return {id,color,paths,path};
+}
+function drawPointerMark(c,x,y,equipment,power=0,cancel=false){
+ const mark=pointerVisual({equipment,power,cancel});c.save();try{c.translate(x,y);c.strokeStyle=mark.color;c.lineWidth=1.8;c.lineJoin='round';c.lineCap='round';for(const pts of mark.paths){c.beginPath();pts.forEach(([px,py],i)=>i?c.lineTo(px,py):c.moveTo(px,py));c.stroke();}}finally{c.restore();}
+}
+
 /** Stable screen-space arrow geometry, shared by native drag overlay and Shop. */
 export function dragArrowVisual({dx=0,dy=-1,power=.5,equipment={},sword=null}={}){
  const element=dashElement(equipment,sword),palette={ink:['#e4edb2','#fff8e7'],fire:['#ffaf78','#ffe6bb'],lightning:['#86dcf0','#e9fbff'],ice:['#b0d9ef','#f3fbff'],echo:['#d0a9e9','#f7eaff'],void:['#b2a5da','#e8e0ff'],water:['#8edbce','#e2fff5']}[element];
@@ -8747,11 +9141,11 @@ export function dragArrowVisual({dx=0,dy=-1,power=.5,equipment={},sword=null}={}
 }
 export function drawDragArrowPreview(c,w,h,{equipment={},sword=null,power=.7}={}){
  const arrow=dragArrowVisual({dx:1,dy:-.55,power,equipment,sword}),x=w*.44,y=h*.53;
- c.save();try{c.fillStyle='#181824';c.fillRect(0,0,w,h);c.translate(x,y);c.rotate(arrow.angle);c.strokeStyle='#8b819b';c.lineWidth=1;c.setLineDash([3,5]);c.beginPath();c.moveTo(-70,0);c.lineTo(0,0);c.stroke();c.setLineDash([]);c.strokeStyle=arrow.color;c.lineWidth=1.5;c.beginPath();c.arc(0,0,10,0,TAU);c.stroke();
+ c.save();try{c.fillStyle='#181824';c.fillRect(0,0,w,h);c.translate(x,y);c.rotate(arrow.angle);c.strokeStyle='#8b819b';c.lineWidth=1;c.setLineDash([3,5]);c.beginPath();c.moveTo(-70,0);c.lineTo(0,0);c.stroke();c.setLineDash([]);c.strokeStyle=arrow.color;c.lineWidth=1.5;drawPointerMark(c,0,0,equipment,power);
  for(const points of [arrow.shaft,arrow.head]){c.beginPath();points.forEach(([px,py],i)=>i?c.lineTo(px,py):c.moveTo(px,py));c.closePath();c.fillStyle=arrow.color;c.fill();c.strokeStyle='#15121e';c.lineWidth=1.2;c.stroke();}
  c.strokeStyle=arrow.light;c.lineWidth=1;for(const points of arrow.accent){c.beginPath();points.forEach(([px,py],i)=>i?c.lineTo(px,py):c.moveTo(px,py));c.stroke();}
  c.restore();}catch(error){c.restore();throw error;}
- c.save();c.fillStyle=arrow.color;c.font='bold 12px monospace';c.textAlign='center';c.fillText(arrow.element.toUpperCase()+' / PULL BACK',w/2,h-16);c.restore();
+ c.save();c.fillStyle=arrow.color;c.font='bold 12px monospace';c.textAlign='center';c.fillText((equipment.pointer||'pointer-reticle').replace('pointer-','').toUpperCase()+' / PULL BACK',w/2,h-16);c.restore();
 }
 /** An elemental cut demonstration, not simulated damage or a new unlock. */
 export function resolveShopSlashPose(time=0,motion=true){
@@ -8843,10 +9237,49 @@ export function drawShopElementDash(c,w,h,{equipment={},sword=null,time=0,motion
   // sample. No wall-clock/tween input survives in reduced-motion mode.
   drawElementalDash(c,{x:pose.x,y:pose.y,vx:pose.speed,vy:0,age:pose.age,element,equipment,sword,radius:24,motion:true});
  }
- const load=pose.phase==='LOAD'?Math.max(0,Math.min(1,time/300)):0;
- c.save();c.translate(pose.x,pose.y);c.scale(pose.phase==='RELEASE'?1.12:1-load*.16,pose.phase==='RELEASE'?.88:1+load*.12);c.rotate(pose.phase==='RELEASE'?.06:0);drawCubeHero(c,{radius:24,equipment,motion:false,pose:{look:[1,0]}});c.restore();
+ const demoAge=!motion?4:time<300?Math.max(0,time/300*DASH.windup):time<530?DASH.windup+(time-300)/230*DASH.active:DASH.windup+DASH.active+Math.min(1,(time-530)/210)*DASH.recover;
+ const shape=dashFor(demoAge,42,0);
+ drawCubeDashSmear(c,{x:pose.x,y:pose.y,vx:42,vy:0,age:demoAge,radius:24,equipment,motion});
+ c.save();c.translate(pose.x,pose.y);c.scale(shape.sx,shape.sy);drawCubeHero(c,{radius:24,equipment,motion:false,pose:{look:[1,0]}});c.restore();
  drawSwordWeapon(c,{x:pose.x,y:pose.y,radius:24,sword:sword||undefined,equipment,active:false,motion:false});
  c.fillStyle=color;c.font='bold 11px monospace';c.textAlign='left';c.fillText(element.toUpperCase()+' / DASH',20,24);
  c.fillStyle='#a99cb6';c.font='9px monospace';c.textAlign='right';c.fillText(pose.phase,280,24);
+ }finally{c.restore();}
+}
+
+/** Short, local aftermath of an actual enemy hit, not an extra damage zone.
+ * Geometry and color encode the authoritative attack, including reduced motion. */
+export function drawEnemyAttackImpact(c,{x=0,y=0,type='hurt',attack=null,age=0,motion=true,scale=1}={}){
+ const kind=attack?.kind,life=type==='break'?27:18;
+ if(!kind||age<0||age>=life||!['fang-rush','pulse-ring','prism-needle','crown-needle','prism-link','fork-swipe','bastion-slam','rift-strike','well-compression'].includes(kind))return;
+ const t=age/life,u=motion?t:.16,fade=(1-t)*(1-t),angle=Number.isFinite(attack.angle)?attack.angle:0;
+ c.save();try{
+  c.translate(x,y);c.rotate(angle);const size=Math.min(2.8,Math.max(1,.8/Math.max(.1,scale)));c.scale(size,size);c.globalAlpha=fade;c.lineJoin='round';c.lineCap='round';
+  const stroke=(color,width,points)=>{c.strokeStyle=color;c.lineWidth=width;c.beginPath();for(let i=0;i<points.length;i++)i?c.lineTo(...points[i]):c.moveTo(...points[i]);c.stroke();};
+  const ring=(color,width,r,start=-Math.PI,end=Math.PI)=>{c.strokeStyle=color;c.lineWidth=width;c.beginPath();c.arc(0,0,r,start,end);c.stroke();};
+  if(kind==='fang-rush'){
+   // A forward bite, visibly directional rather than an explosion.
+   const d=19+u*16;for(const side of [-1,1]){const p=[[-d,side*14],[-5,side*5],[d*.65,side*13]];stroke('#241522',5,p);stroke('#ff7a8f',2.5,p);}stroke('#fff1e8',2,[[7,-5],[16,0],[7,5]]);
+  }else if(kind==='pulse-ring'){
+   // Expanding double annulus echoes the actual Pulse wavefront.
+   const r=22+u*24;ring('#241522',6,r);ring('#ff9eb3',2.5,r);ring('#fff1e8',1.7,Math.max(10,r-7));
+  }else if(kind==='prism-needle'){
+   // One long, sharp puncture and a diamond-shaped aperture.
+   const d=27+u*16,p=[[-d,0],[d*.72,0]];stroke('#211a31',7,p);stroke('#d5adff',2.8,p);
+   const diamond=[[0,-10],[10,0],[0,10],[-10,0],[0,-10]];stroke('#fff0ff',2,diamond);
+  }else if(kind==='crown-needle'){
+   // Broken radial spokes mark a Crown volley, not a Prism's single shot.
+   const r=22+u*12;for(let i=0;i<6;i++){const a=i*Math.PI/3,cs=Math.cos(a),sn=Math.sin(a),p=[[cs*(r-7),sn*(r-7)],[cs*(r+8),sn*(r+8)]];stroke('#241522',5,p);stroke('#ffc27f',2.3,p);}ring('#fff0df',1.7,11);
+  }else if(kind==='prism-link'){
+   const d=29+u*10;for(const y2 of [-7,7]){const p=[[-d,y2],[d,y2]];stroke('#1c192c',6,p);stroke('#b5a6ff',2.5,p);}stroke('#fff3ff',2,[[0,-14],[0,14]]);
+  }else if(kind==='fork-swipe'){
+   for(const a of [0,Math.PI/2]){c.save();c.rotate(a);const p=[[-30,0],[30,0]];stroke('#241522',7,p);stroke('#ffd0af',3,p);c.restore();}
+  }else if(kind==='bastion-slam'){
+   const p=[[-24,-18],[11,-18],[27,0],[11,18],[-24,18]];stroke('#241522',7,p);stroke('#ffe4a9',3,p);
+  }else if(kind==='rift-strike'){
+   const d=24+u*9;for(let i=0;i<4;i++){const a=Math.PI/4+i*Math.PI/2,p=[[Math.cos(a)*12,Math.sin(a)*12],[Math.cos(a)*d,Math.sin(a)*d]];stroke('#241522',6,p);stroke('#ffc3ce',2.5,p);}ring('#fff0df',2,10);
+  }else{
+   const d=27-u*8;for(let i=0;i<4;i++){const a=i*Math.PI/2; c.save();c.rotate(a);const p=[[d,-7],[d-9,0],[d,7]];stroke('#241522',6,p);stroke('#e4ceff',2.5,p);c.restore();}ring('#fff0ff',2,9);
+  }
  }finally{c.restore();}
 }

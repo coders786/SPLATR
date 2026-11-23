@@ -7,11 +7,11 @@ export function chainNote(chain = 1) {
 
 // Tiny procedural SFX bank. No audio files, decoding costs, autoplaying music,
 // or sound requests before the visitor supplies a real user gesture.
-export function createAudio() {
+export function createAudio({ muteKey = 'splatr.muted' } = {}) {
   let context,
     enabled = true;
   try {
-    enabled = localStorage.getItem('splatr.muted') !== '1';
+    enabled = localStorage.getItem(muteKey) !== '1';
   } catch {
     /* private storage */
   }
@@ -177,7 +177,7 @@ export function createAudio() {
     toggle() {
       enabled = !enabled;
       try {
-        localStorage.setItem('splatr.muted', enabled ? '0' : '1');
+        localStorage.setItem(muteKey, enabled ? '0' : '1');
       } catch {
         /* optional */
       }

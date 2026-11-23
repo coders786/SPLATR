@@ -5,6 +5,7 @@ import {disturbDimension,stepDimensionField} from './dimension-field.js';
 import {stepCleanBanks,steerBank} from './clean-banks.js';
 import {swordProfile,effectiveSword,swordAttack,advanceSwordAttacks} from './swords.js';
 import {WAVE_ARENA,createWaveDirector} from './waves.js';
+import {createContinuousDirector} from './continuous-sectors.js';
 import { MOVEMENT, flightEnvelope } from './movement-model.js';
 import { EQUIPMENT_LIMITS, nearestEquipmentTarget, aimPull, horizontalCutWidth } from './equipment-combat.js';
 import { normalizeEquipment, equipmentRules } from './equipment.js';
@@ -279,22 +280,23 @@ export function ballisticAim(from, to, speed) {
 export function createRun(
   seed,
   emit = () => {},
-  { warmup = false, staged = warmup, viewport = null, combatTrace = null, equipment = null, waveMode = false, controlPractice = false } = {},
+  { warmup = false, staged = warmup, viewport = null, combatTrace = null, equipment = null, waveMode = false, controlPractice = false, continuous = false, lockdownIntro = false } = {},
 ) {
   // Stream the normal neighbourhood, but keep its other bodies off the
   // Hold the rest of the stream until the first live Fang is cut (or the
   // player leaves it). A strong launch gets one short decision beat after it
   // crosses empty sky. That is not a phantom hit: no score, freeze or refund.
-  const ARENA=waveMode?WAVE_ARENA:DEFAULT_ARENA;
+  const ARENA=waveMode?(continuous?{...WAVE_ARENA}:WAVE_ARENA):DEFAULT_ARENA;
   const loadout = normalizeEquipment(equipment), rules = equipmentRules(loadout), edgeMax = rules.edgeMax;
   let wingsUsed = false, focusRecovery = 0, needleCooldown = 0, bumpGuard = rules.bumpGuard, aimAngle = null;
+  let cutThisTick = false;
   let solo = staged,
     glideAt = Infinity,
     // Identity of the physics contact already shown, so one collision does
     // not re-squash the pose on every substep of the same tick.
     lastContact = null;
   const waiting = [];
-  const world = createPhysics({ seed, spawn: SPAWN, pad: PAD, arena: waveMode ? WAVE_ARENA : ARENA }),
+  const world = createPhysics({ seed, spawn: SPAWN, pad: PAD, arena: ARENA }),
     origin = { ...SPAWN },
     combat = createCombat(world, (e) => emit('tell', e)),
     // ── NO ENEMY MAY ENTER OUTSIDE THE WALLS ──────────────────────────────
@@ -449,6 +451,9 @@ export function createRun(
     seed: seed >>> 0,
     hp: rules.healthMax,
     hpMax: rules.healthMax,
+    lastDamage: null,
+    safeContact: null,
+    lastDefense: null,
     score: 0,
     kills: 0,
     chain: 0,
@@ -511,7 +516,7 @@ export function createRun(
     chainFrom: 0,
   };
   if(viewport)world.viewport={...viewport};
-  const waveDirector=waveMode?createWaveDirector({seed,world,combat,state:s,emit,baseDashSpeed:rules.dashSpeed,controlPractice}):null;
+  const waveDirector=waveMode?(continuous?createContinuousDirector({seed,world,combat,state:s,emit,intro:lockdownIntro}):createWaveDirector({seed,world,combat,state:s,emit,baseDashSpeed:rules.dashSpeed,controlPractice})):null;
   if (!lesson && !waveMode) stream.sync(SPAWN, s.line);
   function nearest() {
     const p = world.player.position;
@@ -822,7 +827,7 @@ export function createRun(
     if (!s.hyper) s.hyperLevel = 0;
   }
 
-  function end(cause,contact=null) {
+  function end(cause,contact=null,attack=null) {
     if (s.phase !== 'playing') return;
     s.cause = cause;
     s.fatal = { ...world.player.position, name: cause };
@@ -833,7 +838,7 @@ export function createRun(
     s.stop = 0;
     s.blade = 0;
     s.swordFx.length=0;s.swordCharge=0;
-    emit('break', { ...world.player.position, angle: world.player.angle,equipment:{...s.equipment},sword:s.sword,cut:contact?.angle??s.slashAngle,contact:contact||contactVisual(world.player,{x:world.player.position.x+1,y:world.player.position.y},0) });
+    emit('break', { ...world.player.position, cause, attack, angle: world.player.angle,equipment:{...s.equipment},sword:s.sword,cut:contact?.angle??s.slashAngle,contact:contact||contactVisual(world.player,{x:world.player.position.x+1,y:world.player.position.y},0) });
   }
   /** Grant a breath and remember how long THIS one is, so the pace ramp can
    *  normalise against it. Dividing by the base constant made a long breath
@@ -869,15 +874,25 @@ export function createRun(
     }
     fx.echoes=fx.echoes.filter(e=>e.ticks>0);
   }
-  function hurt(cause, source = null) {
+  function hurt(cause, source = null, attack = null) {
     const door=s.questPortal, p=world.player.position;
     if(door && Math.hypot(p.x-door.x,p.y-door.y)<door.r+160) {if(combatTrace)traceCombat('damage-blocked',{cause,reason:'portal'});return false;}
+    if (s.visualTutorial) {
+      s.visualTutorial.bumpAttempts=(s.visualTutorial.bumpAttempts||0)+1;
+      if (s.visualTutorial.bumpCooldown <= 0 && !cutThisTick) {
+        const dx=p.x-(source?.x ?? p.x-1),dy=p.y-(source?.y ?? p.y),length=Math.hypot(dx,dy)||1;
+        setPlayerVelocity(world,dx/length*8,dy/length*8-3);s.visualTutorial.bumpCooldown=45;s.visualTutorial.bumpFlash=24;emit('tutorialBump',{...p});
+      }
+      return false;
+    }
+    if (cutThisTick) return false;
     if (s.opening || s.phase !== 'playing' || s.invul > 0) {if(combatTrace)traceCombat('damage-blocked',{cause,reason:s.opening?'practice':s.invul>0?'invulnerability':'inactive'});return false;}
-    if(bumpGuard && cause==='Bastion') {
-      bumpGuard=false;s.guardSpent=true;
+    if(bumpGuard && cause==='Fang' && attack?.kind==='fang-rush') {
+      bumpGuard=false;s.guardSpent=true;s.lastDefense={kind:'iron',tick:s.elapsed};
       const v=world.player.velocity;
       if(source){
-        const p=world.player.position,dx=p.x-source.x,dy=p.y-source.y,d=Math.hypot(dx,dy)||1,nx=dx/d,ny=dy/d;
+        const p=world.player.position,dx=p.x-source.x,dy=p.y-source.y,d=Math.hypot(dx,dy),nx=d>.001?dx/d:Math.cos(source.aim||0),ny=d>.001?dy/d:Math.sin(source.aim||0);
+        if(source.id!=null)s.cutImmunity.set(source.id,Math.max(s.cutImmunity.get(source.id)||0,Math.max(1,source.clock||0)+2));
         const distance=source.r+PLAYER_SIZE*.72+8;
         placePlayer(world,{x:clamp(source.x+nx*distance,ARENA.x+PLAYER_SIZE,ARENA.x+ARENA.w-PLAYER_SIZE),y:clamp(source.y+ny*distance,ARENA.y+PLAYER_SIZE,ARENA.y+ARENA.h-PLAYER_SIZE)});
         setPlayerVelocity(world,nx*14,ny*14);
@@ -885,9 +900,11 @@ export function createRun(
       equipmentBurst(world.player.position,'guard');return false;
     }
     const contact=contactVisual(world.player,source||{x:p.x+(world.player.velocity.x||1),y:p.y+world.player.velocity.y},s.slashAngle||0);
-    if(s.waveShield>0){s.waveShield--;s.invul=45;equipmentBurst(p,'guard');emit('waveBlock',{...p,contact,equipment:{...s.equipment},sword:s.sword});return false;}
+    if(s.waveShield>0){s.waveShield--;s.invul=45;s.lastDefense={kind:'ward',tick:s.elapsed};equipmentBurst(p,'guard');emit('waveBlock',{...p,cause,attack,contact,equipment:{...s.equipment},sword:s.sword});return false;}
+    s.lastDefense = null;s.safeContact = null;
     s.hp--;s.damageTaken++;
-    if(combatTrace)traceCombat('damage',{cause,hpBefore:s.hp+1,hpAfter:s.hp});
+    s.lastDamage = {cause, hp:s.hp, hpMax:s.hpMax, tick:s.elapsed};
+    if(combatTrace)traceCombat('damage',{cause,attackKind:attack?.kind,attackId:attack?.attackId,sourceId:attack?.sourceId,hpBefore:s.hp+1,hpAfter:s.hp});
     // Mercy is real-world reaction time. A faster game compresses world time
     // into fewer frames, so the window is stretched to keep the player's
     // actual recovery time unchanged.
@@ -898,15 +915,24 @@ export function createRun(
     s.panicTicks = s.panicWarm = 0;
     s.edge = Math.max(1, s.edge);
     s.stop = Math.max(s.stop, 3);
-    if (s.hp <= 0) end(cause,contact);
-    else emit('hurt', { ...world.player.position, cause,contact });
+    if (s.hp <= 0) end(cause,contact,attack);
+    else emit('hurt', { ...world.player.position, cause,contact,attack });
     return true;
   }
   function cut(e, fromShear = false, secondary = false, swordSource = null) {
     if(!combat.enemies.has(e.id))return;
+    // The isolated Rift remains intact until its real warning is escaped.
+    // The Fang appears only afterward, when the player can cut both targets.
+    if(s.visualTutorial?.stage===2&&!s.visualTutorial.dodged&&e.id==='tutorial/rift'){
+      // Contact with the protected Rift during its warning may be incidental
+      // to an escape; do not turn the suggested dodge into a failed bump.
+      if(e.mode!=='tell'&&e.tutorialBlockShot!==s.shots){e.tutorialBlockShot=s.shots;hurt('Practice',e);}
+      return;
+    }
     const contact=contactVisual(world.player,e,s.slashAngle||0);
     if (!swordSource && e.lastSlash === s.shots) return;
     if(!swordSource)e.lastSlash = s.shots;
+    cutThisTick = true;
     if(!secondary&&!fromShear&&!s.opening&&s.sword.family==='pulse'&&(!s.wave||s.wave.phase==='combat')){
       const was=s.swordCharge;s.swordCharge=Math.min(s.sword.chargeMax,s.swordCharge+1);s.swordContacts++;if(was<s.sword.chargeMax&&s.swordCharge===s.sword.chargeMax)emit('swordReady',{});
     }
@@ -958,6 +984,7 @@ export function createRun(
     // blade meets a shape, which is what an impact cel is for.
     if (!fromShear) s.landAge = 0;
     const hpBefore = e.hp;
+    combat.interrupt(e);
     e.hp -= secondary ? 1 : s.drive > 0 ? 3 : (!fromShear && ['crown','bastion'].includes(e.kind) ? rules.armorDamage+effectiveSword(s.sword,s.waveBuff).armor : fromShear ? SHEAR.damage : 1);
     if(!secondary && rules.coil && !s.opening) {
       const victim=nearestEquipmentTarget(combat.enemies.values(),e,160,e.id);
@@ -1310,8 +1337,12 @@ export function createRun(
     return true;
   }
   function tick() {
+    cutThisTick = false;
+    try { return tickCore(); } finally { cutThisTick = false; }
+  }
+  function tickCore() {
     if(waveDirector && s.wave.phase==='choose'){freezePoses();return;}
-    if (s.phase === 'ready' || s.phase === 'over') return;
+    if (s.phase === 'ready' || s.phase === 'over') { if(s.phase==='ready'&&s.narrative?.intro)waveDirector.tick(1); return; }
     if (s.phase === 'dying') {
       freezePoses();
       if (--s.death === 0) {
@@ -2019,22 +2050,26 @@ export function createRun(
       // grace applied to both branches: the "second cut scores once" test lost
       // its second cut entirely.
       if (attackingThisStep) cut(e);
-      else if ((s.cutImmunity.get(e.id)||0)>0 || (s.cutGrace > 0 && e.id === s.cutGraceFrom)) continue;
-      else hurt(TYPES[e.kind].name,e);
+      else if ((s.cutImmunity.get(e.id)||0)>0 || (s.cutGrace > 0 && e.id === s.cutGraceFrom)) {if(combat.rushContacts.has(e))s.lastDefense={kind:'cut-grace',tick:s.elapsed};continue;}
+      else if(combat.rushContacts.has(e)) hurt('Fang',e,Object.freeze({kind:'fang-rush',angle:e.aim,sourceId:e.id}));
+      else s.safeContact = {kind:e.kind,tick:s.elapsed};
     }
-    combat.contacts.clear();
+    combat.contacts.clear();combat.rushContacts.clear();
     if(!stopped&&(!s.wave||s.wave.phase==='combat'))s.swordFx=advanceSwordAttacks(s.swordFx,dt,
       a=>combat.forwardHits({x:a.x,y:a.y},{x:a.tx,y:a.ty},a.width),
       (enemy,a)=>{cut(enemy,true,true,a);emit('swordHit',{x:enemy.x,y:enemy.y,kind:a.kind});});
     tickEquipment(dt);
     combat.attacks(dt, (h) => {
       const facing = h.kind === 'needle' && Math.cos(s.slashAngle - h.angle) < -0.2;
+      const zoneNames={fork:['Fork swipe','fork-swipe'],bastion:['Bastion slam','bastion-slam'],rift:['Rift strike','rift-strike'],well:['Well compression','well-compression']};
+      const [cause,kind]=h.kind==='zone'?zoneNames[h.source]:h.kind==='ring'?['Pulse wave','pulse-ring']:[`${TYPES[h.source].name} needle`,h.source==='crown'?'crown-needle':'prism-needle'];
       if (s.blade <= 0 || !(facing || s.parry > 0))
-        hurt(h.kind === 'ring' ? 'Pulse wave' : `${TYPES[h.source].name} needle`);
-      else if (h.kind === 'needle') emit('parry', { x: h.x, y: h.y, angle: h.angle });
-    });
-    combat.linkAttacks(waveDirector?waveDirector.cells:stream.live, s.wave?.entry>0?0:dt, () => {
-      if (s.parry <= 0) hurt('Prism link');
+        hurt(cause, h, Object.freeze({kind,sourceId:h.sourceId,attackId:h.attackId,angle:h.kind==='needle'||h.source==='bastion'?h.angle:Math.atan2(world.player.position.y-h.y,world.player.position.x-h.x)}));
+      else {s.lastDefense={kind:'parry',tick:s.elapsed};emit('parry', { x: h.x, y: h.y, angle: h.angle||0 });}
+    },{freezeZones:stopped});
+    combat.linkAttacks(waveDirector?waveDirector.cells:stream.live, s.wave?.entry>0?0:dt, (link) => {
+      if (s.parry <= 0) hurt('Prism link',link.a,Object.freeze({kind:'prism-link',angle:Math.atan2(link.b.y-link.a.y,link.b.x-link.a.x)}));
+      else s.lastDefense={kind:'parry',tick:s.elapsed};
     });
     if (s.phase !== 'playing') return;
     // HYPER HOLDS THE BLADE ON.
@@ -2120,7 +2155,7 @@ export function createRun(
     hyperStep();
     const p = world.player.position;
     s.peak = Math.max(s.peak, origin.y - p.y);
-    if(waveDirector){s.dimension=stepDimensionField(s.dimension,{dt,active:!stopped&&s.phase==='playing'&&['combat','breach'].includes(s.wave.phase)&&!s.opening&&!s.tutorialActive,x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,distance:s.moved});waveDirector.tick(dt);if(s.wave.phase!=='combat'){s.swordFx.length=0;s.swordCharge=0;s.equipmentFx={projectiles:[],echoes:[],bursts:[]};s.drive=0;}return;}
+    if(waveDirector){s.dimension=stepDimensionField(s.dimension,{dt,active:!stopped&&s.phase==='playing'&&['combat','breach'].includes(s.wave.phase)&&!s.opening&&!s.tutorialActive,x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,distance:s.moved});if(!s.visualTutorial)waveDirector.tick(dt);if(s.wave.phase!=='combat'){s.swordFx.length=0;s.swordCharge=0;s.equipmentFx={projectiles:[],echoes:[],bursts:[]};s.drive=0;}return;}
     s.oldLine = s.line;
     s.line = Math.min(s.line - dt * (0.38 + Math.min(6, s.band) * 0.07), origin.y - s.peak + 1180);
     // The cut-room safety net is gone with the Redline.
@@ -2306,6 +2341,7 @@ export function createRun(
     skipOpening: () => enterField(false),
     retire,
     chooseWaveBuff:id=>waveDirector?.choose(id)||false,
+    setPracticeLinks:links=>waveDirector?.setPracticeLinks(links)||false,
     skipBreach:()=>waveDirector?.skipBreach()||false,
     dispose() {
       waveDirector?.dispose();s.swordFx.length=0;s.swordCharge=0;

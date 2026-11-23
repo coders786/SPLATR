@@ -13,7 +13,7 @@ test('all 53 powers have short frozen receipts and cosmetic parts never claim co
 });
 test('quick stats exactly match authoritative equipment rules and show costs as well as benefits',()=>{
  for(const eq of [{},{head:'viper'},{core:'glass'},{core:'riot'},{head:'crown'}]){const rules=equipmentRules(eq),p=buildReadout(eq);assert.equal(p.speed,Math.round(rules.dashSpeed*100));assert.equal(p.width,Math.round(rules.cutWidth*100));assert.equal(p.edge,rules.edgeMax);assert.equal(p.hull,rules.healthMax);assert.equal(p.score,rules.scoreMultiplier);}
- assert.deepEqual(powerReadout('viper').chips,['SPEED +20%','CUT WIDTH −15%']);assert.ok(powerReadout('glass').chips.includes('MAX HULL 1'));
+ assert.deepEqual(powerReadout('viper').chips,['SPEED +20%','CUT WIDTH −15%']);assert.ok(powerReadout('glass').chips.includes('MAX HEALTH 1'));
 });
 test('35 valid distinct mutation recipes retain every original ID and load discoveries without granting ownership',()=>{
  assert.equal(MUTATIONS.length,35);assert.equal(SPARKS.length,18);assert.equal(HYBRIDS.length,17);assert.equal(new Set(MUTATIONS.map(x=>x.id)).size,35);

@@ -11,7 +11,7 @@ try{for(const [width,height] of [[1280,720],[550,720],[860,440]]){
  });await page.reload();await page.click('#customize-btn');await page.click('.destination-parts');
  assert.equal(await page.$eval('.custom-hybrid',n=>n.textContent),'CYBER PHANTOM');
  await page.click('.custom-card[aria-label^="Broken Oni,"]');assert.ok(await page.$eval('.custom-detail button',n=>n.disabled));
- assert.match(await page.$eval('.custom-detail',n=>n.textContent),/Challenge: defeat a Crown at 1 HULL/);
+ assert.match(await page.$eval('.custom-detail',n=>n.textContent),/Challenge: defeat a Crown at 1 HEALTH/);
  await page.click('[data-slot="core"]');await page.click('.custom-card[aria-label^="Glass Cannon,"]');
  if(width<=700)await page.click('.custom-view-switch button:nth-child(2)');
  await page.screenshot({path:`.arena/hybrids/preview-${width}x${height}.png`});

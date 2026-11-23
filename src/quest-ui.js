@@ -15,7 +15,10 @@ import { ARENA } from './levels.js';
 
 export function createQuestUI({
   getRun,
+  unlimited = false,
   practice=null,
+  startTutorial=null,
+  teaching=null,
   storage,
   audio,
   resetInput,
@@ -48,10 +51,11 @@ export function createQuestUI({
   const boardDialog=el('dialog','quest-board-dialog');boardDialog.setAttribute('aria-label','Optional quests');
   const closeBoard=el('button','quest-board-close','BACK');closeBoard.type='button';prependIcon(closeBoard,'back');closeBoard.onclick=()=>boardDialog.close();
   boardDialog.append(closeBoard);
-  if(practice){const controlButton=el('button','control-practice-entry','CONTROL PRACTICE');controlButton.type='button';prependIcon(controlButton,'practice');controlButton.onclick=()=>{boardDialog.close();practice();};boardDialog.append(controlButton,el('p','control-entry-note','Safe arena. Actual controls. No damage or rewards.'));}
+  if(teaching){const trainingButton=el('button','control-practice-entry','LIVE ENEMY TRAINING');trainingButton.type='button';trainingButton.onclick=()=>{boardDialog.close();teaching();};boardDialog.append(trainingButton);}
+  if(practice){const controlButton=el('button','control-practice-entry control-drill-entry','CONTROL PRACTICE');controlButton.type='button';prependIcon(controlButton,'practice');controlButton.onclick=()=>{boardDialog.close();practice();};boardDialog.append(controlButton,el('p','control-entry-note','Safe arena. Actual controls. No damage or rewards.'));}
   boardDialog.append(picker);document.querySelector('#game').append(boardDialog);
   const questButton=el('button','choice quiet','Learn');questButton.id='quests-btn';questButton.type='button';
-  questButton.onclick=()=>{resetInput();boardDialog.showModal();};
+  questButton.onclick=()=>{resetInput();if(startTutorial)startTutorial();else boardDialog.showModal();};
   document.querySelector('#manual-btn').before(questButton);
   boardDialog.addEventListener('close',resetInput);
   boardDialog.addEventListener('keydown',e=>e.stopPropagation());boardDialog.addEventListener('keyup',e=>e.stopPropagation());
@@ -181,7 +185,7 @@ export function createQuestUI({
     const toggle=el('button','quest-toggle',questsEnabled?'GUIDED QUESTS · ON':'GUIDED QUESTS · OFF');
     toggle.type='button';toggle.setAttribute('aria-pressed',String(questsEnabled));
     toggle.onclick=()=>{questsEnabled=!questsEnabled;storage.set('optional-quests',questsEnabled?'on':'off');drawPicker();};
-    picker.append(el('b','menu-credit-wallet',`◈ ${profile.coins.toLocaleString()} CREDITS`),toggle,el('small','quest-optional-note','Learn by playing. Three small lessons are picked for your skills. No setup needed.'));
+    picker.append(el('b','menu-credit-wallet',unlimited ? '◈ ∞ SANDBOX CREDITS' : `◈ ${profile.coins.toLocaleString()} CREDITS`),toggle,el('small','quest-optional-note','Learn by playing. Three small lessons are picked for your skills. No setup needed.'));
     if(!questsEnabled)return;
     const board=el('div','quest-board-heading');
     board.append(el('b','','YOUR NEXT SKILLS'));
@@ -454,12 +458,12 @@ export function createQuestUI({
   requestAnimationFrame(forceFrame);
   drawPicker();
   return {
-    wallet: () => profile.coins,
+    wallet: () => unlimited ? Number.MAX_SAFE_INTEGER : profile.coins,
     ownedParts: () => [...profile.owned],
     purchasePart(id, cost) {
-      if (!Number.isSafeInteger(cost) || cost < 0 || profile.coins < cost) return false;
+      if (!Number.isSafeInteger(cost) || cost < 0 || (!unlimited && profile.coins < cost)) return false;
       if (PARTS.some(p=>p.id===id) && profile.owned.includes(id)) return false;
-      profile.coins -= cost;
+      if (!unlimited) profile.coins -= cost;
       if(PARTS.some(p=>p.id===id)) profile.owned.push(id);
       save(); drawPicker(); return true;
     },
@@ -555,9 +559,9 @@ export function createQuestUI({
         save();
         result.replaceChildren(el('h3', '', 'ROUND REWARDS'));
         const payout=el('div','round-payout');payout.setAttribute('role','status');
-        payout.append(el('strong','',`+${pay.total}`),el('b','','CREDITS'),el('small','',`WALLET · ${profile.coins.toLocaleString()} CREDITS`));
+        payout.append(el('strong','',`+${pay.total}`),el('b','','CREDITS'),el('small','',unlimited ? 'WALLET · ∞ SANDBOX CREDITS' : `WALLET · ${profile.coins.toLocaleString()} CREDITS`));
         prependIcon(payout.querySelector('b'),'coin');
-        result.append(payout,el('p','reward-breakdown',`ROUND ${pay.base} · CUTS ${pay.cuts} · SCORE ${pay.score} · ${run.state.wave?'WAVES':'SECTORS'} ${pay.sectors}`));
+        result.append(payout,el('p','reward-breakdown',`ROUND ${pay.base} · CUTS ${pay.cuts} · SCORE ${pay.score} · ${run.state.wave&&!run.state.narrative?'WAVES':'SECTORS'} ${pay.sectors}`));
         if(run.state.killLedger){
           const breakdown=el('details','kill-breakdown');breakdown.append(el('summary','',`ENEMY REWARDS · ${run.state.killLedger.kills} KILLS`));
           const table=el('div','kill-table');for(const [kind,row]of Object.entries(run.state.killLedger.rows)){const line=el('p','');line.append(el('b','',`${ENEMY_NAMES[kind]||kind} ×${row.kills}`),el('span','',`${row.points} PTS · ${row.credits} CREDITS`));table.append(line);}breakdown.append(table);result.append(breakdown);

@@ -16,7 +16,7 @@ test('challenge items are never free migration defaults or purchasable at any ba
   assert.ok(loadEquipment(JSON.stringify({owned:['oni','glass']})).owned.includes('glass'));
 });
 test('collection badges require every currently catalogued item in a slot',()=>{
-  const owned=ITEMS.map(x=>x.id);assert.equal(collectionBadges(ITEMS,owned).length,7);assert.ok(!collectionBadges(ITEMS,owned.filter(x=>x!=='oni')).includes('head'));
+  const owned=ITEMS.map(x=>x.id);assert.equal(collectionBadges(ITEMS,owned).length,11);assert.ok(!collectionBadges(ITEMS,owned.filter(x=>x!=='oni')).includes('head'));
 });
 test('all aura drawings preserve canvas state',()=>{
   const c=createCanvas(160,160).getContext('2d');c.translate(80,80);c.scale(25,25);
