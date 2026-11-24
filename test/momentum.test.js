@@ -7,6 +7,7 @@ import {
   gainMomentum,
   pipCeilingScale,
   hyperChainFor,
+  diminishingRebound,
 } from '../src/momentum.js';
 
 test('fresh ledger is empty and finite', () => {
@@ -93,6 +94,14 @@ test('the hyper gate drops to 5 at full pips only', () => {
   assert.equal(hyperChainFor(3, 7), 5);
   assert.equal(hyperChainFor(99, 7), 5);
   assert.equal(hyperChainFor(undefined, 7), 7);
+});
+
+test('high-speed rebound diminishes instead of compounding at a flat multiplier', () => {
+  assert.equal(diminishingRebound(0), 1.35);
+  assert.equal(diminishingRebound(160), 1.35);
+  assert.equal(diminishingRebound(320), 1.175);
+  assert.ok(diminishingRebound(320) < diminishingRebound(160));
+  assert.ok(diminishingRebound(900) > 1);
 });
 
 test('the ledger constants keep their promises', () => {

@@ -21,27 +21,21 @@ export const TRAINING_DOORS = Object.freeze([
     id: 'course',
     index: '01',
     name: 'THE COURSE',
-    tag: 'THE JOURNEY · 10 MINUTES',
-    body: 'Four rooms, in order. Paper racks teach the blade, a glass wall teaches the bank, the Rift teaches the red circle, and the Crown teaches the field.',
-    detail: 'THE RACK → THE WALL → THE RIFT → THE CROWN',
+    tag: '10 MINUTES · FOUR ROOMS',
     action: 'PLAY THE COURSE',
   }),
   Object.freeze({
     id: 'lessons',
     index: '02',
     name: 'ENEMY LESSONS',
-    tag: 'LIVE COMBAT · ONE ROOM PER SHAPE',
-    body: 'Real enemy AI, real blade, real rules — one small room per kind. Watch the warning, make the dodge, then cut it down. Eleven lessons, Fang to the Monolith.',
-    detail: 'FANG · PULSE · PRISM · FORK · BASTION · RIFT · WELL · CROWN · MONOLITH',
+    tag: 'LIVE ENCOUNTERS · 11 SHAPES',
     action: 'CHOOSE AN ENEMY',
   }),
   Object.freeze({
     id: 'drills',
     index: '03',
     name: 'CONTROL DRILLS',
-    tag: 'THE MOVEMENT ECONOMY',
-    body: 'Pace, Hyper, Sonic and the breach — the full speed game, end to end, in a safe arena. For when the field refuses to make sense.',
-    detail: 'FULL ROUTE · BANK DRILL · BREACH DRILL',
+    tag: 'PACE · BANK · BREACH',
     action: 'OPEN THE DRILLS',
   }),
 ]);
@@ -64,9 +58,8 @@ export function createTrainingHub({ host, startCourse, openLessons, openDrills }
 
   const head = document.createElement('header');
   head.className = 'training-head';
-  head.innerHTML = `<small>THE LEARNING GROUND · SAFE PRACTICE / NO REWARDS</small>
-    <h2>Learn the game.</h2>
-    <p>Three doors. All of them tell the truth — nothing behind them scores, pays or saves anything.</p>`;
+  head.innerHTML = `<small>SAFE PRACTICE · NO REWARDS</small>
+    <h2>CHOOSE A DOOR</h2>`;
   section.append(head);
 
   const doors = document.createElement('div');
@@ -83,19 +76,12 @@ export function createTrainingHub({ host, startCourse, openLessons, openDrills }
       <span class="training-copy">
         <b>${door.name}</b>
         <em>${door.tag}</em>
-        <small>${door.body}</small>
-        <span class="training-detail">${door.detail}</span>
       </span>
       <span class="training-cta">${button.disabled ? 'NOT AVAILABLE' : `${door.action} →`}</span>`;
     button.addEventListener('click', () => { if (!button.disabled) action(); });
     doors.append(button);
   }
   section.append(doors);
-
-  const foot = document.createElement('p');
-  foot.className = 'training-foot';
-  foot.textContent = 'Everything here is SAFE PRACTICE. No points. No credits. No quest damage. Just the game, at your pace.';
-  section.append(foot);
 
   host.append(section);
   return { close: () => host.replaceChildren() };

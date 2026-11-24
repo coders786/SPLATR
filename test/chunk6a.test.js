@@ -1,7 +1,7 @@
 /**
  * CHUNK 6A — THE HOOK.
  *
- * The two cutscenes as content: chip budgets (§4), the cinematic clocks
+ * The story cutscenes as content: chip budgets (§4), the cinematic clocks
  * (§3, §5.4), the SHATTER event's new 140-tick singularity and rung
  * escalation (§5.3), the input lock in the sim (§5.1), and a headless
  * smoke pass over every beat painter.
@@ -13,6 +13,11 @@ import { createRenderer } from '../src/renderer.js';
 import { installDom, createDisplay } from './support/display.js';
 import {
   COLD_OPEN_BEATS,
+  CUTSCENE_PACING,
+  MID_WAVE_BEATS,
+  midWaveBeats,
+  SECTOR_BEATS,
+  sectorBeats,
   SHATTER_BEATS,
   lockTicks,
   chipBudget,
@@ -24,16 +29,46 @@ test('6A: the cold open spends exactly two chips, ≤4 words each', () => {
     assert.ok(chip.split(/\s+/).length <= 4, `${chip} is four words or fewer`);
 });
 
+test('6A: the sector crossing is visual-only, with no briefing text', () => {
+  assert.deepEqual(chipBudget(SECTOR_BEATS), []);
+  assert.deepEqual(SECTOR_BEATS.map(beat => beat.id), ['sector-locks', 'sector-seam', 'sector-rise', 'sector-release']);
+  assert.equal(SECTOR_BEATS.at(-1).lockInput, false);
+});
+
+test('6A: each wave can carry one short story chip without changing the shot order', () => {
+  const beats=sectorBeats('IT SEES YOU.');
+  assert.deepEqual(beats.map(beat => beat.id), SECTOR_BEATS.map(beat => beat.id));
+  assert.deepEqual(chipBudget(beats), ['IT SEES YOU.']);
+  assert.equal(beats[1].chip.at,.2,'the chapter lands just after the seam opens');
+});
+
+test('6A: the mid-wave lesson is a brief animated cutscene with a release handoff', () => {
+  const beats=midWaveBeats('LET IT PASS.');
+  assert.deepEqual(beats.map(beat=>beat.id),MID_WAVE_BEATS.map(beat=>beat.id));
+  assert.equal(chipBudget(beats)[0],'LET IT PASS.');
+  assert.deepEqual(beats.map(beat=>!!beat.lockInput),[true,true,true,false]);
+  assert.equal(lockTicks(beats),48,'the read window is brief');
+  assert.equal(beats[1].chip.at,.15);
+});
+
 test('6A: the SHATTER cinematic spends exactly one chip', () => {
   assert.deepEqual(chipBudget(SHATTER_BEATS), ['IT HOLDS.']);
 });
 
 test('6A: the cinematic clocks match the shot lists at 60 tps', () => {
-  assert.equal(COLD_OPEN_BEATS.reduce((n, b) => n + b.ticks, 0), 240, 'four seconds');
-  assert.equal(SHATTER_BEATS.reduce((n, b) => n + b.ticks, 0), 252, 'four point two seconds');
-  assert.equal(lockTicks(COLD_OPEN_BEATS), 240, 'the open holds the world throughout');
-  assert.equal(lockTicks(SHATTER_BEATS), 180, 'control returns at the 3.0s mark');
-  assert.equal(lockTicks(SHATTER_BEATS, true), 109, 'reduced motion shrinks the lock, not the order');
+  assert.equal(COLD_OPEN_BEATS.reduce((n, b) => n + b.ticks, 0), 144, 'two point four seconds');
+  assert.equal(SHATTER_BEATS.reduce((n, b) => n + b.ticks, 0), 150, 'two point five seconds');
+  assert.equal(SECTOR_BEATS.reduce((n, b) => n + b.ticks, 0), 60, 'one second');
+  assert.equal(lockTicks(SECTOR_BEATS), 50, 'the crossing hands back control before the last ember clears');
+  assert.equal(lockTicks(COLD_OPEN_BEATS), 120, 'the open releases on the handoff beat');
+  assert.equal(lockTicks(SHATTER_BEATS), 120, 'control returns at the 2.0s mark');
+  assert.equal(lockTicks(SHATTER_BEATS, true), 72, 'reduced motion shrinks the lock, not the order');
+  assert.deepEqual(CUTSCENE_PACING,{
+    coldOpen:{totalTicks:144,lockedTicks:120,releaseTicks:24,totalSeconds:2.4,lockedSeconds:2},
+    sector:{totalTicks:60,lockedTicks:50,releaseTicks:10,totalSeconds:1,lockedSeconds:50/60},
+    midWave:{totalTicks:72,lockedTicks:48,releaseTicks:24,totalSeconds:1.2,lockedSeconds:.8},
+    shatter:{totalTicks:150,lockedTicks:120,releaseTicks:30,totalSeconds:2.5,lockedSeconds:2},
+  });
 });
 
 test('6A: the release beat of the SHATTER cinematic never locks input', () => {
@@ -106,7 +141,8 @@ test('6A: every cutscene beat painter renders headlessly, both motion modes, wit
     const { canvas } = createDisplay(880, 710);
     const renderer = createRenderer(canvas);
     const run = createRun(77, () => {}, { waveMode: true, fracturePct: 65 });
-    for (const beat of [...COLD_OPEN_BEATS, ...SHATTER_BEATS]) {
+    run.state.storyMoment={emotion:'friendship',mechanic:'pulse',chip:'LET IT PASS.',lesson:'Dodge the expanding rim.'};
+    for (const beat of [...COLD_OPEN_BEATS, ...SECTOR_BEATS, ...MID_WAVE_BEATS, ...SHATTER_BEATS]) {
       for (const motion of [true, false]) {
         for (const t of [0.02, 0.5, 0.98]) {
           run.state.cutscene = {

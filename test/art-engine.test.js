@@ -16,7 +16,7 @@ test('art engine is an import-free portable ES module, without DOM/store/physics
   assert.doesNotMatch(source,/\b(?:document|window)\s*[.\[]|\b(?:localStorage|sessionStorage|ResizeObserver|requestAnimationFrame|getComputedStyle)\s*[.(]/);
   assert.doesNotMatch(source,/\b(?:Matter|Body|Engine|Composite)\s*\.|run\.setView|\.setVelocity\s*\(/);
   const portable=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
-  for(const name of ['drawCubeHero','drawShopCardArt','drawSlashEffect','drawEnemyShape','drawWorldBackdrop','drawBestStrokeMini','evaluatePreviewPose','createArtRenderer'])assert.equal(typeof portable[name],'function',name);
+  for(const name of ['drawCubeHero','drawShopCardArt','drawSlashEffect','drawEnemyShape','drawTrainingCard','drawWorldBackdrop','drawBestStrokeMini','evaluatePreviewPose','createArtRenderer'])assert.equal(typeof portable[name],'function',name);
   assert.equal(portable.HYBRIDS.length,17);assert.equal(portable.SPARKS.length,18);
 });
 
@@ -52,6 +52,11 @@ test('public art API renders every catalogue item and preserves context and spec
   for(const kind of Object.keys(art.legacy_shapes.TYPES)){
     art.drawEnemyShape(ctx,{kind,x:300,y:180,radius:40});art.drawFieldSpecimen(ctx,312,166,kind);
   }
+  for(const spec of [
+    {lessonId:'slash',kind:'fang',count:3},
+    {lessonId:'link',kind:'prism',count:2},
+    {lessonId:'monolith',kind:'monolith'},
+  ]) art.drawTrainingCard(ctx,300,160,{...spec,selected:true,time:48,motion:true});
   const stroke=frozen({origin:{x:0,y:0},angle:0,shot:2,kills:1,points:100,equipment:eq,marks:[{x:100,y:-20,r:24,kind:'fang',angle:0,cut:.2,hpBefore:1}]});
   assert.match(art.drawBestStrokeMini(ctx,640,120,stroke),/Stroke 2:.*100 points/);
   assert.ok(canvas.toBuffer('image/png').length>5000);

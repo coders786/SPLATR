@@ -182,6 +182,56 @@
  * All Canvas geometry, animation curves, palettes and composition live below.
  */
 
+/**
+ * One owner per event. This is deliberately data, not a second animation
+ * system: tests and future art passes can inspect the contract without guessing
+ * which of the many old layers is allowed to answer a moment on screen.
+ */
+export const VISUAL_EVENT_MAP = Object.freeze({
+  dash: Object.freeze({
+    source: 'state.launchAngle + state.slashAge',
+    primary: 'elemental-wake',
+    evidence: Object.freeze(['launch-dust', 'brake-sparks', 'measured-afterimages']),
+    suppressed: Object.freeze(['cube-smear', 'lead-trail-marks', 'generic-speed-wedge', 'generic-airborne-smear'])
+  }),
+  slashContact: Object.freeze({
+    source: 'contact.angle / state.slashAngle',
+    primary: 'blade-or-sword',
+    evidence: Object.freeze(['one-local-contact-burst', 'actual-shards']),
+    suppressed: Object.freeze(['generic-impact-wave-for-cut'])
+  }),
+  fallLanding: Object.freeze({
+    source: 'state.fallAge + velocity.y / state.landAge + grounded',
+    primary: 'fall-pose / landing-squash',
+    evidence: Object.freeze(['upward-fall-streaks', 'grounded-ring']),
+    suppressed: Object.freeze(['landing-ring-while-airborne'])
+  }),
+  bank: Object.freeze({
+    source: 'real rail contact + inward normal',
+    primary: 'dimension-frame-bite',
+    evidence: Object.freeze(['measured-bank-scar', 'directional-boom-when-owned']),
+    suppressed: Object.freeze(['generic-impact-wave', 'generic-boom-when-source-bank'])
+  }),
+  hurtDeath: Object.freeze({
+    source: 'contact snapshot / fatal state',
+    primary: 'local-damage-reaction',
+    evidence: Object.freeze(['fracture', 'damage-stain']),
+    suppressed: Object.freeze(['slash-contact-geometry'])
+  }),
+  enemyTell: Object.freeze({
+    source: 'enemy.mode + clock + span + aim',
+    primary: 'enemy-warning',
+    evidence: Object.freeze(['active-hazard-at-source']),
+    suppressed: Object.freeze(['tell-as-hazard'])
+  }),
+  theWatch: Object.freeze({
+    source: 'teaching.visualTutorial real phase/callbacks',
+    primary: 'tutorial-guidance / watch-scene',
+    evidence: Object.freeze(['real-tell', 'real-resolve', 'real-hurt-or-miss']),
+    suppressed: Object.freeze(['fabricated-tutorial-combat'])
+  })
+});
+
 var __defProp = Object.defineProperty;
 var __export = (target, all) => {
   for (var name in all)
@@ -669,10 +719,10 @@ function moveFor(vx, vy, hold = 0) {
     stress
   };
 }
-function cubePose({ vx = 0, vy = 0, age = 0, slashAge = -1, fallAge = -1, landAge = -1, hold = 0, facing = 1 } = {}) {
+function cubePose({ vx = 0, vy = 0, age = 0, slashAge = -1, fallAge = -1, landAge = -1, hold = 0, facing = 1, suppressFall = false } = {}) {
   const move = moveFor(vx, vy, hold);
   let lean = move.lean, tall = move.tall, wide = move.wide, eyes2 = move.eyes, scarf = move.scarf, twist = move.twist, stretch = move.stretch, counter = 0, slash = null, fall = null, land = null;
-  fall = fallFor(vy, move.speed);
+  fall = suppressFall ? null : fallFor(vy, move.speed);
   if (fall) {
     lean += fall.lean;
     const f = Math.min(1, fall.k * 0.6 + fall.rush * 0.3 + fall.dive * 0.3);
@@ -750,9 +800,21 @@ var DASH = Object.freeze({
   /** Sum of the three. Written out because the object is frozen. */
   total: 15
 });
-function dashFor(slashAge, vx, vy) {
+/** Resolve a dash's octant from its committed launch bearing when one exists.
+ *
+ * `vx/vy` remain the compatibility fallback for pure animation callers and old
+ * preview fixtures. Gameplay passes the launch angle captured by `run.dash()`;
+ * a rail reflection or a later steering update must never turn the already
+ * committed dash telegraph around underneath the player.
+ */
+function dashDirection(vx, vy, launchAngle = null) {
+  return Number.isFinite(launchAngle)
+    ? octant(Math.cos(launchAngle), Math.sin(launchAngle))
+    : octant(vx, vy);
+}
+function dashFor(slashAge, vx, vy, launchAngle = null) {
   if (!(slashAge >= 0) || slashAge > DASH.total) return null;
-  const dir = octant(vx, vy);
+  const dir = dashDirection(vx, vy, launchAngle);
   const speed = Math.hypot(vx, vy);
   const power = clamp01(speed / 42);
   const a = dir / 8 * TAU2;
@@ -6835,11 +6897,14 @@ export function resolveDashTreatment(equipment={},sword=null,buff=null){
 
 /** Local bounded geometry follows actual velocity. Age is simulation ticks, not RAF count.
  * No randomness, filters, particles, DOM, imported state, or gameplay mutations. */
-export function drawElementalDash(c,{x=0,y=0,vx=0,vy=0,age=-1,element='ink',radius=22,motion=true,equipment=null,sword=null,buff=null}={}){
+export function drawElementalDash(c,{x=0,y=0,vx=0,vy=0,angle=null,travel=0,age=-1,element='ink',radius=22,motion=true,equipment=null,sword=null,buff=null}={}){
  if(!motion||!Number.isFinite(age)||age<0||age>20||![x,y,vx,vy,radius].every(Number.isFinite))return;
  const speed=Math.hypot(vx,vy);if(speed<4||radius<=0)return;
  const treatment=resolveDashTreatment(equipment||{},sword,buff);
- const t=age/20,fade=(1-t)**2,punch=Math.exp(-age*treatment.decay),length=Math.min(180,speed*3.3)*(0.35+.65*punch),r=Math.min(30,radius),a=Math.atan2(vy,vx);
+  // The launch bearing owns orientation. Speed only changes the envelope; it
+  // cannot redirect a wake after a bank, rail reflection, or collision.
+ const a=Number.isFinite(angle)?angle:Math.atan2(vy,vx),r=Math.min(30,radius),measuredTravel=Number.isFinite(travel)?Math.max(0,travel):0;
+ const t=age/20,fade=(1-t)**2,punch=Math.exp(-age*treatment.decay),length=Math.min(180,speed*3.3)*(0.35+.65*punch),trailEvidence=Math.min(1,measuredTravel/Math.max(1,r*2.2));
  const baseColor={ink:'#eee9d9',fire:'#ff9856',lightning:'#8cecf4',ice:'#b1eaff',water:'#89dfcb',void:'#bd9bff',echo:'#edabd9'}[element]||'#eee9d9';
  const color=equipment?blend(baseColor,treatment.energy,.23):baseColor,light=equipment?blend(baseColor,treatment.light,.5):'#e9ffff';
  c.save();try{c.translate(x,y);c.rotate(a);c.scale(treatment.stretch,treatment.compression);c.globalAlpha=.65*fade;c.lineCap='butt';c.lineJoin='miter';
@@ -6865,27 +6930,34 @@ export function drawElementalDash(c,{x=0,y=0,vx=0,vy=0,age=-1,element='ink',radi
  }
  // Two speed slits narrow with cubic decay; avoid persistent scene-wide lines.
  c.globalAlpha=.35*fade;for(const side of[-1,1])line([[-r*1.3,side*r*1.05],[-r*1.3-length*(1-t)**3,side*r*1.05]],1,color);
+ // Position evidence is deliberately a separate, small trailing cue. It is
+ // measured displacement, never a second direction estimate.
+ if(trailEvidence>.05){
+  c.globalAlpha=.22*fade*trailEvidence;
+  line([[-r*1.05,-r*.82],[-r*(1.05+.8*trailEvidence),-r*.82]],1.2,light);
+  line([[-r*1.05,r*.82],[-r*(1.05+.8*trailEvidence),r*.82]],1.2,light);
+ }
  }finally{c.restore();}
 }
 
 /** A hand-drawn smear cel made from three offset slices of the cube itself.
  * Geometry is in hero radii, driven by the existing dash clock and velocity;
  * no physics writes, random numbers, rotation or second animation clock. */
-export function resolveCubeDashSmear({vx=0,vy=0,age=-1,radius=22,motion=true}={}){
+export function resolveCubeDashSmear({vx=0,vy=0,angle=null,age=-1,radius=22,motion=true}={}){
  if(!motion||![vx,vy,age,radius].every(Number.isFinite)||radius<=0)return null;
  const speed=Math.hypot(vx,vy);
  if(!Number.isFinite(speed)||speed<6||age<=DASH.windup||age>=DASH.windup+DASH.active)return null;
  const u=(age-DASH.windup)/DASH.active;
  const envelope=Math.sin(Math.PI*u)**0.8, power=Math.min(1,speed/42);
- const r=Math.min(radius,80),ux=vx/speed,uy=vy/speed;
+ const r=Math.min(radius,80),ux=Number.isFinite(angle)?Math.cos(angle):vx/speed,uy=Number.isFinite(angle)?Math.sin(angle):vy/speed;
  // Three deliberately unequal slices stagger backward. Lag is bounded in world
  // units, direction-normalized and tapers smoothly to zero at both ends.
  const offsets=[.86,1.30,1.82].map(k=>r*k*power*envelope);
- return {ux,uy,r,envelope,power,offsets,vertical:Math.abs(vy)>Math.abs(vx)};
+ return {ux,uy,r,envelope,power,offsets,vertical:Math.abs(uy)>Math.abs(ux)};
 }
-export function drawCubeDashSmear(c,{x=0,y=0,vx=0,vy=0,age=-1,radius=22,equipment={},motion=true}={}){
+export function drawCubeDashSmear(c,{x=0,y=0,vx=0,vy=0,angle=null,age=-1,radius=22,equipment={},motion=true}={}){
  if(!Number.isFinite(x)||!Number.isFinite(y))return;
- const smear=resolveCubeDashSmear({vx,vy,age,radius,motion});if(!smear)return;
+ const smear=resolveCubeDashSmear({vx,vy,angle,age,radius,motion});if(!smear)return;
  const {ux,uy,r,envelope,power,offsets,vertical}=smear;
  equipment=equipment||{};
  const body=resolveBodyConstruction(equipment.body),palette=corePalette(equipment.core);
@@ -7176,7 +7248,10 @@ function createRenderer(c, viewport) {
         if (d.age >= d.life) dashDust.splice(i, 1);
       }
       if (s.swingStart !== dashBurstSwing || s.slashAge < 0) { dashBurstSwing = s.swingStart; dashBurstAt = -1; }
-      const dash = dashFor(s.slashAge, world.player.velocity.x, world.player.velocity.y);
+      const launchAngle = Number.isFinite(s.launchAngle)
+        ? s.launchAngle
+        : Math.atan2(world.player.velocity.y, world.player.velocity.x);
+      const dash = dashFor(s.slashAge, world.player.velocity.x, world.player.velocity.y, launchAngle);
       if (s.phase === "playing" && dash && s.slashAge !== dashBurstAt) {
         const launch = s.slashAge === DASH.windup, brake = s.slashAge === DASH.windup + DASH.active;
         if (launch || brake) {
@@ -7246,7 +7321,7 @@ function createRenderer(c, viewport) {
         e.angle += (e.spin || 0) * dt;
       }
   }
-  function speedField(c2, world, v, time, state) {
+  function speedField(c2, world, v, time, state, bearing = null) {
     const body = world.player, p = body.position, speed = Math.hypot(body.velocity.x, body.velocity.y), tier = tierOf(speed, MAX_SPEED);
     if (tier.index === 0) return;
     const sweep = tier.t;
@@ -7287,7 +7362,11 @@ function createRenderer(c, viewport) {
     const moved = state?.moved ?? world.realMoved ?? speed;
     const gate = MAX_SPEED * 0.65;
     if (moved > gate) {
-      const cx = w / 2, cy = h / 2, travel = Math.abs(body.velocity.x) + Math.abs(body.velocity.y) > 0.01 ? Math.atan2(body.velocity.y, body.velocity.x) : 0, behind = travel + Math.PI, reach = Math.hypot(w, h), calm = Math.min(1, (moved - gate) / (MAX_SPEED - gate)), lines = Math.min(8, 3 + Math.round(5 * calm));
+      const cx = w / 2, cy = h / 2, travel = Number.isFinite(bearing)
+        ? bearing
+        : Math.abs(body.velocity.x) + Math.abs(body.velocity.y) > 0.01
+          ? Math.atan2(body.velocity.y, body.velocity.x)
+          : 0, behind = travel + Math.PI, reach = Math.hypot(w, h), calm = Math.min(1, (moved - gate) / (MAX_SPEED - gate)), lines = Math.min(8, 3 + Math.round(5 * calm));
       c2.globalCompositeOperation = "lighter";
       c2.lineCap = "round";
       for (let i = 0; i < lines; i++) {
@@ -7398,9 +7477,47 @@ function createRenderer(c, viewport) {
     }
     c2.restore();
   }
+  function storyEmotionMotif(c,width,height,emotion,time,motion,intensity=.8){
+    if(!emotion)return;
+    const clock=motion?time:0,pulse=motion?(.5+.5*Math.sin(clock*.055)):.65,power=Math.max(0,Math.min(1,Number(intensity)||0));
+    if(!power)return;
+    c.save();c.lineCap='round';c.lineJoin='round';
+    if(emotion==='friendship'){
+      const x=width*.22,y=height*.17,gap=Math.min(width*.075,54),s=10+4*pulse;
+      c.globalAlpha=.16+.15*power;c.strokeStyle='#ffd68c';c.lineWidth=2;
+      c.beginPath();c.moveTo(x-gap,y);c.quadraticCurveTo(x,y-height*.035*(.7+pulse),x+gap,y);c.stroke();
+      c.globalAlpha=.32+.28*power;c.fillStyle='#ffe7a7';c.beginPath();c.arc(x+(pulse*2-1)*gap,y-height*.012,s*.24,0,Math.PI*2);c.fill();
+      for(const side of [-1,1]){c.save();c.translate(x+side*gap,y);c.rotate(side*(.12+.1*pulse));c.globalAlpha=.42+.2*power;c.fillStyle='#171323';c.strokeStyle='#ffd68c';c.lineWidth=2.5;c.beginPath();c.moveTo(0,-s);c.lineTo(s*.72,0);c.lineTo(0,s);c.lineTo(-s*.72,0);c.closePath();c.fill();c.stroke();c.fillStyle='#ddff89';c.globalAlpha=.72;c.beginPath();c.arc(0,0,2.4,0,Math.PI*2);c.fill();c.restore();}
+    }else if(emotion==='fear'){
+      const x=width*.5,y=height*.17,r=Math.min(width,height)*.14;
+      c.globalAlpha=.12+.13*power;c.strokeStyle='#ff7e6d';c.lineWidth=2;
+      for(let i=0;i<3;i++){const rr=r*(1+i*.24)+pulse*3;c.beginPath();c.arc(x,y,rr,-Math.PI*.18+clock*.002+i*.7,Math.PI*.72+clock*.002+i*.7);c.stroke();}
+      c.globalAlpha=.3+.2*power;c.strokeStyle='#ffb27a';c.beginPath();c.moveTo(x-r*1.25,y);c.lineTo(x-r*.92,y);c.moveTo(x+r*.92,y);c.lineTo(x+r*1.25,y);c.stroke();
+    }else if(emotion==='rage'){
+      const x=width*.5,y=height*.42,flare=.65+.35*pulse;
+      c.globalAlpha=(.12+.16*power)*flare;c.strokeStyle='#ff684f';c.lineWidth=3;
+      for(let i=0;i<7;i++){const a=-Math.PI*.92+i*Math.PI*.3+Math.sin(clock*.03+i)*.025,r0=Math.min(width,height)*.08,r1=r0+20+18*pulse;c.beginPath();c.moveTo(x+Math.cos(a)*r0,y+Math.sin(a)*r0);c.lineTo(x+Math.cos(a)*r1,y+Math.sin(a)*r1);c.stroke();}
+      c.globalAlpha=.34+.2*power;c.fillStyle='#ffb066';c.beginPath();c.arc(x,y,3+3*pulse,0,Math.PI*2);c.fill();
+    }else if(emotion==='ambition'){
+      const base=height*.52,top=height*.09,x=width*.74,step=Math.min(width*.055,42);
+      c.globalAlpha=.16+.16*power;c.strokeStyle='#ffe09a';c.lineWidth=2.5;
+      for(let i=0;i<4;i++){const y=base-i*(base-top)/4,xx=x-i*step;c.beginPath();c.moveTo(xx-step*1.5,y);c.lineTo(xx+step*.6,y);c.lineTo(xx+step*.6,y-(base-top)/4);c.stroke();}
+      c.globalAlpha=.34+.2*power;c.beginPath();c.moveTo(x-3*step,top+20);c.lineTo(x-3*step,top);c.lineTo(x-3*step-10,top+12);c.moveTo(x-3*step,top);c.lineTo(x-3*step+10,top+12);c.stroke();
+    }else if(emotion==='love'){
+      const y=height*.18,gap=Math.min(width*.13,88),x=width*.5;
+      c.globalAlpha=.16+.16*power;c.strokeStyle='#ffe0a0';c.lineWidth=2.5;c.beginPath();c.moveTo(x-gap,y);c.bezierCurveTo(x-gap*.38,y-height*.07,x+gap*.38,y-height*.07,x+gap,y);c.stroke();
+      c.globalAlpha=.28+.22*power;c.fillStyle='#ffe7ad';c.beginPath();c.arc(x+(pulse*2-1)*gap,y-height*.035*(.5+pulse),3+2*pulse,0,Math.PI*2);c.fill();
+      for(const side of [-1,1]){c.globalAlpha=.45+.2*power;c.fillStyle=side<0?'#ffd68c':'#ddff89';c.beginPath();c.arc(x+side*gap,y,5+2*pulse,0,Math.PI*2);c.fill();}
+    }else if(emotion==='resolve'){
+      const y=height*.25,gap=Math.min(width*.12,80),x=width*.5;
+      c.globalAlpha=.18+.14*power;c.strokeStyle='#ffe0a0';c.lineWidth=3;c.beginPath();c.moveTo(x-gap,y);c.lineTo(x-gap*.42,y-height*.055);c.lineTo(x+gap*.42,y-height*.055);c.lineTo(x+gap,y);c.stroke();
+      c.globalAlpha=.34+.2*power;c.fillStyle='#fff0b5';c.beginPath();c.arc(x,y-height*.055,4+3*pulse,0,Math.PI*2);c.fill();
+    }
+    c.restore();
+  }
   function narrativeBackdrop(n, width, height, time, motion) {
     if (!n) return;
-    const clock=motion?time:0, sector=n.sector;
+    const clock=motion?time:0, sector=n.sector, chapter=n.chapter||'';
     c.save();
     if(n.intro){
       const q=Math.min(1,n.introAge/55);c.fillStyle=`rgba(8,7,20,${.12+q*.34})`;c.fillRect(0,0,width,height);
@@ -7418,6 +7535,21 @@ function createRenderer(c, viewport) {
       } else if(sector===3){
         for(let i=0;i<3;i++){const on=i<n.conduits;c.strokeStyle=on?'#a4f6c770':'#64615f55';c.lineWidth=3;c.beginPath();c.moveTo(i*width*.3,0);c.lineTo(i*width*.3,height*.34);c.lineTo(i*width*.3+width*.12,height*.46);c.stroke();if(!on&&motion&&n.sparkAge>0){c.fillStyle='#ffe79a';c.globalAlpha=.3+.4*Math.abs(Math.sin(clock*.14+i));c.fillRect(i*width*.3+width*.12,height*.46,4,4);c.globalAlpha=1;}}
       } else if(sector>=4){for(let i=0;i<22;i++){c.fillStyle=i%4?'#ffe8b466':'#fff6d3aa';c.fillRect((i*179+23)%width,(i*79+31)%(height*.55),i%4?2:3,i%4?2:3);}}
+      // Each wave has a visual noun. These motifs are the sentence behind the
+      // chapter chip: an eye turns, the seam climbs, and the final seal burns.
+      if(chapter==='eye'){
+        const ex=width*.5,ey=height*.17,open=.72+.12*Math.sin(clock*.06);
+        c.save();c.globalAlpha=.78;c.strokeStyle='#ffb27a99';c.lineWidth=4;c.beginPath();c.ellipse(ex,ey,width*.12,height*.038*open,0,0,Math.PI*2);c.stroke();
+        c.fillStyle='#ff6f6288';c.beginPath();c.arc(ex,ey,height*.018,0,Math.PI*2);c.fill();c.fillStyle='#ffe8b2';c.beginPath();c.arc(ex,ey,height*.007,0,Math.PI*2);c.fill();
+        c.globalAlpha=.28;c.strokeStyle='#ff8368';c.lineWidth=2;for(let i=0;i<8;i++){const a=i*Math.PI/4+clock*.012;c.beginPath();c.moveTo(ex+Math.cos(a)*width*.14,ey+Math.sin(a)*height*.05);c.lineTo(ex+Math.cos(a)*width*.19,ey+Math.sin(a)*height*.08);c.stroke();}c.restore();
+      } else if(chapter==='seam'||chapter==='last-seal'){
+        const sx=width*.5,reach=chapter==='last-seal' ? .38 : .28;c.save();c.globalAlpha=.5;c.strokeStyle='#e8b36f';c.lineWidth=3;c.beginPath();c.moveTo(sx,height*.02);c.lineTo(sx-width*.025,height*reach*.45);c.lineTo(sx+width*.018,height*reach);c.stroke();c.globalAlpha=.22;c.strokeStyle='#ddff89';c.lineWidth=10;c.beginPath();c.moveTo(sx,height*.04);c.lineTo(sx-width*.02,height*reach*.46);c.lineTo(sx+width*.015,height*reach);c.stroke();c.restore();
+      } else if(chapter==='landlord'){
+        c.save();c.globalAlpha=.34;c.fillStyle='#ff996688';c.beginPath();c.arc(width*.5,height*.24,Math.min(width,height)*.16,0,Math.PI*2);c.fill();c.restore();
+      }
+      // The chapter noun sets the place; the emotional motif sets the reason
+      // to keep cutting. It is animation, not an explanatory overlay.
+      storyEmotionMotif(c,width,height,n.emotion,clock,motion,.9);
     }
     // A small independent story silhouette never intercepts input or pauses play.
     if(n.intro||n.reaction){
@@ -7438,6 +7570,22 @@ function createRenderer(c, viewport) {
       c.save();c.translate(lock.x,lock.y);c.strokeStyle=lock.broken?'#544751':'#c0a6a8';c.lineWidth=3;c.beginPath();c.moveTo(0,-34);c.lineTo(0,seal.y-lock.y);c.stroke();
       if(lock.broken){c.strokeStyle='#e7e7a0';c.beginPath();c.moveTo(-24,-8);c.lineTo(-8,4);c.moveTo(8,-4);c.lineTo(25,8);c.stroke();}
       else{c.rotate(Math.PI/4);c.fillStyle='#352634';c.strokeStyle='#e1b878';c.lineWidth=4;c.fillRect(-25,-25,50,50);c.strokeRect(-25,-25,50,50);c.fillStyle='#f7df94';c.fillRect(-5,-5,10,10);}
+      c.restore();
+    }
+    // A lock is a real piece of the Watcher's machinery. When the blade breaks
+    // one, the world answers at that exact coordinate: a ring opens, the
+    // conduit snaps, and three fragments leave the anchor. This is intentionally
+    // local and short — the sector crossing remains the large story sentence.
+    for(const burst of n.lockBursts||[]){
+      const age=Math.max(0,burst.age||0),u=motion?Math.min(1,age/30):.18,fade=Math.max(0,1-age/30),spin=(burst.index||0)*.7+u*1.8;
+      c.save();c.translate(burst.x,burst.y);c.rotate(spin);c.globalAlpha=.8*fade;
+      c.strokeStyle='#e6ff78';c.lineWidth=4/scale;c.beginPath();c.arc(0,0,(38+u*35)/scale,0,Math.PI*2);c.stroke();
+      c.globalAlpha=.9*fade;c.strokeStyle='#ffd487';c.lineWidth=2/scale;
+      for(let i=0;i<3;i++){
+        const a=i*Math.PI*2/3-.4,r=(22+u*54)/scale,x=Math.cos(a)*r,y=Math.sin(a)*r;
+        c.beginPath();c.moveTo(Math.cos(a)*12/scale,Math.sin(a)*12/scale);c.lineTo(x,y);c.stroke();
+        c.fillStyle=i===1?'#fff2be':'#ddff89';c.fillRect(x-3/scale,y-3/scale,6/scale,6/scale);
+      }
       c.restore();
     }
     c.restore();
@@ -7528,7 +7676,7 @@ function createRenderer(c, viewport) {
   }
 
   // ── CHUNK 6A: THE CUTSCENE OVERLAY ─────────────────────────────────────
-  // Screen-space painters for the two cutscenes, keyed off `s.cutscene`
+  // Screen-space painters for the story sequences, keyed off `s.cutscene`
   // (mirrored by the shell every tick). Draws after everything, before the
   // DOM HUD — the chips live in the DOM, not here.
   function watcherMask(c, x, y, scale, { glow = 0, split = 0, eye = 1 } = {}) {
@@ -7567,6 +7715,95 @@ function createRenderer(c, viewport) {
     }
     return pts;
   }
+  function drawStoryMechanicDiagram(c,w,h,moment,progress,clock,motion,sx,sy,v,shot='tension'){
+    // This is the actual first-wave Pulse lesson, enlarged into a cinematic
+    // frame. The ring is whole—there is no invented gap—and the player glyph
+    // visibly crosses clear of its expanding rim while the Watcher holds the
+    // thread. Each shot changes the composition, not just a caption.
+    const phase=motion?Math.max(0,Math.min(1,progress)):0.72,
+      pulse=motion?(.5+.5*Math.sin(clock*.08)):.7,
+      cx=w*.56,cy=h*.43,scale=Math.min(w,h)/700,
+      acid='#ddff89',warm='#ffd487',hot='#ff8068',ink='#121020',pass=shot==='pass',returnShot=shot==='return';
+    const watcherX=w*.17,watcherY=h*.2,ring=22*scale+phase*112*scale;
+    const escape=Math.max(0,Math.min(1,(phase-.12)/.7)),path=-.54,
+      passU=pass?Math.max(0,Math.min(1,(phase-.5)/.32)):0,
+      cutterX=pass
+        ? cx+(-150+passU*300)*scale
+        : cx+Math.cos(path)*(ring+24*scale+escape*42*scale),
+      cutterY=pass
+        ? cy+Math.sin(path)*(ring+24*scale)-Math.sin(passU*Math.PI)*44*scale
+        : cy+Math.sin(path)*(ring+24*scale+escape*42*scale);
+    const sourceX=Number.isFinite(moment?.targetX)&&Number.isFinite(v?.scale)
+      ? (moment.targetX-v.x)*v.scale : NaN,
+      sourceY=Number.isFinite(moment?.targetY)&&Number.isFinite(v?.scale)
+      ? (moment.targetY-v.y)*v.scale : NaN;
+    const valid=(x,y)=>Number.isFinite(x)&&Number.isFinite(y)&&x>24&&x<w-24&&y>36&&y<h-30;
+    const thread=(x0,y0,x1,y1,alpha,width=2)=>{
+      const tremor=motion?(Math.sin(clock*.22)*3+Math.sin(clock*.071)*2)*scale:0;
+      c.save();c.globalAlpha=alpha;c.strokeStyle=warm;c.lineWidth=width*scale;c.beginPath();
+      c.moveTo(x0,y0);c.quadraticCurveTo((x0+x1)*.5+tremor,Math.min(y0,y1)-26*scale+tremor,x1,y1);c.stroke();
+      if(motion&&phase>.32){c.globalAlpha=alpha*.28;c.strokeStyle=hot;c.lineWidth=Math.max(1,width*.45)*scale;c.beginPath();c.moveTo(x0,y0+3*scale);c.quadraticCurveTo((x0+x1)*.5-tremor,Math.min(y0,y1)-20*scale-tremor,x1,y1+2*scale);c.stroke();}
+      c.restore();
+    };
+    const ringLine=(r,alpha,width,color=hot)=>{c.save();c.globalAlpha=alpha;c.strokeStyle=color;c.lineWidth=width*scale;c.beginPath();c.arc(cx,cy,r,0,Math.PI*2);c.stroke();c.restore();};
+    c.save();c.lineCap='round';c.lineJoin='round';
+    if(valid(sourceX,sourceY)){
+      c.globalAlpha=.2;c.strokeStyle=warm;c.lineWidth=1.5;c.setLineDash([5,10]);c.beginPath();c.moveTo(sourceX,sourceY);c.lineTo(cx,cy);c.stroke();c.setLineDash([]);
+      c.globalAlpha=.55;c.strokeStyle=warm;c.lineWidth=2;c.beginPath();c.arc(sourceX,sourceY,18*scale+4*pulse*scale,0,Math.PI*2);c.stroke();
+    }
+    const threadEndX=phase>.8?watcherX+42*scale:cutterX,
+      threadEndY=phase>.8?watcherY+8*scale:cutterY;
+    thread(watcherX+40*scale,watcherY+5*scale,threadEndX,threadEndY,.38+.3*(1-phase),2.2);
+    // The Watcher does not merely point at the danger: two angular braces
+    // visibly take the wave's force. Their light bends toward the ring, then
+    // thins when the Cutter gets through.
+    if(phase>.18&&!returnShot){
+      const braceAlpha=Math.min(.7,(phase-.18)*1.25)*(pass?.9:1);
+      c.save();c.globalAlpha=braceAlpha;c.strokeStyle=warm;c.lineWidth=4*scale;c.lineCap='round';
+      for(const side of [-1,1]){
+        const x0=watcherX+48*scale,y0=watcherY+side*24*scale,
+          x1=cx-ring*.62,y1=cy+side*ring*.62;
+        c.globalAlpha=braceAlpha;c.beginPath();c.moveTo(x0,y0);c.quadraticCurveTo((x0+x1)*.5-12*scale,Math.min(y0,y1)-side*18*scale,x1,y1);c.stroke();
+        c.globalAlpha=braceAlpha*.72;c.beginPath();c.moveTo(x1,y1);c.lineTo(x1+side*13*scale,y1-side*9*scale);c.stroke();
+      }
+      c.restore();
+    }
+    // After the pass, the Watcher is still holding the far end; the connection
+    // is no longer a comfortable line between friends.
+    if(phase>.62&&motion){
+      const fx=cx+Math.cos(path)*(ring-4*scale),fy=cy+Math.sin(path)*(ring-4*scale);
+      c.globalAlpha=.65*(phase-.62)/.38;c.strokeStyle=hot;c.lineWidth=2*scale;
+      for(let i=0;i<4;i++){const a=-.8+i*.52;c.beginPath();c.moveTo(fx,fy);c.lineTo(fx+Math.cos(a)*18*scale,fy+Math.sin(a)*18*scale);c.stroke();}
+    }
+    // Trailing rings are afterimages of the same expanding annulus, not extra
+    // hazards. The leading solid rim is the actionable thing to read.
+    ringLine(Math.max(5,ring-46*scale),.1+.12*pulse,2,warm);
+    ringLine(Math.max(5,ring-22*scale),.18+.16*pulse,3,warm);
+    c.save();c.shadowColor=hot;c.shadowBlur=18*scale;
+    ringLine(ring,.52+.25*pulse,5,hot);c.restore();
+    if(motion){
+      c.save();c.lineCap='round';
+      for(let i=0;i<12;i++){
+        const a=i*Math.PI*2/12+clock*.018,inner=ring+5*scale+((i*17)%9)*scale,outer=inner+(5+10*phase)*scale;
+        c.globalAlpha=.16+.22*pulse;c.strokeStyle=i%3===0?acid:warm;c.lineWidth=(1.2+(i%2))*scale;c.beginPath();c.moveTo(cx+Math.cos(a)*inner,cy+Math.sin(a)*inner);c.lineTo(cx+Math.cos(a)*outer,cy+Math.sin(a)*outer);c.stroke();
+      }
+      c.restore();
+    }
+    c.globalAlpha=.1+.06*pulse;c.fillStyle=acid;c.beginPath();c.arc(cx,cy,Math.max(3,ring-10*scale),0,Math.PI*2);c.fill();
+    foe(c,'pulse',cx,cy,24*scale,0,{time:clock,mode:'idle'});
+    // The Cutter exits the rim's path. This is the same moving-body action the
+    // live Pulse collision allows; the visual never claims the ring has a gap.
+    if(pass&&motion){
+      const slashT=Math.max(0,Math.min(1,passU)),slashFade=Math.sin(Math.PI*slashT);
+      c.save();c.translate(cutterX,cutterY);c.rotate(path+.2);c.globalAlpha=.45+.45*slashFade;c.strokeStyle=acid;c.shadowColor=acid;c.shadowBlur=16*scale;c.lineWidth=4*scale;c.beginPath();c.moveTo(-42*scale,28*scale);c.lineTo(34*scale,-34*scale);c.stroke();c.shadowBlur=0;c.globalAlpha=.55*slashFade;c.lineWidth=2*scale;c.beginPath();c.moveTo(-34*scale,37*scale);c.lineTo(43*scale,-25*scale);c.stroke();c.restore();
+    }
+    cube(c,cutterX,cutterY,pass?20*scale:17*scale,path+.2,0,1);
+    c.save();c.globalAlpha=.72+.2*pulse;c.strokeStyle=acid;c.lineWidth=3*scale;c.beginPath();
+    c.moveTo(cutterX,cutterY);c.lineTo(cutterX+Math.cos(path)*30*scale,cutterY+Math.sin(path)*30*scale);c.lineTo(cutterX+Math.cos(path)*22*scale-7*scale,cutterY+Math.sin(path)*22*scale-5*scale);c.moveTo(cutterX+Math.cos(path)*30*scale,cutterY+Math.sin(path)*30*scale);c.lineTo(cutterX+Math.cos(path)*22*scale-7*scale,cutterY+Math.sin(path)*22*scale+5*scale);c.stroke();c.restore();
+    const watcherGlow=returnShot?.28:phase>.72?.95:.72;
+    watcherMask(c,watcherX,watcherY,Math.min(w,h)*.00092+.25,{glow:watcherGlow,eye:returnShot?.22:.42+.45*(1-phase),split:returnShot?.18:phase>.82?(phase-.82)*.25:0});
+    c.restore();
+  }
   function drawCutsceneOverlay(c, w, h, s, v, p, time, motion) {
     const cs = s.cutscene;
     if (!cs) return;
@@ -7575,6 +7812,8 @@ function createRenderer(c, viewport) {
     const t = cs.t, easeOut = (u) => 1 - Math.pow(1 - u, 3), easeIn = (u) => u * u * u;
     const wash = (a) => { c.fillStyle = `rgba(4,4,10,${a})`; c.fillRect(0, 0, w, h); };
     c.save();
+    if(cs.beatId?.startsWith('sector-'))storyEmotionMotif(c,w,h,s.narrative?.emotion,cs.elapsedTotal??time,motion,.82);
+    if(cs.beatId?.startsWith('mid-wave-'))storyEmotionMotif(c,w,h,s.storyMoment?.emotion,cs.elapsedTotal??time,motion,.32);
     // Letterbox bars for the locked beats.
     if (cs.lockInput) {
       const barT = Math.min(1, Math.min(t, 1 - t) / 0.16);
@@ -7585,7 +7824,7 @@ function createRenderer(c, viewport) {
     switch (cs.beatId) {
       case 'cold-dark': {
         wash(0.96 - 0.06 * t);
-        // Sparks falling from the dark.
+        // The hook is deliberately brief: sparks and eyes arrive immediately.
         for (let i = 0; i < 26; i++) {
           const x = hash(11, i, 3) % 1000 / 1000 * w;
           const y = ((hash(11, i, 5) % 1000) / 1000 * h * 0.35 + t * h * 0.42);
@@ -7679,6 +7918,97 @@ function createRenderer(c, viewport) {
         watcherMask(c, w / 2, h * 0.3, Math.min(w, h) * 0.0016 + 0.55, { glow: Math.max(0, 1 - t * 1.6), eye: Math.max(0, 1 - t) });
         break;
       }
+      case 'mid-wave-signal': {
+        // A mid-wave beat is a signal, not a pause: the Watcher points at the
+        // real Pulse while the live formation remains visible underneath.
+        wash(.18);
+        drawStoryMechanicDiagram(c,w,h,s.storyMoment,t*.25,cs.elapsedTotal??time,motion,sx,sy,v,'signal');
+        break;
+      }
+      case 'mid-wave-tension': {
+        // The Pulse rim grows into the friendship line. The player is held for
+        // only this readable tell; no gameplay result is invented here.
+        wash(.3);
+        drawStoryMechanicDiagram(c,w,h,s.storyMoment,.12+.38*t,cs.elapsedTotal??time,motion,sx,sy,v,'tension');
+        break;
+      }
+      case 'mid-wave-pass': {
+        // The Watcher takes the impact so the Cutter can clear the rim. This is
+        // the story consequence and the actionable Pulse dodge in one motion.
+        wash(.24);
+        drawStoryMechanicDiagram(c,w,h,s.storyMoment,.5+.32*t,cs.elapsedTotal??time,motion,sx,sy,v,'pass');
+        break;
+      }
+      case 'mid-wave-return': {
+        const fade=Math.max(0,.12*(1-t));
+        if(fade){c.fillStyle=`rgba(8,7,20,${fade})`;c.fillRect(0,0,w,h);}
+        drawStoryMechanicDiagram(c,w,h,s.storyMoment,.82+.18*t,cs.elapsedTotal??time,motion,sx,sy,v,'return');
+        break;
+      }
+      case 'sector-locks': {
+        // The old room is visibly letting go: three anchor locks drop and
+        // flare instead of silently teleporting the player to a new counter.
+        wash(0.24 + 0.18 * (1 - t));
+        const fall = easeIn(t), glow = 0.35 + 0.65 * (1 - t);
+        for (let i = 0; i < 3; i++) {
+          const x = w * (0.28 + i * 0.22), y = h * 0.56 + fall * (h * 0.22 + i * 8);
+          c.save();
+          c.translate(x, y);
+          c.rotate((i - 1) * 0.42 + t * (i % 2 ? 1 : -1));
+          c.globalAlpha = glow;
+          c.fillStyle = '#171323'; c.strokeStyle = '#e1b878'; c.lineWidth = 3;
+          c.beginPath(); c.moveTo(0, -24); c.lineTo(24, 0); c.lineTo(0, 24); c.lineTo(-24, 0); c.closePath(); c.fill(); c.stroke();
+          c.globalAlpha = 0.8 * glow; c.strokeStyle = '#ddff89'; c.lineWidth = 2;
+          c.beginPath(); c.moveTo(-12, -2); c.lineTo(-3, 7); c.lineTo(14, -10); c.stroke();
+          c.restore();
+        }
+        break;
+      }
+      case 'sector-seam': {
+        // The Watcher is not a menu narrator. It is the thing opening the next
+        // room: its eyes wake, then the seam tears behind the player.
+        wash(0.18);
+        const breathe = 0.45 + 0.55 * Math.sin(t * Math.PI);
+        watcherMask(c, w / 2, h * 0.27, Math.min(w, h) * 0.00155 + 0.5, { glow: breathe * flash, eye: 0.25 + 0.75 * t });
+        const seamY = h * 0.66, reach = easeOut(Math.min(1, t * 1.2));
+        const pts = fracturePath(1200 + (s.narrative?.sector || 1), w / 2, seamY, w / 2 + (w * 0.46) * reach, seamY + Math.sin(t * Math.PI) * 18, 11);
+        c.globalAlpha = 0.55 + 0.45 * breathe; c.strokeStyle = '#ddff89'; c.lineWidth = 3; jaggedLine(c, pts); c.stroke();
+        c.globalAlpha = 0.28 * breathe; c.strokeStyle = '#ffb256'; c.lineWidth = 12; jaggedLine(c, pts); c.stroke();
+        c.globalAlpha = 1;
+        break;
+      }
+      case 'sector-rise': {
+        // A vertical lift gives the crossing a destination: the next arena is
+        // being pulled up through the wound, with real fragments moving toward
+        // the new horizon rather than an unexplained screen flash.
+        wash(0.12 * (1 - t));
+        const lift = easeOut(t), horizon = h * (0.78 - 0.42 * lift);
+        c.globalAlpha = 0.55 + 0.45 * lift;
+        c.strokeStyle = '#ddff89'; c.lineWidth = 3;
+        c.beginPath(); c.moveTo(0, horizon); c.lineTo(w, horizon); c.stroke();
+        for (let i = 0; i < 9; i++) {
+          const x = (i + 0.5) * w / 9, y0 = h + (i % 3) * 30, y1 = horizon + (i % 4) * 16;
+          c.globalAlpha = (0.14 + 0.08 * (i % 3)) * (0.35 + 0.65 * lift);
+          c.strokeStyle = i % 2 ? '#ffb066' : '#ddff89'; c.lineWidth = 2 + (i % 2);
+          c.beginPath(); c.moveTo(x, y0); c.lineTo(x + (i - 4) * 12 * lift, y1); c.stroke();
+        }
+        watcherMask(c, w / 2, horizon - h * 0.18, Math.min(w, h) * 0.0012 + 0.38, { glow: 0.55 * flash, eye: 0.9, split: 0.22 * lift });
+        c.globalAlpha = 1;
+        break;
+      }
+      case 'sector-release': {
+        // The new room is already underneath the live run. This is only the
+        // last breath of the crossing; control returns without a title card.
+        const fade = Math.max(0, 0.16 * (1 - t));
+        if (fade) { c.fillStyle = `rgba(8,7,20,${fade})`; c.fillRect(0, 0, w, h); }
+        for (let i = 0; i < 12; i++) {
+          const x = (hash(1411 + (s.narrative?.sector || 1), i, 3) % 1000) / 1000 * w;
+          const y = h * 0.32 + ((hash(1411, i, 5) % 1000) / 1000) * h * 0.42 - t * h * 0.12;
+          c.globalAlpha = Math.max(0, 0.5 * (1 - t)); c.fillStyle = i % 3 ? '#ddff89' : '#ffb066'; c.fillRect(x, y, 2, 5);
+        }
+        c.globalAlpha = 1;
+        break;
+      }
       case 'shatter-freeze': {
         wash(0.3);
         const snap = Math.min(1, t / 0.4);
@@ -7764,7 +8094,7 @@ function createRenderer(c, viewport) {
         break;
       }
       case 'shatter-dolly': {
-        // Second-long white flicker as the world, not the cube, takes focus.
+        // A brief white flicker as the world, not the cube, takes focus.
         const flick = t < 0.12 ? (t < 0.06 ? 0.5 : 0.32) * flash : 0;
         if (flick > 0) { c.fillStyle = `rgba(255,255,255,${flick})`; c.fillRect(0, 0, w, h); }
         // The spine bursts full-bright.
@@ -7791,7 +8121,13 @@ function createRenderer(c, viewport) {
     transform();
     const { world, state: s, combat } = run, v = lastView = camera.view(alpha), p = bodyPose(world.player, alpha), nearest = run.nearest(), time = mix(world.previousClock, world.clock, alpha);
     const animationAge = age => age > 0 ? age - 1 + Math.max(0, Math.min(1, alpha)) : age;
-    const dash = dashFor(animationAge(s.slashAge), world.player.velocity.x, world.player.velocity.y);
+    // A dash is an event, not a velocity state. Once the launch has happened,
+    // all dash-owned geometry shares this bearing even if the physics body
+    // banks, bounces, or is steered before the 15-tick animation expires.
+    const launchAngle = Number.isFinite(s.launchAngle)
+      ? s.launchAngle
+      : Math.atan2(world.player.velocity.y, world.player.velocity.x);
+    const dash = dashFor(animationAge(s.slashAge), world.player.velocity.x, world.player.velocity.y, launchAngle);
     if (dash && dash.phase !== "windup") {
       if (dashTravel.age === null || s.slashAge < dashTravel.age)
         dashTravel = { age: 0, x: p.x, y: p.y, along: 0 };
@@ -7985,10 +8321,10 @@ function createRenderer(c, viewport) {
           c.restore();
         }
     }
-    if (motion) speedField(c, world, v, time, run.state);
+    if (motion) speedField(c, world, v, time, run.state, dash ? launchAngle : null);
     if (motion && s.phase === "playing") {
       // Element shapes replace the generic ribbon during a launch; no stacking.
-      if(s.slashAge>=0&&s.slashAge<=20)drawElementalDash(c,{x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,age:animationAge(s.slashAge),element:dashElement(s.equipment,s.sword),equipment:s.equipment,sword:s.sword,buff:s.waveBuff,radius:R,motion});
+      if(s.slashAge>=0&&s.slashAge<=20)drawElementalDash(c,{x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,angle:launchAngle,travel:dashTravel.along*R*2,age:animationAge(s.slashAge),element:dashElement(s.equipment,s.sword),equipment:s.equipment,sword:s.sword,buff:s.waveBuff,radius:R,motion});
       else streak(c, trail, p, s.blade > 0);
     }
     if (motion && s.impact && s.impact.source!=='cut'&&s.impact.source!=='bank') {
@@ -8300,7 +8636,10 @@ function createRenderer(c, viewport) {
         c.restore();
       }
     }
-    if (!["dying", "over"].includes(s.phase) && world.player.velocity.y > 3) {
+    // Falling streaks belong to the fall event. During a committed dash the
+    // launch wake owns the motion read, so an upward fall streak would be a
+    // contradictory second arrow.
+    if (!dash && !["dying", "over"].includes(s.phase) && world.player.velocity.y > 3) {
       c.save();
       c.globalAlpha = 0.25;
       c.strokeStyle = "#c0b8cc";
@@ -8364,8 +8703,9 @@ function createRenderer(c, viewport) {
         }
         c.globalAlpha = 1;
       }
-      if (s.phase === "playing" && !s.splat)
-        drawCubeDashSmear(c,{x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,age:animationAge(s.slashAge),radius:R,equipment:s.equipment,motion});
+      // Dash deformation is applied once below from the committed event pose.
+      // The standalone cube-smear painter remains available to previews, but
+      // gameplay does not stack three extra body copies on the elemental wake.
       c.save();
       if (s.invul > 0 && motion) c.globalAlpha = 0.86 + 0.14 * Math.abs(Math.sin(s.invul * 0.12));
       c.translate(p.x, p.y);
@@ -8383,21 +8723,25 @@ function createRenderer(c, viewport) {
         c.scale(1 + snap * nx, 1 + snap * ny);
         c.scale(1 - snap * 0.72 * ny, 1 - snap * 0.72 * nx);
       }
+      const visualSpeed = Math.hypot(world.player.velocity.x, world.player.velocity.y);
+      const visualVx = dash ? Math.cos(launchAngle) * visualSpeed : world.player.velocity.x;
+      const visualVy = dash ? Math.sin(launchAngle) * visualSpeed : world.player.velocity.y;
       const poseAnim = cubePose({
-        vx: world.player.velocity.x,
-        vy: world.player.velocity.y,
+        vx: visualVx,
+        vy: visualVy,
         slashAge: animationAge(s.slashAge),
         fallAge: s.fallAge,
         landAge: animationAge(s.landAge),
         hold: holdDir,
-        facing
+        facing,
+        suppressFall: !!dash
       });
       if (poseAnim.move.speed >= 6) holdDir = poseAnim.move.index;
       const splat = splatFor(s.splat ? animationAge(s.splat.age) : -1, s.splat && { x: s.splat.nx, y: s.splat.ny });
       const dWide = (poseAnim.wide ?? 1) * (splat ? splat.sx : dash ? dash.sx : 1);
       const dTall = (poseAnim.tall ?? 1) * (splat ? splat.sy : dash ? dash.sy : 1);
       if (dWide !== 1 || dTall !== 1) c.scale(dWide, dTall);
-      if (poseAnim.stretch > 4e-3) {
+      if (!dash && poseAnim.stretch > 4e-3) {
         const k = poseAnim.stretch;
         const sx = Math.sign(world.player.velocity.x) || 0, sy = Math.sign(world.player.velocity.y) || 0;
         const wx = sx ? sy ? 0.6 : 1 : 0, wy = sy ? sx ? 0.6 : 1 : 0;
@@ -8426,7 +8770,7 @@ function createRenderer(c, viewport) {
         c.globalAlpha = 1;
         c.restore();
       }
-      if (motion && !world.grounded) {
+      if (motion && !world.grounded && !dash) {
         const vx = world.player.velocity.x, vy = world.player.velocity.y, speed = Math.hypot(vx, vy), e = stretchFor(speed, MAX_SPEED, s.hyper ? HYPER_SPEED : MAX_SPEED);
         if (e.along > 1.001) {
           const ax = Math.abs(vx) / (speed || 1), ay = Math.abs(vy) / (speed || 1);
@@ -8483,8 +8827,11 @@ function createRenderer(c, viewport) {
         facing = Math.sign(toward) || facing;
       }
       {
-        const speed = s.railSettle ? 0 : s.moved ?? Math.hypot(world.player.velocity.x, world.player.velocity.y), g = ghostFor(speed, MAX_SPEED);
-        if (motion && dash?.phase !== "active" && g.count && s.slashAge >= DASH.windup && s.slashAge < DASH.windup + DASH.active + 6) {
+        // Ghost positions are sampled from the simulation. The speed tier only
+        // controls how many measured samples remain legible; it never supplies
+        // a heading or a synthetic offset.
+        const speed = s.railSettle ? 0 : (Number.isFinite(s.moved) && s.moved > 0 ? s.moved : Math.hypot(world.player.velocity.x, world.player.velocity.y)), g = ghostFor(speed, MAX_SPEED);
+        if (motion && !s.splat && g.count && s.slashAge >= DASH.windup && s.slashAge < DASH.windup + DASH.active + 6) {
           c.save();
           let n = 0;
           ghosts.each((gx, gy, ga, gf, age) => {
@@ -8494,7 +8841,8 @@ function createRenderer(c, viewport) {
             c.globalAlpha = g.alpha * k * Math.max(0, 1 - age / 0.1);
             c.save();
             c.translate(gx - p.x, gy - p.y);
-            c.rotate(ga - bodyAngle);
+            // The hero is screen-axis aligned; after-images are the same flat
+            // silhouette, not rotated copies of a velocity vector.
             cube(c, 0, 0, R * (0.86 + 0.14 * k), 0, 0, gf);
             c.restore();
           });
@@ -8503,8 +8851,8 @@ function createRenderer(c, viewport) {
         }
       }
       {
-        const speed = s.railSettle ? 0 : s.moved ?? Math.hypot(world.player.velocity.x, world.player.velocity.y), m = morphWedge(c, speed, MAX_SPEED, Math.max(s.hyper ? s.hyperLevel : 0, poseAnim.sonic));
-        if (motion && m) {
+        const speed = s.railSettle ? 0 : (Number.isFinite(s.moved) && s.moved > 0 ? s.moved : Math.hypot(world.player.velocity.x, world.player.velocity.y)), m = morphWedge(c, speed, MAX_SPEED, Math.max(s.hyper ? s.hyperLevel : 0, poseAnim.sonic));
+        if (!dash && motion && m) {
           const a = Math.atan2(world.player.velocity.y, world.player.velocity.x);
           c.save();
           c.rotate(a - bodyAngle);
@@ -8520,7 +8868,7 @@ function createRenderer(c, viewport) {
           c.restore();
         }
       }
-      if (motion && !world.grounded && dash?.phase !== "active") {
+      if (motion && !world.grounded && !dash) {
         const vx = world.player.velocity.x, vy = world.player.velocity.y, speed = Math.hypot(vx, vy), smear = stretchFor(speed, MAX_SPEED, s.hyper ? HYPER_SPEED : MAX_SPEED).blur;
         if (smear > 1) {
           const along = Math.atan2(vy, vx), steps = smear > 12 ? 3 : 2;
@@ -8576,95 +8924,10 @@ function createRenderer(c, viewport) {
           ];
         }
       }
-      if (motion && dash && !s.splat) {
-        for (const g of ghostsFor(dash, dashTravel.along)) {
-          c.save();
-          c.translate(g.x * R, g.y * R);
-          c.scale(g.scale, g.scale);
-          c.globalAlpha = g.alpha * 0.28;
-          c.fillStyle = INK.paper;
-          c.beginPath();
-          c.moveTo(-R * 0.96, -R);
-          c.lineTo(R * 0.86, -R);
-          c.lineTo(R, -R * 0.86);
-          c.lineTo(R, R);
-          c.lineTo(-R * 0.9, R);
-          c.lineTo(-R * 0.96, R * 0.88);
-          c.closePath();
-          c.fill();
-          c.restore();
-        }
-        c.globalAlpha = 1;
-      }
-      if (dash && (dash.leadGlow > 0.02 || dash.trailBreak > 0.02)) {
-        const half = R * 0.98 * (dash.phase === "active" ? 1.04 : 1);
-        if (dash.leadGlow > 0.02) {
-          c.globalAlpha = Math.min(1, dash.leadGlow);
-          c.strokeStyle = INK.acid;
-          c.lineWidth = (2.2 + 3.4 * dash.leadGlow) / v.scale;
-          c.beginPath();
-          if (dash.lead.x) {
-            c.moveTo(dash.lead.x * half, -half);
-            c.lineTo(dash.lead.x * half, half);
-          }
-          if (dash.lead.y) {
-            c.moveTo(-half, dash.lead.y * half);
-            c.lineTo(half, dash.lead.y * half);
-          }
-          c.stroke();
-          c.globalAlpha = Math.min(1, dash.leadGlow) * 0.3;
-          c.lineWidth = (6 + 8 * dash.leadGlow) / v.scale;
-          c.stroke();
-        }
-        if (dash.trailBreak > 0.02) {
-          const diagonal = dash.trail.x !== 0 && dash.trail.y !== 0;
-          const n = diagonal ? 6 : 5;
-          for (let i = 0; i < n; i++) {
-            const u = i / (n - 1);
-            const push = half + u * R * (diagonal ? 1.5 : 1.1) * dash.trailBreak;
-            const fade2 = (1 - u * 0.75) * dash.trailBreak;
-            c.globalAlpha = Math.min(1, fade2) * 0.85;
-            const ink2 = i % 2 ? INK.paper : INK.acid;
-            c.strokeStyle = ink2;
-            c.lineWidth = Math.max(0.7, (2.6 - u * 1.6) / v.scale);
-            c.beginPath();
-            if (diagonal) {
-              const tx = dash.trail.x / Math.SQRT2, ty = dash.trail.y / Math.SQRT2;
-              const off = (u - 0.5) * R * 1.5;
-              const ox = tx * push - ty * off, oy = ty * push + tx * off;
-              const len = R * (0.6 + 0.5 * dash.trailBreak) * (1 - Math.abs(u - 0.5));
-              for (let g = 0; g < 3; g++) {
-                const a0 = g / 3 + 0.04, a1 = (g + 1) / 3 - 0.04;
-                line(
-                  c,
-                  ink2,
-                  Math.max(0.7, (2.6 - u * 1.6) / v.scale),
-                  ox + tx * len * a0,
-                  oy + ty * len * a0,
-                  ox + tx * len * a1,
-                  oy + ty * len * a1
-                );
-              }
-            } else if (dash.trail.x) {
-              const y0 = -half * 0.86, y1 = half * 0.86, seg = (y1 - y0) / 3;
-              for (let g = 0; g < 3; g++) {
-                const a0 = y0 + g * seg + seg * 0.18, a1 = y0 + (g + 1) * seg - seg * 0.18;
-                c.moveTo(dash.trail.x * push, a0);
-                c.lineTo(dash.trail.x * push, a1);
-              }
-            } else {
-              const x0 = -half * 0.86, x1 = half * 0.86, seg = (x1 - x0) / 3;
-              for (let g = 0; g < 3; g++) {
-                const a0 = x0 + g * seg + seg * 0.18, a1 = x0 + (g + 1) * seg - seg * 0.18;
-                c.moveTo(a0, dash.trail.y * push);
-                c.lineTo(a1, dash.trail.y * push);
-              }
-            }
-            c.stroke();
-          }
-        }
-        c.globalAlpha = 1;
-      }
+      // The elemental wake is the single launch-direction punctuation. The
+      // position sampler below is the only remaining after-image source; it
+      // records where the cube actually was instead of inventing a second
+      // velocity-shaped trail.
       const boundedBody = bodyBase && Number.isFinite(bodyBase.a) && !splat;
       if (boundedBody) {
         c.setTransform(bodyBase.a, bodyBase.b, bodyBase.c, bodyBase.d, bodyBase.e, bodyBase.f);
@@ -8734,7 +8997,9 @@ function createRenderer(c, viewport) {
       if (poseAnim.sonic > 0.02) c.restore();
       c.restore();
       const fallRow = (() => {
-        if (!motion) return null;
+        // The committed dash wake owns the motion read. A live downward
+        // velocity during that event must not resurrect airborne fall cels.
+        if (!motion || dash) return null;
         const vy = Math.round(Math.max(0, world.player.velocity.y));
         if (vy > FALL_SAMPLES) return null;
         const o = vy * FALL_ROW.width;
@@ -8777,7 +9042,7 @@ function createRenderer(c, viewport) {
         c.restore();
       }
       const upgradePhase=upgradeVisualPhase(s,motion),structural=['reach','cleaver','barrier'].includes(upgradePhase.buff?.id),visualBuff=structural?upgradePhase.buff:s.waveBuff;
-      drawCombatAccent(c,{x:p.x,y:p.y,radius:R,angle:s.slashAngle||0,age:s.slashAge,blade:s.blade,buff:visualBuff?.id,shield:structural?upgradePhase.shield:s.waveShield,finish:structural?upgradePhase.amount:1,equipment:s.equipment,sword:s.sword,motion,reach:(s.reach||1)*(s.waveBuff?.reach||1)});
+      drawCombatAccent(c,{x:p.x,y:p.y,radius:R,angle:s.slashAngle||0,age:s.slashAge,blade:s.blade,buff:visualBuff?.id,shield:structural?upgradePhase.shield:s.waveShield,finish:structural?upgradePhase.amount:1,equipment:s.equipment,sword:s.sword,motion,reach:(s.reach||1)*(s.waveBuff?.reach||1),suppressWake:!!dash});
       if(s.waveBuff?.id==='guard')drawCutExit(c,{x:p.x,y:p.y,radius:R,remaining:s.cutGrace,source:combat.enemies.get(s.cutGraceFrom)||cutExitSource,sourceId:s.cutGraceFrom,equipment:s.equipment,sword:s.sword,motion});
       if(s.waveShield>0&&s.waveBuff?.id!=='barrier'){c.save();c.strokeStyle='#d5ef9e';c.lineWidth=1.8/v.scale;for(const side of [-1,1]){c.beginPath();c.arc(p.x,p.y,R*1.43,side<0?2.3:-.85,side<0?4.0:.85);c.stroke();}c.restore();}
       if(s.sword){
@@ -9251,6 +9516,45 @@ function drawEnemyShape(ctx, spec = {}) {
     ctx.restore();
   }
 }
+
+/**
+ * A compact study card for THE WATCH. This belongs beside the rest of the art
+ * API so callers never grow a second, slightly different enemy renderer in a
+ * menu component. The card is a silhouette plus one live tell, not a tutorial
+ * screenshot and not a second combat simulation.
+ */
+export function drawTrainingCard(ctx, width = 280, height = 150, {
+  lessonId = 'fang', kind = 'fang', count = 1, time = 0, selected = false, motion = true,
+} = {}) {
+  const w = Math.max(1, Number(width) || 280), h = Math.max(1, Number(height) || 150);
+  const t = motion ? (Number.isFinite(time) ? time : 0) * 0.0015 : 0;
+  ctx.save();
+  try {
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#100e19'; ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = '#2c2740'; ctx.lineWidth = 1;
+    for (let x = 16; x < w; x += 28) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+    for (let y = 16; y < h; y += 28) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+    ctx.strokeStyle = selected ? '#ddff89' : '#5b5068'; ctx.lineWidth = selected ? 2 : 1; ctx.strokeRect(.75, .75, w - 1.5, h - 1.5);
+    const pulse = 1 + .06 * Math.sin(t * 4), cy = h * .48;
+    ctx.globalAlpha = .18; ctx.fillStyle = selected ? '#ddff89' : '#b99bd8'; ctx.beginPath(); ctx.arc(w / 2, cy, 34 * pulse, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+    const foeCard = (enemyKind, x, y, radius, angle = 0) => drawEnemyShape(ctx, {
+      kind: enemyKind, x, y, radius, angle,
+      options: { mode: 'tell', clock: Math.floor(t * 60), span: 1, aim: angle, hp: enemyKind === 'monolith' ? 10 : 2 },
+    });
+    if (lessonId === 'slash') {
+      foeCard('fang', w * .33, cy + 5, 18, -.22); foeCard('fang', w * .5, cy - 8, 21, 0); foeCard('fang', w * .67, cy + 5, 18, .22);
+    } else if (lessonId === 'link' || count > 1) {
+      ctx.strokeStyle = '#f3b1d4'; ctx.globalAlpha = .42; ctx.lineWidth = 3; ctx.setLineDash([6, 7]);
+      ctx.beginPath(); ctx.moveTo(w * .34, cy); ctx.lineTo(w * .66, cy); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+      foeCard(kind, w * .34, cy, 20, Math.sin(t) * .08); foeCard(kind, w * .66, cy, 20, -Math.sin(t) * .08);
+    } else {
+      const radius = lessonId === 'monolith' ? 34 : lessonId === 'crown' ? 27 : lessonId === 'bastion' ? 25 : 22;
+      foeCard(kind, w / 2, cy, radius, lessonId === 'rift' ? t * .35 : Math.sin(t) * .06);
+    }
+    ctx.fillStyle = '#dfff70'; ctx.globalAlpha = .82; ctx.fillRect(w / 2 - 18, h * .82, 36, 2); ctx.globalAlpha = 1;
+  } finally { ctx.restore(); }
+}
 function drawWorldBackdrop(ctx, width, height, worldId = "twilight", time = 0, camera = { x: 0, y: 0 }) {
   ctx.save();
   try {
@@ -9708,7 +10012,7 @@ export function drawCutExit(c,{x=0,y=0,radius=22,remaining=0,source=null,sourceI
 }
 
 /** Pure, bounded combat accents. Simulation ages, never wall-clock animation. */
-export function drawCombatAccent(c,{x=0,y=0,radius=18,angle=0,age=-1,blade=0,buff=null,shield=0,motion=true,reach=1,equipment={},sword=null,finish=1}={}){
+export function drawCombatAccent(c,{x=0,y=0,radius=18,angle=0,age=-1,blade=0,buff=null,shield=0,motion=true,reach=1,equipment={},sword=null,finish=1,suppressWake=false}={}){
  const colors={fleet:'#9be8ff',reach:'#d8f19c',breaker:'#ffb36e',linger:'#c6acff',bounty:'#ffe38b',guard:'#a0efda',barrier:'#d8f19c',comet:'#80d6ff',cleaver:'#ff996b',duelist:'#ff93c8',bastion:'#b4c9ff'};
  const tint=colors[buff]||'#d8f19c',r=radius;
  if(['fleet','comet','linger','guard'].includes(buff))return;
@@ -9724,7 +10028,7 @@ export function drawCombatAccent(c,{x=0,y=0,radius=18,angle=0,age=-1,blade=0,buf
  c.beginPath();c.moveTo(-r*.85,-r*inset);c.lineTo(r*.65,-r*inset);c.lineTo(r*.95,-r*.8);c.stroke();
  }
  }
- if(motion&&age>=0&&age<16){
+ if(!suppressWake&&motion&&age>=0&&age<16){
   const u=age/16,fade=(1-u)*(1-u);c.globalAlpha=fade;
   // Three tapered wake wedges read as propulsion, not another damage beam.
   for(let i=0;i<3;i++){const side=(i-1)*r*.7,len=r*(2.8+u*3)*(i===1?1.2:.75);c.fillStyle=i===1?'#fff5d9':tint;c.beginPath();c.moveTo(-r*.9,side);c.lineTo(-r-len,side-r*.12);c.lineTo(-r-len*.65,side+r*.19);c.closePath();c.fill();}

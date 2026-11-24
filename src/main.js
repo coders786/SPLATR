@@ -30,7 +30,8 @@ import { speedReadout, meterReadout, dialGeometry } from './motion.js';
 import { MAX_SPEED } from './physics.js';
 import { FRACTURE_TIERS, FRACTURE_KEY, clampPct, persistFracture, fractureTier } from './fracture.js';
 import { createCutscene, coldOpenOnce } from './cutscene.js';
-import { COLD_OPEN_BEATS, SHATTER_BEATS, lockTicks } from './cinematics.js';
+import { COLD_OPEN_BEATS, midWaveBeats, sectorBeats, SHATTER_BEATS, lockTicks } from './cinematics.js';
+import { LANDLORD_STORY, storyChipForWave } from './story-arc.js';
 let questUI, customize, waveUI, controlPractice, teaching;let learningGround=false,tutorial=null,lastTutorialHint=null,lastRiftObjective='',lastTutorialWhy='';
 const tutorialHintSpeech=Object.freeze({
  slice:'Slice the highlighted target. Tap it, or pull away and release toward it.',
@@ -113,20 +114,26 @@ const active = () =>
 // owns input lock, the freeze, and the chip.
 const coldOpenGate = coldOpenOnce();
 let activeCutscene = null,
-  cutsceneOnDone = null;
-function launchCutscene(beats, { reducedMotion = !opts.motion, onDone = null } = {}) {
+  cutsceneOnDone = null,
+  cutsceneOwnsStop = false;
+function launchCutscene(beats, { reducedMotion = !opts.motion, onDone = null, preserveInput = false } = {}) {
   if (activeCutscene) return;
   const cs = createCutscene({ beats, reducedMotion, onDone: () => endCutscene() });
   activeCutscene = cs;
   cutsceneOnDone = onDone;
+  const lockedTicks = lockTicks(beats, reducedMotion);
+  cutsceneOwnsStop = lockedTicks > 0;
   if (run) {
-    run.state.inputLock = true;
+    // A mid-wave story pulse owns only its short reveal lock; the release beat
+    // hands control back before the afterimage clears. Locked cutscenes claim
+    // the stop window before their first tick so no frame slips through.
+    run.state.inputLock = cutsceneOwnsStop;
     run.state.cutscene = null;
-    // The world holds through every locked beat — freeze before creating the
-    // lock so no tick slips between "cinematic decided" and "world frozen".
-    run.state.stop = Math.max(run.state.stop || 0, lockTicks(beats, reducedMotion));
+    run.state.stop = cutsceneOwnsStop
+      ? Math.max(run.state.stop || 0, lockedTicks)
+      : run.state.stop || 0;
   }
-  input.reset();
+  if (!preserveInput) input.reset();
   dirty = true;
 }
 function tickCutscene() {
@@ -142,6 +149,10 @@ function tickCutscene() {
       lockInput: snap.lockInput,
       reducedMotion: snap.reducedMotion,
     };
+    // The beat table owns the handoff: locked shots hold the live run, while
+    // the final release shot lets the player move again before the visual
+    // sentence fully fades. `endCutscene` still clears this on skip/finish.
+    run.state.inputLock = !!snap.lockInput;
   }
   // The chip is DOM, owned here; the engine never writes text.
   if (snap.chip && snap.t >= (snap.chip.at ?? 0)) {
@@ -160,17 +171,20 @@ function endCutscene() {
   cutsceneOnDone = null;
   activeCutscene = null;
   hideStoryChip();
+  const ownsStop = cutsceneOwnsStop;
+  cutsceneOwnsStop = false;
   if (run) {
-    // A skipped cutscene may end before the lock window's pre-applied stop
-    // expires. Release the simulation immediately; otherwise a 0.8s skip
-    // leaves the world frozen for the remainder of a 3–4s cinematic.
-    run.state.stop = 0;
+    // A skipped locked cutscene may end before its pre-applied stop expires.
+    // The mid-wave pulse owns only its short reveal window; release or skip
+    // clears that window without leaving the live run frozen.
+    if (ownsStop) run.state.stop = 0;
     run.state.cutscene = null;
     run.state.inputLock = false;
+    run.state.storyMoment = null;
   }
   onDone?.();
 }
-// Any key or tap after the 0.8s gate ends the cutscene. Capture runs before
+// Any key or tap after the 0.5s gate ends the cutscene. Capture runs before
 // the game's own input handlers, so the skip is never swallowed.
 window.addEventListener('keydown', (e) => {
   if (!activeCutscene?.skippable) return;
@@ -374,7 +388,34 @@ function event(type, d) {
     case 'sonicBank': audio.strike('parry');break;
     case 'breachContact': audio.seamHit();break;
     case 'dimensionBreak': if(!run?.state.narrative)input?.reset();audio.shatter();break;
-    case 'waveStart': audio.zone(); break;
+    case 'storyMoment':
+      // Mid-wave story is a short gameplay cutscene: the opening image gets
+      // a real read window, then the release beat hands the live formation
+      // back before the emotional afterimage is gone.
+      if (run && d && !activeCutscene) {
+        launchCutscene(midWaveBeats(d.chip), { reducedMotion: !opts.motion });
+      }
+      break;
+    case 'sector':
+      audio.zone();
+      // Continuous mode has a real room-to-room story beat. Legacy wave mode
+      // also emits `sector` for its counter, but it must not inherit a cinematic
+      // that belongs only to the Watcher/seal route.
+      if (run?.state.narrative && (d?.band | 0) > 1) {
+        input?.reset();
+        audio.seamHit();
+        launchCutscene(sectorBeats(storyChipForWave(d.band)), { reducedMotion: !opts.motion });
+      }
+      break;
+    case 'waveStart':
+      audio.zone();
+      // Legacy finite waves do not have the continuous Watcher backdrop, so
+      // give their first five formations the same short story cadence. The
+      // encounter itself remains the picture; this is only the highlighted
+      // chapter name.
+      if (!run?.state.narrative && Number.isFinite(d?.number) && d.number <= 5)
+        showStoryChip(storyChipForWave(d.number));
+      break;
     // CHUNK 2: every fracture the run causes lands in storage immediately,
     // so an interrupted session never loses the seam it tore.
     case 'fractureGain':
@@ -398,7 +439,7 @@ function event(type, d) {
       setFractureUI(0);
       audio.shatter();
       buzz(70);
-      // CHUNK 6A: the tear is a 4.2s visual sentence, not a banner.
+      // CHUNK 6A: the tear is a 2.5s visual sentence, not a banner.
       launchCutscene(SHATTER_BEATS, { reducedMotion: !opts.motion });
       break;
     case 'kineticOvercharge':
@@ -410,12 +451,12 @@ function event(type, d) {
       // for the one chip the spec allows.
       audio.shatter();
       buzz(90);
-      showStoryChip('THE LANDLORD.');
+      showStoryChip(LANDLORD_STORY.chip);
       break;
     case 'monolithDown':
       audio.strike('drive');
       buzz(120);
-      showStoryChip('THE SEAM KNOWS YOU.');
+      showStoryChip(LANDLORD_STORY.finishChip);
       break;
     case 'waveClear': input?.reset();if(!d.shattered){audio.waveClear();pop('CLEAR',60,3);}break;
     case 'waveRest': input?.reset();break;
@@ -486,11 +527,6 @@ function event(type, d) {
       audio.strike('break');
       buzz(38);
       portal();
-      break;
-    case 'sector':
-      // CHUNK 6A (§4): the transition is a 1.4s chip, not a sentence. The
-      // ribbon/band numbers carry the lore weight; the words went.
-      audio.zone();
       break;
     case 'drive':
       audio.strike('drive');
@@ -888,7 +924,15 @@ function updateHUD() {
       lastSectorKey = sectorKey;
       setText('sector', sectorKey);
       const chip = $('sector');
-      if (chip) { chip.hidden = false; void chip.offsetWidth; chip.classList.add('on'); sectorChipUntil = wallNow() + 1400; }
+      if (chip) {
+        if (s.narrative) {
+          // The chapter chip is the narrative line in continuous mode; do not
+          // stack a second "SECTOR 02" label under it.
+          chip.classList.remove('on');chip.hidden=true;sectorChipUntil=0;
+        } else {
+          chip.hidden = false; void chip.offsetWidth; chip.classList.add('on'); sectorChipUntil = wallNow() + 1400;
+        }
+      }
     }
     if (sectorChipUntil && wallNow() >= sectorChipUntil) {
       const chip = $('sector');
@@ -1060,12 +1104,13 @@ function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   hud.hidden = false;
   restoreField();
   nextHUD = 0;
-  // CHUNK 6A: the cold open — first real run of the session. Four seconds,
-  // skippable with any key after 0.8s, never again this session.
+  // CHUNK 6A: the cold open — first real run of the session. 2.4 seconds,
+  // skippable with any key after 0.5s, never again this session.
   if (!learn && coldOpenGate.should())
     launchCutscene(COLD_OPEN_BEATS, { reducedMotion: !opts.motion, onDone: () => {
       hud.classList.add('hud-fade-in');
       setTimeout(() => hud.classList.remove('hud-fade-in'), 740);
+      if (run?.state.narrative) showStoryChip(storyChipForWave(run.state.narrative.sector));
     }});
   renderer.draw(run, 1, null, opts.motion,lastDevice);
   updateHUD();
@@ -1267,7 +1312,7 @@ function frame(now) {
       input.retry();
       run.setAim(input.aim);
       run.tick(); // owns the panic ray, grace and every other tick rule
-      tickCutscene(); // CHUNK 6A: advances the cold open / SHATTER cinematic
+      tickCutscene(); // CHUNK 6A: advances the cold open / mid-wave / sector / SHATTER cuts
       if(learningGround&&tutorial){tutorial.tick(input.engaged);const objective=tutorialObjective(tutorial.visual,run.combat.enemies,lastDevice),label=$('tutorial-objective');label.hidden=!objective;const speech=objective?tutorialAnnouncement(tutorial.visual,objective,lastDevice):'',objectiveKey=objective+'|'+speech;if(objectiveKey!==lastRiftObjective){if(!objective)lastTutorialHint=null;lastRiftObjective=objectiveKey;setText('tutorial-objective-text',objective);const room=TUTORIAL_LINES[Math.min(Math.max(tutorial.visual.stage|0,0),3)];if(room&&label.dataset.room!==room.title){label.dataset.room=room.title;}if(speech)say(speech);}const whyNow=objective?tutorialWhy(tutorial.visual,run.combat.enemies):'';if(whyNow!==lastTutorialWhy){lastTutorialWhy=whyNow;const why=$('tutorial-objective-why');if(why)why.textContent=whyNow;}const hint=tutorial.visual.guide?.kind;if(!objective&&hint&&hint!==lastTutorialHint){lastTutorialHint=hint;say(tutorialHintSpeech[hint]);}if(tutorial.finished){queueMicrotask(()=>{if(learningGround&&tutorial?.finished)finishTutorial();});}}
       else questUI.tick();
       audio.focus(run.state.phase === 'playing' && run.state.held && run.world.slow);
