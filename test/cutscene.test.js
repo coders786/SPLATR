@@ -1,7 +1,7 @@
 /**
  * CHUNK 6A — THE CUTSCENE DRIVER.
  *
- * The pure reducer behind both cutscenes. Tick bookkeeping, the 0.8s skip
+ * The pure reducer behind both cutscenes. Tick bookkeeping, the 0.5s skip
  * gate, the reduced-motion tick scale, the onDone-once guarantee, and the
  * one-shot session gate for the cold open.
  */
@@ -66,7 +66,7 @@ test('lockInput is true only while a locking beat is live', () => {
   assert.equal(cs.snapshot().lockInput, false);
 });
 
-test('skip is refused before the 0.8s gate and honored after it', () => {
+test('skip is refused before the 0.5s gate and honored after it', () => {
   let done = 0, skipped = 0;
   const long = [{ id: 'long', ticks: 240, lockInput: true }];
   const cs = createCutscene({ beats: long, onDone: () => done++, onSkip: () => skipped++ });

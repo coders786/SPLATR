@@ -12,7 +12,7 @@
  *  - beats advance on tick counts only; the last beat finishing calls
  *    `onDone` exactly once;
  *  - `skip()` is ignored until at least MIN_SKIP ticks have ELAPSED IN THE
- *    CUTSCENE (0.8s at 60 ticks/s — the reduced-motion clock still counts
+ *    CUTSCENE (0.5s at 60 ticks/s — the reduced-motion clock still counts
  *    scaled ticks, so the gate stays honest);
  *  - `lockInput` is true only while a beat that declares it is live;
  *  - reducedMotion scales every beat's tick count ×0.6 (round, ≥1 tick);
@@ -22,7 +22,7 @@
  */
 
 export const CUTSCENE_TPS = 60;
-export const MIN_SKIP_TICKS = 48; // 0.8s at 60 ticks/s
+export const MIN_SKIP_TICKS = 30; // 0.5s at 60 ticks/s
 export const REDUCED_MOTION_SCALE = 0.6;
 
 export function scaledTicks(ticks, reducedMotion) {

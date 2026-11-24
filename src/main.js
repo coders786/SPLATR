@@ -167,15 +167,15 @@ function endCutscene() {
   hideStoryChip();
   if (run) {
     // A skipped cutscene may end before the lock window's pre-applied stop
-    // expires. Release the simulation immediately; otherwise a 0.8s skip
-    // leaves the world frozen for the remainder of a 3–4s cinematic.
+    // expires. Release the simulation immediately; otherwise a quick skip
+    // leaves the world frozen for the remainder of the visual handoff.
     run.state.stop = 0;
     run.state.cutscene = null;
     run.state.inputLock = false;
   }
   onDone?.();
 }
-// Any key or tap after the 0.8s gate ends the cutscene. Capture runs before
+// Any key or tap after the 0.5s gate ends the cutscene. Capture runs before
 // the game's own input handlers, so the skip is never swallowed.
 window.addEventListener('keydown', (e) => {
   if (!activeCutscene?.skippable) return;
@@ -422,7 +422,7 @@ function event(type, d) {
       setFractureUI(0);
       audio.shatter();
       buzz(70);
-      // CHUNK 6A: the tear is a 4.2s visual sentence, not a banner.
+      // CHUNK 6A: the tear is a 2.5s visual sentence, not a banner.
       launchCutscene(SHATTER_BEATS, { reducedMotion: !opts.motion });
       break;
     case 'kineticOvercharge':
@@ -1087,8 +1087,8 @@ function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   hud.hidden = false;
   restoreField();
   nextHUD = 0;
-  // CHUNK 6A: the cold open — first real run of the session. Four seconds,
-  // skippable with any key after 0.8s, never again this session.
+  // CHUNK 6A: the cold open — first real run of the session. 2.4 seconds,
+  // skippable with any key after 0.5s, never again this session.
   if (!learn && coldOpenGate.should())
     launchCutscene(COLD_OPEN_BEATS, { reducedMotion: !opts.motion, onDone: () => {
       hud.classList.add('hud-fade-in');
@@ -1295,7 +1295,7 @@ function frame(now) {
       input.retry();
       run.setAim(input.aim);
       run.tick(); // owns the panic ray, grace and every other tick rule
-      tickCutscene(); // CHUNK 6A: advances the cold open / SHATTER cinematic
+      tickCutscene(); // CHUNK 6A: advances the cold open / sector / SHATTER cuts
       if(learningGround&&tutorial){tutorial.tick(input.engaged);const objective=tutorialObjective(tutorial.visual,run.combat.enemies,lastDevice),label=$('tutorial-objective');label.hidden=!objective;const speech=objective?tutorialAnnouncement(tutorial.visual,objective,lastDevice):'',objectiveKey=objective+'|'+speech;if(objectiveKey!==lastRiftObjective){if(!objective)lastTutorialHint=null;lastRiftObjective=objectiveKey;setText('tutorial-objective-text',objective);const room=TUTORIAL_LINES[Math.min(Math.max(tutorial.visual.stage|0,0),3)];if(room&&label.dataset.room!==room.title){label.dataset.room=room.title;}if(speech)say(speech);}const whyNow=objective?tutorialWhy(tutorial.visual,run.combat.enemies):'';if(whyNow!==lastTutorialWhy){lastTutorialWhy=whyNow;const why=$('tutorial-objective-why');if(why)why.textContent=whyNow;}const hint=tutorial.visual.guide?.kind;if(!objective&&hint&&hint!==lastTutorialHint){lastTutorialHint=hint;say(tutorialHintSpeech[hint]);}if(tutorial.finished){queueMicrotask(()=>{if(learningGround&&tutorial?.finished)finishTutorial();});}}
       else questUI.tick();
       audio.focus(run.state.phase === 'playing' && run.state.held && run.world.slow);

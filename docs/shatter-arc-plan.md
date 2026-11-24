@@ -8,7 +8,9 @@ One line up top, so nobody loses it:
 > moving pictures and light, not paragraphs.**
 
 Shadow of doubt everywhere below — numbers marked `REVISIT` want playtesting
-before they are frozen. Nothing in this document is implemented yet.
+before they are frozen. This is the original design plan, not the final timing
+contract. The shipped pacing pass supersedes its longer 4.0s/4.2s sequences;
+see `docs/cutscene-pacing.md` and `CUTSCENE_PACING` in `src/cinematics.js`.
 
 |                       | Before                          | After (this chunk)                                   |
 | --------------------- | ------------------------------- | ---------------------------------------------------- |

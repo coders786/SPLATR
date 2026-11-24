@@ -862,9 +862,9 @@ export function createRun(
     // Kinetic baseline: first border is ×1, as the ladder promises.
     s.kineticStage = 1;
     s.kineticBounces = 0;
-    // Singularity-flash clock for the renderer. CHUNK 6A: the flash now
-    // runs 140 ticks — long enough to seat the 4.2s cinematic before the
-    // shards settle into the permanent post-tear sky.
+    // Singularity-flash clock for the renderer. CHUNK 6A: the flash runs
+    // 140 ticks — long enough to carry the 2.5s cinematic into the
+    // permanent post-tear sky without outliving the player’s handoff.
     s.shatter = 140;
     // CHUNK 6A: each SHATTER this run escalates the show one rung. The
     // rules never change; the light does.

@@ -7734,7 +7734,7 @@ function createRenderer(c, viewport) {
     switch (cs.beatId) {
       case 'cold-dark': {
         wash(0.96 - 0.06 * t);
-        // Sparks falling from the dark.
+        // The hook is deliberately brief: sparks and eyes arrive immediately.
         for (let i = 0; i < 26; i++) {
           const x = hash(11, i, 3) % 1000 / 1000 * w;
           const y = ((hash(11, i, 5) % 1000) / 1000 * h * 0.35 + t * h * 0.42);
@@ -7977,7 +7977,7 @@ function createRenderer(c, viewport) {
         break;
       }
       case 'shatter-dolly': {
-        // Second-long white flicker as the world, not the cube, takes focus.
+        // A brief white flicker as the world, not the cube, takes focus.
         const flick = t < 0.12 ? (t < 0.06 ? 0.5 : 0.32) * flash : 0;
         if (flick > 0) { c.fillStyle = `rgba(255,255,255,${flick})`; c.fillRect(0, 0, w, h); }
         // The spine bursts full-bright.

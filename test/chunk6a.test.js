@@ -13,6 +13,7 @@ import { createRenderer } from '../src/renderer.js';
 import { installDom, createDisplay } from './support/display.js';
 import {
   COLD_OPEN_BEATS,
+  CUTSCENE_PACING,
   SECTOR_BEATS,
   sectorBeats,
   SHATTER_BEATS,
@@ -36,7 +37,7 @@ test('6A: each wave can carry one short story chip without changing the shot ord
   const beats=sectorBeats('IT SEES YOU.');
   assert.deepEqual(beats.map(beat => beat.id), SECTOR_BEATS.map(beat => beat.id));
   assert.deepEqual(chipBudget(beats), ['IT SEES YOU.']);
-  assert.ok(beats[1].chip.at===0,'the chapter appears when the seam opens');
+  assert.equal(beats[1].chip.at,.2,'the chapter lands just after the seam opens');
 });
 
 test('6A: the SHATTER cinematic spends exactly one chip', () => {
@@ -44,13 +45,18 @@ test('6A: the SHATTER cinematic spends exactly one chip', () => {
 });
 
 test('6A: the cinematic clocks match the shot lists at 60 tps', () => {
-  assert.equal(COLD_OPEN_BEATS.reduce((n, b) => n + b.ticks, 0), 240, 'four seconds');
-  assert.equal(SHATTER_BEATS.reduce((n, b) => n + b.ticks, 0), 252, 'four point two seconds');
-  assert.equal(SECTOR_BEATS.reduce((n, b) => n + b.ticks, 0), 90, 'one point five seconds');
-  assert.equal(lockTicks(SECTOR_BEATS), 66, 'the crossing holds until the new room appears');
-  assert.equal(lockTicks(COLD_OPEN_BEATS), 240, 'the open holds the world throughout');
-  assert.equal(lockTicks(SHATTER_BEATS), 180, 'control returns at the 3.0s mark');
-  assert.equal(lockTicks(SHATTER_BEATS, true), 109, 'reduced motion shrinks the lock, not the order');
+  assert.equal(COLD_OPEN_BEATS.reduce((n, b) => n + b.ticks, 0), 144, 'two point four seconds');
+  assert.equal(SHATTER_BEATS.reduce((n, b) => n + b.ticks, 0), 150, 'two point five seconds');
+  assert.equal(SECTOR_BEATS.reduce((n, b) => n + b.ticks, 0), 60, 'one second');
+  assert.equal(lockTicks(SECTOR_BEATS), 50, 'the crossing hands back control before the last ember clears');
+  assert.equal(lockTicks(COLD_OPEN_BEATS), 120, 'the open releases on the handoff beat');
+  assert.equal(lockTicks(SHATTER_BEATS), 120, 'control returns at the 2.0s mark');
+  assert.equal(lockTicks(SHATTER_BEATS, true), 72, 'reduced motion shrinks the lock, not the order');
+  assert.deepEqual(CUTSCENE_PACING,{
+    coldOpen:{totalTicks:144,lockedTicks:120,releaseTicks:24,totalSeconds:2.4,lockedSeconds:2},
+    sector:{totalTicks:60,lockedTicks:50,releaseTicks:10,totalSeconds:1,lockedSeconds:50/60},
+    shatter:{totalTicks:150,lockedTicks:120,releaseTicks:30,totalSeconds:2.5,lockedSeconds:2},
+  });
 });
 
 test('6A: the release beat of the SHATTER cinematic never locks input', () => {
