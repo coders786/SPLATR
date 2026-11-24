@@ -28,5 +28,5 @@ export function stepCleanBanks(previous,{dt=1,active=true,distance=0,speed=0,tar
  const separated=p.lastSide===null||p.away&&p.travel>=CLEAN_BANK.travel;
  if(corner||!Number.isFinite(incoming)||!Number.isFinite(outgoing)||incoming<target||normalSpeed<target*.5||outgoing<incoming*.7||!separated||p.ticks-p.lastAt<CLEAN_BANK.cooldown)return {state:p,event:null};
  p.total++;p.chain++;p.best=Math.max(p.best,p.chain);p.lastSide=contact.side;p.lastAt=p.ticks;p.travel=0;p.away=false;p.flash=54;p.retention=Math.min(1,outgoing/incoming);p.steered=false;
- return {state:p,event:{side:contact.side,incoming,outgoing,retention:p.retention,total:p.total,chain:p.chain,x:contact.x,y:contact.y,nx:contact.nx,ny:contact.ny}};
+ return {state:p,event:{side:contact.side,incoming,outgoing,arrivalSpeed:incoming,exitSpeed:outgoing,retention:p.retention,total:p.total,chain:p.chain,paceTarget:target,paceQualified:true,x:contact.x,y:contact.y,nx:contact.nx,ny:contact.ny}};
 }

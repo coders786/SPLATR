@@ -140,6 +140,10 @@ export function createPhysics(level) {
     grounded: true,
     launched: false,
     slow: false,
+    // Training lessons may supply a fixed, state-derived dilation while an
+    // enemy telegraphs. Ordinary focus leaves this null and keeps the normal
+    // speed-aware floors above untouched.
+    slowScale: null,
     focusScale: 1,
     previousClock: 0,
     clock: 0,
@@ -199,14 +203,18 @@ function capVelocity(body, ceiling = MAX_SPEED) {
 export function setBulletTime(world, on, immediate = false) {
   world.slow = Boolean(on);
   if (immediate) {
-    const floor = slowFloor(playerSpeed(world));
+    const floor = Number.isFinite(world.slowScale)
+      ? Math.max(SLOW_MIN, Math.min(1, world.slowScale))
+      : slowFloor(playerSpeed(world));
     world.engine.timing.timeScale = world.focusScale = on ? floor : 1;
     world.engine.gravity.scale = BASE_GRAVITY * (on ? floor : 1);
   }
 }
 
 function advanceTiming(world, pace) {
-  const floor = slowFloor(playerSpeed(world));
+  const floor = Number.isFinite(world.slowScale)
+    ? Math.max(SLOW_MIN, Math.min(1, world.slowScale))
+    : slowFloor(playerSpeed(world));
   const target=world.slow?floor:1;
   // Snappier in, snappier out: the slower the transition, the more the world
   // reads as "lurching" rather than as speed changing.

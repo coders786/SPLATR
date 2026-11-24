@@ -1965,15 +1965,7 @@ body:has(#panel[open]) #hud {
 .health-heart{color:#ff748e;font-size:12px;letter-spacing:0}
 /* One live objective at a time; the arena stays the visual priority. */
 .teaching-directions{grid-template-columns:1fr;gap:3px}
-.teaching-directions .teaching-step-label{font:700 10px/1.3 'Space Mono',monospace;color:#d7efad}
-.teaching-directions .teaching-step-action{font-weight:700}
 .teaching-tools button:disabled{opacity:.45;cursor:default}
-@media(max-width:600px){.teaching-tools{gap:4px}.teaching-tools label{flex:1}.teaching-tools select{width:100%;max-width:150px}.teaching-directions .teaching-step-label{font-size:9px}}
-.teaching-step-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.teaching-step-row .teaching-step-label{font:700 10px/1.3 'Space Mono',monospace;color:#d7efad}
-.teaching-guide .teaching-step-next{flex:none;min-height:28px;background:#d9ecac;color:#151b11;border-color:#e7f5c3}
-.teaching-guide .teaching-step-next[hidden]{display:none}
-@media(max-width:600px){.teaching-step-row .teaching-step-label{font-size:9px}}
 /* The field manual opens the real drills, not looping illustrations. */
 #panel:has(#manual-page:not([hidden])){overflow:auto}
 #panel .visual-manual .manual-controls{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -2019,7 +2011,6 @@ body:has(#panel[open]) #hud {
 .teaching-tools label{grid-column:1/-1}.teaching-tools select{flex:1;max-width:none}
 .teaching-directions{position:absolute;z-index:2;bottom:max(16px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(470px,calc(100% - 28px));box-sizing:border-box;display:grid;gap:6px;background:#171520ee;padding:10px 14px;pointer-events:none}
 .teaching-directions button{pointer-events:auto;min-height:40px}
-.teaching-directions .teaching-step-action{font:600 14px/1.3 'Space Grotesk',sans-serif}
 .teaching-illustration{display:flex;align-items:center;gap:10px;color:#d8f19c}
 .teaching-illustration .ui-icon{width:26px;height:26px}
 .teaching-menu .teaching-controls{margin:9px 0;color:#d8e9b6;font:10px/1.4 var(--mono)}
@@ -2030,8 +2021,6 @@ body:has(#panel[open]) #hud {
 .control-readout{position:absolute;z-index:2;bottom:max(16px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(440px,calc(100% - 28px));box-sizing:border-box;background:#171520ee;padding:8px 12px;pointer-events:none}
 .control-readout>.control-visual-cue{padding:5px 0;gap:15px}.control-visual-cue>.ui-icon{width:25px;height:25px}
 .control-help{display:none}
-@media(max-width:600px){.teaching-guide h2,.control-practice h2{font-size:20px}.teaching-directions{padding:8px 10px}.teaching-directions .teaching-step-action{font-size:12px}.teaching-illustration .ui-icon{width:22px;height:22px}.teaching-menu{top:72px}.control-toolbar{top:72px}.control-toolbar label{gap:4px}.control-toolbar select{max-width:135px}}
-@media(max-height:500px){.teaching-guide header small,.control-practice header small{display:none}.teaching-menu,.control-toolbar{top:60px}.teaching-directions,.control-readout{bottom:8px;padding:7px 10px}.teaching-illustration .ui-icon,.control-visual-cue>.ui-icon{width:19px;height:19px}.teaching-directions .teaching-step-action{font-size:12px}.teaching-menu{max-height:calc(100dvh - 70px)}}
 #rack-guidance:not([hidden]){top:max(14px,env(safe-area-inset-top));bottom:auto;left:max(14px,env(safe-area-inset-left));transform:none;width:min(330px,calc(100% - 155px))}
 @media(max-height:500px) and (min-width:601px){.teaching-directions,.control-readout{left:14px;transform:none;width:min(300px,36vw)}}
 #rack-skip:not([hidden]){opacity:.55;border-radius:999px;background:#14131d;color:#f4f7e2;border:1px solid #d8e8aa;min-height:40px;transition:opacity .2s}
@@ -2215,3 +2204,35 @@ body:has(#panel[open]) #hud {
 .wave-upgrades[data-read-lock='300'] .wave-upgrade-cards button{cursor:wait}
 @media(prefers-reduced-motion:reduce){.wave-upgrade-cards button[data-catalog=true]{animation:none}.upgrade-comparison-row>i::after{transition:none}}
 @media(max-width:600px){.upgrade-comparison-row{grid-template-columns:minmax(55px,1fr) 30px 30px auto;font-size:6px}.upgrade-comparison-row>b{font-size:6px}.upgrade-comparison{gap:2px}}
+
+/* ── 6E THE WATCH rehearsal surface ────────────────────────────────────────
+   The lesson has one live chip, not a stack of step copy. */
+.teaching-guide .teaching-meters{position:absolute;z-index:3;top:max(76px,calc(env(safe-area-inset-top) + 70px));left:max(14px,env(safe-area-inset-left));width:min(360px,calc(100vw - 28px));box-sizing:border-box;background:#171520d9;border:1px solid #5b5268;pointer-events:none}
+.teaching-guide .teaching-directions{display:flex;flex-direction:column;align-items:center;gap:7px;padding:0;background:transparent;border:0;bottom:max(70px,calc(env(safe-area-inset-bottom) + 58px));pointer-events:none}
+.teaching-guide .watch-lesson-mark{font:700 9px/1 var(--mono);letter-spacing:.14em;color:#d5cbdc;text-shadow:0 1px 3px #000;opacity:.86}
+.teaching-guide .watch-chip{position:static;transform:skewX(-6deg);display:inline-block;opacity:1;font-size:17px;line-height:1;min-width:92px;text-align:center;box-shadow:0 2px 18px rgba(221,255,137,.35),0 0 0 1px #101310 inset}
+.teaching-guide .watch-chip[data-phase=idle]{background:#d8f19c}
+.teaching-guide .watch-chip[data-phase=tell]{background:#ffe39a}
+.teaching-guide .watch-chip[data-phase=resolve]{background:#fff2d1}
+.teaching-guide .watch-chip[data-phase=hurt]{background:#ffb5aa;color:#2a1018}
+.teaching-guide .watch-chip[data-phase=missed]{background:#d7c9e8}
+.teaching-guide .watch-chip[data-phase=cut],.teaching-guide .watch-chip[data-phase=complete],.teaching-guide .watch-chip[data-phase=reach]{background:#ddff89}
+.teaching-guide .watch-action{display:none}
+.teaching-guide .watch-try-speed{pointer-events:auto;min-height:38px;background:#d9ecac;color:#151b11;border-color:#e7f5c3}
+.teaching-guide .teaching-enemy-state{opacity:.9}
+@media(max-width:600px){
+ .teaching-guide .teaching-meters{top:max(65px,calc(env(safe-area-inset-top) + 60px));width:min(300px,calc(100vw - 20px));left:10px;padding:6px}
+ .teaching-guide .teaching-directions{bottom:max(62px,calc(env(safe-area-inset-bottom) + 50px));width:calc(100% - 20px);padding:0 10px}
+ .teaching-guide .watch-chip{font-size:14px}
+ .teaching-guide .watch-lesson-mark{font-size:8px}
+}
+@media(max-height:500px){
+ .teaching-guide .teaching-meters{top:58px;padding:4px 7px}
+ .teaching-guide .teaching-directions{bottom:8px}
+ .teaching-guide .watch-lesson-mark{display:none}
+}
+@media(prefers-reduced-motion:reduce){.teaching-guide .watch-chip{transition:none}}
+
+.teaching-guide .teaching-lesson-picker{display:flex;align-items:center;gap:7px;pointer-events:auto;color:#bfb3ca;font:700 9px var(--mono);letter-spacing:.08em}
+.teaching-guide .teaching-lesson-picker select{min-width:min(190px,28vw);max-width:230px}
+@media(max-width:600px){.teaching-guide .teaching-lesson-picker{font-size:8px}.teaching-guide .teaching-lesson-picker select{min-width:115px;max-width:150px}}

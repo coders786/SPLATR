@@ -810,7 +810,8 @@ verbatim ask first; 6C–6E are the depth slices; 6F proves them.
   chooser before→after interaction, reduced-motion run, mobile landscape.
 - Coverage honesty: headless cannot prove *enjoyment*; it proves state
   machines, input locks, timings and no console errors. Feel claims are
-  tuning bets, flagged REVISIT honestly.
+  tuning bets, flagged REVISIT honestly. The current implementation and
+  browser limitation are recorded in `docs/shatter-arc-as-built.md`.
 - Perf: cutscene overlay adds < 1 ms/frame (vector path count < 40);
   boss bar DOM writes only on plate change; chooser re-renders only on
   deal steps.

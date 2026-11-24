@@ -40,6 +40,10 @@ export const MOMENTUM = Object.freeze({
   hyperChain: 5,
   /** Pips required for the relaxed Hyper gate. */
   fullPips: 3,
+  /** Arrival speed where the high-speed rebound curve starts to diminish. */
+  reboundAt: 160,
+  /** Maximum bonus below the diminishing-speed threshold. */
+  reboundBonus: 0.35,
 });
 
 export function createMomentum() {
@@ -83,3 +87,25 @@ export function pipCeilingScale(count) {
 export function hyperChainFor(count, base = 7) {
   return (count ?? 0) >= MOMENTUM.fullPips ? MOMENTUM.hyperChain : base;
 }
+
+/**
+ * Return the rebound multiplier paid for an arrival at a rail.
+ *
+ * Below the high-speed threshold the full 1.35x ceiling is available. Above
+ * it, the excess is deliberately diminished: at 320 px/tick the multiplier is
+ * 1.175 rather than another flat 1.35x kick. This keeps a fast bank exciting
+ * without turning consecutive wall contacts into a motor.
+ */
+export function diminishingRebound(arrival, {
+  threshold = MOMENTUM.reboundAt,
+  bonus = MOMENTUM.reboundBonus,
+} = {}) {
+  const speed = Number.isFinite(arrival) ? Math.max(0, arrival) : 0;
+  const edge = Number.isFinite(threshold) && threshold > 0 ? threshold : MOMENTUM.reboundAt;
+  const extra = Number.isFinite(bonus) ? Math.max(0, bonus) : MOMENTUM.reboundBonus;
+  return 1 + extra * Math.min(1, edge / Math.max(edge, speed));
+}
+
+// Descriptive aliases keep the pure rule easy to discover from tuning tools.
+export const reboundScale = diminishingRebound;
+export const diminishedRebound = diminishingRebound;

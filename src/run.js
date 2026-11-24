@@ -27,7 +27,7 @@ import {
   dampPlayer,
   setPlayerVelocity,
 } from './physics.js';
-import { MOMENTUM, createMomentum, stepMomentum, gainMomentum, pipCeilingScale, hyperChainFor } from './momentum.js';
+import { MOMENTUM, createMomentum, stepMomentum, gainMomentum, pipCeilingScale, hyperChainFor, diminishingRebound } from './momentum.js';
 import { upgradeById, upgradeFields } from './upgrades.js';
 
 /** ── SPEED-PRESERVING VECTOR REDIRECT ───────────────────────────────────────
@@ -1271,6 +1271,13 @@ export function createRun(
     // blade meets a shape, which is what an impact cel is for.
     if (!fromShear) s.landAge = 0;
     const hpBefore = e.hp;
+    // Keep the pace decision beside the contact that earns it. This is the
+    // measured body speed, not the score multiplier or a nominal dash power.
+    const cutSpeed = Math.hypot(world.player.velocity.x, world.player.velocity.y),
+      cutPaceTarget = MOVEMENT.maxSpeed * MOMENTUM.paceRatio,
+      cutPaceQualified = cutSpeed >= cutPaceTarget,
+      momentumTotalBefore = s.momentum?.total ?? 0;
+    let momentumEarned = false;
     combat.interrupt(e);
     // ── CHUNK 3: F = m·a ─────────────────────────────────────────────────
     //
@@ -1347,7 +1354,7 @@ export function createRun(
       s.cutGrace = Math.max(s.cutGrace, ARMOR_GRACE);
       s.cutGraceFrom = e.id;
       e.fault = s.slashAngle - e.angle;
-      emit('armor', { entityId:e.id,x: e.x, y: e.y, r: e.r, cut: s.slashAngle, hp: e.hp, hpBefore, kind: e.kind,contact,upgrade:s.waveBuff?.id||s.upgrades.at(-1)?.id,equipment:{...s.equipment},sword:s.sword,armorRemoved:Math.min(hpBefore,Math.max(0,hpBefore-e.hp)),secondary:!!secondary||!!fromShear });
+      emit('armor', { entityId:e.id,x: e.x, y: e.y, r: e.r, cut: s.slashAngle, hp: e.hp, hpBefore, kind: e.kind,contact,speed:cutSpeed,paceTarget:cutPaceTarget,paceQualified:cutPaceQualified,upgrade:s.waveBuff?.id||s.upgrades.at(-1)?.id,equipment:{...s.equipment},sword:s.sword,armorRemoved:Math.min(hpBefore,Math.max(0,hpBefore-e.hp)),secondary:!!secondary||!!fromShear });
       return;
     }
     if(!s.opening && !e.paper && e.kind==='crown' && s.hp===1) emit('challenge',{id:'oni'});
@@ -1361,8 +1368,8 @@ export function createRun(
     // pays for speed. Killing a slow shape pays points, never pips; a dash
     // or a rally through a target pays one, capped at three.
     if (!s.opening && !s.practice && s.phase === 'playing' && s.momentum) {
-      const cutSpeed = Math.hypot(world.player.velocity.x, world.player.velocity.y);
-      if (cutSpeed >= MOVEMENT.maxSpeed * MOMENTUM.paceRatio) gainMomentum(s.momentum, 'cut');
+      if (cutPaceQualified) gainMomentum(s.momentum, 'cut');
+      momentumEarned = s.momentum.total > momentumTotalBefore;
     }
     // CHUNK 2: every cut feeds the Dimension Fracture. The gain is small on
     // purpose — the number only moves because the player did something.
@@ -1488,6 +1495,10 @@ export function createRun(
       strokeKills: ledger.kills,
       points,
       chain: s.chain,
+      speed: cutSpeed,
+      paceTarget: cutPaceTarget,
+      paceQualified: cutPaceQualified,
+      momentumEarned,
     });
     if (release && !secondary) {
       s.throughcuts++;
@@ -2206,6 +2217,12 @@ export function createRun(
       }
       const v = world.player.velocity,
         speed = Math.hypot(v.x, v.y),
+        // Rail contacts preserve the pre-reflect arrival in the physics event.
+        // Use that value for the high-speed payout; the outgoing vector already
+        // contains the wall's ordinary 0.85x reduction.
+        arrivalSpeed = Number.isFinite(hitSurface.incomingX) && Number.isFinite(hitSurface.incomingY)
+          ? Math.hypot(hitSurface.incomingX, hitSurface.incomingY)
+          : speed,
         // ── THE BOUNCE, AND THE NEAR-WALL BONUS ────────────────────────────
         //
         // Under hyper the gain SCALES WITH IMPACT SPEED rather than being a
@@ -2238,7 +2255,7 @@ export function createRun(
         reboundCap = bankUpgrade.reboundCap > 0 ? (bankUpgrade.reboundCap >= 1 ? bankUpgrade.reboundCap : 1 + bankUpgrade.reboundCap) : Infinity,
         bankBonus = Math.min(reboundCap, 1 + (bankUpgrade.reboundBonus || 0) * Math.min(3, s.banks + 1)),
         BOOST = boom
-          ? Math.min(HYPER.reboundCap, 1 + (speed / HYPER.speed) * HYPER.bankGain)
+          ? Math.min(HYPER.reboundCap, diminishingRebound(arrivalSpeed))
           : s.hyper
             ? // NOT a small boost. Even 1.06 per bounce is a net MOTOR: a bot
               // touching a rail every 8 ticks gains 4.8% while drag takes
@@ -2381,9 +2398,13 @@ export function createRun(
         nx: hitSurface.nx,
         ny: hitSurface.ny,
         speed: Math.round(speed),
+        arrivalSpeed: Math.round(arrivalSpeed),
         after: Math.round(Math.hypot(world.player.velocity.x, world.player.velocity.y)),
+        reboundMultiplier: BOOST,
         hyper: s.hyper,
         banks: s.banks,
+        paceTarget: s.wave?.pace?.target ?? null,
+        paceQualified: false,
         combo: s.banks >= 3,
       });
     }
@@ -2406,12 +2427,14 @@ export function createRun(
       // certified — feeds MOMENTUM. An ordinary grazed wall pays points and
       // an edge at best; this is the bounce half of "good slashes and some
       // bounces".
-      if(!s.opening&&!s.tutorialActive&&s.momentum)gainMomentum(s.momentum,'bank');
+      const momentumTotalBefore=s.momentum?.total??0;
+      if(!s.opening&&!s.practice&&!s.tutorialActive&&s.momentum)gainMomentum(s.momentum,'bank');
+      const momentumEarned=(s.momentum?.total??0)>momentumTotalBefore;
         const before={x:v.x,y:v.y};
         if(s.held&&aimAngle!==null){const steered=steerBank(before,{x:hitSurface.nx,y:hitSurface.ny},{x:Math.cos(aimAngle),y:Math.sin(aimAngle)});setPlayerVelocity(world,steered.x,steered.y);result.state.steered=Math.hypot(steered.x-before.x,steered.y-before.y)>.01;if(result.state.steered)s.launchGrace=Math.max(s.launchGrace,MOVEMENT.launchGrace);}
         if(s.breakthrough){const reward=bankBreakthrough(s.breakthrough);s.breakthrough=reward.state;if(reward.sonic){if(!s.hyper){const vv=world.player.velocity,sp=Math.hypot(vv.x,vv.y),next=Math.min(BREAKTHROUGH.ceiling,sp*BREAKTHROUGH.sonicFactor);world.playerCeiling=Math.max(world.playerCeiling,next);if(sp>0)setPlayerVelocity(world,vv.x*next/sp,vv.y*next/sp);}emit('sonicBank',{...world.player.position});}}
         disturbRoom('bank',{...result.event,x:result.event.x-result.event.nx*PLAYER_SIZE/2,y:result.event.y-result.event.ny*PLAYER_SIZE/2,normalSpeed:Math.max(0,-hitSurface.incomingX*hitSurface.nx-hitSurface.incomingY*hitSurface.ny),speed:result.event.incoming,angle:Math.atan2(hitSurface.ny,hitSurface.nx)});
-        emit('cleanBank',{...result.event,steered:result.state.steered});
+        emit('cleanBank',{...result.event,steered:result.state.steered,momentumEarned});
       }
     }
     // The pip-return flash is a short readout, not a state.
@@ -2598,7 +2621,7 @@ export function createRun(
     if (!s.chainTime) s.chain = 0;
     // CHUNK 6: the ledger's quiet tick. Held pips wither after 14 idle
     // seconds; menus and pauses never count against them.
-    stepMomentum(s.momentum, { dt, active: s.phase === 'playing' });
+    stepMomentum(s.momentum, { dt, active: s.phase === 'playing' && !stopped });
     stepCatalogPacePip(dt, !stopped);
     hyperStep();
     const p = world.player.position;
