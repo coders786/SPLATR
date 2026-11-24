@@ -3,6 +3,9 @@ import Matter from 'matter-js';
 import { TYPES, TAU } from './shapes.js';
 import { clamp, PLAYER_SIZE, ARENA as DEFAULT_ARENA } from './levels.js';
 import {enemyAttackZone} from './art/splatr-art-engine.js';
+// CHUNK 2: one definition of the blade's ray, shared with the "safe to slice"
+// marker. See `src/slice-safe.js` for why it is not re-derived per caller.
+import {sweepGeometry} from './slice-safe.js';
 const { Bodies, Body, Composite, Events, Vertices } = Matter;
 const E_OPTIONS = {
   isSensor: true,
@@ -690,27 +693,32 @@ export function createCombat(world, tell = () => {}, onBoss = null) {
    *  blade that swings itself is a cutscene.
    */
   function sweepBlade(angle, reach = 1, width = 1, closeWidth = 1) {
-    const p = world.player.position,
-      r = PLAYER_SIZE / 2,
-      span = 3.6 * r * reach,
+    const p = world.player.position;
+    // CHUNK 2: the blade's ray is defined ONCE, in `sliceGeometry`, so the
+    // green "you can cut this" marker and the real hit test cannot drift apart.
+    // `span` and `halfWidth` are the same numbers the marker brackets are
+    // measured from.
+    const geo = sweepGeometry({ reach, width, closeWidth }),
+      span = geo.span,
       candidates = [];
     for (const e of enemies.values())
       if (Math.abs(e.x - p.x) < e.r + span && Math.abs(e.y - p.y) < e.r + span)
         candidates.push(e.body);
-    if (!candidates.length) return;
+    if (!candidates.length) return geo;
     const tip = {
       x: p.x + span * Math.cos(angle),
       y: p.y + span * Math.sin(angle),
     };
     // Wide ray: the arc of the swing.
-    for (const hit of Matter.Query.ray(candidates, p, tip, r * 0.95 * reach * width)) {
+    for (const hit of Matter.Query.ray(candidates, p, tip, geo.halfWidth)) {
       const e = hit.body.parent.plugin.enemy;
       if (e) contacts.add(e);
     }
-    if(closeWidth>1) for(const hit of Matter.Query.ray(candidates,p,tip,r*.95*reach*width*closeWidth)) {
+    if(closeWidth>1) for(const hit of Matter.Query.ray(candidates,p,tip,geo.halfWidth*closeWidth)) {
       const e=hit.body.parent.plugin.enemy;
-      if(e && Math.hypot(e.x-p.x,e.y-p.y)<=100)contacts.add(e);
+      if(e && Math.hypot(e.x-p.x,e.y-p.y)<=geo.closeRadius)contacts.add(e);
     }
+    return geo;
     // NOTE: there is deliberately NO radial "brushing" term here.
     //
     // I added one while widening the blade, reasoning that a shape the cube

@@ -272,6 +272,28 @@ var cross = [
   [-1, -0.31],
   [-0.31, -0.31]
 ];
+// ── CHUNK 2: THE THREE-COLOUR LAW ────────────────────────────────────────
+// One vocabulary for the whole field, and three words in it:
+//
+//   SAFE    green  — you may cut this, with the blade you are holding NOW.
+//   LETHAL  rose   — this will hurt you. Wind-ups, live hazards, landed hits.
+//   REWARD  gold   — this pays you. Health, credits, a wave reward.
+//
+// The enemy body palette is deliberately free of the safe band (see
+// `ENEMY_HUES` in src/color-law.js and the test that re-reads these literals),
+// so green can only ever mean one thing. Nothing here is a new hue invented for
+// this pass: the greens are the acid the game already paints with, the red is
+// the hit line's own rose, and the gold is the pad's upgrade gold.
+var LAW = {
+  safe: "#ddff89",
+  safeCore: "#f4ffd0",
+  safeEdge: "#9dc94a",
+  lethal: "#ff2b4a",
+  lethalPale: "#ffd0d8",
+  reward: "#ffd166",
+  rewardCore: "#fff1c4",
+  rewardEdge: "#b47b18"
+};
 var INK = {
   void: "#100e19",
   black: "#16111e",
@@ -331,7 +353,9 @@ var TYPES = {
   bastion: species(
     "Bastion",
     "Shield",
-    "#ffba52",
+    // CHUNK 2: hot rust, not gold. A Bastion pays nothing when it breaks, and
+    // under the three-colour law gold is reserved for what DOES pay (see LAW).
+    "#ff6b3d",
     [[-0.85, -0.8], [0.85, -0.8], [0.92, 0.3], [0.5, 0.78], [0, 1], [-0.5, 0.78], [-0.92, 0.3]],
     41,
     300,
@@ -5247,11 +5271,13 @@ function radarRect(width, height) {
   const pad2 = Math.max(12, side * 0.022);
   return { x: width - size - pad2, y: height - size - pad2, w: size, h: size };
 }
+// The BODY colours. `LAW` owns meaning; these own identity, and by contract
+// none of them may read as safe (green) or as reward (gold).
 var COLORS = {
   fang: "#ff507b",
   prism: "#b28cff",
   fork: "#ffa54d",
-  bastion: "#ffc35b",
+  bastion: "#ff6b3d",
   crown: "#ffd166",
   rift: "#ff4277",
   pulse: "#e178ed",
@@ -5274,13 +5300,19 @@ function localRadar(view, player, rect, enemies = [], portal = null, {range = 1}
   for (const e of enemies) {
     if (Math.abs(e.x - player.x) > view.w * range || e.y < player.y - view.h * 2 * range || e.y > player.y + view.h * 0.5 * range)
       continue;
-    const r = e.kind === "crown" ? 5 : 3;
+    const r = e.kind === "crown" ? 5 : 3,
+      isBody = !!TYPES[e.kind];
     blips.push({
       ...project(e, r),
       r,
       id: e.id,
       kind: e.kind,
       mode: e.mode,
+      // CHUNK 2: only an ENEMY BODY may be drawn in the body palette. A wave
+      // source (a wave marker, a breach point, a portal) is not a creature and
+      // gets the neutral teal diamond instead of a rose dot that reads as one
+      // more thing to cut.
+      shape: isBody ? 'body' : 'source',
       onScreen: e.x >= view.x && e.x <= view.x + view.w && e.y >= view.y && e.y <= view.y + view.h,
       color: COLORS[e.kind] || "#ff507b"
     });
@@ -6592,7 +6624,10 @@ export function enemyAttackZone(kind,x,y,angle=0,r=32){
 }
 /** Dashed outlines are non-damaging tells; solid filled regions are active. */
 export function drawEnemyZone(c,zone,active=false,scale=1){
- if(!zone)return;const unit=1/Math.max(.1,scale),color={fork:'#ffc19b',bastion:'#ffe1a0',rift:'#ffb5c7',well:'#ead3ff'}[zone.kind]||'#ffffff';
+ // CHUNK 2: every strike zone speaks in the LETHAL voice. These were four
+ // warm tints, including a gold (Bastion at hue 41) and a pale lavender; a
+ // player reading colour as meaning needs one colour for "this will hit you".
+ if(!zone)return;const unit=1/Math.max(.1,scale),color={fork:'#ff9a86',bastion:'#ff8f72',rift:'#ff6b86',well:'#ff8fa8'}[zone.kind]||LAW.lethal;
  c.save();try{
   c.lineJoin='round';c.lineWidth=(active?2.7:2)*unit;c.strokeStyle=color;
   c.fillStyle=color;c.globalAlpha=active?.25:.08;
@@ -6660,9 +6695,9 @@ export function drawEnemyIntentBadges(c,v,combat,player,alpha=1){
   for(const b of badges){
    const width=Math.max(96,Math.min(142,c.measureText(b.label).width+14)),active=b.state==='WINDUP'||b.state==='ATTACK';
    c.fillStyle='#17101deb';c.fillRect(b.x-width/2,b.y-17,width,32);
-   c.strokeStyle=active?'#ffbbac':'#aa9eae';c.lineWidth=active?1.5:1;c.strokeRect(b.x-width/2,b.y-17,width,32);
+   c.strokeStyle=active?LAW.lethalPale:'#aa9eae';c.lineWidth=active?1.5:1;c.strokeRect(b.x-width/2,b.y-17,width,32);
    c.fillStyle='#fff5ed';c.fillText(b.label,b.x,b.y-9,width-6);
-   c.font='bold 10px monospace';c.fillStyle=active?'#ffb2a8':'#c5b6c5';c.fillText(b.state==='WINDUP'?'CHARGING':b.state==='ATTACK'?'ATTACK':b.state==='RECOVER'?'RECOVER':'',b.x,b.y+3,width-6);
+   c.font='bold 10px monospace';c.fillStyle=active?LAW.lethalPale:'#c5b6c5';c.fillText(b.state==='WINDUP'?'CHARGING':b.state==='ATTACK'?'ATTACK':b.state==='RECOVER'?'RECOVER':'',b.x,b.y+3,width-6);
    if(b.progress!==null){c.fillStyle='#61414b';c.fillRect(b.x-width/2+2,b.y+11,width-4,3);c.fillStyle='#ffcaad';c.fillRect(b.x-width/2+2,b.y+11,(width-4)*b.progress,3);}
    c.font='bold 11px monospace';
   }
@@ -6709,6 +6744,103 @@ export function drawEnemyThreatIndicators(c,v,combat,{top=32,gutter=20}={}){
  }finally{c.restore();}return items;
 }
 
+/**
+ * CHUNK 2 — "SAFE TO SLICE".
+ *
+ * One bracket per body the live blade would actually reach, drawn from the
+ * SAME sweep geometry the hit test uses (`src/slice-safe.js` feeds this; the
+ * run publishes the exact `reach/width/closeWidth` it swept with). A body that
+ * is mid-attack is drawn in the lethal rose and never in green, because "green"
+ * has exactly one meaning in this game.
+ *
+ * Deliberately cheap: no `shadowBlur`, no gradient, four short strokes and one
+ * pip per body, all at the world's own stroke scale so it survives a phone
+ * zoom. It reads as a target acquisition bracket, not as another enemy.
+ */
+export function resolveSliceMark(slice={}, time=0){
+  if(!slice||!slice.armed)return null;
+  const lethal=slice.state==='lethal';
+  return Object.freeze({
+    id:slice.id,
+    kind:slice.kind,
+    x:slice.x,
+    y:slice.y,
+    r:Math.max(6,Number(slice.r)||20),
+    // THE BRACKET IS ALWAYS ABOUT THE CUT: green when the blade may take it,
+    // rose when it is a live attack. Every other meaning gets its own glyph,
+    // so "I can cut this" and "this pays" can never be confused.
+    color:lethal?LAW.lethal:LAW.safe,
+    core:lethal?LAW.lethalPale:LAW.safeCore,
+    shielded:!!slice.shielded,
+    reward:!!slice.reward,
+    lethal,
+    // A slow, deterministic breathing so the mark is alive without a clock the
+    // caller has to own.
+    pulse:.72+.28*Math.sin((Number(time)||0)*.11+(Number(slice.along)||0)*.012)
+  });
+}
+export function drawSliceSafe(c, slices=[], {scale=1, motion=true, time=0}={}){
+  if(!Array.isArray(slices)||!slices.length)return 0;
+  const unit=1/Math.max(.1,scale);
+  let drawn=0;
+  c.save();try{
+    c.lineCap='round';c.lineJoin='miter';
+    for(const slice of slices){
+      const m=resolveSliceMark(slice,time);
+      if(!m)continue;
+      const gap=m.r+9*unit, arm=Math.max(5*unit,m.r*.42), w=Math.max(1.8,2.4*unit);
+      // Four corner brackets: a targeting frame, never a filled shape, so it
+      // cannot be mistaken for a body or for a hazard field. Each stroke is
+      // laid over a dark underlay, the same trick the hit line uses, so the
+      // mark survives a bright body underneath it.
+      for(const pass of [0,1]){
+        c.globalAlpha=(pass
+          ? (motion?m.pulse:1)*(m.lethal?.95:.9)
+          : .5*(motion?m.pulse:1));
+        c.strokeStyle=pass?m.color:'#0b0408';
+        c.lineWidth=pass?w:w+2*unit;
+        for(const sx of [-1,1])for(const sy of [-1,1]){
+          const x=m.x+sx*gap, y=m.y+sy*gap;
+          c.beginPath();
+          c.moveTo(x-sx*arm,y);c.lineTo(x,y);c.lineTo(x,y-sy*arm);
+          c.stroke();
+        }
+      }
+      // The core pip says WHICH of the three voices this is at a glance. It
+      // uses the STRONG ink of its role (a pale highlight would not read as a
+      // colour signal on a dark field).
+      c.globalAlpha=motion?m.pulse:1;
+      c.fillStyle=m.lethal?LAW.lethal:LAW.safe;
+      const pip=m.r*.14+1*unit;
+      c.beginPath();c.arc(m.x,m.y,pip,0,TAU);c.fill();
+      if(m.shielded){
+        // Armour notch: cut it and it does NOT die. Red, because that is the
+        // honest consequence, and it is the same red as a hazard. One thick
+        // tick on the bracket's left top and one on its right bottom, so the
+        // gold bounty chevron above the frame has a corner of its own.
+        c.strokeStyle=LAW.lethal;c.lineWidth=Math.max(1.8,2.4*unit);
+        for(const [sx,sy] of [[-1,-1],[1,1]]){
+          const x=m.x+sx*gap, y=m.y+sy*gap;
+          c.beginPath();c.moveTo(x-sx*arm,y);c.lineTo(x,y);c.stroke();
+        }
+      }
+      if(m.reward){
+        // GOLD IS A PROMISE: a chevron above the frame, never the frame itself.
+        // The one body in the field that pays is the one body that wears it.
+        const cy=m.y-gap-arm-8*unit, s2=5.5*unit;
+        c.globalAlpha=motion?m.pulse:1;
+        c.fillStyle=LAW.reward;
+        c.beginPath();
+        c.moveTo(m.x,cy-s2);c.lineTo(m.x+s2,cy);c.lineTo(m.x,cy+s2);c.lineTo(m.x-s2,cy);
+        c.closePath();c.fill();
+        c.strokeStyle=LAW.rewardEdge;c.lineWidth=Math.max(1,1.3*unit);c.stroke();
+      }
+      drawn++;
+    }
+  }finally{c.restore();}
+  return drawn;
+}
+
 export function drawEnemyWarning(c, e, p, time, scale=1, motion=true, arena=null) {
   const col = TYPES[e.kind].color;
   if (e.kind === "well") {
@@ -6726,7 +6858,7 @@ export function drawEnemyWarning(c, e, p, time, scale=1, motion=true, arena=null
   }
   if (e.kind === "fang" && e.mode === "rush") {
     // Active charge is marked at the real body, distinct from the lane tell.
-    c.save();c.translate(p.x,p.y);c.rotate(e.aim);c.strokeStyle='#fff0e2';c.lineWidth=Math.max(1.8,2/Math.max(.1,scale));
+    c.save();c.translate(p.x,p.y);c.rotate(e.aim);c.strokeStyle=LAW.lethalPale;c.lineWidth=Math.max(1.8,2/Math.max(.1,scale));
     c.beginPath();c.moveTo(e.r*.25,-e.r*.78);c.lineTo(e.r*1.08,0);c.lineTo(e.r*.25,e.r*.78);c.stroke();c.restore();
   }
   if (e.mode !== "tell") return;
@@ -6740,7 +6872,7 @@ export function drawEnemyWarning(c, e, p, time, scale=1, motion=true, arena=null
   if (e.kind === "pulse") {
     // Dashed nested diaphragms are a wind-up, not the solid moving hit rim.
     for(const radius of [e.r+10+(1-f)*12,e.r+19+(1-f)*12])
-      arc(c,'#ffd2df',Math.max(1.8,2*unit),p.x,p.y,radius);
+      arc(c,LAW.lethalPale,Math.max(1.8,2*unit),p.x,p.y,radius);
   } else if (e.kind === "prism" || e.kind === "crown") {
     const count = e.kind === "crown" ? 10 : 1, length = e.kind === "prism" ? 840 : 230;
     for (let j = 0; j < count; j++) {
@@ -7102,8 +7234,13 @@ function createRenderer(c, viewport) {
   // CHUNK 1: view-time payloads owned by the shell (main.js): the screen-space
   // aim ring and the "what hit me" reaction. Never read from the simulation.
   let hitFeedbackView = null;
-  function setAimFeedback({ hit = null } = {}) {
+  /** CHUNK 2: bodies the live blade would reach this frame (see slice-safe.js). */
+  let sliceMarkView = [];
+  function setAimFeedback({ hit = null, slices = null } = {}) {
     hitFeedbackView = hit;
+    // CHUNK 2: the "safe to slice" brackets. A snapshot, never a live read of
+    // the enemy map -- the painter must not be able to move the simulation.
+    if (slices !== null) sliceMarkView = Array.isArray(slices) ? slices : [];
   }
   let dashBurstAt = -1, dashBurstSwing = null;
   let dashTravel = { age: null, x: 0, y: 0, along: 0 };
@@ -7431,7 +7568,13 @@ function createRenderer(c, viewport) {
       c2.fillStyle = c2.strokeStyle = blip.color;
       c2.lineWidth = 1.4;
       c2.beginPath();
-      if (blip.kind === "bastion") c2.rect(blip.x - blip.r, blip.y - blip.r, blip.r * 2, blip.r * 2);
+      // A non-body source on the map is a diamond, not a creature.
+      if (blip.shape === 'source') {
+        const r2 = Math.max(3, blip.r);
+        c2.moveTo(blip.x, blip.y - r2); c2.lineTo(blip.x + r2, blip.y);
+        c2.lineTo(blip.x, blip.y + r2); c2.lineTo(blip.x - r2, blip.y);
+        c2.closePath();
+      } else if (blip.kind === "bastion") c2.rect(blip.x - blip.r, blip.y - blip.r, blip.r * 2, blip.r * 2);
       else if (blip.kind === "crown") {
         c2.moveTo(blip.x, blip.y - blip.r);
         c2.lineTo(blip.x + blip.r, blip.y);
@@ -7858,9 +8001,49 @@ function createRenderer(c, viewport) {
     // The impact ring tightens onto the body.
     const ringR = 34 - 20 * fb.impact;
     c.globalAlpha = 0.9 * ramp;
-    c.strokeStyle = '#ffd0d8';
+    c.strokeStyle = LAW.lethalPale;
     c.lineWidth = 2.5;
     c.beginPath(); c.arc(ex, ey, ringR, 0, Math.PI * 2); c.stroke();
+    // ── CHUNK 2: THE KILLER POINTER ──────────────────────────────────────
+    //
+    // The line says WHERE; it still left the player doing the arithmetic on a
+    // 960px field with four bodies in it. So the attacker gets named at its own
+    // body — one short word, in the same rose as the line, in the same
+    // body-first vocabulary as the corner readout (`FANG HIT`, `RING HIT`) —
+    // and the name is pinned to the viewport edge when the attacker is off it.
+    const label = fb.label || 'HIT';
+    c.font = 'bold 12px monospace';
+    const tw = Math.min(112, c.measureText(label).width + 12);
+    const lx = Math.max(46, Math.min(w - 46, ex)), ly = Math.max(70, Math.min(h - 26, ey - 30));
+    c.globalAlpha = 0.92 * ramp;
+    c.fillStyle = '#280e18';
+    c.fillRect(lx - tw / 2, ly - 10, tw, 19);
+    c.strokeStyle = LAW.lethal;
+    c.lineWidth = 1.4;
+    c.strokeRect(lx - tw / 2, ly - 10, tw, 19);
+    c.fillStyle = '#fff4e9';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText(label, lx, ly - 1, tw - 6);
+    // A tag stem down to the body, so the word cannot be read as a HUD chip.
+    c.globalAlpha = 0.55 * ramp;
+    c.strokeStyle = LAW.lethal;
+    c.beginPath(); c.moveTo(lx, ly + 9); c.lineTo(lx, ly + 13); c.stroke();
+    c.textAlign = 'left';
+    c.textBaseline = 'alphabetic';
+    // Off-screen attacker: point at it from the edge, because a line clipped by
+    // the viewport is not a warning, it is a hint that something happened.
+    const off = ex < 8 || ex > w - 8 || ey < hudTop() + 8 || ey > h - 8;
+    if (off) {
+      const sx = clamp(ex, 22, w - 22), sy = clamp(ey, hudTop() + 22, h - 22);
+      c.save();
+      c.translate(sx, sy);
+      c.rotate(dir.angle);
+      c.globalAlpha = 0.95 * ramp;
+      c.fillStyle = LAW.lethal;
+      c.beginPath(); c.moveTo(15, 0); c.lineTo(0, -8); c.lineTo(0, 8); c.closePath(); c.fill();
+      c.restore();
+    }
     c.globalAlpha = 1;
     c.restore();
   }
@@ -8641,8 +8824,20 @@ function createRenderer(c, viewport) {
         lensT: e.lensT || 0,
         time:motion?time:0
       });c.restore();
+      // ── CHUNK 2: GOLD IS A PROMISE, NOT DECORATION ────────────────────
+      // The Crown is the one body in the field that PAYS: breaking it restores
+      // a hull point. The mark for that is the gold chevron `drawSliceSafe`
+      // hangs above its bracket — NOT a ring or a second frame on the body.
+      // A body-hugging gold ring was tried in this pass and read as a second
+      // targeting bracket, which made "you can cut this" and "this pays" look
+      // like the same sentence. The bubble above the active mark is a bubble:
+      // it only exists while the bounty is actually within reach.
       if (s.equipment?.world === "manga") c.restore();
     }
+    // CHUNK 2: "safe to slice", drawn OVER the bodies and UNDER the hazards, so
+    // a live ring is never hidden behind a bracket. Screen-space free: the view
+    // array is built once per frame by the shell.
+    if (sliceMarkView.length && !s.opening) drawSliceSafe(c, sliceMarkView, { scale: v.scale, motion, time });
     for (const a of combat.hazards) {
       const x = mix(a.px, a.x, alpha), y = mix(a.py, a.y, alpha);
       if (a.kind === "zone") {
@@ -8650,16 +8845,16 @@ function createRenderer(c, viewport) {
       } else if (a.kind === "ring") {
         c.save();
         c.globalAlpha = a.spent ? 0.26 : 1;
-        arc(c, "#b93863", 6, x, y, mix(a.previousRadius, a.radius, alpha));
-        arc(c, "#ffb7c8", 2, x, y, mix(a.previousRadius, a.radius, alpha));
+        arc(c, "#a3122f", 6, x, y, mix(a.previousRadius, a.radius, alpha));
+        arc(c, LAW.lethalPale, 2, x, y, mix(a.previousRadius, a.radius, alpha));
         c.restore();
       } else if (a.kind === "shock") {
         // CHUNK 6B: the landlord's slam — a bone-white concussion ring, not a
         // Pulse. Cracked and amber, spent fading.
         c.save();
         c.globalAlpha = a.spent ? 0.3 : Math.max(0.25, 1 - a.radius / ((a.maxRadius || 150) + 30));
-        arc(c, "#7d6a52", 7, x, y, mix(a.previousRadius, a.radius, alpha));
-        arc(c, "#ffe4b3", 2.4, x, y, mix(a.previousRadius, a.radius, alpha));
+        arc(c, "#5b2a2e", 7, x, y, mix(a.previousRadius, a.radius, alpha));
+        arc(c, LAW.lethalPale, 2.4, x, y, mix(a.previousRadius, a.radius, alpha));
         c.restore();
       } else if (a.source === "monolith") {
         // Debris off the slab — a tumbling ember rock, not a needle.
@@ -8676,7 +8871,7 @@ function createRenderer(c, viewport) {
           Math.max(1.8,1.4/v.scale/markerScale)
         );
         line(c, '#ff8f4d', Math.max(1.5,1.35/v.scale/markerScale), -7, 1, 4, 3);
-        line(c, '#ffd9a0', Math.max(1.2,1.1/v.scale/markerScale), -4, -3, 5, -2);
+        line(c, LAW.lethalPale, Math.max(1.2,1.1/v.scale/markerScale), -4, -3, 5, -2);
         c.restore();
       } else {
         c.save();
@@ -8687,7 +8882,7 @@ function createRenderer(c, viewport) {
         c.scale(markerScale,markerScale);
         poly2(
           c,
-          a.source === "crown" ? "#ffc27f" : "#d5adff",
+          a.source === "crown" ? LAW.lethalPale : "#d5adff",
           a.source === "crown" ? [[10,0],[-5,-6],[-3,-2],[-17,-5],[-12,0],[-17,5],[-3,2],[-5,6]]
             : [[10,0],[-9,-4],[-18,0],[-9,4]],
           INK.black,

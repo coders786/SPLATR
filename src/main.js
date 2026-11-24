@@ -6,9 +6,12 @@ import {createControlPracticeUI} from './control-practice-ui.js';
 import {createTeachingUI} from './teaching-ui.js';
 import {createTrainingHub} from './training-hub.js';
 import {healthDamageLabel,healthDeathMessage} from './health-ui.js';
-import {healthSegments,damageFeedback,dmgLabel,SAFE_BLINK_TICKS,HIT_RIM_TICKS} from './damage-feedback.js';
+import {healthSegments,damageFeedback,dmgLabel,bearingWord,SAFE_BLINK_TICKS,HIT_RIM_TICKS} from './damage-feedback.js';
+// CHUNK 2: the live "safe to slice" set, measured against the blade's own sweep.
+import {sliceStates,sweepGeometry} from './slice-safe.js';
+import {lawHintVisible} from './color-law.js';
 import {reticleFor} from './pointer-reticle.js';
-import {bossChargeReadout,shortDamageLine,hintVisible} from './hud-copy.js';
+import {bossChargeReadout,shortDamageLine,damageBearing,hintVisible} from './hud-copy.js';
 import {combatStatus} from './combat-status.js';
 import {runCoaching} from './run-coach.js';
 import {createWaveUI} from './wave-ui.js';
@@ -531,7 +534,11 @@ function event(type, d) {
       hitAt = 0;
       hitCause = d.cause || null;
       hitSource = damageSource(run?.state, d);
-      pop(`${shortDamageLine(`${dmgLabel(d.cause)} HIT`)}`, 55, 3);
+      // CHUNK 2: a bearing word ONLY when the attacker is off the viewport.
+      // On-screen, the drawn line already points at it and a compass would be
+      // noise; off-screen, the word is the whole message.
+      hitBearing = hitIsOffScreen() ? bearingWord(hitAngleFromPlayer()) : '';
+      pop(shortDamageLine(`${dmgLabel(d.cause)} HIT${hitBearing ? ` ${hitBearing}` : ''}`), 55, 3);
       break;
     case 'break':
       input.cancel();
@@ -837,6 +844,7 @@ let pointerPos = null,          // canvas-local CSS px, or null
   hitAt = -1,                   // ticks since the last real health loss
   hitSource = null,             // where that hit came from, if anywhere
   hitCause = null,
+  hitBearing = '',             // CHUNK 2: a compass word, only when off-screen
   hitRimTimer = 0;
 // Which body is allowed to own the "what hit me" line: the run names the
 // cause, the attack names the source, and the combat map turns an id into a
@@ -849,6 +857,20 @@ function damageSource(s, d) {
   if (body) return { x: body.x, y: body.y };
   if (Number.isFinite(d?.x) && Number.isFinite(d?.y) && (d.x || d.y)) return { x: d.x, y: d.y };
   return null;
+}
+/** CHUNK 2: is the attacker outside the drawn field? Uses the renderer's own
+ *  last view, which is the space the player is actually looking at. */
+function hitIsOffScreen() {
+  if (!hitSource) return false;
+  const view = renderer?.viewSnapshot?.();
+  if (!view) return false;
+  return hitSource.x < view.x || hitSource.x > view.x + view.w || hitSource.y < view.y || hitSource.y > view.y + view.h;
+}
+/** Bearing from the cube to the attacker, or NaN when there is no attacker. */
+function hitAngleFromPlayer() {
+  if (!hitSource || !run?.world?.player?.position) return NaN;
+  const p = run.world.player.position;
+  return Math.atan2(hitSource.y - p.y, hitSource.x - p.x);
 }
 function paintReticle(now) {
   const el = $('reticle');
@@ -976,9 +998,18 @@ function updateHUD() {
       hint.hidden = !show;
       hint.classList.toggle('on', show);
     }
+    // CHUNK 2: the colour law, taught on the same ticker lane until the player
+    // has cut three things. Never during practice (the practice ground teaches
+    // its own lesson), never during a cutscene, never over a live fight.
+    const law = $('law-hint');
+    if (law) {
+      const show = lawHintVisible(s.kills, s.elapsed) && s.phase === 'playing' && !s.opening && !learningGround && !activeCutscene;
+      law.hidden = !show;
+      law.classList.toggle('on', show);
+    }
   }
   $('last-damage').hidden = !s.lastDamage || !!s.opening;
-  if(s.lastDamage) setText('last-damage-cause', shortDamageLine(`${dmgLabel(s.lastDamage.cause)} HIT`));
+  if(s.lastDamage) setText('last-damage-cause', damageBearing(`${dmgLabel(s.lastDamage.cause)} HIT`, hitAt >= 0 ? hitBearing : ''));
   // EDGE. The pip count and the recharge timer both matter: three pips tell
   // you whether you can cut, the timer tells you whether to bother lining one
   // up. Without the second, an empty meter is indistinguishable from a broken
@@ -1479,7 +1510,7 @@ function frame(now) {
       // Ticks, not milliseconds: the game's own clock, so a paused tab can
       // never advance a shake or a hint.
       if (refuseTicks >= 0 && ++refuseTicks > 26) refuseTicks = -1;
-      if (hitAt >= 0 && ++hitAt > HIT_RIM_TICKS) { hitAt = -1; hitSource = null; hitCause = null; }
+      if (hitAt >= 0 && ++hitAt > HIT_RIM_TICKS) { hitAt = -1; hitSource = null; hitCause = null; hitBearing = ''; }
       paintReticle(now);
       renderer.tick(run, opts.motion && opts.shake !== 'off');
       if (receiptTicks && !--receiptTicks) $('imprint').hidden = true;
@@ -1496,7 +1527,24 @@ function frame(now) {
       ? damageFeedback({ age: hitAt, player: run.world.player.position, source: hitSource, cause: hitCause })
       : null;
     $('damage-rim')?.classList.toggle('on', !!feedback?.live && opts.motion);
-    renderer.setAimFeedback?.({ hit: feedback });
+    // CHUNK 2: which bodies the blade in the player's hand would reach on THIS
+    // frame. The geometry is the run's own published sweep when a blade is out,
+    // so the green brackets cannot promise a cut the hit test would refuse.
+    const slices = run.state.blade > 0 && !feedback?.live
+      ? sliceStates({
+          player: run.world.player.position,
+          enemies: run.combat.enemies.values(),
+          state: run.state,
+          // `state.sweep` is refreshed by the run on every tick a blade is out,
+          // with exactly the multipliers it swept with. The fallback only runs
+          // on the first frame of a blade, before that tick has published.
+          geometry: run.state.sweep || sweepGeometry({
+            reach: (run.state.reach || 1) * (run.state.sword?.reach || 1),
+            width: run.state.sword?.width || 1,
+          }),
+        })
+      : [];
+    renderer.setAimFeedback?.({ hit: feedback, slices });
     renderer.draw(run, a, input.aim, opts.motion,lastDevice);
     if (now >= nextHUD) {
       updateHUD();

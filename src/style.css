@@ -2625,6 +2625,58 @@ body:has(#panel[open]) #hud {
   }
 }
 
+/* ── CHUNK 2: THE THREE-COLOUR LAW, TAUGHT ONCE ───────────────────────────
+   The same bottom-edge ticker as the starter hint, because a second
+   notification lane is how the screen got crowded in the first place. It
+   sits one slot higher so the two can coexist for the first few seconds
+   without either one covering an enemy body. Retirement is by USE (three
+   cuts) rather than by timer, so a player who is still learning keeps it. */
+#law-hint {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--foot, 24px) + 40px);
+  transform: translateX(-50%) skewX(-6deg);
+  z-index: 6;
+  pointer-events: none;
+  padding: 6px 14px 7px;
+  background: #0e1110ee;
+  border: 1px solid #3c4a34;
+  color: #cbd8b6;
+  font: 800 13px/1 var(--mono);
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+#law-hint.on {
+  opacity: 1;
+}
+#law-hint[hidden] {
+  display: none;
+}
+#law-hint b {
+  font: inherit;
+  font-weight: 800;
+}
+/* The three voices, and only these three. */
+.law-safe {
+  color: #ddff89;
+}
+.law-lethal {
+  color: #ff5070;
+}
+.law-reward {
+  color: #ffd166;
+}
+@media (max-width: 600px) {
+  #law-hint {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 5px 9px 6px;
+    bottom: calc(var(--foot, 24px) + 34px);
+  }
+}
+
 /* ── THE STORY CHIP IS A TICKER, NOT A PHOTO BOMB ─────────────────────────
    It used to sit at 60% height, dead centre of live combat, at 17px, with a
    lime plate behind it: story lines and wave callouts covered the fight.

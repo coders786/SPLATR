@@ -72,6 +72,9 @@ import { createOpening } from './opening.js';
 import { beginStroke, printKill, impactFor, SHEAR } from './stroke.js';
 import { IMPACT } from './impact.js';
 import { PACE, breathFor, focusPace, tempoOf, assistRange } from './pace.js';
+// CHUNK 2: the damage reaction's slow window. Pure; it only returns a time
+// multiplier, which is spent through `pace` (never by skipping a tick).
+import { hitPace, HIT_WINDOW_TICKS } from './damage-feedback.js';
 import { tierOf } from './motion.js';
 
 /** The highest chain a miss can leave behind.
@@ -632,6 +635,9 @@ export function createRun(
     held: false,
     depleted: false,
     invul: 0,
+    // CHUNK 2: ticks since the last real health loss, -1 = none. View-time
+    // consumers read it; the run only uses it for the pace window.
+    hitAge: -1,
     stop: 0,
     drive: 0,
     elapsed: 0,
@@ -1208,6 +1214,10 @@ export function createRun(
     // into fewer frames, so the window is stretched to keep the player's
     // actual recovery time unchanged.
     s.invul = PACE.invulTicks;
+    // CHUNK 2: the slow-motion window is a property of the HIT, so it starts
+    // on the same line the hit does. It is read by the pace expression below
+    // and never by swallowing simulation ticks -- see `hitPace`.
+    s.hitAge = 0;
     s.chain = s.chainTime = s.drive = s.blade = s.parry = s.breath = s.hyperChain = 0;
     s.chainMax = CHAIN_TIME;
     s.panic = null;
@@ -1736,6 +1746,10 @@ export function createRun(
       return;
     }
     s.elapsed++;
+    // CHUNK 2: the damage window is measured in the game's own ticks, so a
+    // backgrounded tab can never spend it. It outlives the hitstop on purpose:
+    // the stop is `s.stop`, the window is this.
+    if (s.hitAge >= 0 && ++s.hitAge > HIT_WINDOW_TICKS) s.hitAge = -1;
     // The floor's dead band is a fact about the WORLD, and it is what the
     // physics step reads to decide whether a touch is a kick or a landing.
     // Published every tick so it can never go stale.
@@ -1931,6 +1945,11 @@ export function createRun(
     // is a shove, and nothing here is allowed to crawl. `held` focus sets its own
     // floor through world.slow, which advanceTiming also caps.
     const focusFloor = s.held ? focusPace(s) : 1,
+      // CHUNK 2: a real hit owns the next third of a second. `hitPace` is 1.0
+      // outside its window, so it can be min()'d in without changing any other
+      // pacing rule -- and because it is the `pace` argument, `advanceTiming`
+      // still scales gravity by the same fraction it scales the clock.
+      hitScale = hitPace(s.hitAge),
       pace = Math.min(
         1 - (1 - PACE.warnDepth) * s.warning,
         s.breath
@@ -1939,6 +1958,7 @@ export function createRun(
           : 1,
         panicScale(s),
         focusFloor,
+        hitScale,
       );
     if(s.equipmentScar?.ticks>0) s.equipmentScar.ticks--;
     if(needleCooldown>0)needleCooldown--;
@@ -2502,7 +2522,10 @@ export function createRun(
     if (s.blade > 0) {
       s.slashAngle = Math.atan2(world.player.velocity.y, world.player.velocity.x);
       const drawn=effectiveSword(s.sword,upgradeBuff());
-      combat.sweepBlade(s.slashAngle, s.reach*drawn.reach, horizontalCutWidth(s.slashAngle,rules)*s.sword.width*upgradeMods().width, rules.closeWidth);
+      // CHUNK 2: keep the geometry this swing actually used, so the green
+      // "safe to slice" marker is measured against the real blade rather than
+      // re-guessing its reach from the HUD.
+      s.sweep = combat.sweepBlade(s.slashAngle, s.reach*drawn.reach, horizontalCutWidth(s.slashAngle,rules)*s.sword.width*upgradeMods().width, rules.closeWidth) || s.sweep;
     }
     // Resolve this step's contact batch using one attack eligibility snapshot.
     // A presentation/refund from an earlier contact cannot change whether a

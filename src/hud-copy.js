@@ -81,6 +81,20 @@ export function shortDamageLine(label) {
 }
 
 /**
+ * CHUNK 2: the corner line learns one more word, and only when the attacker is
+ * off-screen. A line you can see needs no compass; a hit from behind a wall
+ * does, and "FANG HIT" alone leaves the player spinning.
+ *
+ * `FANG HIT` → `FANG HIT LEFT`. Still inside the four-word ceiling.
+ */
+export function damageBearing(line, bearing) {
+  const base = shortDamageLine(line);
+  const word = String(bearing || '').trim().toUpperCase();
+  if (!word) return base;
+  return shortDamageLine(`${base} ${word}`);
+}
+
+/**
  * The explicit guide label at the bottom edge of the arena for the starter
  * hint. A ticker, never a modal: it must not cover the field.
  */
