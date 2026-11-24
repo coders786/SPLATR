@@ -412,10 +412,10 @@ test('test_meter_edge_and_focus_readouts', () => {
   assert.equal(full.edgeEmpty, false);
   assert.equal(full.regen, 0, 'a full meter owes nothing -- the timer must not run');
 
-  const owed = meterReadout({ edge: 2, edgeMax: 3, recharge: 38, focus: 0.5 });
+  const owed = meterReadout({ edge: 2, edgeMax: 3, recharge: 30, focus: 0.5, regenWindow: 60 });
   assert.equal(owed.edgeEmpty, false);
   assert.equal(owed.regenDue, true);
-  assert.ok(Math.abs(owed.regen - 0.5) < 1e-9, `half the 76-tick window: ${owed.regen}`);
+  assert.ok(Math.abs(owed.regen - 0.5) < 1e-9, `half the 60-tick window: ${owed.regen}`);
   assert.equal(owed.focusPct, 50);
 
   const spent = meterReadout({ edge: 0, edgeMax: 3, recharge: 0, focus: 0, depleted: true });

@@ -59,8 +59,9 @@ not happening.
 **Focus** — the bullet-time reserve. Drains while held, regenerates while not,
 and it is the entire risk/reward of aiming mid-flight. Also invisible.
 
-Edge's 76-tick recharge is drawn across the next pip's slot as a 2px fill, so
-the meter never jumps from empty to full without warning.
+Edge's 60-tick (one-second) auto-reload is drawn across the next pip's slot as
+a fill sweep inside the pip itself, so the meter never jumps from empty to full
+without warning. The refill runs anywhere — no wall or floor required.
 
 ## The dial
 
@@ -105,3 +106,36 @@ judgement that needs an eye.
 Specifically unchecked: whether three stacked meters read as clutter at phone
 sizes, and whether the lime Edge pips are distinguishable from the orange hull
 pips at a glance.
+
+---
+
+## CHUNK 2 — the SHATTER EVENT bar (Dimension Fracture)
+
+The eighth readout is not an instrument; it is a countdown. The **Dimension
+Fracture** is a persistent 0–100 seam across the world that fills as the
+player cuts. It lives outside any single run: `localStorage["riot.fracturePct"]`
+(`riot.dev.fracturePct` in the sandbox) is the storage home; `run.state.fracture`
+is the live meter; `src/fracture.js` is the rulebook.
+
+- **Feeds:** every cut +0.4, every cleared wave +2.5, every Dimension Shatter
+  in a breach +6. No-stakes control practice and lessons never fracture the
+  world. Interrupted sessions keep what they tore open — gains land in
+  storage on the event, not at run end.
+- **Tiers (25 / 50 / 75):** STABLE → TREMORS → FAULT LINES → CRITICAL
+  COLLAPSE. Each threshold escalates three things at once: the sky (cracks,
+  ember light, a dead light well), the sound (a tier-gated tremor cue on the
+  run's own clock — 8s / 4s / 2s cadence, never on the menu), and the field
+  (two bonus Fangs per tier in `encounters.js`, capped under the spawn grid).
+- **Sky stages (10 / 35 / 60 / 88):** HAZE → CRACKED SKY → SPLIT SKY →
+  COLLAPSE SKY. These sit deliberately *below* the warning tiers: the horizon
+  warns before the HUD words do. Stage 4 draws one white-hot fissure; all
+  geometry is hash-seeded and static under Reduce Motion / Screen shake OFF.
+- **Mounts:** the slim ribbon across the arena top, the menu panel bar under
+  the nav, and the RUN ENDED debrief (with a `+x.x THIS RUN` line). One
+  anatomy, three homes, kept in step by a single `setFractureUI(pct)`.
+- **100%:** the bar reads SHATTER EVENT READY. Chunk 3 spends it; nothing in
+  Chunk 2 triggers the event.
+- **Spent (Chunk 3):** the tick after the gain that fills the bar fires the
+  tear itself — the bar zeroes (spend persisted to `riot.fracturePct`), the
+  arena becomes SHATTERED for the rest of the run, and the meter rebuilds
+  from ordinary play. See `docs/shatter-event.md`.

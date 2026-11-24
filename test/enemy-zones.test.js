@@ -10,11 +10,19 @@ const kinds=['fork','bastion','rift','well'];
 function pointIn(zone){if(zone.radius)return{x:zone.x,y:zone.y};const poly=zone.polygons[0];return{x:poly.reduce((n,p)=>n+p.x,0)/poly.length,y:poly.reduce((n,p)=>n+p.y,0)/poly.length};}
 function getRealZone(kind){
  const events=[],s=createTeachingSession({scenario:kind,emit:(type,data)=>events.push({type,data})});
+ // The Rift lesson teaches the wake for a reason: it holds its ground until
+ // the player steps inside its dashed ring. Step in to see the tell.
+ if(kind==='rift'){placePlayer(s.run.world,{x:120,y:-80});stopPlayer(s.run.world);}
+ // The Rift lesson opens with the wake-up step: the first waiting the session
+ // reports is the ring being crossed, not the warning. Acknowledge it, then
+ // wait for the actual tell (the Rift holds its ground until the player is
+ // inside its ring, so the warning only begins once the player is close).
  for(let i=0;i<300&&!s.waiting;i++)s.tick();assert.equal(s.waiting,true,`${kind} tell`);
+ if(kind==='rift'){s.continueStep();for(let i=0;i<300&&!s.waiting;i++)s.tick();assert.equal(s.waiting,true,`${kind} tell`);}
  const e=[...s.run.combat.enemies.values()][0],zone=e.attackZone;assert.ok(zone);assert.ok(Object.isFrozen(zone));
  assert.ok(!s.run.combat.hazards.some(h=>h.kind==='zone'),'no damage during tell');
  placePlayer(s.run.world,{x:-500,y:-500});stopPlayer(s.run.world);s.continueStep();
- for(let i=0;i<300&&!s.waiting;i++)s.tick();assert.equal(s.waiting,true,`${kind} strike`);
+ for(let i=0;i<300&&!s.run.combat.hazards.some(h=>h.kind==='zone');i++)s.tick();
  const hazard=s.run.combat.hazards.find(h=>h.kind==='zone');assert.ok(hazard);assert.equal(hazard.zone,zone,'same locked geometry is the live hitbox');
  return {s,e,zone,hazard,events};
 }

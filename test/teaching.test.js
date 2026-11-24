@@ -12,7 +12,8 @@ function launchAtTarget(session) {
 }
 
 test('training covers every real enemy and uses isolated fresh runs',()=>{
- assert.deepEqual(new Set(TEACHING_SCENARIOS.map(s=>s.kind)),new Set(['fang','pulse','prism','fork','bastion','rift','well','crown']));
+ // CHUNK 5 adds the Monolith (the SHATTERED fifth-clear boss) as a lesson.
+ assert.deepEqual(new Set(TEACHING_SCENARIOS.map(s=>s.kind)),new Set(['fang','pulse','prism','fork','bastion','rift','well','crown','monolith']));
  assert.equal(new Set(TEACHING_SCENARIOS.map(s=>s.id)).size,TEACHING_SCENARIOS.length);
  for(const lesson of TEACHING_SCENARIOS){
   const session=createTeachingSession({scenario:lesson.id}),r=session.run;
@@ -66,10 +67,25 @@ test('opening guidance reflects the live blade, parry, rack and armor',()=>{
 test('real attack lessons pause on each actual cue and require explicit continuation',()=>{
  for(const id of ['fang','pulse','prism','link','fork','bastion','rift','well','crown']){
   const s=createTeachingSession({scenario:id});
+  // CHUNK 5: the Rift lesson now opens with the wake-up step — beyond its ring
+  // it sleeps, and nothing it does reads as an attack. Launch the player into
+  // the ring to wake it, then proceed through the tell checkpoint as usual.
+  if(id==='rift'){
+   assert.equal(s.step[0],'approach');
+   const e=[...s.run.combat.enemies.values()][0];
+   placePlayer(s.run.world,{x:e.x-120,y:e.y});stopPlayer(s.run.world);s.run.state.shots=1;
+   s.tick();assert.equal(s.waiting,true,'rift wake checkpoint');
+   assert.equal(s.continueStep(),true);
+  }
   assert.equal(s.step[0],'tell',id);
   for(let i=0;i<220&&!s.waiting;i++)s.tick();
   assert.equal(s.waiting,true,`${id} real tell checkpoint`);assert.equal(s.step[0],'tell');
   const elapsed=s.run.state.elapsed;for(let i=0;i<30;i++)s.tick();assert.equal(s.run.state.elapsed,elapsed,`${id} really paused`);
+  if(id==='rift'){
+   // The Rift lesson has no attack step — the wake IS the attack lesson. From
+   // the tell checkpoint, continue straight to the kill step.
+   assert.equal(s.continueStep(),true);assert.equal(s.step[0],'clear');s.dispose();continue;
+  }
   assert.equal(s.continueStep(),true);assert.equal(s.step[0],'attack');assert.equal(s.waiting,false);
   for(let i=0;i<220&&!s.waiting;i++)s.tick();
   assert.equal(s.waiting,true,`${id} actual attack checkpoint`);

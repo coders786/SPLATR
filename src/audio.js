@@ -228,6 +228,49 @@ export function createAudio({ muteKey = 'splatr.muted' } = {}) {
         tone(f, f * 1.1, 0.18, 'triangle', 0.045, i * 0.1),
       );
     },
+    /**
+     * CHUNK 1: the wave-clear chime. A rising three-note triad (C5 -> E5 -> G5),
+     * brighter and more resolved than `zone`'s two-note step, so clearing a wave
+     * reads as an accomplishment rather than a UI tick.
+     */
+    waveClear() {
+      [523.25, 659.25, 783.99].forEach((f, i) =>
+        tone(f, f, 0.22, 'triangle', 0.05, i * 0.085),
+      );
+      tone(1046.5, 1046.5, 0.34, 'sine', 0.028, 0.255);
+    },
+    /** CHUNK 6A §8.4: large fracture gains get a legible chime; ordinary
+     * per-cut dust stays silent so the meter does not become a metronome. */
+    fractureGain(amount = 0) {
+      if (Number(amount) < 2.5) return;
+      tone(392, 523.25, 0.12, 'triangle', 0.035);
+      tone(659.25, 783.99, 0.16, 'sine', 0.028, 0.055);
+    },
+    /** Tier motifs descend into the seam instead of reusing the generic tremor. */
+    fractureTier(tier = 1) {
+      const t = Math.max(1, Math.min(3, Math.floor(tier) || 1));
+      [220, 277.18, 329.63].slice(0, t).forEach((f, i) => tone(f, f * .92, .18, 'triangle', .025, i * .06));
+      if (t >= 3) tone(110, 55, .42, 'sine', .045, .18);
+    },
+    /** The meter only calls this at the armed 100% edge, once per fill. */
+    fractureHeartbeat() {
+      tone(92, 68, .16, 'sine', .042);
+      tone(92, 68, .16, 'sine', .032, .22);
+    },
+    /**
+     * CHUNK 2: a TREMOR under the floor. One cue per fracture tier, played by
+     * the shell on the run's own clock while the tier holds — never on a
+     * wall-clock timer that survives pause. Tier 1 knocks somewhere far away,
+     * tier 2 settles rubble on top of it, tier 3 is the collapse: a sub-bass
+     * drop with one high wire still singing.
+     */
+    tremor(tier = 1) {
+      const t = Math.max(1, Math.min(3, Math.floor(tier) || 1));
+      tone(58 - t * 7, 36, 0.8 + t * 0.3, 'sine', 0.03 + t * 0.014);
+      rush(0.16 + t * 0.07, 180 + t * 140, 0.012 + t * 0.012);
+      if (t >= 2) tone(96, 49, 0.34, 'triangle', 0.028, 0.06);
+      if (t >= 3) tone(1730, 1640, 0.09, 'triangle', 0.011, 0.16);
+    },
     lock() {
       // A sharp, quiet two-step tick. It confirms a magnet catch without
       // pretending the target is already cut.

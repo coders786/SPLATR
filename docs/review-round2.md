@@ -50,9 +50,11 @@ body would detach.
   `#16111e` black backing. On a dark floor that is fine. Against the bright
   tick-marked floor line the backing only extends `1px` above and `1.2px` below
   the pip, so the grey bar overlaps the floor's own grey.
-- **Timing.** Refill is 76 ticks **per pip** at `dt = 1`, i.e. **1.27 s each /
+- **Timing.** Refill was 76 ticks **per pip** at `dt = 1`, i.e. **1.27 s each /
   3.80 s for all three**. That is the "~8 seconds of white pips" in the note
-  (it is 3.8 s, but with the dash cooldown on top it feels like 8).
+  (it is 3.8 s, but with the dash cooldown on top it feels like 8). CHUNK 1
+  later replaced the flat timer with a 60-tick auto-reload that pays anywhere,
+  and the anchoring is gone with it.
 
 So the note is right about both, and slightly wrong about the number.
 

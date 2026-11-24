@@ -1,7 +1,10 @@
 import {installIconSprite,prependIcon} from './ui-icons.js';
 import {isDevMode,modeURL,createProfileStorage,refillForTesting} from './dev-mode.js';
 import {createCombatTrace} from './combat-trace.js';
-import {createVisualTutorial,tutorialObjective,tutorialAnnouncement} from './visual-tutorial.js';
+import {createVisualTutorial,tutorialObjective,tutorialAnnouncement,tutorialWhy,TUTORIAL_LINES} from './visual-tutorial.js';
+import {createControlPracticeUI} from './control-practice-ui.js';
+import {createTeachingUI} from './teaching-ui.js';
+import {createTrainingHub} from './training-hub.js';
 import {healthDamageLabel,healthDeathMessage} from './health-ui.js';
 import {combatStatus} from './combat-status.js';
 import {runCoaching} from './run-coach.js';
@@ -18,14 +21,17 @@ import { createRenderer } from './renderer.js';
 import { createInput, enableMenuTaps } from './input.js';
 import { createAudio } from './audio.js';
 import { createPokiBridge } from './poki.js';
-import { freshSeed, district, openingFacing } from './levels.js';
+import { freshSeed, openingFacing } from './levels.js';
 import { TYPES, SPECIES } from './shapes.js';
 import { drawStrokePrint } from './print.js';
 import { SPEEDS, setSpeed, speedIndexOf, speed } from './pace.js';
 import { TIERS } from './motion.js';
 import { speedReadout, meterReadout, dialGeometry } from './motion.js';
 import { MAX_SPEED } from './physics.js';
-let questUI, customize, waveUI, controlPractice, teaching;let learningGround=false,tutorial=null,lastTutorialHint=null,lastRiftObjective='';
+import { FRACTURE_TIERS, FRACTURE_KEY, clampPct, persistFracture, fractureTier } from './fracture.js';
+import { createCutscene, coldOpenOnce } from './cutscene.js';
+import { COLD_OPEN_BEATS, SHATTER_BEATS, lockTicks } from './cinematics.js';
+let questUI, customize, waveUI, controlPractice, teaching;let learningGround=false,tutorial=null,lastTutorialHint=null,lastRiftObjective='',lastTutorialWhy='';
 const tutorialHintSpeech=Object.freeze({
  slice:'Slice the highlighted target. Tap it, or pull away and release toward it.',
  bank:'Launch into the glowing wall. Pull away from the wall and release.',
@@ -37,7 +43,8 @@ const tutorialHintSpeech=Object.freeze({
 });
 const devMode = isDevMode(location.href);
 const storage = createProfileStorage(() => localStorage, devMode);
-let combatTrace = null;
+let combatTrace = null,
+  nextFractureRumble = 0;
 const $ = (id) => document.getElementById(id),
   game = $('game'),
   canvas = $('arena'),
@@ -82,6 +89,10 @@ setSpeed(storage.get('pace', 'fast'));
 const score = (n) => String(n).padStart(6, '0'),
   two = (n) => String(n).padStart(2, '0');
 let best = Math.max(0, Math.floor(Number(storage.get('best', 0)) || 0));
+// CHUNK 2: the persistent Dimension Fracture. The shell owns its storage
+// home; the run owns the live meter (run.state.fracture); this mirror is
+// what the menu and debrief bars paint from when no run is live.
+let fractureMirror = clampPct(Number(storage.get(FRACTURE_KEY, 0)) || 0);
 if (!Number.isSafeInteger(best)) best = 0;
 let run = null,
   page = null,
@@ -96,8 +107,110 @@ let run = null,
   receiptTicks = 0,
   noticeTicks = 0;
 const active = () =>
-  run && !teaching?.isOpen && !controlPractice?.isOpen && !waveUI?.open && !customize?.isOpen && !questUI?.vault && !dialog.open && !document.hidden && ['ready', 'playing'].includes(run.state.phase);
+  run && !teaching?.isOpen && !controlPractice?.isOpen && !waveUI?.open && !customize?.isOpen && !questUI?.vault && !dialog.open && !document.hidden && ['ready', 'playing'].includes(run.state.phase) && !run.state.inputLock;
+// ── CHUNK 6A: THE CUTSCENE DRIVER ─────────────────────────────────────────
+// Pure time; the art lives in the engine keyed off s.cutscene. The shell
+// owns input lock, the freeze, and the chip.
+const coldOpenGate = coldOpenOnce();
+let activeCutscene = null,
+  cutsceneOnDone = null;
+function launchCutscene(beats, { reducedMotion = !opts.motion, onDone = null } = {}) {
+  if (activeCutscene) return;
+  const cs = createCutscene({ beats, reducedMotion, onDone: () => endCutscene() });
+  activeCutscene = cs;
+  cutsceneOnDone = onDone;
+  if (run) {
+    run.state.inputLock = true;
+    run.state.cutscene = null;
+    // The world holds through every locked beat — freeze before creating the
+    // lock so no tick slips between "cinematic decided" and "world frozen".
+    run.state.stop = Math.max(run.state.stop || 0, lockTicks(beats, reducedMotion));
+  }
+  input.reset();
+  dirty = true;
+}
+function tickCutscene() {
+  if (!activeCutscene) return;
+  const snap = activeCutscene.tick(1);
+  if (run) {
+    run.state.cutscene = {
+      beatId: snap.beatId,
+      beatIndex: snap.beatIndex,
+      t: snap.t,
+      elapsedTotal: snap.elapsedTotal,
+      totalTicks: snap.totalTicks,
+      lockInput: snap.lockInput,
+      reducedMotion: snap.reducedMotion,
+    };
+  }
+  // The chip is DOM, owned here; the engine never writes text.
+  if (snap.chip && snap.t >= (snap.chip.at ?? 0)) {
+    const chip = $('story-chip');
+    if (chip && chip.textContent !== snap.chip.text) {
+      chip.textContent = snap.chip.text;
+      chip.hidden = false;
+      void chip.offsetWidth;
+      chip.classList.add('on');
+    }
+  } else hideStoryChip();
+  if (snap.phase !== 'playing') endCutscene();
+}
+function endCutscene() {
+  const onDone = cutsceneOnDone;
+  cutsceneOnDone = null;
+  activeCutscene = null;
+  hideStoryChip();
+  if (run) {
+    // A skipped cutscene may end before the lock window's pre-applied stop
+    // expires. Release the simulation immediately; otherwise a 0.8s skip
+    // leaves the world frozen for the remainder of a 3–4s cinematic.
+    run.state.stop = 0;
+    run.state.cutscene = null;
+    run.state.inputLock = false;
+  }
+  onDone?.();
+}
+// Any key or tap after the 0.8s gate ends the cutscene. Capture runs before
+// the game's own input handlers, so the skip is never swallowed.
+window.addEventListener('keydown', (e) => {
+  if (!activeCutscene?.skippable) return;
+  e.preventDefault(); e.stopPropagation();
+  activeCutscene.skip();
+}, true);
+for (const type of ['pointerdown', 'touchstart'])
+  window.addEventListener(type, (e) => {
+    if (!activeCutscene?.skippable) return;
+    e.preventDefault(); e.stopPropagation();
+    activeCutscene.skip();
+  }, true);
+let lastSectorKey = null, sectorChipUntil = 0, lastFracturePaint = null, fractureGainTimer = 0, fractureSurgeTimer = 0, fractureHeartbeatArmed = false;
+const wallNow = () => globalThis.performance?.now?.() ?? Date.now();
 const say = (s) => setText('announcement', s);
+// ── CHUNK 6A: THE STORY CHIP ─────────────────────────────────────────────
+// One chip, ≤4 words, the only legible text allowed mid-play. Purely
+// decorative; fades via CSS.
+let storyChipTimer = 0;
+function showStoryChip(text) {
+  const chip = $('story-chip');
+  if (!chip) return;
+  chip.textContent = text;
+  chip.hidden = false;
+  // Force the transition to run from hidden → on.
+  void chip.offsetWidth;
+  chip.classList.add('on');
+  clearTimeout(storyChipTimer);
+  storyChipTimer = setTimeout(() => {
+    chip.classList.remove('on');
+    storyChipTimer = setTimeout(() => { chip.hidden = true; }, 750);
+  }, 1400);
+}
+function hideStoryChip() {
+  const chip = $('story-chip');
+  clearTimeout(storyChipTimer);
+  if (!chip) return;
+  chip.classList.remove('on');
+  chip.hidden = true;
+}
 function portal() {
   poki.setPlaying(!!active());
 }
@@ -126,6 +239,25 @@ function record() {
   setText('result-chain', `${s.maxChain} hit${s.maxChain === 1 ? '' : 's'}`);
   setText('result-stage-label',s.wave&&!s.narrative?'Wave reached':'Sector');
   setText('result-sector', s.opening ? '—' : two(s.band));
+  // ── CHUNK 1: BEST WAVE, ALONGSIDE THE SCORE ─────────────────────────────
+  // A run that dies on Wave 03 still has to say so, and the number has to
+  // survive the run. `band` tracks the wave the player is fighting; the wave
+  // director's own counter is the fallback for direct console/test runs.
+  const reached = Math.max(1, s.band | 0, (s.wave?.number | 0) || 1);
+  let bestWave = 0;
+  try { bestWave = Math.max(0, Math.floor(Number(storage.get('bestWave', 0)) || 0)); } catch {}
+  if (reached > bestWave) {
+    bestWave = reached;
+    try { storage.set('bestWave', bestWave); } catch {}
+  }
+  setText('result-best-wave', two(bestWave));
+  // ── CHUNK 2: THE DEBRIEF BANKS THE FRACTURE ─────────────────────────────
+  //
+  // The meter never resets between runs; this only writes the run's final
+  // value. The debrief mount shows it, and how much THIS run contributed.
+  const fractureNow = persistFracture(s);
+  persistFractureMirror(fractureNow);
+  setFractureUI(fractureNow, s.fracture?.gained ?? 0);
   setText(
     'cause',
     s.cause === 'Retired'
@@ -229,7 +361,7 @@ function record() {
     `BEST ${score(best)}   /   SEED ${s.seed.toString(16).padStart(8, '0').toUpperCase()}`,
   );
   open('result');
-  say(`Run over. ${s.score} points. Best ${best}.`);
+  say(`Run over. ${s.score} points. Best ${best}. Best wave ${bestWave}. Dimension fracture ${Math.floor(fractureNow)} percent.`);
 }
 function event(type, d) {
   if(type==='challenge' && customize?.unlock(d.id)) say(d.id==='oni'?'Broken Oni unlocked.':'Glass Cannon unlocked.');
@@ -243,7 +375,49 @@ function event(type, d) {
     case 'breachContact': audio.seamHit();break;
     case 'dimensionBreak': if(!run?.state.narrative)input?.reset();audio.shatter();break;
     case 'waveStart': audio.zone(); break;
-    case 'waveClear': input?.reset();if(d.shattered)pop('SHATTERED',75,3);else{audio.zone();pop('CLEAR',60,3);}break;
+    // CHUNK 2: every fracture the run causes lands in storage immediately,
+    // so an interrupted session never loses the seam it tore.
+    case 'fractureGain':
+      persistFractureMirror(d.pct);
+      setFractureUI(d.pct, d.gained);
+      audio.fractureGain(d.delta);
+      if (d.pct >= 100 && !fractureHeartbeatArmed) { fractureHeartbeatArmed = true; audio.fractureHeartbeat(); }
+      if (d.pct < 90) fractureHeartbeatArmed = false;
+      break;
+    case 'fractureTier':
+      audio.fractureTier(d.tier);
+      audio.tremor(Math.max(1, Math.min(3, d.tier | 0)));
+      // CHUNK 6A (§8.2): no announcement — the ribbon itself surges via the
+      // width/tier delta detected in setFractureUI. A chime, not a sentence.
+      buzz(30);
+      break;
+    // CHUNK 6A: the fracture rumble cadence belongs to this run.
+    case 'shatterEvent':
+      fractureHeartbeatArmed = false;
+      persistFractureMirror(0);
+      setFractureUI(0);
+      audio.shatter();
+      buzz(70);
+      // CHUNK 6A: the tear is a 4.2s visual sentence, not a banner.
+      launchCutscene(SHATTER_BEATS, { reducedMotion: !opts.motion });
+      break;
+    case 'kineticOvercharge':
+      pop('OVERCHARGED — LETHAL', 70, 3);
+      buzz(45);
+      break;
+    case 'monolithRise':
+      // CHUNK 4/6A: a torn arena does not breach. It manifests — silent but
+      // for the one chip the spec allows.
+      audio.shatter();
+      buzz(90);
+      showStoryChip('THE LANDLORD.');
+      break;
+    case 'monolithDown':
+      audio.strike('drive');
+      buzz(120);
+      showStoryChip('THE SEAM KNOWS YOU.');
+      break;
+    case 'waveClear': input?.reset();if(!d.shattered){audio.waveClear();pop('CLEAR',60,3);}break;
     case 'waveRest': input?.reset();break;
     case 'swordReady': audio.strike('parry');pop('READY',55,1);break;
     case 'swordPulse': audio.strike('parry');break;
@@ -283,7 +457,21 @@ function event(type, d) {
       break;
     case 'armor':
       audio.strike('armor');
+      // CHUNK 6B: when a plate boundary breaks on the landlord, the world
+      // answers with something deeper than the armor tick.
+      if (d.kind === 'monolith' && Math.ceil((d.hpBefore ?? 0) / 2) !== Math.ceil((d.hp ?? 0) / 2))
+        audio.tremor(1);
       buzz(9);
+      break;
+    case 'bossCast':
+      // CHUNK 6B: fired at the moment each telegraph unloads.
+      if (d.kind === 'seismicLash') audio.tremor(2);
+      else if (d.kind === 'plateSlam') { audio.tremor(3); buzz(80); }
+      else if (d.kind === 'gravityLens') audio.seamHit();
+      break;
+    case 'slamShove':
+      audio.tremor(1);
+      buzz(60);
       break;
     case 'parry':
       audio.strike('parry');
@@ -300,11 +488,9 @@ function event(type, d) {
       portal();
       break;
     case 'sector':
+      // CHUNK 6A (§4): the transition is a 1.4s chip, not a sentence. The
+      // ribbon/band numbers carry the lore weight; the words went.
       audio.zone();
-      if(run?.state.narrative){say(`Sector ${d.band}`);break;}
-      if(run?.state.wave){say(`Wave ${d.band}`);break;}
-      if (d.band % 3 === 0) pop('Crown incoming', 72);
-      else say(`Sector ${d.band}: ${d.name}`);
       break;
     case 'drive':
       audio.strike('drive');
@@ -519,6 +705,59 @@ let lastHp = null,
   hitTimer = 0,
   kickTimer = 0,
   flareTimer = 0;
+// ── CHUNK 2: ONE BAR, THREE MOUNTS ─────────────────────────────────────────
+// The arena ribbon, the menu panel and the RUN ENDED debrief all render the
+// same persistent `riot.fracturePct`. `gained` (optional) only feeds the
+// debrief's "+x.x THIS RUN" line.
+function setFractureUI(pct, gained = null) {
+  fractureMirror = clampPct(pct);
+  const tier = fractureTier(fractureMirror),
+    tierDef = FRACTURE_TIERS[tier],
+    ready = fractureMirror >= 100;
+  for (const mount of [$('fracture-hud'), $('title-fracture'), $('result-fracture')]) {
+    if (!mount) continue;
+    mount.hidden = false;
+    mount.dataset.tier = tierDef.id;
+    mount.dataset.ready = String(ready && !!opts.motion);
+    const fill = mount.querySelector('.fracture-fill');
+    if (fill) fill.style.width = `${fractureMirror}%`;
+    const pc = mount.querySelector('.fracture-pct');
+    if (pc) pc.textContent = `${Math.floor(fractureMirror)}%`;
+    const tr = mount.querySelector('.fracture-tier');
+    if (tr) tr.textContent = tierDef.label;
+    mount.setAttribute(
+      'aria-label',
+      `Dimension fracture: ${Math.floor(fractureMirror)} percent. Tier ${tierDef.label.toLowerCase()}.`,
+    );
+  }
+  const gainedEl = $('result-fracture')?.querySelector('.fracture-gained');
+  if (gainedEl && gained !== null && Number.isFinite(gained)) gainedEl.textContent = `+${gained.toFixed(1)} THIS RUN`;
+  // CHUNK 6A §8.2: the ribbon fights for attention. Gains sweep the fill
+  // bright; a tier change surges the frame edges inward. Projection of the
+  // meter only — never of the fiction. Reduced motion keeps state, drops show.
+  const ribbon = $('fracture-hud');
+  if (ribbon && opts.motion && lastFracturePaint) {
+    if (fractureMirror > lastFracturePaint.pct + 0.005) {
+      ribbon.classList.remove('gain');
+      void ribbon.offsetWidth;
+      ribbon.classList.add('gain');
+      clearTimeout(fractureGainTimer);
+      fractureGainTimer = setTimeout(() => ribbon.classList.remove('gain'), 680);
+    }
+    if (tier !== lastFracturePaint.tier) {
+      game.classList.remove('fracture-surge');
+      void game.offsetWidth;
+      game.classList.add('fracture-surge');
+      clearTimeout(fractureSurgeTimer);
+      fractureSurgeTimer = setTimeout(() => game.classList.remove('fracture-surge'), 760);
+    }
+  }
+  if (opts.motion) lastFracturePaint = { pct: fractureMirror, tier };
+}
+function persistFractureMirror(pct) {
+  fractureMirror = clampPct(pct);
+  try { storage.set(FRACTURE_KEY, fractureMirror); } catch {}
+}
 function updateHUD() {
   if (!run) return;
   const s = run.state;
@@ -640,8 +879,23 @@ function updateHUD() {
   lastHp = s.hp;
   lastScore = s.score;
   lastChain = s.chain;
-  setText('sector', s.narrative?`SECTOR ${two(s.narrative.sector)}`:s.wave?`WAVE ${two(s.wave.number)}`:s.opening ? 'Cutting room' : `Sector ${two(s.band)}`);
-  setText('district', s.narrative?'':s.wave?(s.wave.phase==='combat'?(s.wave.number%5===0?'BREAK WAVE / CLEAR TARGETS':'CLEAR THE FIELD'):s.wave.phase==='breach'?'LAUNCH INTO THE BREACH':'LAND TO UPGRADE'):s.opening ? `Rack ${two(s.opening.row + 1)} / 03` : district(seed, s.band));
+  // CHUNK 6A: the SECTOR/WAVE readout is a 1.4s chip on transition, then
+  // gone — the persistent readouts were §4 text. The #district wall of
+  // adjectives is deleted outright.
+  {
+    const sectorKey = s.narrative ? `SECTOR ${two(s.narrative.sector)}` : s.wave ? `WAVE ${two(s.wave.number)}` : s.opening ? 'CUTTING ROOM' : `SECTOR ${two(s.band)}`;
+    if (sectorKey !== lastSectorKey) {
+      lastSectorKey = sectorKey;
+      setText('sector', sectorKey);
+      const chip = $('sector');
+      if (chip) { chip.hidden = false; void chip.offsetWidth; chip.classList.add('on'); sectorChipUntil = wallNow() + 1400; }
+    }
+    if (sectorChipUntil && wallNow() >= sectorChipUntil) {
+      const chip = $('sector');
+      if (chip) { chip.classList.remove('on'); chip.hidden = true; }
+      sectorChipUntil = 0;
+    }
+  }
   // Speedometer: the cube's own velocity, not the world's tempo, so the
   // number is about the player's flying rather than the game's difficulty.
   // The ceiling only lifts while hyper is live. Passing HYPER.speed always
@@ -670,7 +924,8 @@ function updateHUD() {
     [...run.combat.enemies.values()].some(e=>overlapsHUD(view,dialRect,e,e.r||30)));
   dial.classList.toggle('actor-overlap',covered);
   dial.dataset.band = readout.band;
-  dial.setAttribute('aria-label', `Speed ${readout.kmh}, ${readout.band.toLowerCase()}`);
+  const momentumCount = s.momentum?.count ?? 0;
+  dial.setAttribute('aria-label', `Speed ${readout.kmh}, ${readout.band.toLowerCase()}${momentumCount ? `, momentum ${momentumCount} of 3` : ''}`);
   setText('speedo-value', readout.kmh);
   setText('speedo-band', readout.band);
   // The dial has two encodings of the same number on purpose: an arc (a
@@ -720,6 +975,15 @@ function updateHUD() {
       pips.children[i].classList.toggle('now', i === tierIndex);
     }
   }
+  // The MOMENTUM ledger, three diamonds under the dial's tier pips. Cyan on
+  // the tier rail would read as a sixth tier; acid-on-dark cannot be mistaken
+  // for one. Not announced separately — the dial's aria-label carries it.
+  const momentumPips = dial ? dial.querySelector('.momentum-pips') : null;
+  if (momentumPips) {
+    for (let i = 0; i < momentumPips.children.length; i++) {
+      momentumPips.children[i].classList.toggle('on', i < momentumCount);
+    }
+  }
   $('drive').hidden = !!s.opening || s.drive <= 0;
   // Overdrive's fill is a ::after driven by `--v`, so the bar and every other
   // continuous meter share one transform. Clamped: 175 is the bank it is
@@ -753,12 +1017,16 @@ function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   poki.setPlaying(false);
   if(tutorial)tutorial.dispose();else run?.dispose();tutorial=null;
   seed = freshSeed(seed);
-  const wasLearning=learningGround;learningGround=learn;lastTutorialHint=null;lastRiftObjective='';$('tutorial-objective').hidden=true;game.dataset.learning=String(learn);game.dataset.tutorialReveal=String(wasLearning&&!learn);storage.set('started',1);if(learn){tutorialSeenThisSession=true;storage.set('tutorialStarted',1);}
+  const wasLearning=learningGround;learningGround=learn;lastTutorialHint=null;lastRiftObjective='';lastTutorialWhy='';$('tutorial-objective').hidden=true;game.dataset.learning=String(learn);game.dataset.tutorialReveal=String(wasLearning&&!learn);storage.set('started',1);if(learn){tutorialSeenThisSession=true;storage.set('tutorialStarted',1);}
   renderer.reset(seed, false);
   $('dev-refill').textContent='Refill health / Edge / focus';
   combatTrace = devMode ? createCombatTrace(4096) : null;
   if(learn){tutorial=createVisualTutorial(seed,(type,data)=>renderer.event(type,type==='cut'?{...data,points:0}:data,opts.motion));run=tutorial.run;}
-  else run = createRun(seed, event, {waveMode:true,continuous:true,lockdownIntro:lockdown,viewport:renderer.questView(),equipment:customize?.snapshot(),combatTrace});
+  else run = createRun(seed, event, {waveMode:true,continuous:true,catalogRewards:false,lockdownIntro:lockdown,viewport:renderer.questView(),equipment:customize?.snapshot(),combatTrace,fracturePct:fractureMirror});
+  // QA/debug handle: ?debug in the URL or riot.debug=1 in localStorage exposes
+  // the live run to automated playtests. Never set for an ordinary player.
+  if (new URLSearchParams(location.search).has('debug') || storage.get('debug', '0') === '1') window.__riot = run;
+  renderer.setFieldScale?.(0.9);
   renderer.field(run.world.player.position);run.setView(renderer.questView());
   game.dataset.world=run.state.equipment.world;
   if(!learn)questUI.start();
@@ -768,10 +1036,16 @@ function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   audio.unlock();
   audio.menu();
   lastBeat = -1;
+  // CHUNK 2: the fracture rumble cadence belongs to this run.
+  nextFractureRumble = 0;
+  fractureHeartbeatArmed = false;
+  setFractureUI(fractureMirror);
   // A fresh run must not react to the previous run's hull, score or chain --
   // and must not inherit the previous run's FORM, or the readout would open
   // already showing the last run's identity.
   lastHp = lastScore = lastChain = null;
+  lastSectorKey = null;
+  sectorChipUntil = 0;
   lastFormSig = '';
   liveForm = null;
   $('form-read').hidden = true;
@@ -786,12 +1060,22 @@ function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   hud.hidden = false;
   restoreField();
   nextHUD = 0;
+  // CHUNK 6A: the cold open — first real run of the session. Four seconds,
+  // skippable with any key after 0.8s, never again this session.
+  if (!learn && coldOpenGate.should())
+    launchCutscene(COLD_OPEN_BEATS, { reducedMotion: !opts.motion, onDone: () => {
+      hud.classList.add('hud-fade-in');
+      setTimeout(() => hud.classList.remove('hud-fade-in'), 740);
+    }});
   renderer.draw(run, 1, null, opts.motion,lastDevice);
   updateHUD();
-  say(learn?'Practice: slice the targets, bank the wall, dodge and cut, then break the Crown.':'New run.');
+  // The cold open is the first sentence. Do not put the retired ambient
+  // announcement underneath it; practice still keeps its authored instruction.
+  if (!activeCutscene) say(learn?'Practice: slice the targets, bank the wall, dodge and cut, then break the Crown.':'New run.');
 }
 function home() {
   questUI?.closePeek();
+  renderer.setFieldScale?.(1);
   input.reset();
   if(tutorial)tutorial.dispose();else run?.dispose();
   run = null;tutorial=null;
@@ -803,25 +1087,25 @@ function home() {
   $('title-screen').hidden = false;
   game.dataset.screen = 'title';
   setText('title-best', score(best));
+  // CHUNK 2: returning to the menu repaints the persistent meter too.
+  setFractureUI(fractureMirror);
   $('start-btn').focus({ preventScroll: true });
   dirty = true;
   portal();
 }
+// ── CHUNK 5: THE LEARNING GROUND ───────────────────────────────────────────
+// The manual used to be a wall of eleven buttons labeled like eleven different
+// lessons, all of which started the same 4-room course. The hub tells the
+// truth: three doors, each with the game it actually opens behind it.
 function manual(){
- const host=document.querySelector('.visual-manual');if(host.children.length)return;
- const hint=document.createElement('p');hint.className='manual-replay-hint';hint.textContent='REPLAY THE VISUAL PRACTICE COURSE';host.append(hint);
- for(const [group,lessons] of [
-  ['manual-controls', [['slash','LAUNCH & SLASH','Learn the blade window'],['pace','PACE & BREACH','Practice advanced movement']]],
-  ['manual-enemies', [['fang','FANG','Watch the charge'],['pulse','PULSE','Read the ring'],['prism','PRISM','Dodge the needle'],['link','LINKED PRISMS','Break the beam'],['fork','FORK','Swipe & split'],['bastion','BASTION','Slam & plates'],['rift','RIFT','Dodge the landing'],['well','WELL','Pull & compression'],['crown','CROWN','Read the volley']]]
- ]){
-  const grid=document.createElement('div');grid.className=group;
-  for(const [id,title,detail] of lessons){
-   const button=document.createElement('button'),name=document.createElement('b'),sub=document.createElement('span');
-   button.type='button';button.className='manual-drill';button.dataset.lesson=id;name.textContent=title;sub.textContent=detail;button.append(name,sub);
-   button.onclick=()=>start({learningGround:true});grid.append(button);
-  }
-  host.append(grid);
- }
+ const host=document.querySelector('.visual-manual');if(!host)return;
+ if(host.querySelector('.training-hub'))return;
+ createTrainingHub({
+  host,
+  startCourse:()=>start({learningGround:true}),
+  openLessons:()=>teaching?.open(),
+  openDrills:()=>controlPractice?.open(),
+ });
 }
 function open(next) {
   questUI?.closePeek();
@@ -983,10 +1267,25 @@ function frame(now) {
       input.retry();
       run.setAim(input.aim);
       run.tick(); // owns the panic ray, grace and every other tick rule
-      if(learningGround&&tutorial){tutorial.tick(input.engaged);const objective=tutorialObjective(tutorial.visual,run.combat.enemies,lastDevice),label=$('tutorial-objective');label.hidden=!objective;const speech=objective?tutorialAnnouncement(tutorial.visual,objective,lastDevice):'',objectiveKey=objective+'|'+speech;if(objectiveKey!==lastRiftObjective){if(!objective)lastTutorialHint=null;lastRiftObjective=objectiveKey;setText('tutorial-objective',objective);if(speech)say(speech);}const hint=tutorial.visual.guide?.kind;if(!objective&&hint&&hint!==lastTutorialHint){lastTutorialHint=hint;say(tutorialHintSpeech[hint]);}if(tutorial.finished){queueMicrotask(()=>{if(learningGround&&tutorial?.finished)finishTutorial();});}}
+      tickCutscene(); // CHUNK 6A: advances the cold open / SHATTER cinematic
+      if(learningGround&&tutorial){tutorial.tick(input.engaged);const objective=tutorialObjective(tutorial.visual,run.combat.enemies,lastDevice),label=$('tutorial-objective');label.hidden=!objective;const speech=objective?tutorialAnnouncement(tutorial.visual,objective,lastDevice):'',objectiveKey=objective+'|'+speech;if(objectiveKey!==lastRiftObjective){if(!objective)lastTutorialHint=null;lastRiftObjective=objectiveKey;setText('tutorial-objective-text',objective);const room=TUTORIAL_LINES[Math.min(Math.max(tutorial.visual.stage|0,0),3)];if(room&&label.dataset.room!==room.title){label.dataset.room=room.title;}if(speech)say(speech);}const whyNow=objective?tutorialWhy(tutorial.visual,run.combat.enemies):'';if(whyNow!==lastTutorialWhy){lastTutorialWhy=whyNow;const why=$('tutorial-objective-why');if(why)why.textContent=whyNow;}const hint=tutorial.visual.guide?.kind;if(!objective&&hint&&hint!==lastTutorialHint){lastTutorialHint=hint;say(tutorialHintSpeech[hint]);}if(tutorial.finished){queueMicrotask(()=>{if(learningGround&&tutorial?.finished)finishTutorial();});}}
       else questUI.tick();
       audio.focus(run.state.phase === 'playing' && run.state.held && run.world.slow);
       audio.flush();
+      // CHUNK 2: the ground keeps score. Tier 1 knocks every 8s of run time,
+      // tier 2 every 4s, tier 3 every 2s — diegetic, tick-scheduled, inaudible
+      // on the menu and silent at STABLE.
+      {
+        const tier = run.state.fracture?.tier | 0;
+        if (tier > 0 && run.state.phase === 'playing' && !run.state.opening) {
+          if (run.world.clock >= nextFractureRumble) {
+            audio.tremor(tier);
+            nextFractureRumble = run.world.clock + FRACTURE_TIERS[tier].rumble;
+          }
+        } else {
+          nextFractureRumble = run.world.clock;
+        }
+      }
       // ── "SCREEN SHAKE: OFF" MUST MEAN OFF ────────────────────────────────
       //
       // `motion` is the flag that gates EVERY moving flourish in the renderer:
@@ -1020,9 +1319,14 @@ function frame(now) {
 }
 function finishTutorial(){const first=storage.get('tutorialCompleted','0')!=='1';storage.set('tutorialCompleted',1);start({learningGround:false,lockdown:first});}
 $('rack-skip').onclick=()=>{if(learningGround)finishTutorial();};
-questUI = createQuestUI({unlimited:devMode,startTutorial:()=>start({learningGround:true}),getRun:()=>run, storage, audio, motion:()=>opts.motion && opts.shake !== 'off', resetInput:()=>input.reset(), home,
+// CHUNK 5: the "Learn" door in the quest board now opens THE LEARNING
+// GROUND instead of force-starting the course; the two safe-practice dialogs
+// it used to reference are real, wired and rendered below.
+questUI = createQuestUI({unlimited:devMode,startTutorial:()=>{home();open('manual');},practice:()=>controlPractice?.open(),teaching:()=>teaching?.open(),getRun:()=>run, storage, audio, motion:()=>opts.motion && opts.shake !== 'off', resetInput:()=>input.reset(), home,
   resume:(playing)=>{clock.reset();dirty=true;if(playing)canvas.focus({preventScroll:true});portal();}, view:()=>renderer.questView()});
 customize = createCustomize({storage,unlimited:devMode,wallet:()=>questUI.wallet(),ownedParts:()=>questUI.ownedParts(),purchase:(id,cost)=>questUI.purchasePart(id,cost),resetInput:()=>input.reset(),motion:()=>opts.motion,snap:()=>audio.menu()});
+controlPractice = createControlPracticeUI({resetInput:()=>input.reset(),motion:()=>opts.motion&&opts.shake!=='off',onOpen:()=>{input.reset();poki.setPlaying(false);},onClose:()=>{input.reset();}});
+teaching = createTeachingUI({resetInput:()=>input.reset(),motion:()=>opts.motion&&opts.shake!=='off',onOpen:()=>{input.reset();poki.setPlaying(false);},onClose:()=>{input.reset();},openControl:()=>controlPractice?.open()});
 const customButton=document.createElement('button');customButton.id='customize-btn';customButton.className='choice quiet';customButton.textContent='Shop';customButton.onclick=()=>customize.open();$('main-nav').append(customButton);
 waveUI=createWaveUI({getRun:()=>run,resetInput:()=>input.reset(),motion:()=>opts.motion});
 installIconSprite();
@@ -1032,6 +1336,9 @@ $('dev-badge').hidden = $('dev-panel-badge').hidden = !devMode;
 syncSettings();
 renderer.setShakeLevel(opts.shake);
 setText('title-best', score(best));
+// CHUNK 2: the menu always shows the persistent meter, even before the
+// first run of the session.
+setFractureUI(fractureMirror);
 renderer.title(0);
 // Only reveal the menu once its artwork and action handlers are ready.
 game.removeAttribute('inert');

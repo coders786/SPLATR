@@ -51,17 +51,14 @@ test('finite cuts, passive refill, bounded focus; misses eventually time out a c
   s.chain = 3;
   s.chainTime = 80;
   advance(g, 100);
-  // ── THE DRIP IS AN AIR RULE ──────────────────────────────────────────────
+  // ── CHUNK 1: THE AUTO-RELOAD PAYS ANYWHERE ───────────────────────────────
   //
-  // This used to assert `edge === 1` after 100 ticks, and it passed because the
-  // cube had settled onto a SPAWN PAD within a few ticks of the last dash: the
-  // refill timer was running the whole time it sat there. That is the exact
-  // shape of the floor farm -- park, wait out the timer, get a pip, repeat.
-  //
-  // A pad landing pays nothing (there is no rail contact), so what this now
-  // measures is that the timer genuinely does not run while the cube is lying
-  // around. The pass is the absence of income.
-  assert.equal(s.edge + 0, 0, 'sitting on a pad pays nothing at all');
+  // The refill timer is a flat one second (60 ticks) that runs wherever the
+  // cube is, so the park-and-wait question no longer has a cheap answer:
+  // sitting on the pad pays the same one pip per second as hovering in the air,
+  // and never more than that. What this measures now is that the timer is
+  // honest -- one pip per second, capped at three, no wall required.
+  assert.equal(s.edge, 1, 'the one-second auto-reload pays one pip on the first tick boundary');
   assert.equal(s.chain, 0, 'and the chain is gone');
   assert.equal(s.phase, 'playing');
   g.dispose();
@@ -270,7 +267,10 @@ test('long score runs cross multiple biomes, meet all eight species and trigger 
     // that ends early would still mean something is wrong.
     assert.ok(['playing', 'dying', 'over'].includes(r.phase));
     assert.ok(r.kills > 50 && r.band > 8, `only reached band ${r.band} / ${r.kills} kills`);
-    assert.equal(r.kinds, SPECIES.length);
+    // Every kind the WAVE DIRECTOR fields is met; the one it never fields is
+    // the Monolith, which manifests only on a SHATTERED fifth-clear (Chunk 4),
+    // so a long ordinary run meets SPECIES.length - 1 kinds by design.
+    assert.equal(r.kinds, SPECIES.length - 1);
     assert.equal(r.maxCells, 9);
   }
   // Both seeds must complete a substantial run rather than dying on contact.

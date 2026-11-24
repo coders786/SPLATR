@@ -39,6 +39,9 @@ export function hazardHits(h, p, prev) {
     r = PLAYER_SIZE * 0.44;
   if (h.kind === 'needle') return closest(ax, ay, bx, by) <= r + 5;
   if (h.kind === 'zone') return zoneHits(h.zone,p,prev,r);
+  // 'ring' and 'shock' share the expanding-annulus test. What differs is what
+  // the caller DOES with the answer: a Pulse wave hurts; a Monolith slam only
+  // shoves and staggers — the damage decision belongs to the onHit handler.
   // Moving circle versus expanding annulus. Check both sides of the wave;
   // being inside a pulse that has ALREADY passed is safe.
   const pad = r + 3,
@@ -91,7 +94,7 @@ export function zoneHits(zone,p,prev,pad=PLAYER_SIZE*.44){
  }
  return false;
 }
-export function createCombat(world, tell = () => {}) {
+export function createCombat(world, tell = () => {}, onBoss = null) {
   const ARENA=world.arena||DEFAULT_ARENA;
   const enemies = new Map(),
     contacts = new Set(),
@@ -161,7 +164,7 @@ export function createCombat(world, tell = () => {}) {
       y: bornY,
       postX: bornX, postY: bornY,
       r: t.r * (spec.size ?? (spec.small ? 0.6 : 1)),
-      hp: t.hp,
+      hp: Number.isFinite(spec.hp) ? spec.hp : t.hp,
       enteredViewport: !!spec.pinned || (viewport ? inViewport({x:bornX,y:bornY},viewport) : true),
       x: bornX,
       y: bornY,
@@ -182,6 +185,14 @@ export function createCombat(world, tell = () => {}) {
       flash: 0,
       lastSlash: -1,
     };
+    // CHUNK 6B: boss state for the landlord. home:'monolith' arms the
+    // behaviors (both directors spawn it that way); the training room spawns
+    // home:'wave' and stays a quiet door.
+    if (spec.kind === 'monolith') Object.assign(e, {
+      lashAt: 360 - 54, slamAt: 270 - 30, lensAt: 540 - 45,
+      lashTell: 0, slamTell: 0, lensTell: 0, lensT: 0,
+      slamPlate: -1, seamGlow: 0,
+    });
     e.body = sensor(e);
     Body.setAngle(e.body, a);
     e.body.plugin.enemy = e;
@@ -198,8 +209,9 @@ export function createCombat(world, tell = () => {}) {
     if (!enemies.delete(e.id)) return;
     Composite.remove(world.engine.world, e.body);
     contacts.delete(e);rushContacts.delete(e);
-    // The new close-range zones belong to their source and cannot linger after a cut.
-    for(let i=hazards.length-1;i>=0;i--)if(hazards[i].kind==='zone'&&hazards[i].sourceId===e.id)hazards.splice(i,1);
+    // Every hazard born from this body leaves with it: the close-range zones,
+    // the Monolith's debris and its slam shockwave. Nothing outlives its maker.
+    for(let i=hazards.length-1;i>=0;i--)if(hazards[i].sourceId===e.id)hazards.splice(i,1);
   }
   function interrupt(e){
     if(!['fork','bastion','rift','well'].includes(e.kind))return;
@@ -274,6 +286,124 @@ export function createCombat(world, tell = () => {}) {
     e.attackZone=enemyAttackZone(kind,kind==='rift'?e.tx:e.x,kind==='rift'?e.ty:e.y,kind==='fork'?e.angle:e.aim,e.r);
     if (announce) tell(e);
   }
+  // ── CHUNK 6B: THE LANDLORD ─────────────────────────────────────────────
+  //
+  // The Monolith used to be a door: ten hit points, five plates, no verbs. It
+  // is a fixed landmark with three telegraphed behaviors, all timed in COMBAT
+  // ticks on the enemy itself — so they stretch with bullet time and freeze
+  // in a hitstop like everything else on the table. None of them damage
+  // through invulnerability frames (the hull is safe on entry, as before),
+  // none of them fire once the slab falls (its body leaving the fight stops
+  // its clock), and every tell is the real countdown, not an animation.
+  //
+  // SEISMIC LASH (6.0s): crack-lines crawl out of the base for 0.9s, then
+  // four debris arcs fan out ballistically. Hits cost 1 hull. Parryable with
+  // a live blade like any needle; dodge by banking or being elsewhere.
+  //
+  // PLATE SLAM (4.5s, while ≥ 3 plates stand): the lowest live plate slots
+  // loose and hangs white for 0.5s, then drops — a 150px shockwave rings the
+  // base. Jump/dash through it: a live blade or parry window walks through
+  // unscathed; otherwise the cube is shoved 220px straight out from the
+  // epicenter and stunned 0.35s (no mid-air control; dashing still works).
+  //
+  // GRAVITY LENS (9.0s): the core iris dilates for 0.75s, then the world
+  // pulls the cube toward the slab at 2.1 px/tick² for 1.5s. The slab cannot
+  // choose what hits it: anything that connects during the window deals +1
+  // bonus damage (the plate-doubling window). It is a fixed landmark, which
+  // is what makes the pull fair.
+  const LASH = { period: 360, tell: 54, fan: [-0.471, -0.157, 0.157, 0.471] },
+    SLAM = { period: 270, tell: 30, minHp: 6 },
+    LENS = { period: 540, tell: 45, active: 90, pull: 2.1 };
+  // `period` is the time between attack resolutions, not between the start of
+  // one tell and the next. The tell is inside that budget, so a full first
+  // attack lands on its documented interval instead of interval plus tell.
+  const tellCooldown = spec => spec.period - spec.tell,
+    lensCooldown = LENS.period - LENS.tell - LENS.active;
+  function monolithBase(e) { return e.y + 1.5 * e.r; }
+  function fireLash(e, p) {
+    const baseY = monolithBase(e),
+      dx = p.x - e.x,
+      dy = p.y - baseY,
+      aim = dx || dy ? Math.atan2(dy, dx) : Math.PI / 2;
+    for (const offset of LASH.fan) {
+      if (hazards.length >= 72) break;
+      const angle = aim + offset,
+        speed = 11.5,
+        x = e.x + Math.cos(angle) * (e.r * 0.75),
+        y = baseY - 8;
+      hazards.push({
+        kind: 'needle', source: 'monolith', sourceId: e.id,
+        attackId: `${e.id}:lash:${++attackSerial}`,
+        x, y, px: x, py: y,
+        vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+        angle, gravity: 0.14, life: 150, age: 0,
+      });
+    }
+    if (onBoss) onBoss({ kind: 'seismicLash', x: e.x, y: baseY });
+  }
+  function fireSlam(e) {
+    if (hazards.length >= 72) return;
+    const x = e.x, y = monolithBase(e);
+    hazards.push({
+      kind: 'shock', source: 'monolith', sourceId: e.id,
+      attackId: `${e.id}:slam:${++attackSerial}`,
+      x, y, px: x, py: y, angle: 0,
+      age: 0, life: 80, radius: 18, previousRadius: 14, maxRadius: 150,
+    });
+    e.slamPlate = -1;
+    e.seamGlow = 0;
+    if (onBoss) onBoss({ kind: 'plateSlam', x, y });
+  }
+  function tickMonolith(e, dt, player) {
+    const p = player.position;
+    // ── SEISMIC LASH ───────────────────────────────────────────────────
+    if (e.lashTell > 0) {
+      e.lashTell = Math.max(0, e.lashTell - dt);
+      if (e.lashTell === 0) fireLash(e, p);
+    } else if ((e.lashAt -= dt) <= 0) {
+      e.lashAt = tellCooldown(LASH);
+      e.lashTell = LASH.tell;
+    }
+    // ── PLATE SLAM (≥ 3 plates standing) ───────────────────────────────
+    if (e.slamTell > 0) {
+      e.slamTell = Math.max(0, e.slamTell - dt);
+      e.seamGlow = e.slamTell;
+      if (e.slamTell === 0) fireSlam(e);
+    } else if ((e.slamAt -= dt) <= 0) {
+      if (Math.max(0, e.hp) >= SLAM.minHp) {
+        e.slamAt = tellCooldown(SLAM);
+        e.slamTell = SLAM.tell;
+        e.seamGlow = SLAM.tell;
+        // The lowest standing plate slots loose — plates 0..standing-1 are
+        // the lit ones (index 0 is the top seam), so the lowest is standing-1.
+        e.slamPlate = Math.max(0, Math.ceil(e.hp / 2) - 1);
+      } else {
+        // Below three plates the slam waits; it does not fire a dying show.
+        e.slamAt = 60;
+      }
+    }
+    // ── GRAVITY LENS ───────────────────────────────────────────────────
+    if (e.lensTell > 0) {
+      e.lensTell = Math.max(0, e.lensTell - dt);
+      if (e.lensTell === 0) {
+        e.lensT = LENS.active;
+        if (onBoss) onBoss({ kind: 'gravityLens', x: e.x, y: e.y });
+      }
+    } else if (e.lensT > 0) {
+      e.lensT = Math.max(0, e.lensT - dt);
+      const dx = e.x - p.x, dy = e.y - p.y, dist = Math.hypot(dx, dy);
+      if (dist > 1) {
+        Body.setVelocity(player, {
+          x: player.velocity.x + (dx / dist) * LENS.pull * dt,
+          y: player.velocity.y + (dy / dist) * LENS.pull * dt,
+        });
+      }
+      if (e.lensT === 0) e.lensAt = lensCooldown;
+    } else if ((e.lensAt -= dt) <= 0) {
+      e.lensAt = lensCooldown;
+      e.lensTell = LENS.tell;
+    }
+  }
   function move(dt, difficulty) {
     const player=world.player,p=player.position,m=Math.min(1.38,1+(difficulty-1)*.055);
     cadence=difficulty<=2?76:54; beat=Math.max(0,beat-dt);
@@ -290,7 +420,14 @@ export function createCombat(world, tell = () => {}) {
       e.pa = e.angle;
       e.flash = Math.max(0, e.flash - dt);
       e.age += dt;
-      if (e.pinned) continue;
+      // CHUNK 6B: the pinned Monolith never MOVES — but it acts. Its timers
+      // tick in the same place every other enemy's AI ticks. The training
+      // room spawns the same slab with home:'wave', and it stays a quiet
+      // door there on purpose.
+      if (e.pinned) {
+        if (e.kind === 'monolith' && e.home === 'monolith') tickMonolith(e, dt, player);
+        continue;
+      }
       // Camera position affects rendering and NEW spawn presentation only.
       // Existing entities must not be deleted or repositioned by a pan/zoom.
       const dx = p.x - e.x,
@@ -400,8 +537,11 @@ export function createCombat(world, tell = () => {}) {
         // the "idle actors pile up at the cube" failure). So the pull fades to
         // zero as the shape approaches the edge of its leash.
         const CLOSING = 780,
-          LEASH = 110;
-        if (k !== 'crown' && dist < CLOSING && dist > 90) {
+          LEASH = 110,
+          // A sleeping shape (wakeAt set and the player beyond it) holds its
+          // ground: the ring is the promise that "outside it, it ignores you."
+          asleep = e.wakeAt != null && dist >= e.wakeAt;
+        if (!asleep && k !== 'crown' && dist < CLOSING && dist > 90) {
           const pull = 1 - dist / CLOSING, // strongest nearby, zero at the edge
             home = Math.hypot(e.x - e.postX, e.y - e.postY),
             slack = clamp(1 - home / LEASH, 0, 1),
@@ -413,7 +553,7 @@ export function createCombat(world, tell = () => {}) {
         e.x+=vx*dt;e.y+=vy*dt;
         if (
           e.cool <= 0 &&
-          dist < (k === 'fang' ? 10.8*m*24+e.r+PLAYER_SIZE*.5-20 : k === 'pulse' ? 410 : k === 'fork' ? 260 : k === 'bastion' ? 290 : k === 'well' ? 230 : 820) &&
+          dist < (e.wakeAt ?? (k === 'fang' ? 10.8*m*24+e.r+PLAYER_SIZE*.5-20 : k === 'pulse' ? 410 : k === 'fork' ? 260 : k === 'bastion' ? 290 : k === 'well' ? 230 : 820)) &&
           ['fang', 'pulse', 'prism', 'fork', 'bastion', 'rift', 'well', 'crown'].includes(k) &&
           takeTurn()
         ) {
@@ -474,11 +614,15 @@ export function createCombat(world, tell = () => {}) {
       h.age += dt;
       h.life -= dt;
       if (h.kind === 'needle') {
+        // CHUNK 6B: the Monolith's debris falls — gravity arcs over the table.
+        if (h.gravity) h.vy += h.gravity * dt;
         h.x += h.vx * dt;
         h.y += h.vy * dt;
-      } else if(h.kind==='ring') {
+        if (h.gravity) h.angle = Math.atan2(h.vy, h.vx);
+      } else if(h.kind==='ring'||h.kind==='shock') {
         h.previousRadius = h.radius;
         h.radius += 3.45 * dt;
+        if (h.maxRadius && h.radius > h.maxRadius) h.radius = h.maxRadius;
       }
       if (h.life <= 0) {
         hazards.splice(i, 1);

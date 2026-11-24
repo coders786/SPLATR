@@ -49,7 +49,7 @@ test('inactive state freezes and slow-time cooldown uses simulation time',()=>{
 });
 function wallRun(steer=false){
  const events=[],r=createRun(41,(type,d)=>events.push({type,...d}),{waveMode:true});
- r.state.invul=99999;r.state.wave.entry=0;placePlayer(r.world,{x:820,y:-450});r.dash({x:42,y:0,power:1});
+ r.state.invul=99999;r.state.wave.entry=0;placePlayer(r.world,{x:1450,y:-450});r.dash({x:42,y:0,power:1});
  if(steer){r.setAim({x:-1,y:-.6});r.focus(true);}
  for(let i=0;i<90&&!events.some(e=>e.type==='cleanBank');i++)r.tick();return {r,events};
 }

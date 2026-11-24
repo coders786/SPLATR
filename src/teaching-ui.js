@@ -54,7 +54,7 @@ export function createTeachingUI({resetInput=()=>{},motion=()=>true,onOpen=()=>{
   const retryNeeded=(session.complete||s.phase!=='playing')&&!session.waiting&&!session.objectivesComplete;
   stepNext.hidden=!(session.waiting||session.objectivesComplete||retryNeeded);
   stepNext.textContent=session.waiting?(session.stepIndex===session.steps.length-1?'FINISH STEP':'NEXT STEP'):retryNeeded?'TRY AGAIN':lessonNumber===TEACHING_SCENARIOS.length?'FINISH':'NEXT LESSON';
-  const visual=retryNeeded?['retry']:session.objectivesComplete?['check','forward']:({launch:['pull','release'],cut:['blade','target'],clear:['blade','check'],tell:['target'],attack:['forward'],split:['blade','target'],armor:['breaker'],pull:['pull','release']})[step?.[0]]||['target'];
+  const visual=retryNeeded?['retry']:session.objectivesComplete?['check','forward']:({launch:['pull','release'],cut:['blade','target'],clear:['blade','check'],tell:['target'],attack:['forward'],split:['blade','target'],armor:['breaker'],pull:['pull','release'],approach:['target','forward'],charge:['bolt','bank','bolt']})[step?.[0]]||['target'];
   const signature=visual.join('/');if(illustration.dataset.visual!==signature){illustration.dataset.visual=signature;illustration.replaceChildren(...visual.map(name=>iconNode(name)));}
   if(session.objectivesComplete){
    watch.textContent=`LESSON ${lessonNumber} / ${TEACHING_SCENARIOS.length} · COMPLETE`;
