@@ -37,6 +37,7 @@ test('actual launched wall bank adds evidence; clear settles transients, next cy
  const r=createRun(41,()=>{},{waveMode:true});try{
  r.state.invul=99999;r.state.wave.entry=0;placePlayer(r.world,{x:1450,y:-450});r.dash({x:42,y:0,power:1});assert.ok(r.state.dimension.impulses.some(i=>i.kind==='launch'));
  for(let i=0;i<6;i++)r.tick();assert.ok(r.state.dimension.scars.some(i=>i.kind==='bank'));
+ assert.equal(r.state.dimension.impulses.filter(i=>i.kind==='bank').length,1,'one real bank owns one field impulse');
  for(const e of [...r.combat.enemies.values()])r.combat.remove(e);r.tick();assert.equal(r.state.wave.phase,'return');assert.equal(r.state.dimension.impulses.length,0);assert.ok(r.state.dimension.scars.length>0);
  r.state.wave.phase='choose';r.state.wave.offers=[{id:'test'}];r.chooseWaveBuff('test');assert.ok(r.state.dimension.scars.length>0,'same room remembers across waves');
  r.state.wave.number=5;r.state.wave.phase='choose';r.state.wave.offers=[{id:'test'}];r.chooseWaveBuff('test');assert.equal(r.state.dimension.cycle,1);assert.equal(r.state.dimension.scars.length,0);

@@ -638,6 +638,9 @@ export function createRun(
     cause: '',
     previousSlash: -0.65,
     slashAngle: -0.65,
+    /** Immutable bearing of the current dash, captured at launch. Renderer
+     * effects may read live velocity for magnitude, never for this direction. */
+    launchAngle: null,
     stroke: null,
     bestStroke: null,
     throughcuts: 0,
@@ -975,6 +978,10 @@ export function createRun(
     // for HYPER only, after `launch()` had already clamped the input to
     // MAX_SPEED — two writers, one property. There is exactly one writer now.
     s.previousSlash = s.slashAngle = Math.atan2(v.y, v.x);
+    // This snapshot owns the dash's visual bearing for its entire 15-tick
+    // lifetime. `slashAngle` may continue to follow the live combat sweep;
+    // launch/ghost/dust/deformation visuals must not turn with a later rebound.
+    s.launchAngle = s.slashAngle;
     // Every dash is a swing. Restarting the clock here (rather than on contact)
     // is what makes the attack read as something the PLAYER did: the wind-up
     // begins on the input, so by the time the blade reaches a shape it is
@@ -2385,6 +2392,7 @@ export function createRun(
           nx: hitSurface.nx,
           ny: hitSurface.ny,
           speed,
+          source: 'bank',
         };
         s.boomAge = 0;
       }
@@ -2407,6 +2415,21 @@ export function createRun(
         paceQualified: false,
         combo: s.banks >= 3,
       });
+      // BANK owns one local field impulse and one directional frame bite. Mark
+      // the same contact before any later renderer-facing event can mistake it
+      // for a generic impact wave.
+      if (s.impact && Math.hypot(s.impact.x - hitSurface.x, s.impact.y - hitSurface.y) < 45)
+        s.impact = { ...s.impact, source: 'bank' };
+      const bankPoint = {
+        x: hitSurface.x - hitSurface.nx * PLAYER_SIZE / 2,
+        y: hitSurface.y - hitSurface.ny * PLAYER_SIZE / 2,
+        speed,
+        normalSpeed: Math.max(0, -hitSurface.incomingX * hitSurface.nx - hitSurface.incomingY * hitSurface.ny),
+        angle: Math.atan2(hitSurface.ny, hitSurface.nx),
+        nx: hitSurface.nx,
+        ny: hitSurface.ny
+      };
+      disturbRoom('bank', bankPoint);
     }
     // Wave-specific skill recognition is independent of the legacy rail refund.
     // Observe each real physics arrival, never a cooldown repeatedly touching a wall.
@@ -2433,7 +2456,8 @@ export function createRun(
         const before={x:v.x,y:v.y};
         if(s.held&&aimAngle!==null){const steered=steerBank(before,{x:hitSurface.nx,y:hitSurface.ny},{x:Math.cos(aimAngle),y:Math.sin(aimAngle)});setPlayerVelocity(world,steered.x,steered.y);result.state.steered=Math.hypot(steered.x-before.x,steered.y-before.y)>.01;if(result.state.steered)s.launchGrace=Math.max(s.launchGrace,MOVEMENT.launchGrace);}
         if(s.breakthrough){const reward=bankBreakthrough(s.breakthrough);s.breakthrough=reward.state;if(reward.sonic){if(!s.hyper){const vv=world.player.velocity,sp=Math.hypot(vv.x,vv.y),next=Math.min(BREAKTHROUGH.ceiling,sp*BREAKTHROUGH.sonicFactor);world.playerCeiling=Math.max(world.playerCeiling,next);if(sp>0)setPlayerVelocity(world,vv.x*next/sp,vv.y*next/sp);}emit('sonicBank',{...world.player.position});}}
-        disturbRoom('bank',{...result.event,x:result.event.x-result.event.nx*PLAYER_SIZE/2,y:result.event.y-result.event.ny*PLAYER_SIZE/2,normalSpeed:Math.max(0,-hitSurface.incomingX*hitSurface.nx-hitSurface.incomingY*hitSurface.ny),speed:result.event.incoming,angle:Math.atan2(hitSurface.ny,hitSurface.nx)});
+        // The generic bank block already published the single field impulse;
+        // clean-bank recognition adds gameplay/readout state only.
         emit('cleanBank',{...result.event,steered:result.state.steered,momentumEarned});
       }
     }

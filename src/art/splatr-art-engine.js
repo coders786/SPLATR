@@ -182,6 +182,56 @@
  * All Canvas geometry, animation curves, palettes and composition live below.
  */
 
+/**
+ * One owner per event. This is deliberately data, not a second animation
+ * system: tests and future art passes can inspect the contract without guessing
+ * which of the many old layers is allowed to answer a moment on screen.
+ */
+export const VISUAL_EVENT_MAP = Object.freeze({
+  dash: Object.freeze({
+    source: 'state.launchAngle + state.slashAge',
+    primary: 'elemental-wake',
+    evidence: Object.freeze(['launch-dust', 'brake-sparks', 'measured-afterimages']),
+    suppressed: Object.freeze(['cube-smear', 'lead-trail-marks', 'generic-speed-wedge', 'generic-airborne-smear'])
+  }),
+  slashContact: Object.freeze({
+    source: 'contact.angle / state.slashAngle',
+    primary: 'blade-or-sword',
+    evidence: Object.freeze(['one-local-contact-burst', 'actual-shards']),
+    suppressed: Object.freeze(['generic-impact-wave-for-cut'])
+  }),
+  fallLanding: Object.freeze({
+    source: 'state.fallAge + velocity.y / state.landAge + grounded',
+    primary: 'fall-pose / landing-squash',
+    evidence: Object.freeze(['upward-fall-streaks', 'grounded-ring']),
+    suppressed: Object.freeze(['landing-ring-while-airborne'])
+  }),
+  bank: Object.freeze({
+    source: 'real rail contact + inward normal',
+    primary: 'dimension-frame-bite',
+    evidence: Object.freeze(['measured-bank-scar', 'directional-boom-when-owned']),
+    suppressed: Object.freeze(['generic-impact-wave', 'generic-boom-when-source-bank'])
+  }),
+  hurtDeath: Object.freeze({
+    source: 'contact snapshot / fatal state',
+    primary: 'local-damage-reaction',
+    evidence: Object.freeze(['fracture', 'damage-stain']),
+    suppressed: Object.freeze(['slash-contact-geometry'])
+  }),
+  enemyTell: Object.freeze({
+    source: 'enemy.mode + clock + span + aim',
+    primary: 'enemy-warning',
+    evidence: Object.freeze(['active-hazard-at-source']),
+    suppressed: Object.freeze(['tell-as-hazard'])
+  }),
+  theWatch: Object.freeze({
+    source: 'teaching.visualTutorial real phase/callbacks',
+    primary: 'tutorial-guidance / watch-scene',
+    evidence: Object.freeze(['real-tell', 'real-resolve', 'real-hurt-or-miss']),
+    suppressed: Object.freeze(['fabricated-tutorial-combat'])
+  })
+});
+
 var __defProp = Object.defineProperty;
 var __export = (target, all) => {
   for (var name in all)
@@ -669,10 +719,10 @@ function moveFor(vx, vy, hold = 0) {
     stress
   };
 }
-function cubePose({ vx = 0, vy = 0, age = 0, slashAge = -1, fallAge = -1, landAge = -1, hold = 0, facing = 1 } = {}) {
+function cubePose({ vx = 0, vy = 0, age = 0, slashAge = -1, fallAge = -1, landAge = -1, hold = 0, facing = 1, suppressFall = false } = {}) {
   const move = moveFor(vx, vy, hold);
   let lean = move.lean, tall = move.tall, wide = move.wide, eyes2 = move.eyes, scarf = move.scarf, twist = move.twist, stretch = move.stretch, counter = 0, slash = null, fall = null, land = null;
-  fall = fallFor(vy, move.speed);
+  fall = suppressFall ? null : fallFor(vy, move.speed);
   if (fall) {
     lean += fall.lean;
     const f = Math.min(1, fall.k * 0.6 + fall.rush * 0.3 + fall.dive * 0.3);
@@ -750,9 +800,21 @@ var DASH = Object.freeze({
   /** Sum of the three. Written out because the object is frozen. */
   total: 15
 });
-function dashFor(slashAge, vx, vy) {
+/** Resolve a dash's octant from its committed launch bearing when one exists.
+ *
+ * `vx/vy` remain the compatibility fallback for pure animation callers and old
+ * preview fixtures. Gameplay passes the launch angle captured by `run.dash()`;
+ * a rail reflection or a later steering update must never turn the already
+ * committed dash telegraph around underneath the player.
+ */
+function dashDirection(vx, vy, launchAngle = null) {
+  return Number.isFinite(launchAngle)
+    ? octant(Math.cos(launchAngle), Math.sin(launchAngle))
+    : octant(vx, vy);
+}
+function dashFor(slashAge, vx, vy, launchAngle = null) {
   if (!(slashAge >= 0) || slashAge > DASH.total) return null;
-  const dir = octant(vx, vy);
+  const dir = dashDirection(vx, vy, launchAngle);
   const speed = Math.hypot(vx, vy);
   const power = clamp01(speed / 42);
   const a = dir / 8 * TAU2;
@@ -6835,11 +6897,14 @@ export function resolveDashTreatment(equipment={},sword=null,buff=null){
 
 /** Local bounded geometry follows actual velocity. Age is simulation ticks, not RAF count.
  * No randomness, filters, particles, DOM, imported state, or gameplay mutations. */
-export function drawElementalDash(c,{x=0,y=0,vx=0,vy=0,age=-1,element='ink',radius=22,motion=true,equipment=null,sword=null,buff=null}={}){
+export function drawElementalDash(c,{x=0,y=0,vx=0,vy=0,angle=null,travel=0,age=-1,element='ink',radius=22,motion=true,equipment=null,sword=null,buff=null}={}){
  if(!motion||!Number.isFinite(age)||age<0||age>20||![x,y,vx,vy,radius].every(Number.isFinite))return;
  const speed=Math.hypot(vx,vy);if(speed<4||radius<=0)return;
  const treatment=resolveDashTreatment(equipment||{},sword,buff);
- const t=age/20,fade=(1-t)**2,punch=Math.exp(-age*treatment.decay),length=Math.min(180,speed*3.3)*(0.35+.65*punch),r=Math.min(30,radius),a=Math.atan2(vy,vx);
+  // The launch bearing owns orientation. Speed only changes the envelope; it
+  // cannot redirect a wake after a bank, rail reflection, or collision.
+ const a=Number.isFinite(angle)?angle:Math.atan2(vy,vx),r=Math.min(30,radius),measuredTravel=Number.isFinite(travel)?Math.max(0,travel):0;
+ const t=age/20,fade=(1-t)**2,punch=Math.exp(-age*treatment.decay),length=Math.min(180,speed*3.3)*(0.35+.65*punch),trailEvidence=Math.min(1,measuredTravel/Math.max(1,r*2.2));
  const baseColor={ink:'#eee9d9',fire:'#ff9856',lightning:'#8cecf4',ice:'#b1eaff',water:'#89dfcb',void:'#bd9bff',echo:'#edabd9'}[element]||'#eee9d9';
  const color=equipment?blend(baseColor,treatment.energy,.23):baseColor,light=equipment?blend(baseColor,treatment.light,.5):'#e9ffff';
  c.save();try{c.translate(x,y);c.rotate(a);c.scale(treatment.stretch,treatment.compression);c.globalAlpha=.65*fade;c.lineCap='butt';c.lineJoin='miter';
@@ -6865,27 +6930,34 @@ export function drawElementalDash(c,{x=0,y=0,vx=0,vy=0,age=-1,element='ink',radi
  }
  // Two speed slits narrow with cubic decay; avoid persistent scene-wide lines.
  c.globalAlpha=.35*fade;for(const side of[-1,1])line([[-r*1.3,side*r*1.05],[-r*1.3-length*(1-t)**3,side*r*1.05]],1,color);
+ // Position evidence is deliberately a separate, small trailing cue. It is
+ // measured displacement, never a second direction estimate.
+ if(trailEvidence>.05){
+  c.globalAlpha=.22*fade*trailEvidence;
+  line([[-r*1.05,-r*.82],[-r*(1.05+.8*trailEvidence),-r*.82]],1.2,light);
+  line([[-r*1.05,r*.82],[-r*(1.05+.8*trailEvidence),r*.82]],1.2,light);
+ }
  }finally{c.restore();}
 }
 
 /** A hand-drawn smear cel made from three offset slices of the cube itself.
  * Geometry is in hero radii, driven by the existing dash clock and velocity;
  * no physics writes, random numbers, rotation or second animation clock. */
-export function resolveCubeDashSmear({vx=0,vy=0,age=-1,radius=22,motion=true}={}){
+export function resolveCubeDashSmear({vx=0,vy=0,angle=null,age=-1,radius=22,motion=true}={}){
  if(!motion||![vx,vy,age,radius].every(Number.isFinite)||radius<=0)return null;
  const speed=Math.hypot(vx,vy);
  if(!Number.isFinite(speed)||speed<6||age<=DASH.windup||age>=DASH.windup+DASH.active)return null;
  const u=(age-DASH.windup)/DASH.active;
  const envelope=Math.sin(Math.PI*u)**0.8, power=Math.min(1,speed/42);
- const r=Math.min(radius,80),ux=vx/speed,uy=vy/speed;
+ const r=Math.min(radius,80),ux=Number.isFinite(angle)?Math.cos(angle):vx/speed,uy=Number.isFinite(angle)?Math.sin(angle):vy/speed;
  // Three deliberately unequal slices stagger backward. Lag is bounded in world
  // units, direction-normalized and tapers smoothly to zero at both ends.
  const offsets=[.86,1.30,1.82].map(k=>r*k*power*envelope);
- return {ux,uy,r,envelope,power,offsets,vertical:Math.abs(vy)>Math.abs(vx)};
+ return {ux,uy,r,envelope,power,offsets,vertical:Math.abs(uy)>Math.abs(ux)};
 }
-export function drawCubeDashSmear(c,{x=0,y=0,vx=0,vy=0,age=-1,radius=22,equipment={},motion=true}={}){
+export function drawCubeDashSmear(c,{x=0,y=0,vx=0,vy=0,angle=null,age=-1,radius=22,equipment={},motion=true}={}){
  if(!Number.isFinite(x)||!Number.isFinite(y))return;
- const smear=resolveCubeDashSmear({vx,vy,age,radius,motion});if(!smear)return;
+ const smear=resolveCubeDashSmear({vx,vy,angle,age,radius,motion});if(!smear)return;
  const {ux,uy,r,envelope,power,offsets,vertical}=smear;
  equipment=equipment||{};
  const body=resolveBodyConstruction(equipment.body),palette=corePalette(equipment.core);
@@ -7176,7 +7248,10 @@ function createRenderer(c, viewport) {
         if (d.age >= d.life) dashDust.splice(i, 1);
       }
       if (s.swingStart !== dashBurstSwing || s.slashAge < 0) { dashBurstSwing = s.swingStart; dashBurstAt = -1; }
-      const dash = dashFor(s.slashAge, world.player.velocity.x, world.player.velocity.y);
+      const launchAngle = Number.isFinite(s.launchAngle)
+        ? s.launchAngle
+        : Math.atan2(world.player.velocity.y, world.player.velocity.x);
+      const dash = dashFor(s.slashAge, world.player.velocity.x, world.player.velocity.y, launchAngle);
       if (s.phase === "playing" && dash && s.slashAge !== dashBurstAt) {
         const launch = s.slashAge === DASH.windup, brake = s.slashAge === DASH.windup + DASH.active;
         if (launch || brake) {
@@ -7246,7 +7321,7 @@ function createRenderer(c, viewport) {
         e.angle += (e.spin || 0) * dt;
       }
   }
-  function speedField(c2, world, v, time, state) {
+  function speedField(c2, world, v, time, state, bearing = null) {
     const body = world.player, p = body.position, speed = Math.hypot(body.velocity.x, body.velocity.y), tier = tierOf(speed, MAX_SPEED);
     if (tier.index === 0) return;
     const sweep = tier.t;
@@ -7287,7 +7362,11 @@ function createRenderer(c, viewport) {
     const moved = state?.moved ?? world.realMoved ?? speed;
     const gate = MAX_SPEED * 0.65;
     if (moved > gate) {
-      const cx = w / 2, cy = h / 2, travel = Math.abs(body.velocity.x) + Math.abs(body.velocity.y) > 0.01 ? Math.atan2(body.velocity.y, body.velocity.x) : 0, behind = travel + Math.PI, reach = Math.hypot(w, h), calm = Math.min(1, (moved - gate) / (MAX_SPEED - gate)), lines = Math.min(8, 3 + Math.round(5 * calm));
+      const cx = w / 2, cy = h / 2, travel = Number.isFinite(bearing)
+        ? bearing
+        : Math.abs(body.velocity.x) + Math.abs(body.velocity.y) > 0.01
+          ? Math.atan2(body.velocity.y, body.velocity.x)
+          : 0, behind = travel + Math.PI, reach = Math.hypot(w, h), calm = Math.min(1, (moved - gate) / (MAX_SPEED - gate)), lines = Math.min(8, 3 + Math.round(5 * calm));
       c2.globalCompositeOperation = "lighter";
       c2.lineCap = "round";
       for (let i = 0; i < lines; i++) {
@@ -7791,7 +7870,13 @@ function createRenderer(c, viewport) {
     transform();
     const { world, state: s, combat } = run, v = lastView = camera.view(alpha), p = bodyPose(world.player, alpha), nearest = run.nearest(), time = mix(world.previousClock, world.clock, alpha);
     const animationAge = age => age > 0 ? age - 1 + Math.max(0, Math.min(1, alpha)) : age;
-    const dash = dashFor(animationAge(s.slashAge), world.player.velocity.x, world.player.velocity.y);
+    // A dash is an event, not a velocity state. Once the launch has happened,
+    // all dash-owned geometry shares this bearing even if the physics body
+    // banks, bounces, or is steered before the 15-tick animation expires.
+    const launchAngle = Number.isFinite(s.launchAngle)
+      ? s.launchAngle
+      : Math.atan2(world.player.velocity.y, world.player.velocity.x);
+    const dash = dashFor(animationAge(s.slashAge), world.player.velocity.x, world.player.velocity.y, launchAngle);
     if (dash && dash.phase !== "windup") {
       if (dashTravel.age === null || s.slashAge < dashTravel.age)
         dashTravel = { age: 0, x: p.x, y: p.y, along: 0 };
@@ -7985,10 +8070,10 @@ function createRenderer(c, viewport) {
           c.restore();
         }
     }
-    if (motion) speedField(c, world, v, time, run.state);
+    if (motion) speedField(c, world, v, time, run.state, dash ? launchAngle : null);
     if (motion && s.phase === "playing") {
       // Element shapes replace the generic ribbon during a launch; no stacking.
-      if(s.slashAge>=0&&s.slashAge<=20)drawElementalDash(c,{x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,age:animationAge(s.slashAge),element:dashElement(s.equipment,s.sword),equipment:s.equipment,sword:s.sword,buff:s.waveBuff,radius:R,motion});
+      if(s.slashAge>=0&&s.slashAge<=20)drawElementalDash(c,{x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,angle:launchAngle,travel:dashTravel.along*R*2,age:animationAge(s.slashAge),element:dashElement(s.equipment,s.sword),equipment:s.equipment,sword:s.sword,buff:s.waveBuff,radius:R,motion});
       else streak(c, trail, p, s.blade > 0);
     }
     if (motion && s.impact && s.impact.source!=='cut'&&s.impact.source!=='bank') {
@@ -8300,7 +8385,10 @@ function createRenderer(c, viewport) {
         c.restore();
       }
     }
-    if (!["dying", "over"].includes(s.phase) && world.player.velocity.y > 3) {
+    // Falling streaks belong to the fall event. During a committed dash the
+    // launch wake owns the motion read, so an upward fall streak would be a
+    // contradictory second arrow.
+    if (!dash && !["dying", "over"].includes(s.phase) && world.player.velocity.y > 3) {
       c.save();
       c.globalAlpha = 0.25;
       c.strokeStyle = "#c0b8cc";
@@ -8364,8 +8452,9 @@ function createRenderer(c, viewport) {
         }
         c.globalAlpha = 1;
       }
-      if (s.phase === "playing" && !s.splat)
-        drawCubeDashSmear(c,{x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,age:animationAge(s.slashAge),radius:R,equipment:s.equipment,motion});
+      // Dash deformation is applied once below from the committed event pose.
+      // The standalone cube-smear painter remains available to previews, but
+      // gameplay does not stack three extra body copies on the elemental wake.
       c.save();
       if (s.invul > 0 && motion) c.globalAlpha = 0.86 + 0.14 * Math.abs(Math.sin(s.invul * 0.12));
       c.translate(p.x, p.y);
@@ -8383,21 +8472,25 @@ function createRenderer(c, viewport) {
         c.scale(1 + snap * nx, 1 + snap * ny);
         c.scale(1 - snap * 0.72 * ny, 1 - snap * 0.72 * nx);
       }
+      const visualSpeed = Math.hypot(world.player.velocity.x, world.player.velocity.y);
+      const visualVx = dash ? Math.cos(launchAngle) * visualSpeed : world.player.velocity.x;
+      const visualVy = dash ? Math.sin(launchAngle) * visualSpeed : world.player.velocity.y;
       const poseAnim = cubePose({
-        vx: world.player.velocity.x,
-        vy: world.player.velocity.y,
+        vx: visualVx,
+        vy: visualVy,
         slashAge: animationAge(s.slashAge),
         fallAge: s.fallAge,
         landAge: animationAge(s.landAge),
         hold: holdDir,
-        facing
+        facing,
+        suppressFall: !!dash
       });
       if (poseAnim.move.speed >= 6) holdDir = poseAnim.move.index;
       const splat = splatFor(s.splat ? animationAge(s.splat.age) : -1, s.splat && { x: s.splat.nx, y: s.splat.ny });
       const dWide = (poseAnim.wide ?? 1) * (splat ? splat.sx : dash ? dash.sx : 1);
       const dTall = (poseAnim.tall ?? 1) * (splat ? splat.sy : dash ? dash.sy : 1);
       if (dWide !== 1 || dTall !== 1) c.scale(dWide, dTall);
-      if (poseAnim.stretch > 4e-3) {
+      if (!dash && poseAnim.stretch > 4e-3) {
         const k = poseAnim.stretch;
         const sx = Math.sign(world.player.velocity.x) || 0, sy = Math.sign(world.player.velocity.y) || 0;
         const wx = sx ? sy ? 0.6 : 1 : 0, wy = sy ? sx ? 0.6 : 1 : 0;
@@ -8426,7 +8519,7 @@ function createRenderer(c, viewport) {
         c.globalAlpha = 1;
         c.restore();
       }
-      if (motion && !world.grounded) {
+      if (motion && !world.grounded && !dash) {
         const vx = world.player.velocity.x, vy = world.player.velocity.y, speed = Math.hypot(vx, vy), e = stretchFor(speed, MAX_SPEED, s.hyper ? HYPER_SPEED : MAX_SPEED);
         if (e.along > 1.001) {
           const ax = Math.abs(vx) / (speed || 1), ay = Math.abs(vy) / (speed || 1);
@@ -8483,8 +8576,11 @@ function createRenderer(c, viewport) {
         facing = Math.sign(toward) || facing;
       }
       {
-        const speed = s.railSettle ? 0 : s.moved ?? Math.hypot(world.player.velocity.x, world.player.velocity.y), g = ghostFor(speed, MAX_SPEED);
-        if (motion && dash?.phase !== "active" && g.count && s.slashAge >= DASH.windup && s.slashAge < DASH.windup + DASH.active + 6) {
+        // Ghost positions are sampled from the simulation. The speed tier only
+        // controls how many measured samples remain legible; it never supplies
+        // a heading or a synthetic offset.
+        const speed = s.railSettle ? 0 : (Number.isFinite(s.moved) && s.moved > 0 ? s.moved : Math.hypot(world.player.velocity.x, world.player.velocity.y)), g = ghostFor(speed, MAX_SPEED);
+        if (motion && !s.splat && g.count && s.slashAge >= DASH.windup && s.slashAge < DASH.windup + DASH.active + 6) {
           c.save();
           let n = 0;
           ghosts.each((gx, gy, ga, gf, age) => {
@@ -8494,7 +8590,8 @@ function createRenderer(c, viewport) {
             c.globalAlpha = g.alpha * k * Math.max(0, 1 - age / 0.1);
             c.save();
             c.translate(gx - p.x, gy - p.y);
-            c.rotate(ga - bodyAngle);
+            // The hero is screen-axis aligned; after-images are the same flat
+            // silhouette, not rotated copies of a velocity vector.
             cube(c, 0, 0, R * (0.86 + 0.14 * k), 0, 0, gf);
             c.restore();
           });
@@ -8503,8 +8600,8 @@ function createRenderer(c, viewport) {
         }
       }
       {
-        const speed = s.railSettle ? 0 : s.moved ?? Math.hypot(world.player.velocity.x, world.player.velocity.y), m = morphWedge(c, speed, MAX_SPEED, Math.max(s.hyper ? s.hyperLevel : 0, poseAnim.sonic));
-        if (motion && m) {
+        const speed = s.railSettle ? 0 : (Number.isFinite(s.moved) && s.moved > 0 ? s.moved : Math.hypot(world.player.velocity.x, world.player.velocity.y)), m = morphWedge(c, speed, MAX_SPEED, Math.max(s.hyper ? s.hyperLevel : 0, poseAnim.sonic));
+        if (!dash && motion && m) {
           const a = Math.atan2(world.player.velocity.y, world.player.velocity.x);
           c.save();
           c.rotate(a - bodyAngle);
@@ -8520,7 +8617,7 @@ function createRenderer(c, viewport) {
           c.restore();
         }
       }
-      if (motion && !world.grounded && dash?.phase !== "active") {
+      if (motion && !world.grounded && !dash) {
         const vx = world.player.velocity.x, vy = world.player.velocity.y, speed = Math.hypot(vx, vy), smear = stretchFor(speed, MAX_SPEED, s.hyper ? HYPER_SPEED : MAX_SPEED).blur;
         if (smear > 1) {
           const along = Math.atan2(vy, vx), steps = smear > 12 ? 3 : 2;
@@ -8576,95 +8673,10 @@ function createRenderer(c, viewport) {
           ];
         }
       }
-      if (motion && dash && !s.splat) {
-        for (const g of ghostsFor(dash, dashTravel.along)) {
-          c.save();
-          c.translate(g.x * R, g.y * R);
-          c.scale(g.scale, g.scale);
-          c.globalAlpha = g.alpha * 0.28;
-          c.fillStyle = INK.paper;
-          c.beginPath();
-          c.moveTo(-R * 0.96, -R);
-          c.lineTo(R * 0.86, -R);
-          c.lineTo(R, -R * 0.86);
-          c.lineTo(R, R);
-          c.lineTo(-R * 0.9, R);
-          c.lineTo(-R * 0.96, R * 0.88);
-          c.closePath();
-          c.fill();
-          c.restore();
-        }
-        c.globalAlpha = 1;
-      }
-      if (dash && (dash.leadGlow > 0.02 || dash.trailBreak > 0.02)) {
-        const half = R * 0.98 * (dash.phase === "active" ? 1.04 : 1);
-        if (dash.leadGlow > 0.02) {
-          c.globalAlpha = Math.min(1, dash.leadGlow);
-          c.strokeStyle = INK.acid;
-          c.lineWidth = (2.2 + 3.4 * dash.leadGlow) / v.scale;
-          c.beginPath();
-          if (dash.lead.x) {
-            c.moveTo(dash.lead.x * half, -half);
-            c.lineTo(dash.lead.x * half, half);
-          }
-          if (dash.lead.y) {
-            c.moveTo(-half, dash.lead.y * half);
-            c.lineTo(half, dash.lead.y * half);
-          }
-          c.stroke();
-          c.globalAlpha = Math.min(1, dash.leadGlow) * 0.3;
-          c.lineWidth = (6 + 8 * dash.leadGlow) / v.scale;
-          c.stroke();
-        }
-        if (dash.trailBreak > 0.02) {
-          const diagonal = dash.trail.x !== 0 && dash.trail.y !== 0;
-          const n = diagonal ? 6 : 5;
-          for (let i = 0; i < n; i++) {
-            const u = i / (n - 1);
-            const push = half + u * R * (diagonal ? 1.5 : 1.1) * dash.trailBreak;
-            const fade2 = (1 - u * 0.75) * dash.trailBreak;
-            c.globalAlpha = Math.min(1, fade2) * 0.85;
-            const ink2 = i % 2 ? INK.paper : INK.acid;
-            c.strokeStyle = ink2;
-            c.lineWidth = Math.max(0.7, (2.6 - u * 1.6) / v.scale);
-            c.beginPath();
-            if (diagonal) {
-              const tx = dash.trail.x / Math.SQRT2, ty = dash.trail.y / Math.SQRT2;
-              const off = (u - 0.5) * R * 1.5;
-              const ox = tx * push - ty * off, oy = ty * push + tx * off;
-              const len = R * (0.6 + 0.5 * dash.trailBreak) * (1 - Math.abs(u - 0.5));
-              for (let g = 0; g < 3; g++) {
-                const a0 = g / 3 + 0.04, a1 = (g + 1) / 3 - 0.04;
-                line(
-                  c,
-                  ink2,
-                  Math.max(0.7, (2.6 - u * 1.6) / v.scale),
-                  ox + tx * len * a0,
-                  oy + ty * len * a0,
-                  ox + tx * len * a1,
-                  oy + ty * len * a1
-                );
-              }
-            } else if (dash.trail.x) {
-              const y0 = -half * 0.86, y1 = half * 0.86, seg = (y1 - y0) / 3;
-              for (let g = 0; g < 3; g++) {
-                const a0 = y0 + g * seg + seg * 0.18, a1 = y0 + (g + 1) * seg - seg * 0.18;
-                c.moveTo(dash.trail.x * push, a0);
-                c.lineTo(dash.trail.x * push, a1);
-              }
-            } else {
-              const x0 = -half * 0.86, x1 = half * 0.86, seg = (x1 - x0) / 3;
-              for (let g = 0; g < 3; g++) {
-                const a0 = x0 + g * seg + seg * 0.18, a1 = x0 + (g + 1) * seg - seg * 0.18;
-                c.moveTo(a0, dash.trail.y * push);
-                c.lineTo(a1, dash.trail.y * push);
-              }
-            }
-            c.stroke();
-          }
-        }
-        c.globalAlpha = 1;
-      }
+      // The elemental wake is the single launch-direction punctuation. The
+      // position sampler below is the only remaining after-image source; it
+      // records where the cube actually was instead of inventing a second
+      // velocity-shaped trail.
       const boundedBody = bodyBase && Number.isFinite(bodyBase.a) && !splat;
       if (boundedBody) {
         c.setTransform(bodyBase.a, bodyBase.b, bodyBase.c, bodyBase.d, bodyBase.e, bodyBase.f);
@@ -8734,7 +8746,9 @@ function createRenderer(c, viewport) {
       if (poseAnim.sonic > 0.02) c.restore();
       c.restore();
       const fallRow = (() => {
-        if (!motion) return null;
+        // The committed dash wake owns the motion read. A live downward
+        // velocity during that event must not resurrect airborne fall cels.
+        if (!motion || dash) return null;
         const vy = Math.round(Math.max(0, world.player.velocity.y));
         if (vy > FALL_SAMPLES) return null;
         const o = vy * FALL_ROW.width;
@@ -8777,7 +8791,7 @@ function createRenderer(c, viewport) {
         c.restore();
       }
       const upgradePhase=upgradeVisualPhase(s,motion),structural=['reach','cleaver','barrier'].includes(upgradePhase.buff?.id),visualBuff=structural?upgradePhase.buff:s.waveBuff;
-      drawCombatAccent(c,{x:p.x,y:p.y,radius:R,angle:s.slashAngle||0,age:s.slashAge,blade:s.blade,buff:visualBuff?.id,shield:structural?upgradePhase.shield:s.waveShield,finish:structural?upgradePhase.amount:1,equipment:s.equipment,sword:s.sword,motion,reach:(s.reach||1)*(s.waveBuff?.reach||1)});
+      drawCombatAccent(c,{x:p.x,y:p.y,radius:R,angle:s.slashAngle||0,age:s.slashAge,blade:s.blade,buff:visualBuff?.id,shield:structural?upgradePhase.shield:s.waveShield,finish:structural?upgradePhase.amount:1,equipment:s.equipment,sword:s.sword,motion,reach:(s.reach||1)*(s.waveBuff?.reach||1),suppressWake:!!dash});
       if(s.waveBuff?.id==='guard')drawCutExit(c,{x:p.x,y:p.y,radius:R,remaining:s.cutGrace,source:combat.enemies.get(s.cutGraceFrom)||cutExitSource,sourceId:s.cutGraceFrom,equipment:s.equipment,sword:s.sword,motion});
       if(s.waveShield>0&&s.waveBuff?.id!=='barrier'){c.save();c.strokeStyle='#d5ef9e';c.lineWidth=1.8/v.scale;for(const side of [-1,1]){c.beginPath();c.arc(p.x,p.y,R*1.43,side<0?2.3:-.85,side<0?4.0:.85);c.stroke();}c.restore();}
       if(s.sword){
@@ -9708,7 +9722,7 @@ export function drawCutExit(c,{x=0,y=0,radius=22,remaining=0,source=null,sourceI
 }
 
 /** Pure, bounded combat accents. Simulation ages, never wall-clock animation. */
-export function drawCombatAccent(c,{x=0,y=0,radius=18,angle=0,age=-1,blade=0,buff=null,shield=0,motion=true,reach=1,equipment={},sword=null,finish=1}={}){
+export function drawCombatAccent(c,{x=0,y=0,radius=18,angle=0,age=-1,blade=0,buff=null,shield=0,motion=true,reach=1,equipment={},sword=null,finish=1,suppressWake=false}={}){
  const colors={fleet:'#9be8ff',reach:'#d8f19c',breaker:'#ffb36e',linger:'#c6acff',bounty:'#ffe38b',guard:'#a0efda',barrier:'#d8f19c',comet:'#80d6ff',cleaver:'#ff996b',duelist:'#ff93c8',bastion:'#b4c9ff'};
  const tint=colors[buff]||'#d8f19c',r=radius;
  if(['fleet','comet','linger','guard'].includes(buff))return;
@@ -9724,7 +9738,7 @@ export function drawCombatAccent(c,{x=0,y=0,radius=18,angle=0,age=-1,blade=0,buf
  c.beginPath();c.moveTo(-r*.85,-r*inset);c.lineTo(r*.65,-r*inset);c.lineTo(r*.95,-r*.8);c.stroke();
  }
  }
- if(motion&&age>=0&&age<16){
+ if(!suppressWake&&motion&&age>=0&&age<16){
   const u=age/16,fade=(1-u)*(1-u);c.globalAlpha=fade;
   // Three tapered wake wedges read as propulsion, not another damage beam.
   for(let i=0;i<3;i++){const side=(i-1)*r*.7,len=r*(2.8+u*3)*(i===1?1.2:.75);c.fillStyle=i===1?'#fff5d9':tint;c.beginPath();c.moveTo(-r*.9,side);c.lineTo(-r-len,side-r*.12);c.lineTo(-r-len*.65,side+r*.19);c.closePath();c.fill();}
