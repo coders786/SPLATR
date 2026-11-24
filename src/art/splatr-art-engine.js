@@ -7519,6 +7519,22 @@ function createRenderer(c, viewport) {
       else{c.rotate(Math.PI/4);c.fillStyle='#352634';c.strokeStyle='#e1b878';c.lineWidth=4;c.fillRect(-25,-25,50,50);c.strokeRect(-25,-25,50,50);c.fillStyle='#f7df94';c.fillRect(-5,-5,10,10);}
       c.restore();
     }
+    // A lock is a real piece of the Watcher's machinery. When the blade breaks
+    // one, the world answers at that exact coordinate: a ring opens, the
+    // conduit snaps, and three fragments leave the anchor. This is intentionally
+    // local and short — the sector crossing remains the large story sentence.
+    for(const burst of n.lockBursts||[]){
+      const age=Math.max(0,burst.age||0),u=motion?Math.min(1,age/30):.18,fade=Math.max(0,1-age/30),spin=(burst.index||0)*.7+u*1.8;
+      c.save();c.translate(burst.x,burst.y);c.rotate(spin);c.globalAlpha=.8*fade;
+      c.strokeStyle='#e6ff78';c.lineWidth=4/scale;c.beginPath();c.arc(0,0,(38+u*35)/scale,0,Math.PI*2);c.stroke();
+      c.globalAlpha=.9*fade;c.strokeStyle='#ffd487';c.lineWidth=2/scale;
+      for(let i=0;i<3;i++){
+        const a=i*Math.PI*2/3-.4,r=(22+u*54)/scale,x=Math.cos(a)*r,y=Math.sin(a)*r;
+        c.beginPath();c.moveTo(Math.cos(a)*12/scale,Math.sin(a)*12/scale);c.lineTo(x,y);c.stroke();
+        c.fillStyle=i===1?'#fff2be':'#ddff89';c.fillRect(x-3/scale,y-3/scale,6/scale,6/scale);
+      }
+      c.restore();
+    }
     c.restore();
   }
   function narrativeTrack(n,width,height){

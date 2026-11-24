@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRun} from '../src/run.js';
+import {createRenderer} from '../src/renderer.js';
+import {installDom,createDisplay} from './support/display.js';
 import {placePlayer, stopPlayer} from '../src/physics.js';
 
 function shotAt(run,x,y,dx=0,dy=-42,ticks=12){
@@ -29,6 +31,10 @@ test('locks require the live forward blade and seal requires all three plus an u
  // A live blade facing away cannot cut a lock behind it.
  shotAt(run,first.x,first.y+130,0,42,2);assert.equal(first.broken,false);
  shotAt(run,first.x,first.y+130);assert.equal(first.broken,true);
+ assert.equal(n.lockBursts.length,1,'the broken anchor leaves a local visual burst');
+ assert.deepEqual([n.lockBursts[0].x,n.lockBursts[0].y],[first.x,first.y]);
+ for(let i=0;i<30;i++)run.tick();
+ assert.equal(n.lockBursts.length,0,'the burst settles before the next story beat');
  let seal=n.seal;shotAt(run,seal.x,seal.y+130);assert.equal(n.sector,1,'two missing locks block the seal');
  for(const lock of n.locks.filter(l=>!l.broken))shotAt(run,lock.x,lock.y+130);
  assert.ok(n.locks.every(l=>l.broken));assert.equal(n.seal.ready,true);assert.ok(!run.world.engine.world.bodies.some(b=>b.label==='sector-seal'),'unlocked barrier no longer blocks the blade crossing');
@@ -52,6 +58,20 @@ test('sectors continue through 04 with new locks and nonblocking reactions',()=>
   assert.equal(run.state.phase,'playing');assert.equal(run.state.wave.phase,'combat');
  }
  run.dispose();
+});
+
+test('an anchor break has a real local render beat, not only a boolean lock state',()=>{
+ const dom=installDom();
+ try{
+  const {canvas,ctx}=createDisplay(880,710),run=createRun(23,()=>{},{waveMode:true,continuous:true});
+  run.state.phase='playing';
+  const lock=run.state.narrative.locks[0];shotAt(run,lock.x,lock.y+130);
+  assert.equal(run.state.narrative.lockBursts.length,1);
+  const renderer=createRenderer(canvas);
+  renderer.tick(run,true);renderer.draw(run,1,null,true);
+  assert.ok(ctx.__ops.length>0,'the narrative frame painted');
+  renderer.dispose();run.dispose();
+ }finally{dom.uninstall();}
 });
 
 test('sector-three conduit damage follows actual prism destruction',()=>{

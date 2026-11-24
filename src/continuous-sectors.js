@@ -19,7 +19,7 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
  // once -- `arena.y` is mutated sector-to-sector as the world grows upward.
  const LIFT = -arena.y;
  const wave=state.wave={number:1,phase:'combat',entry:0,age:0,total:0,remaining:0,cleared:0,platform:null,spawnPadGone:false,offers:[],recommendation:null,upgradeChosen:false};
- const story=state.narrative={intro:!!intro,introAge:0,sector:1,locks:[],seal:null,fracture:null,reaction:null,rest:null,conduits:3};
+ const story=state.narrative={intro:!!intro,introAge:0,sector:1,locks:[],lockBursts:[],seal:null,fracture:null,reaction:null,rest:null,conduits:3};
  let targets=[],lastPosition={...world.player.position}, prismIds=new Set(),sealBody=null,sealGeometry=null;
  function body(x,y,r,label){return Matter.Bodies.circle(x,y,r,{isStatic:true,isSensor:true,label});}
  function removeSeal(){
@@ -29,6 +29,7 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
  }
  function install(){
   removeSeal();
+  story.lockBursts=[];
   const top=arena.y;
   story.locks=[-310,0,310].map((x,i)=>({id:i,x,y:top+370,r:38,broken:false,body:body(x,top+370,38,'anchor-lock')}));
   story.seal={x:arena.x+arena.w/2,y:top+205,w:arena.w,h:24,ready:false,armed:false};
@@ -125,6 +126,10 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
   const active=state.phase==='playing',directorActive=active&&wave.entry<=0;
   if(story.intro)story.introAge+=t;
   if(story.reaction){story.reaction.age+=t;if(story.reaction.age>=48)story.reaction=null;}
+  if(story.lockBursts.length){
+   for(const burst of story.lockBursts)burst.age+=t;
+   story.lockBursts=story.lockBursts.filter(burst=>burst.age<30);
+  }
   wave.age+=t;wave.remaining=combat.enemies.size;
   // CHUNK 4: the Monolith's fall is checked unconditionally, not inside the
   // blade gate — the seam opens even if the killing cut spent the blade.
@@ -159,6 +164,8 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
     const hits=new Set(bladeHits(targets.filter(x=>!x.broken)));
     for(const lock of targets)if(!lock.broken&&hits.has(lock.body)){
      lock.broken=true;story.conduits=Math.max(0,story.conduits-1);story.sparkAge=30;state.edge=Math.min(state.edgeMax,state.edge+1);
+     story.lockBursts.push({x:lock.x,y:lock.y,index:lock.id,age:0});
+     if(story.lockBursts.length>3)story.lockBursts.shift();
      emit('anchorBreak',{x:lock.x,y:lock.y,sector:wave.number,index:lock.id});
     }
     const seal=story.seal;seal.ready=targets.every(x=>x.broken);if(seal.ready&&sealBody)removeSeal();
