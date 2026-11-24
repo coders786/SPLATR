@@ -2,6 +2,7 @@ import {BUFF_PRESENTATION,buffPresentation} from './buff-presentation.js';
 import {iconNode,prependIcon,BUFF_ICONS,STAGE_ICONS} from './ui-icons.js';
 import {controlCue} from './control-cues.js';
 import {breakthroughLabel,breachCue} from './breakthrough.js';
+import {rushReadout} from './hud-copy.js';
 import {SPEED_PACE} from './speed-pace.js';
 import {drawSwordWeapon,drawEncounterRoster,drawWaveUpgradePreview} from './art/splatr-art-engine.js';
 function luckyStamp(copy){const stamp=document.createElement('small');stamp.className='buff-lucky';stamp.textContent='LUCKY';stamp.setAttribute('aria-hidden','true');stamp.title='Boosted roll · Normally '+copy.usualStat;return stamp;}
@@ -128,11 +129,19 @@ const paceAction=pace.querySelector('.pace-action'),paceSpeed=pace.querySelector
    const banks=wave.cleanBanks;
    bankFeedback.dataset.active=String(!!banks?.flash);
    bankFeedback.textContent=banks?.flash?`${banks.steered?'STEERED BANK':'CLEAN BANK'}${banks.chain>1?' ×'+banks.chain:''} · ${Math.round(banks.retention*100)}%`:run.state.breakthrough?breakthroughLabel(run.state.breakthrough):banks?.total?`${banks.total} BANKS · ×${banks.best}`:'';
-   paceAction.textContent=wave.phase==='breach'?breachCue(run.state).title:run.state.phase==='ready'?'LAUNCH':entering?'GET READY':p.held?'PACE READY':p.status==='holding'?'HOLD PACE':p.status==='recover'?'RECOVER':'BUILD SPEED';
+   // ── CHUNK 1: ONE BAR, ONE WORD ───────────────────────────────────────
+   // HOLD PACE, PACE READY, the overcharge pill and two raw speed numbers
+   // were three names for this one meter, in three corners of the screen. The
+   // bar is RUSH now. The speed figures stay in the DOM (the meter's aria
+   // values and the headless checks read them) but are never painted: see
+   // `.pace-speed` in style.css.
    const display=Math.round(p.displaySpeed*60),target=Math.round(p.target*60),percent=Math.round(p.progress/SPEED_PACE.goalTicks*100);
+   const rush=rushReadout(p,run.state.breakthrough,run.state.drive);
+   paceAction.textContent=wave.phase==='breach'?breachCue(run.state).title:run.state.phase==='ready'?'LAUNCH':entering?'GET READY':rush.label;
+   pace.dataset.ready=String(rush.ready);
    paceSpeed.textContent=`${display} px/s`;
    paceLabel.textContent=`TARGET ${target}+`;
-   paceProgress.textContent=run.state.breakthrough?.sonic?'SONIC HELD':cue.stage==='surge'?`HYPER ${(run.state.breakthrough.surgeTicks/60).toFixed(1)}s`:cue.stage==='recharge'?`RECHARGE ${Math.round(cue.progress*100)}%`:run.state.breakthrough?.paceReady?'HYPER READY':`HYPER CHARGE ${percent}%`;
+   paceProgress.textContent=`${Math.round(rush.fill*100)}%`;
    pace.dataset.relevant=String(wave.phase==='breach'||cue.stage!=='pace'||p.progress>0);
    const ceiling=SPEED_PACE.displayCeiling;
    paceTrack.style.background=`linear-gradient(to right,#71677e 0%,#71677e ${p.target/ceiling*100}%,#758c48 ${p.target/ceiling*100}%,#758c48 100%)`;

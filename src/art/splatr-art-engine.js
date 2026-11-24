@@ -5821,9 +5821,9 @@ function createBackdrop(c) {
         c.font = "italic 800 39px Riot,Impact,sans-serif";
         c.fillText("THROUGHCUT", -183, 152);
         line(c, "#652843", 2, -179, 161, 183, 161);
-        c.font = "italic 800 29px Riot,Impact,sans-serif";
-        c.textAlign = "right";
-        c.fillText("+300", 180, 151);
+        // CHUNK 1: the stray "+300" floating-score sticker used to sit here,
+        // on top of the hero's key art, over a poster that has nothing to do
+        // with scoring. A price tag on a character portrait.
       }
       c.restore();
     }
@@ -7099,6 +7099,12 @@ function createRenderer(c, viewport) {
   const trail = [], shards = [], pops = [], beams = [], imprints = [], sparks = [];
   const dashDust = [];
   const wardBreaks=[],contactBursts=[];let cutExitSource=null;
+  // CHUNK 1: view-time payloads owned by the shell (main.js): the screen-space
+  // aim ring and the "what hit me" reaction. Never read from the simulation.
+  let hitFeedbackView = null;
+  function setAimFeedback({ hit = null } = {}) {
+    hitFeedbackView = hit;
+  }
   let dashBurstAt = -1, dashBurstSwing = null;
   let dashTravel = { age: null, x: 0, y: 0, along: 0 };
   let viewListener = null;
@@ -7804,6 +7810,61 @@ function createRenderer(c, viewport) {
     watcherMask(c,watcherX,watcherY,Math.min(w,h)*.00092+.25,{glow:watcherGlow,eye:returnShot?.22:.42+.45*(1-phase),split:returnShot?.18:phase>.82?(phase-.82)*.25:0});
     c.restore();
   }
+  // ── CHUNK 1: "WHAT HIT ME?" ──────────────────────────────────────────────
+  // One red line from the cube to the body that hit it, an impact ring on
+  // that body, and a rim flash at the screen edge. The rim is capped at 25%
+  // opacity by design (src/damage-feedback.js): a flash bright enough to hide
+  // the attacker is the bug, not the feature.
+  function drawHitFeedback(c, w, h, s, v, p, motion, time, fb) {
+    if (!fb || !fb.live) return;
+    const dir = fb.direction;
+    if (fb.rim > 0) {
+      const inner = c.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.32, w / 2, h / 2, Math.max(w, h) * 0.78);
+      inner.addColorStop(0, 'rgba(200,16,46,0)');
+      inner.addColorStop(0.62, `rgba(200,16,46,${fb.rim * 0.5})`);
+      inner.addColorStop(1, `rgba(125,0,24,${fb.rim})`);
+      c.save();
+      c.fillStyle = inner;
+      c.fillRect(0, 0, w, h);
+      c.restore();
+    }
+    if (!dir) return;
+    const px = (p.x - v.x) * v.scale, py = (p.y - v.y) * v.scale,
+      ex = (dir.x - v.x) * v.scale, ey = (dir.y - v.y) * v.scale,
+      ramp = Math.max(0, 1 - (fb.age || 0) / 36);
+    c.save();
+    c.lineCap = 'round';
+    // The connector: dark underlay then the red line, so it reads over any
+    // wall. It is clipped to the viewport by construction (both ends are).
+    const ux = Math.cos(dir.angle), uy = Math.sin(dir.angle),
+      startX = px + ux * 26, startY = py + uy * 26,
+      pull = Math.min(1, (fb.age || 0) / 6),
+      endX = startX + (ex - startX) * pull, endY = startY + (ey - startY) * pull;
+    c.globalAlpha = 0.9 * ramp;
+    c.strokeStyle = '#0b0408';
+    c.lineWidth = 7;
+    c.beginPath(); c.moveTo(startX, startY); c.lineTo(endX, endY); c.stroke();
+    c.strokeStyle = '#ff2b4a';
+    c.lineWidth = 3;
+    c.beginPath(); c.moveTo(startX, startY); c.lineTo(endX, endY); c.stroke();
+    // Arrowhead at the attacker's end.
+    const ah = 11;
+    c.fillStyle = '#ff2b4a';
+    c.beginPath();
+    c.moveTo(ex + ux * 12, ey + uy * 12);
+    c.lineTo(ex - ux * 2 - uy * ah, ey - uy * 2 + ux * ah);
+    c.lineTo(ex - ux * 2 + uy * ah, ey - uy * 2 - ux * ah);
+    c.closePath(); c.fill();
+    // The impact ring tightens onto the body.
+    const ringR = 34 - 20 * fb.impact;
+    c.globalAlpha = 0.9 * ramp;
+    c.strokeStyle = '#ffd0d8';
+    c.lineWidth = 2.5;
+    c.beginPath(); c.arc(ex, ey, ringR, 0, Math.PI * 2); c.stroke();
+    c.globalAlpha = 1;
+    c.restore();
+  }
+
   function drawCutsceneOverlay(c, w, h, s, v, p, time, motion) {
     const cs = s.cutscene;
     if (!cs) return;
@@ -9140,20 +9201,50 @@ function createRenderer(c, viewport) {
     }
     c.restore();
     if(s.visualTutorial?.guide?.kind==='dodge')drawTutorialGuidance(c,v,s.visualTutorial,p,motion,device);
+    // ── CHUNK 1: THE CUT CHARGES, ON THE CUBE ────────────────────────────
+    //
+    // These three marks already existed — as three 7×3.6px bars tucked under
+    // the cube at a fixed screen size, which at a 960×540 embed is a smudge
+    // nobody can count, in the one place the eye is. They are the whole
+    // resource the game is built on ("NO CUTS" was a real dead end for new
+    // players) and the far-right HUD copy of them has been deleted.
+    //
+    // So: same place, same idea, drawn at the player's own scale with a dark
+    // well, a full-height block per charge, a crisp white recharge fill, and a
+    // red pulse when empty. Screen-space, so the size is honest at every zoom.
     {
-      const ux = s.visualTutorial ? 1 : 1 / v.scale, sp = toScreen(v, p);
-      if (!s.opening?.free && (s.phase !== "ready" || s.visualTutorial))
-        for (let i = 0; i < 3; i++) {
-          const x = sp.x + (i - 1) * 9 * ux, y = s.visualTutorial ? sp.y + R * Math.SQRT2 * v.scale + 8 : sp.y + (R * Math.SQRT2 + 9) * ux;
-          c.fillStyle = INK.black;
-          c.fillRect(x - 4.6 * ux, y - ux, 9.2 * ux, 6 * ux);
-          c.fillStyle = i < s.edge ? INK.acid : "#766978";
-          c.fillRect(x - 3.5 * ux, y, 7 * ux, 3.6 * ux);
-          if (i === s.edge) {
+      const ux = 1 / Math.max(0.25, v.scale), sp = toScreen(v, p);
+      if (!s.opening?.free && (s.phase !== "ready" || s.visualTutorial)) {
+        const max = Math.max(1, s.edgeMax || 3),
+          now = clamp(s.edge ?? max, 0, max),
+          empty = now <= 0,
+          pulse = motion ? 0.5 + 0.5 * Math.sin(time * 0.42) : 0.7,
+          blockW = 9 * ux, blockH = 8 * ux, gap = 3.5 * ux,
+          total = max * blockW + (max - 1) * gap,
+          y = s.visualTutorial ? sp.y + R * Math.SQRT2 * v.scale + 10 * ux : sp.y + (R * Math.SQRT2 + 8) * ux,
+          x0 = sp.x - total / 2;
+        // A dark plate under the row so the charges read on a lit floor or a
+        // white flash frame alike.
+        c.fillStyle = 'rgba(10,8,16,0.72)';
+        c.fillRect(x0 - 3 * ux, y - 2 * ux, total + 6 * ux, blockH + 4 * ux);
+        for (let i = 0; i < max; i++) {
+          const x = x0 + i * (blockW + gap), filled = i < now;
+          c.fillStyle = filled ? INK.acid : empty ? `rgba(255,53,84,${0.45 + 0.55 * pulse})` : '#4b4050';
+          c.fillRect(x, y, blockW, blockH);
+          if (filled) {
+            // One white notch per block so the count survives a colour-blind
+            // read and the shapes are countable at a glance.
             c.fillStyle = INK.paper;
-            c.fillRect(x - 3.5 * ux, y, 7 * ux * Math.min(1, (s.recharge || 0) / (s.regenWindow || 60)), 3.6 * ux);
+            c.fillRect(x + blockW * 0.28, y + blockH * 0.28, blockW * 0.44, blockH * 0.44);
+          }
+          if (i === now) {
+            // The charge being REGENERATED fills in white from the left, so an
+            // empty row says when it will not be empty.
+            c.fillStyle = INK.paper;
+            c.fillRect(x, y, blockW * Math.min(1, (s.recharge || 0) / (s.regenWindow || 60)), blockH);
           }
         }
+      }
     }
     if (!s.visualTutorial && (s.phase === "playing" || s.caught) && !s.opening?.finishing) pointer(c, v, p, nearest);
     if (s.warning > 0 && s.phase === "playing") {
@@ -9259,6 +9350,16 @@ function createRenderer(c, viewport) {
     drawSpine(c, w, h, s, motion, time);
     drawCutsceneOverlay(c, w, h, s, v, p, time, motion);
     c.restore();
+    // CHUNK 1: the two pieces of aim/damage feedback that belong in SCREEN
+    // space, drawn last so nothing in the world can cover them. Both read a
+    // view-time payload the shell sets (`setAimFeedback`); neither invents
+    // state. The reticle exists because the OS cursor is hidden over the
+    // arena; the hit line exists because "what hurt me?" was the loudest
+    // question in the whole report.
+    c.save();
+    c.setTransform(viewport.width / w, 0, 0, viewport.height / h, 0, 0);
+    drawHitFeedback(c, w, h, s, v, p, motion, time, hitFeedbackView);
+    c.restore();
   }
   return {
     reset,
@@ -9277,6 +9378,8 @@ function createRenderer(c, viewport) {
     setShakeLevel(level) {
       shakeLevel = level === "off" || level === "low" ? level : "full";
     },
+    /** CHUNK 1: screen-space aim ring + damage reaction, supplied per frame. */
+    setAimFeedback,
     // Read-only hooks for the headless camera checks.
     effectState() {
       return { ghosts: ghosts.size, trail: trail.length, beams: beams.length };

@@ -8,7 +8,7 @@ import { magnetize } from './aim.js';
 /** Exactly one captured primary pointer. A hold remembers what was under the
  * finger at press, so camera motion doesn't steal a target before release.
  * Drag direction follows the pointer in display pixels, independent of zoom. */
-export function createInput(canvas, { get, active, point, assist, engage, commit, lock }) {
+export function createInput(canvas, { get, active, point, assist, engage, commit, lock, onPointerMove = null }) {
   const listeners=[];let disposed=false;
   const listen=(target,type,handler,options)=>{target.addEventListener(type,handler,options);listeners.push(()=>target.removeEventListener?.(type,handler,options));};
   const enabled=()=>!disposed&&active();
@@ -172,6 +172,13 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
     r.focus(true);
   });
   listen(window, 'pointermove', (e) => {
+    // CHUNK 1: the shell owns the drawn reticle (the OS cursor is hidden over
+    // the arena), so every move is reported — not only the ones that belong to
+    // a captured pull. Canvas-local CSS px, the same space the ring is drawn in.
+    if (onPointerMove) {
+      const box = canvas.getBoundingClientRect();
+      onPointerMove({ x: e.clientX - box.left, y: e.clientY - box.top, type: e.pointerType || 'mouse' });
+    }
     if (pointer?.id === e.pointerId) {
       pointer=movePull(pointer,e.clientX,e.clientY);
       showGesture();

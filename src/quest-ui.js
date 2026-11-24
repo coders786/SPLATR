@@ -54,9 +54,15 @@ export function createQuestUI({
   if(teaching){const trainingButton=el('button','control-practice-entry','LIVE ENEMY TRAINING');trainingButton.type='button';trainingButton.onclick=()=>{boardDialog.close();teaching();};boardDialog.append(trainingButton);}
   if(practice){const controlButton=el('button','control-practice-entry control-drill-entry','CONTROL PRACTICE');controlButton.type='button';prependIcon(controlButton,'practice');controlButton.onclick=()=>{boardDialog.close();practice();};boardDialog.append(controlButton,el('p','control-entry-note','Safe arena. Actual controls. No damage or rewards.'));}
   boardDialog.append(picker);document.querySelector('#game').append(boardDialog);
-  const questButton=el('button','choice quiet','Learn');questButton.id='quests-btn';questButton.type='button';
-  questButton.onclick=()=>{resetInput();if(startTutorial)startTutorial();else boardDialog.showModal();};
-  document.querySelector('#manual-btn').before(questButton);
+  // CHUNK 1: the title used to show BOTH 'Learn' and 'Field manual', and both
+  // opened the same panel (startTutorial resolves to open('manual')). One door
+  // now: QUESTS, which is a different thing, sitting beside the single
+  // practice/help door. Nothing on the menu is a synonym for anything else.
+  const questButton=el('button','choice quiet','Quests');questButton.id='quests-btn';questButton.type='button';
+  questButton.onclick=()=>{resetInput();boardDialog.showModal();};
+  // The manual button is the practice door now; its label is set in index.html.
+  void startTutorial;
+  document.querySelector('#manual-btn').after(questButton);
   boardDialog.addEventListener('close',resetInput);
   boardDialog.addEventListener('keydown',e=>e.stopPropagation());boardDialog.addEventListener('keyup',e=>e.stopPropagation());
   const liveKills=el('div','live-kills','KILLS 0');document.querySelector('.score-lock').append(liveKills);

@@ -16,7 +16,12 @@ export function bankBreakthrough(previous){
  const sonic=!previous.sonic&&previous.surgeTicks>0;
  return {state:{...previous,banks:previous.banks+1,sonic:previous.sonic||sonic},sonic};
 }
-export function breakthroughLabel(p){return p?.sonic?'SONIC HELD':p?.surgeTicks>0?'HYPER · BANK NOW':p?.paceReady&&!p.surgeSpent?'HYPER READY · NEXT LAUNCH':p?.paceReady?'HOLD PACE TO RECHARGE':'BUILD PACE FOR HYPER';}
+/**
+ * CHUNK 1: the same five states, named the way the HUD names the meter they
+ * belong to. `HOLD PACE` / `PACE READY` were a second vocabulary for RUSH in a
+ * second corner of the screen; there is one meter and one word now.
+ */
+export function breakthroughLabel(p){return p?.sonic?'RUSH HELD':p?.surgeTicks>0?'RUSH HELD · BANK NOW':p?.paceReady&&!p.surgeSpent?'RUSH READY · NEXT LAUNCH':p?.paceReady?'HOLD PACE TO RECHARGE':'BUILD RUSH';}
 export function placeBreach(arena,player,view){
  const v=view||{x:player.x-320,y:player.y-220,w:640,h:440};
  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));

@@ -1529,9 +1529,22 @@ body:has(#panel[open]) #hud {
 /* The hull row shakes when it loses a plate. `data-hit` is set for one frame,
    then cleared; the animation runs on the attribute flip, so it needs no
    timers and cannot stack up if the player is hit twice quickly. */
-.hull[data-hit] #hull {
+.hull[data-hit] #health-bar {
   animation: hull-break 380ms cubic-bezier(0.3, 1.5, 0.5, 1);
   transform-origin: 50% 50%;
+}
+/* CHUNK 1: the hull's own box. 24px tall, one hard-edged block per point with
+   black separations -- a bar you can count from across a room at 960x540,
+   with the game moving. Declared here (next to its own overrides) and before
+   the responsive rules that narrow it. */
+#health-bar {
+  display: flex;
+  gap: 3px;
+  height: 24px;
+  padding: 3px;
+  background: #150e19;
+  border: 1px solid #4d2b3c;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
 }
 /* A plate that just went dark reads as a break rather than a fade. */
 .hull i {
@@ -1554,12 +1567,12 @@ body:has(#panel[open]) #hud {
 
 /* Reduced motion: acknowledge without moving. Colour and opacity only. */
 @media (prefers-reduced-motion: reduce) {
-  .hull[data-hit] #hull,
+  .hull[data-hit] #health-bar,
   #score[data-kick],
   #chain[data-flare] {
     animation: none;
   }
-  .hull[data-hit] #hull {
+  .hull[data-hit] #health-bar {
     outline: 2px solid var(--hot);
   }
   #score[data-kick] {
@@ -1984,7 +1997,7 @@ body:has(#panel[open]) #hud {
 #last-damage b{font:700 9px var(--mono);color:#ffabb2;letter-spacing:.06em}
 #last-damage span{font:700 12px var(--mono)}
 .hull[data-critical] small,.hull[data-critical] #health-value{color:#ffadb1}
-.hull[data-critical] #hull{outline:1px solid #ffadb1;outline-offset:3px}
+.hull[data-critical] #health-bar{outline:1px solid #ffadb1;outline-offset:3px}
 #combat-status:not([hidden]){position:absolute;left:var(--gutter);bottom:86px;max-width:min(245px,55vw);display:flex;flex-direction:column;gap:3px;padding:6px 9px;background:#171321f2;border-left:3px solid #e5ebae;color:#fff6e8;line-height:1.2;text-shadow:0 1px 1px #000;pointer-events:none}
 #combat-status b{font:700 10px var(--mono);color:#e5ebae;letter-spacing:.04em}
 #combat-status span{font:600 11px/1.25 var(--mono)}
@@ -2151,7 +2164,7 @@ body:has(#panel[open]) #hud {
    The ONLY legible text allowed mid-play. One chip, ≤4 words, acid on
    #101310, slight skew. Fade in fast, fade out slow; never blinks, never
    stacks. aria-hidden by contract. */
-.story-chip{position:absolute;left:50%;top:60%;transform:translate(-50%,-50%) skewX(-6deg);z-index:8;pointer-events:none;user-select:none;font:600 17px/1 'Space Grotesk',sans-serif;letter-spacing:.18em;color:#101310;background:#ddff89;padding:.38em .95em;box-shadow:0 2px 18px rgba(221,255,137,.35),0 0 0 1px #101310 inset;opacity:0;transition:opacity .7s ease}
+.story-chip{position:absolute;left:50%;top:auto;bottom:calc(var(--foot,24px) + 34px);transform:translateX(-50%) skewX(-6deg);z-index:8;pointer-events:none;user-select:none;font:800 13px/1 var(--mono);letter-spacing:.16em;color:#101310;background:#ddff89;padding:.38em .95em;box-shadow:0 2px 18px rgba(221,255,137,.35),0 0 0 1px #101310 inset;opacity:0;transition:opacity .7s ease}
 .story-chip.on{opacity:1;transition:opacity .22s ease}
 .story-chip[hidden]{display:none}
 @media(prefers-reduced-motion:reduce){.story-chip{transition:none}}
@@ -2293,3 +2306,363 @@ body:has(#panel[open]) #hud {
  .teaching-lesson-card-copy strong{font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){.teaching-lesson-card{transition:none}.teaching-lesson-card:hover,.teaching-lesson-card:focus-visible,.teaching-lesson-card[aria-pressed=true]{transform:none}}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CHUNK 1 — CLEAR SIGHTLINES, AN OBVIOUS HULL AND A CLEAN HUD
+   ══════════════════════════════════════════════════════════════════════════
+   Three complaints, one corner.
+
+     1. The hull was four 7px amber blocks in the top-right, next to a tiny
+        "3/3", while the top-left carried the only big number on screen. A
+        player watching their score never saw health at all. The health bar now
+        lives DIRECTLY under the score, chunky, ruby, segmented.
+
+     2. Every meter in that top-right column was a 7px skew that only made
+        sense if you already knew what it was called. The one that mattered
+        during a launch — the cut charges — was the smallest thing on the HUD
+        and lived furthest from the cube. It is now drawn on the cube itself
+        (canvas, in the engine) and the far-right corner warning about it is
+        gone.
+
+     3. The HUD was shouting in six places. RUSH replaces three of them.
+
+   Nothing here is a new layout system: the same anatomy, made legible.
+   ------------------------------------------------------------------------ */
+
+/* ── THE HULL, UNDER THE SCORE ─────────────────────────────────────────── */
+#hull-block {
+  margin-top: 7px;
+  width: max-content;
+  min-width: 168px;
+  filter: drop-shadow(1px 2px 0 #130e1a);
+}
+#hull-block .hull-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 3px;
+}
+#hull-block .hull-head span {
+  font: 700 10px/1 var(--mono);
+  letter-spacing: 0.18em;
+  color: #f3c3cd;
+  text-transform: uppercase;
+}
+#hull-block .hull-head b {
+  font: italic 800 15px/1 var(--type);
+  color: #ffdfe5;
+  font-variant-numeric: tabular-nums;
+}
+/* The blocks themselves. */
+#health-bar i {
+  display: block;
+  flex: 1 1 0;
+  min-width: 22px;
+  background: linear-gradient(180deg, #ff6e86, #e01f4c 62%, #9d0c31);
+  box-shadow: inset 0 1px 0 #ffd3da80;
+  transform-origin: center;
+  transition: background 160ms linear, opacity 160ms linear;
+}
+/* Empty is a dark well, not an absent element: the player must still be able
+   to count how many they HAVE LOST. */
+#health-bar i.empty {
+  background: repeating-linear-gradient(135deg, #33202c 0 4px, #241622 4px 8px);
+  box-shadow: none;
+}
+/* A block that just broke cracks and shakes exactly once. The animation is
+   the acknowledgement; when it is over, the well stays. */
+#health-bar i.broke {
+  animation: hull-crack 420ms cubic-bezier(0.3, 1.7, 0.4, 1) 1;
+}
+@keyframes hull-crack {
+  0% { transform: translateX(0) scaleY(1); filter: brightness(2.4); }
+  22% { transform: translateX(-3px) scaleY(0.72); }
+  46% { transform: translateX(3px) scaleY(1.08); }
+  70% { transform: translateX(-1px) scaleY(1); }
+  100% { transform: translateX(0) scaleY(1); filter: none; }
+}
+/* One health left: the whole bar breathes red and the screen corners glow so
+   the state is legible without looking at the bar at all. */
+#hull-block[data-critical] #health-bar i:not(.empty) {
+  animation: hull-critical 1100ms ease-in-out infinite alternate;
+}
+@keyframes hull-critical {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.6); }
+}
+#game[data-critical='true']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 58%, #ff2b4a2e 100%);
+  animation: hull-rim 1100ms ease-in-out infinite alternate;
+}
+@keyframes hull-rim {
+  from { opacity: 0.45; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #health-bar i.broke,
+  #hull-block[data-critical] #health-bar i:not(.empty),
+  #game[data-critical='true']::after {
+    animation: none;
+  }
+}
+
+/* ── THE DAMAGE RIM (from src/damage-feedback.js) ─────────────────────────
+   One red frame-edge flash on the tick health drops. 25% opacity by design:
+   a flash bright enough to hide the thing that just hit you is the bug. */
+#damage-rim {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(ellipse at 50% 50%, transparent 52%, #c8102e 78%, #7d0018 100%);
+  transition: opacity 90ms linear;
+}
+#damage-rim.on {
+  opacity: 0.25;
+}
+@media (prefers-reduced-motion: reduce) {
+  #damage-rim {
+    transition: none;
+  }
+}
+
+/* ── THE TARGETING RING ───────────────────────────────────────────────────
+   The OS cursor is hidden over the arena while a run is live (see
+   #game[data-screen='run'] #arena below) and this ring replaces it. Drawn from
+   the pointer, not from the cube, so it always answers "where am I aiming?" */
+#reticle {
+  position: absolute;
+  z-index: 6;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  pointer-events: none;
+  will-change: transform, left, top;
+}
+#reticle[hidden] {
+  display: none;
+}
+#reticle svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+#reticle .reticle-ring {
+  fill: none;
+  stroke: #fff8ec;
+  stroke-width: 2;
+}
+#reticle .reticle-tick {
+  stroke: #deff52;
+  stroke-width: 2.4;
+  stroke-linecap: butt;
+}
+#reticle .reticle-dot {
+  fill: #fff8ec;
+}
+#reticle[data-charging='true'] .reticle-ring {
+  stroke: #deff52;
+  stroke-width: 2.6;
+}
+#reticle[data-warn='true'] .reticle-ring {
+  stroke: #ff5f7a;
+}
+#reticle[data-warn='true'] .reticle-dot {
+  fill: #ff5f7a;
+}
+#reticle[data-refused='true'] .reticle-ring {
+  stroke: #ff3554;
+  stroke-width: 3;
+}
+/* A refused click: a hard X snapped across the ring, once. */
+#reticle[data-refused='true'] .reticle-cross {
+  opacity: 1;
+}
+#reticle .reticle-cross {
+  opacity: 0;
+  stroke: #ff3554;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+#game[data-screen='run'] #arena {
+  cursor: none;
+}
+/* Touch has no hover cursor to hide, and the OS pointer there is the finger. */
+@media (pointer: coarse) {
+  #reticle {
+    display: none !important;
+  }
+  #game[data-screen='run'] #arena {
+    cursor: default;
+  }
+}
+
+/* ── ONE RUSH BAR, THREE TOOLS REMOVED ────────────────────────────────────
+   `HOLD PACE`, `PACE READY`, `OVERCHARGED — LETHAL` and two raw `px/s` numbers
+   are now one bar with one word. The far-right `NO CUTS / RECHARGING` pill and
+   the `OVERCHARGED` pill are deleted outright: the cut charges live under the
+   cube, where the player is already looking. */
+.wave-hud .speed-pace {
+  min-width: 170px;
+  border-top: 1px solid #ffffff1a;
+  padding-top: 5px;
+}
+.speed-pace .speed-pace-readout {
+  justify-content: flex-start;
+  gap: 8px;
+}
+.speed-pace .pace-action {
+  font: 800 12px/1 var(--mono);
+  letter-spacing: 0.12em;
+  color: #fff4d8;
+}
+.speed-pace[data-ready='true'] .pace-action {
+  color: #ffe083;
+  text-shadow: 0 0 10px #ffd35c66;
+}
+/* The px/s readout is kept in the DOM for assistive tech and tests, never
+   painted. `visibility` keeps its box so the flex row does not jump. */
+.speed-pace .pace-speed {
+  visibility: hidden;
+  min-width: 0;
+  width: 0;
+  overflow: hidden;
+}
+.speed-pace .pace-caption {
+  justify-content: flex-start;
+  gap: 8px;
+}
+/* TARGET+ is gone; the threshold is still drawn on the track itself, because
+   a mark the player can see needs no number beside it. */
+.speed-pace .pace-target-label {
+  display: none;
+}
+.speed-pace .pace-progress {
+  font: 700 10px/1 var(--mono);
+  letter-spacing: 0.1em;
+  color: #e7f6b5;
+}
+.speed-pace .pace-track {
+  height: 10px;
+  margin: 6px 0 4px;
+  border-radius: 0;
+}
+/* A refused cut no longer earns a sentence, but the bar still has to say
+   "nothing is coming back yet", so the empty notch pulses. */
+.speed-pace[data-empty='true'] .pace-action {
+  color: #ff8497;
+}
+
+/* ── THE BOSS-CHARGE RIBBON ───────────────────────────────────────────────
+   Same mount, plain-English words. `SHATTER EVENT` / `FAULT LINES` /
+   `CRITICAL COLLAPSE` described the world's mood to a player who wanted to
+   know what they were charging. The bar is the goal now, and the words under
+   it are steps a person can picture. */
+.fracture-ribbon {
+  height: 26px;
+}
+.fracture-ribbon .fracture-name {
+  font: 800 9px/1 var(--mono);
+  letter-spacing: 0.2em;
+  color: #e9dcff;
+}
+.fracture-ribbon .fracture-track {
+  height: 6px;
+}
+.fracture-ribbon .fracture-pct {
+  font: italic 800 14px/1 var(--type);
+  letter-spacing: 0.02em;
+}
+.fracture-ribbon .fracture-tier {
+  font: 700 9px/1 var(--mono);
+  letter-spacing: 0.08em;
+  color: #cdb9e8;
+}
+/* The menu mount can afford one more line of explanation. */
+.fracture-menu-foot em {
+  font-style: normal;
+}
+
+/* ── THE STARTER HINT ─────────────────────────────────────────────────────
+   One four-word line at the bottom edge of the field, retired by the first
+   kill. It is a ticker, never a modal: nothing here can cover an enemy. */
+#start-hint {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--foot, 24px) + 6px);
+  transform: translateX(-50%) skewX(-6deg);
+  z-index: 6;
+  pointer-events: none;
+  padding: 6px 16px 7px;
+  background: #101310e6;
+  border: 1px solid #ddff8966;
+  color: #ddff89;
+  font: 800 13px/1 var(--mono);
+  letter-spacing: 0.18em;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+#start-hint.on {
+  opacity: 1;
+}
+#start-hint[hidden] {
+  display: none;
+}
+@media (max-width: 600px) {
+  #start-hint {
+    font-size: 11px;
+    padding: 5px 10px 6px;
+  }
+}
+
+/* ── THE STORY CHIP IS A TICKER, NOT A PHOTO BOMB ─────────────────────────
+   It used to sit at 60% height, dead centre of live combat, at 17px, with a
+   lime plate behind it: story lines and wave callouts covered the fight.
+   The base rule (above) now pins it to the bottom edge, where a banner is
+   allowed to be. Everything below is weight and legibility only. */
+.story-chip {
+  padding: 6px 14px 7px;
+  color: #131609;
+  background: #ddff89;
+  box-shadow: 0 2px 14px #0006;
+}
+@media (max-width: 600px) {
+  .story-chip {
+    font-size: 11px;
+    bottom: calc(var(--foot, 24px) + 26px);
+  }
+}
+
+/* ── THE CORNER CALL-OUT IS NOW A DAMAGE LINE ─────────────────────────────
+   Four words maximum (see DAMAGE_LINE_MAX_WORDS). `HEALTH −1 / Pulse wave`
+   became `RING HIT`: what touched you, not the name of the system it belonged
+   to. It is a footnote under a bar that already cracked. */
+#callout {
+  font: 800 13px/1.15 var(--mono);
+  letter-spacing: 0.1em;
+  border-right: 3px solid #ff4d6d;
+  background: #2a0f19e6;
+}
+
+/* CHUNK 1: the cut charges are the arc under the cube (engine painter); the
+   far-corner copy is kept in the DOM but never painted, so assistive tech and
+   the headless checks still read the live count. */
+#hud .meter.edge {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  opacity: 0;
+  pointer-events: none;
+}

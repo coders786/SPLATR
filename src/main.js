@@ -6,6 +6,9 @@ import {createControlPracticeUI} from './control-practice-ui.js';
 import {createTeachingUI} from './teaching-ui.js';
 import {createTrainingHub} from './training-hub.js';
 import {healthDamageLabel,healthDeathMessage} from './health-ui.js';
+import {healthSegments,damageFeedback,dmgLabel,SAFE_BLINK_TICKS,HIT_RIM_TICKS} from './damage-feedback.js';
+import {reticleFor} from './pointer-reticle.js';
+import {bossChargeReadout,shortDamageLine,hintVisible} from './hud-copy.js';
 import {combatStatus} from './combat-status.js';
 import {runCoaching} from './run-coach.js';
 import {createWaveUI} from './wave-ui.js';
@@ -443,7 +446,9 @@ function event(type, d) {
       launchCutscene(SHATTER_BEATS, { reducedMotion: !opts.motion });
       break;
     case 'kineticOvercharge':
-      pop('OVERCHARGED — LETHAL', 70, 3);
+      // CHUNK 1: the old lethal-charge pill was a grey box in the far right
+      // corner describing the RUSH bar in the top centre. The bar says RUSH
+      // READY now; this beat keeps only what the bar cannot say.
       buzz(45);
       break;
     case 'monolithRise':
@@ -520,7 +525,13 @@ function event(type, d) {
     case 'hurt':
       audio.strike('hurt');
       buzz(24);
-      pop(`HEALTH −1 / ${healthDamageLabel(d.cause)}`, 65, 3);
+      // CHUNK 1: remember WHERE it came from so the canvas can draw one red
+      // line to the exact body, orb or laser that did it. `pop` speaks the
+      // short body-first name (`RING HIT`) instead of a health paragraph.
+      hitAt = 0;
+      hitCause = d.cause || null;
+      hitSource = damageSource(run?.state, d);
+      pop(`${shortDamageLine(`${dmgLabel(d.cause)} HIT`)}`, 55, 3);
       break;
     case 'break':
       input.cancel();
@@ -591,6 +602,12 @@ const input = createInput(canvas, {
   get: () => run,
   active,
   point: renderer.worldPoint,
+  // CHUNK 1: the drawn reticle follows every pointer move, not just captured
+  // pulls, because the OS cursor is hidden over the arena during a run.
+  onPointerMove(e) {
+    if (e.type === 'touch') { pointerPos = null; return; }
+    pointerPos = { x: e.x, y: e.y };
+  },
   assist: () => opts.assist,
   engage(device) {
     lastDevice = device;
@@ -614,7 +631,15 @@ const input = createInput(canvas, {
     // A magnetised release really is a touch wider along that corridor. Only
     // this launch; the next unassisted shot is ordinary reach again.
     const ok = run.dash(v);
-    if (!ok && !run.state.opening && run.state.edge <= 0) {say('Out of cuts.');pop('NO CUTS / RECHARGING',45,2);}
+    // CHUNK 1: a refused shot used to print `NO CUTS / RECHARGING` in the far
+    // right corner, 900px from the cube that owns the charges. Nothing is
+    // printed now: the reticle snaps red with an X and shakes, and the charge
+    // arc under the cube is already pulsing red. Say it once for screen
+    // readers, where a visual shake cannot reach.
+    if (!ok && !run.state.opening && run.state.edge <= 0) {
+      refuseTicks = 0;
+      say('No cuts left. Cuts recharge.');
+    }
     return ok;
   },
 });
@@ -733,6 +758,10 @@ $('form-pips').replaceChildren(
   ...GRADE_AT.map(() => document.createElement('i')),
 );
 let lastHp = null,
+  // Which health total the bar was last PAINTED with. `lastHp` is the damage
+  // detector for the whole HUD; this one exists only so the bar can crack the
+  // right block, and it is reset with the run beside it.
+  lastHpOnly = null,
   lastScore = null,
   lastChain = null,
   lastFormSig = '',
@@ -759,12 +788,14 @@ function setFractureUI(pct, gained = null) {
     if (fill) fill.style.width = `${fractureMirror}%`;
     const pc = mount.querySelector('.fracture-pct');
     if (pc) pc.textContent = `${Math.floor(fractureMirror)}%`;
+    // CHUNK 1: the meter is the player's goal, so its mounts say what it is
+    // charging (a boss event) instead of describing the world's mood. The
+    // internal tier id is untouched -- art, sound and difficulty still key off
+    // `data-tier`; only the words a player reads changed.
+    const copy = bossChargeReadout(fractureMirror, tier);
     const tr = mount.querySelector('.fracture-tier');
-    if (tr) tr.textContent = tierDef.label;
-    mount.setAttribute(
-      'aria-label',
-      `Dimension fracture: ${Math.floor(fractureMirror)} percent. Tier ${tierDef.label.toLowerCase()}.`,
-    );
+    if (tr) tr.textContent = mount.id === 'fracture-hud' ? copy.tier : copy.tier.replace('NEXT BOSS · ', '');
+    mount.setAttribute('aria-label', copy.speech);
   }
   const gainedEl = $('result-fracture')?.querySelector('.fracture-gained');
   if (gainedEl && gained !== null && Number.isFinite(gained)) gainedEl.textContent = `+${gained.toFixed(1)} THIS RUN`;
@@ -793,6 +824,66 @@ function setFractureUI(pct, gained = null) {
 function persistFractureMirror(pct) {
   fractureMirror = clampPct(pct);
   try { storage.set(FRACTURE_KEY, fractureMirror); } catch {}
+}
+// ── CHUNK 1: THE AIM RING, THE DAMAGE REACTION AND THE STARTER HINT ──────
+//
+// Three small view-time values owned by the shell. None of them is simulation
+// state, so none of them may live on `run.state`: the engine reads them
+// through `renderer.setAimFeedback` and the HUD reads the same objects.
+let pointerPos = null,          // canvas-local CSS px, or null
+  reticleArmed = true,
+  refuseTicks = -1,             // ticks since a refused shot, -1 = none
+  hintUntil = 0,                // wall clock the four-word hint retires
+  hitAt = -1,                   // ticks since the last real health loss
+  hitSource = null,             // where that hit came from, if anywhere
+  hitCause = null,
+  hitRimTimer = 0;
+// Which body is allowed to own the "what hit me" line: the run names the
+// cause, the attack names the source, and the combat map turns an id into a
+// position. Nothing here guesses.
+function damageSource(s, d) {
+  const attack = d?.attack || null;
+  if (attack && Number.isFinite(attack.x) && Number.isFinite(attack.y)) return { x: attack.x, y: attack.y };
+  const id = attack?.sourceId ?? d?.sourceId;
+  const body = id != null ? run?.combat?.enemies?.get(id) : null;
+  if (body) return { x: body.x, y: body.y };
+  if (Number.isFinite(d?.x) && Number.isFinite(d?.y) && (d.x || d.y)) return { x: d.x, y: d.y };
+  return null;
+}
+function paintReticle(now) {
+  const el = $('reticle');
+  if (!el) return;
+  // Touch has no hover cursor; the ring is a mouse/keyboard instrument.
+  const show = !!run && reticleArmed && lastDevice !== 'touch' && !!pointerPos &&
+    ['ready', 'playing'].includes(run.state.phase) && !dialog.open && !document.hidden;
+  if (!show) { el.hidden = true; return; }
+  el.hidden = false;
+  const aim = input.aim;
+  const view = reticleFor({
+    pointer: pointerPos,
+    power: aim?.power || 0,
+    charging: !!aim?.power,
+    cuts: run.state.edge,
+    refuseAge: refuseTicks,
+    tick: run.world.clock,
+    motion: opts.motion,
+  });
+  if (!view) { el.hidden = true; return; }
+  el.style.left = `${view.x}px`;
+  el.style.top = `${view.y}px`;
+  el.dataset.charging = String(view.charging);
+  el.dataset.warn = String(view.warn);
+  el.dataset.refused = String(view.refused);
+  const ring = el.querySelector('.reticle-ring');
+  if (ring) ring.setAttribute('r', view.r.toFixed(1));
+  const ticks = el.querySelector('.reticle-tick');
+  if (ticks) ticks.setAttribute('transform', `rotate(${(view.spin * 57.2958).toFixed(1)} 22 22)`);
+  const dot = el.querySelector('.reticle-dot');
+  if (dot) dot.setAttribute('r', view.dot.toFixed(1));
+  // Hand the same numbers to the canvas painter so the HTML ring and the
+  // canvas effects can never disagree about where the aim is. The canvas
+  // reticle is deliberately not drawn twice: the DOM ring IS the reticle.
+  return view;
 }
 function updateHUD() {
   if (!run) return;
@@ -851,13 +942,43 @@ function updateHUD() {
   const status = s.narrative ? null : combatStatus(s);
   $('combat-status').hidden = !status;
   if(status){setText('combat-status-title',status.title);setText('combat-status-detail',status.detail);}
-  if($('hull').children.length !== (s.hpMax || 3)) $('hull').replaceChildren(...Array.from({length:s.hpMax || 3},()=>document.createElement('i')));
-  Array.from($('hull').children).forEach((n, i) => n.classList.toggle('empty', i >= meters.hp));
-  setText('health-value', `${meters.hp}/${s.hpMax}`);
-  $('hull').closest('.hull').toggleAttribute('data-critical',meters.hp === 1);
+  // ── CHUNK 1: THE HULL, UNDER THE SCORE ────────────────────────────────
+  // One 24px block per point, under the only big number on the screen. The
+  // block that breaks cracks once (`.broke`), so losing health has a moment
+  // instead of a silent style change.
+  {
+    const seg = healthSegments(meters.hp, s.hpMax || 3, lastHpOnly);
+    const bar = $('health-bar');
+    if (bar && bar.children.length !== seg.max)
+      bar.replaceChildren(...Array.from({ length: seg.max }, () => document.createElement('i')));
+    if (bar) {
+      Array.from(bar.children).forEach((n, i) => n.classList.toggle('empty', i >= seg.now));
+      if (seg.brokeAt >= 0) {
+        const block = bar.children[seg.brokeAt];
+        if (block) { block.classList.remove('broke'); void block.offsetWidth; block.classList.add('broke'); }
+      }
+      bar.setAttribute('aria-label', `Health: ${seg.now} of ${seg.max} remaining. The run ends at zero health.`);
+    }
+    setText('health-value', `${seg.now}/${seg.max}`);
+    const block = $('hull-block');
+    block?.toggleAttribute('data-critical', seg.critical);
+    game.dataset.critical = String(seg.critical && !s.opening);
+    lastHpOnly = seg.now;
+  }
+  // The corner line is now a four-word footnote under a bar that already
+  // cracked; it never repeats the word HEALTH (the bar IS health).
+  // CHUNK 1: the four-word starter hint retires on the first kill, not on a
+  // timer, and never during practice (the practice ground has its own lesson).
+  {
+    const hint = $('start-hint');
+    if (hint) {
+      const show = hintVisible(s.kills, s.elapsed) && s.phase === 'playing' && !s.opening && !learningGround && !activeCutscene;
+      hint.hidden = !show;
+      hint.classList.toggle('on', show);
+    }
+  }
   $('last-damage').hidden = !s.lastDamage || !!s.opening;
-  if(s.lastDamage) setText('last-damage-cause', healthDamageLabel(s.lastDamage.cause));
-  $('hull').setAttribute('aria-label', `Health: ${meters.hp} of ${s.hpMax} remaining. The run ends at zero health.`);
+  if(s.lastDamage) setText('last-damage-cause', shortDamageLine(`${dmgLabel(s.lastDamage.cause)} HIT`));
   // EDGE. The pip count and the recharge timer both matter: three pips tell
   // you whether you can cut, the timer tells you whether to bother lining one
   // up. Without the second, an empty meter is indistinguishable from a broken
@@ -888,13 +1009,19 @@ function updateHUD() {
   // behind itself if the player is hit twice inside one animation.
   // `lastHp`/`lastScore`/`lastChain` live outside this function so a paused or
   // hidden tab resuming does not fire a false "you were hit".
+  // CHUNK 1: the shake moved to the per-segment crack above (`#health-bar i`
+  // `.broke`), which is a sharper read than a whole row wobbling: the block
+  // that actually broke is the one that moves. The one-frame `data-hit` flip
+  // stays as a hook for anything that wants the moment without the motion.
   if (lastHp !== null && s.hp < lastHp) {
-    const row = $('hull').closest('.hull');
-    row.removeAttribute('data-hit');
-    void row.offsetWidth; // force the animation to restart
-    row.setAttribute('data-hit', '');
-    clearTimeout(hitTimer);
-    hitTimer = setTimeout(() => row.removeAttribute('data-hit'), 420);
+    const row = $('hull-block');
+    if (row) {
+      row.removeAttribute('data-hit');
+      void row.offsetWidth;
+      row.setAttribute('data-hit', '');
+      clearTimeout(hitTimer);
+      hitTimer = setTimeout(() => row.removeAttribute('data-hit'), 420);
+    }
   }
   if (lastScore !== null && s.score > lastScore) {
     const scoreEl = $('score');
@@ -913,6 +1040,7 @@ function updateHUD() {
     flareTimer = setTimeout(() => chainEl.removeAttribute('data-flare'), 240);
   }
   lastHp = s.hp;
+  lastHpOnly = meters.hp;
   lastScore = s.score;
   lastChain = s.chain;
   // CHUNK 6A: the SECTOR/WAVE readout is a 1.4s chip on transition, then
@@ -1087,7 +1215,7 @@ function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   // A fresh run must not react to the previous run's hull, score or chain --
   // and must not inherit the previous run's FORM, or the readout would open
   // already showing the last run's identity.
-  lastHp = lastScore = lastChain = null;
+  lastHp = lastScore = lastChain = lastHpOnly = null;
   lastSectorKey = null;
   sectorChipUntil = 0;
   lastFormSig = '';
@@ -1131,6 +1259,10 @@ function home() {
   $('rack-skip').hidden=true;$('tutorial-objective').hidden=true;
   $('title-screen').hidden = false;
   game.dataset.screen = 'title';
+  $('reticle').hidden = true;
+  $('start-hint').hidden = true;
+  $('damage-rim').classList.remove('on');
+  game.removeAttribute('data-critical');
   setText('title-best', score(best));
   // CHUNK 2: returning to the menu repaints the persistent meter too.
   setFractureUI(fractureMirror);
@@ -1343,6 +1475,12 @@ function frame(now) {
       //
       // Both switches now feed it, because both mean the same thing to a player
       // with motion sensitivity: stop the movement.
+      // ── CHUNK 1: THE THREE VIEW-TIME REACTIONS ────────────────────────
+      // Ticks, not milliseconds: the game's own clock, so a paused tab can
+      // never advance a shake or a hint.
+      if (refuseTicks >= 0 && ++refuseTicks > 26) refuseTicks = -1;
+      if (hitAt >= 0 && ++hitAt > HIT_RIM_TICKS) { hitAt = -1; hitSource = null; hitCause = null; }
+      paintReticle(now);
       renderer.tick(run, opts.motion && opts.shake !== 'off');
       if (receiptTicks && !--receiptTicks) $('imprint').hidden = true;
       if (noticeTicks && !--noticeTicks) $('callout').hidden = true;
@@ -1352,6 +1490,13 @@ function frame(now) {
         lastBeat = beat;
       }
     });
+    // The screen-space damage reaction is read by the painter on this frame,
+    // so it is pushed immediately before the draw, never a frame late.
+    const feedback = hitAt >= 0
+      ? damageFeedback({ age: hitAt, player: run.world.player.position, source: hitSource, cause: hitCause })
+      : null;
+    $('damage-rim')?.classList.toggle('on', !!feedback?.live && opts.motion);
+    renderer.setAimFeedback?.({ hit: feedback });
     renderer.draw(run, a, input.aim, opts.motion,lastDevice);
     if (now >= nextHUD) {
       updateHUD();
