@@ -9,6 +9,7 @@ import {horizontalCutWidth} from './equipment-combat.js';
 import {upgradeOffers} from './upgrades.js';
 import {recommendWaveOffer} from './encounters.js';
 import {gainFracture,FRACTURE_PER_WAVE_CLEAR} from './fracture.js';
+import {storyForWave} from './story-arc.js';
 
 // The targets are Matter sensor shapes queried by the same forward blade ray
 // used for enemies. They are not proximity-triggered or timed objectives.
@@ -19,7 +20,8 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
  // once -- `arena.y` is mutated sector-to-sector as the world grows upward.
  const LIFT = -arena.y;
  const wave=state.wave={number:1,phase:'combat',entry:0,age:0,total:0,remaining:0,cleared:0,platform:null,spawnPadGone:false,offers:[],recommendation:null,upgradeChosen:false};
- const story=state.narrative={intro:!!intro,introAge:0,sector:1,locks:[],lockBursts:[],seal:null,fracture:null,reaction:null,rest:null,conduits:3};
+ const openingStory=storyForWave(1);
+ const story=state.narrative={intro:!!intro,introAge:0,sector:1,chapter:openingStory.id,storyTitle:openingStory.title,storyChip:openingStory.chip,storyLine:openingStory.line,locks:[],lockBursts:[],seal:null,fracture:null,reaction:null,rest:null,conduits:3};
  let targets=[],lastPosition={...world.player.position}, prismIds=new Set(),sealBody=null,sealGeometry=null;
  function body(x,y,r,label){return Matter.Bodies.circle(x,y,r,{isStatic:true,isSensor:true,label});}
  function removeSeal(){
@@ -29,6 +31,12 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
  }
  function install(){
   removeSeal();
+  const chapter=storyForWave(wave.number);
+  story.sector=wave.number;
+  story.chapter=chapter.id;
+  story.storyTitle=chapter.title;
+  story.storyChip=chapter.chip;
+  story.storyLine=chapter.line;
   story.lockBursts=[];
   const top=arena.y;
   story.locks=[-310,0,310].map((x,i)=>({id:i,x,y:top+370,r:38,broken:false,body:body(x,top+370,38,'anchor-lock')}));
@@ -175,6 +183,7 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
     // the seam is not for them.
     for(const e of [...combat.enemies.values()])combat.remove(e);combat.hazards.length=0;combat.links.length=0;
      state.monolith=true;
+     story.chapter='landlord';story.storyTitle='THE LANDLORD';story.storyChip='THE LANDLORD WAKES.';story.storyLine='The Monolith is the seal made solid. Break the landlord and the world opens.';
      const a=world.arena,mx=a.x+a.w/2,my=Math.min(p.y-520,seal.y-340);
      combat.add({id:'monolith/core',kind:'monolith',x:mx,y:my,home:'monolith',pinned:true,wavePlaced:true,delay:0,hp:10});
      story.reaction={kind:'split',age:0};

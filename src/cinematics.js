@@ -39,6 +39,17 @@ export const SECTOR_BEATS = Object.freeze([
   { id: 'sector-release', ticks: 24, lockInput: false },
 ]);
 
+/** Add the current wave's one highlighted story line without changing the
+ * reusable shot order. The base table stays silent for timing and painter
+ * tests; the shell supplies the chapter-specific chip at the seam shot. */
+export function sectorBeats(chip = '') {
+  const text = String(chip || '').trim();
+  if (!text) return SECTOR_BEATS;
+  return Object.freeze(SECTOR_BEATS.map((beat, index) => index === 1
+    ? Object.freeze({ ...beat, chip: { text, at: 0 } })
+    : beat));
+}
+
 /**
  * §5.4 — the SHATTER cinematic (~4.2s). Input locks through the dolly
  * (3.0s); the release beat is free — control returns with zero warning.

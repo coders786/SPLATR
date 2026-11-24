@@ -7479,7 +7479,7 @@ function createRenderer(c, viewport) {
   }
   function narrativeBackdrop(n, width, height, time, motion) {
     if (!n) return;
-    const clock=motion?time:0, sector=n.sector;
+    const clock=motion?time:0, sector=n.sector, chapter=n.chapter||'';
     c.save();
     if(n.intro){
       const q=Math.min(1,n.introAge/55);c.fillStyle=`rgba(8,7,20,${.12+q*.34})`;c.fillRect(0,0,width,height);
@@ -7497,6 +7497,18 @@ function createRenderer(c, viewport) {
       } else if(sector===3){
         for(let i=0;i<3;i++){const on=i<n.conduits;c.strokeStyle=on?'#a4f6c770':'#64615f55';c.lineWidth=3;c.beginPath();c.moveTo(i*width*.3,0);c.lineTo(i*width*.3,height*.34);c.lineTo(i*width*.3+width*.12,height*.46);c.stroke();if(!on&&motion&&n.sparkAge>0){c.fillStyle='#ffe79a';c.globalAlpha=.3+.4*Math.abs(Math.sin(clock*.14+i));c.fillRect(i*width*.3+width*.12,height*.46,4,4);c.globalAlpha=1;}}
       } else if(sector>=4){for(let i=0;i<22;i++){c.fillStyle=i%4?'#ffe8b466':'#fff6d3aa';c.fillRect((i*179+23)%width,(i*79+31)%(height*.55),i%4?2:3,i%4?2:3);}}
+      // Each wave has a visual noun. These motifs are the sentence behind the
+      // chapter chip: an eye turns, the seam climbs, and the final seal burns.
+      if(chapter==='eye'){
+        const ex=width*.5,ey=height*.17,open=.72+.12*Math.sin(clock*.06);
+        c.save();c.globalAlpha=.78;c.strokeStyle='#ffb27a99';c.lineWidth=4;c.beginPath();c.ellipse(ex,ey,width*.12,height*.038*open,0,0,Math.PI*2);c.stroke();
+        c.fillStyle='#ff6f6288';c.beginPath();c.arc(ex,ey,height*.018,0,Math.PI*2);c.fill();c.fillStyle='#ffe8b2';c.beginPath();c.arc(ex,ey,height*.007,0,Math.PI*2);c.fill();
+        c.globalAlpha=.28;c.strokeStyle='#ff8368';c.lineWidth=2;for(let i=0;i<8;i++){const a=i*Math.PI/4+clock*.012;c.beginPath();c.moveTo(ex+Math.cos(a)*width*.14,ey+Math.sin(a)*height*.05);c.lineTo(ex+Math.cos(a)*width*.19,ey+Math.sin(a)*height*.08);c.stroke();}c.restore();
+      } else if(chapter==='seam'||chapter==='last-seal'){
+        const sx=width*.5,reach=chapter==='last-seal' ? .38 : .28;c.save();c.globalAlpha=.5;c.strokeStyle='#e8b36f';c.lineWidth=3;c.beginPath();c.moveTo(sx,height*.02);c.lineTo(sx-width*.025,height*reach*.45);c.lineTo(sx+width*.018,height*reach);c.stroke();c.globalAlpha=.22;c.strokeStyle='#ddff89';c.lineWidth=10;c.beginPath();c.moveTo(sx,height*.04);c.lineTo(sx-width*.02,height*reach*.46);c.lineTo(sx+width*.015,height*reach);c.stroke();c.restore();
+      } else if(chapter==='landlord'){
+        c.save();c.globalAlpha=.34;c.fillStyle='#ff996688';c.beginPath();c.arc(width*.5,height*.24,Math.min(width,height)*.16,0,Math.PI*2);c.fill();c.restore();
+      }
     }
     // A small independent story silhouette never intercepts input or pauses play.
     if(n.intro||n.reaction){

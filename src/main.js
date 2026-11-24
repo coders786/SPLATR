@@ -30,7 +30,8 @@ import { speedReadout, meterReadout, dialGeometry } from './motion.js';
 import { MAX_SPEED } from './physics.js';
 import { FRACTURE_TIERS, FRACTURE_KEY, clampPct, persistFracture, fractureTier } from './fracture.js';
 import { createCutscene, coldOpenOnce } from './cutscene.js';
-import { COLD_OPEN_BEATS, SECTOR_BEATS, SHATTER_BEATS, lockTicks } from './cinematics.js';
+import { COLD_OPEN_BEATS, sectorBeats, SHATTER_BEATS, lockTicks } from './cinematics.js';
+import { storyChipForWave } from './story-arc.js';
 let questUI, customize, waveUI, controlPractice, teaching;let learningGround=false,tutorial=null,lastTutorialHint=null,lastRiftObjective='',lastTutorialWhy='';
 const tutorialHintSpeech=Object.freeze({
  slice:'Slice the highlighted target. Tap it, or pull away and release toward it.',
@@ -386,10 +387,18 @@ function event(type, d) {
       if (run?.state.narrative && (d?.band | 0) > 1) {
         input?.reset();
         audio.seamHit();
-        launchCutscene(SECTOR_BEATS, { reducedMotion: !opts.motion });
+        launchCutscene(sectorBeats(storyChipForWave(d.band)), { reducedMotion: !opts.motion });
       }
       break;
-    case 'waveStart': audio.zone(); break;
+    case 'waveStart':
+      audio.zone();
+      // Legacy finite waves do not have the continuous Watcher backdrop, so
+      // give their first five formations the same short story cadence. The
+      // encounter itself remains the picture; this is only the highlighted
+      // chapter name.
+      if (!run?.state.narrative && Number.isFinite(d?.number) && d.number <= 5)
+        showStoryChip(storyChipForWave(d.number));
+      break;
     // CHUNK 2: every fracture the run causes lands in storage immediately,
     // so an interrupted session never loses the seam it tore.
     case 'fractureGain':
@@ -425,7 +434,7 @@ function event(type, d) {
       // for the one chip the spec allows.
       audio.shatter();
       buzz(90);
-      showStoryChip('THE LANDLORD.');
+      showStoryChip('THE LANDLORD WAKES.');
       break;
     case 'monolithDown':
       audio.strike('drive');
@@ -898,7 +907,15 @@ function updateHUD() {
       lastSectorKey = sectorKey;
       setText('sector', sectorKey);
       const chip = $('sector');
-      if (chip) { chip.hidden = false; void chip.offsetWidth; chip.classList.add('on'); sectorChipUntil = wallNow() + 1400; }
+      if (chip) {
+        if (s.narrative) {
+          // The chapter chip is the narrative line in continuous mode; do not
+          // stack a second "SECTOR 02" label under it.
+          chip.classList.remove('on');chip.hidden=true;sectorChipUntil=0;
+        } else {
+          chip.hidden = false; void chip.offsetWidth; chip.classList.add('on'); sectorChipUntil = wallNow() + 1400;
+        }
+      }
     }
     if (sectorChipUntil && wallNow() >= sectorChipUntil) {
       const chip = $('sector');
@@ -1076,6 +1093,7 @@ function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
     launchCutscene(COLD_OPEN_BEATS, { reducedMotion: !opts.motion, onDone: () => {
       hud.classList.add('hud-fade-in');
       setTimeout(() => hud.classList.remove('hud-fade-in'), 740);
+      if (run?.state.narrative) showStoryChip(storyChipForWave(run.state.narrative.sector));
     }});
   renderer.draw(run, 1, null, opts.motion,lastDevice);
   updateHUD();

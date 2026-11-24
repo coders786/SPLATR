@@ -14,6 +14,7 @@ import { installDom, createDisplay } from './support/display.js';
 import {
   COLD_OPEN_BEATS,
   SECTOR_BEATS,
+  sectorBeats,
   SHATTER_BEATS,
   lockTicks,
   chipBudget,
@@ -29,6 +30,13 @@ test('6A: the sector crossing is visual-only, with no briefing text', () => {
   assert.deepEqual(chipBudget(SECTOR_BEATS), []);
   assert.deepEqual(SECTOR_BEATS.map(beat => beat.id), ['sector-locks', 'sector-seam', 'sector-rise', 'sector-release']);
   assert.equal(SECTOR_BEATS.at(-1).lockInput, false);
+});
+
+test('6A: each wave can carry one short story chip without changing the shot order', () => {
+  const beats=sectorBeats('IT SEES YOU.');
+  assert.deepEqual(beats.map(beat => beat.id), SECTOR_BEATS.map(beat => beat.id));
+  assert.deepEqual(chipBudget(beats), ['IT SEES YOU.']);
+  assert.ok(beats[1].chip.at===0,'the chapter appears when the seam opens');
 });
 
 test('6A: the SHATTER cinematic spends exactly one chip', () => {
