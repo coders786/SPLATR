@@ -104,7 +104,7 @@ test('emotional chapters change the actual painted frame without adding a text p
  }finally{dom.uninstall();}
 });
 
-test('a midpoint kill threshold triggers one real, nonblocking story lesson per run',()=>{
+test('a midpoint kill threshold triggers one real, one-shot story cutscene per run',()=>{
  const events=[],run=createRun(31,type=>events.push(type),{waveMode:true,continuous:true});run.state.phase='playing';run.state.wave.entry=0;run.state.invul=10000;
  const enemies=[...run.combat.enemies.values()],half=Math.ceil(enemies.length/2);
  for(const enemy of enemies.slice(0,half))run.combat.remove(enemy);

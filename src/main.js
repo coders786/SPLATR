@@ -124,9 +124,9 @@ function launchCutscene(beats, { reducedMotion = !opts.motion, onDone = null, pr
   const lockedTicks = lockTicks(beats, reducedMotion);
   cutsceneOwnsStop = lockedTicks > 0;
   if (run) {
-    // A mid-wave story pulse has no locking beats: the player keeps the live
-    // formation, aim, and current launch. Locked cutscenes still claim the
-    // stop window before their first tick so no frame slips through.
+    // A mid-wave story pulse owns only its short reveal lock; the release beat
+    // hands control back before the afterimage clears. Locked cutscenes claim
+    // the stop window before their first tick so no frame slips through.
     run.state.inputLock = cutsceneOwnsStop;
     run.state.cutscene = null;
     run.state.stop = cutsceneOwnsStop
@@ -175,8 +175,8 @@ function endCutscene() {
   cutsceneOwnsStop = false;
   if (run) {
     // A skipped locked cutscene may end before its pre-applied stop expires.
-    // The nonblocking mid-wave pulse does not own the stop: live hitstop or
-    // movement state created underneath it must survive the handoff.
+    // The mid-wave pulse owns only its short reveal window; release or skip
+    // clears that window without leaving the live run frozen.
     if (ownsStop) run.state.stop = 0;
     run.state.cutscene = null;
     run.state.inputLock = false;
@@ -389,10 +389,11 @@ function event(type, d) {
     case 'breachContact': audio.seamHit();break;
     case 'dimensionBreak': if(!run?.state.narrative)input?.reset();audio.shatter();break;
     case 'storyMoment':
-      // Mid-wave story is a nonblocking visual handoff: the live formation
-      // keeps moving while the Watcher demonstrates the next real verb.
+      // Mid-wave story is a short gameplay cutscene: the opening image gets
+      // a real read window, then the release beat hands the live formation
+      // back before the emotional afterimage is gone.
       if (run && d && !activeCutscene) {
-        launchCutscene(midWaveBeats(d.chip), { reducedMotion: !opts.motion, preserveInput: true });
+        launchCutscene(midWaveBeats(d.chip), { reducedMotion: !opts.motion });
       }
       break;
     case 'sector':

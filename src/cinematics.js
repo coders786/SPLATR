@@ -52,15 +52,20 @@ export function sectorBeats(chip = '') {
 }
 
 /**
- * The one mid-wave story pulse is deliberately not another stop-and-watch
- * panel. It is a one-second, nonblocking visual demonstration triggered by the
- * first wave's real midpoint formation. The Pulse and the Watcher remain
- * legible while the formation stays live beneath it.
+ * The one mid-wave story pulse is a brief gameplay cutscene, not another
+ * sector chip. It has a short locked reveal so the player can read the
+ * emotional action, then a release window that returns control before the
+ * final thread image clears.
  */
 export const MID_WAVE_BEATS = Object.freeze([
-  { id: 'mid-wave-signal', ticks: 10, lockInput: false },
-  { id: 'mid-wave-teach', ticks: 32, lockInput: false },
-  { id: 'mid-wave-return', ticks: 18, lockInput: false },
+  // 0.00–0.13s — the Watcher catches the player's eye and finds the Pulse.
+  { id: 'mid-wave-signal', ticks: 8, lockInput: true },
+  // 0.13–0.40s — the expanding rim bears down on the bond.
+  { id: 'mid-wave-tension', ticks: 16, lockInput: true },
+  // 0.40–0.80s — the Watcher holds; the Cutter clears the real danger.
+  { id: 'mid-wave-pass', ticks: 24, lockInput: true },
+  // 0.80–1.20s — control returns while the cost remains visible.
+  { id: 'mid-wave-return', ticks: 24, lockInput: false },
 ]);
 
 export function midWaveBeats(chip = '') {

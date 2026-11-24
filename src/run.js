@@ -452,7 +452,7 @@ export function createRun(
     /** Mirror of the live cutscene (set by the shell; painters read it). */
     cutscene: null,
     /** A mid-wave story beat is armed by real encounter progress and cleared
-     * when its nonblocking visual handoff ends. The guard belongs to the run,
+     * when its brief cutscene ends. The guard belongs to the run,
      * not the wave, so later waves can never replay the set piece. */
     storyMoment: null,
     midWaveStorySeen: false,

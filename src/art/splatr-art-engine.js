@@ -7733,8 +7733,11 @@ function createRenderer(c, viewport) {
       ? (moment.targetY-v.y)*v.scale : NaN;
     const valid=(x,y)=>Number.isFinite(x)&&Number.isFinite(y)&&x>24&&x<w-24&&y>36&&y<h-30;
     const thread=(x0,y0,x1,y1,alpha,width=2)=>{
+      const tremor=motion?(Math.sin(clock*.22)*3+Math.sin(clock*.071)*2)*scale:0;
       c.save();c.globalAlpha=alpha;c.strokeStyle=warm;c.lineWidth=width*scale;c.beginPath();
-      c.moveTo(x0,y0);c.quadraticCurveTo((x0+x1)*.5,Math.min(y0,y1)-26*scale,x1,y1);c.stroke();c.restore();
+      c.moveTo(x0,y0);c.quadraticCurveTo((x0+x1)*.5+tremor,Math.min(y0,y1)-26*scale+tremor,x1,y1);c.stroke();
+      if(motion&&phase>.32){c.globalAlpha=alpha*.28;c.strokeStyle=hot;c.lineWidth=Math.max(1,width*.45)*scale;c.beginPath();c.moveTo(x0,y0+3*scale);c.quadraticCurveTo((x0+x1)*.5-tremor,Math.min(y0,y1)-20*scale-tremor,x1,y1+2*scale);c.stroke();}
+      c.restore();
     };
     const ringLine=(r,alpha,width,color=hot)=>{c.save();c.globalAlpha=alpha;c.strokeStyle=color;c.lineWidth=width*scale;c.beginPath();c.arc(cx,cy,r,0,Math.PI*2);c.stroke();c.restore();};
     c.save();c.lineCap='round';c.lineJoin='round';
@@ -7756,7 +7759,16 @@ function createRenderer(c, viewport) {
     // hazards. The leading solid rim is the actionable thing to read.
     ringLine(Math.max(5,ring-46*scale),.1+.12*pulse,2,warm);
     ringLine(Math.max(5,ring-22*scale),.18+.16*pulse,3,warm);
-    ringLine(ring,.52+.25*pulse,5,hot);
+    c.save();c.shadowColor=hot;c.shadowBlur=18*scale;
+    ringLine(ring,.52+.25*pulse,5,hot);c.restore();
+    if(motion){
+      c.save();c.lineCap='round';
+      for(let i=0;i<12;i++){
+        const a=i*Math.PI*2/12+clock*.018,inner=ring+5*scale+((i*17)%9)*scale,outer=inner+(5+10*phase)*scale;
+        c.globalAlpha=.16+.22*pulse;c.strokeStyle=i%3===0?acid:warm;c.lineWidth=(1.2+(i%2))*scale;c.beginPath();c.moveTo(cx+Math.cos(a)*inner,cy+Math.sin(a)*inner);c.lineTo(cx+Math.cos(a)*outer,cy+Math.sin(a)*outer);c.stroke();
+      }
+      c.restore();
+    }
     c.globalAlpha=.1+.06*pulse;c.fillStyle=acid;c.beginPath();c.arc(cx,cy,Math.max(3,ring-10*scale),0,Math.PI*2);c.fill();
     foe(c,'pulse',cx,cy,24*scale,0,{time:clock,mode:'idle'});
     // The Cutter exits the rim's path. This is the same moving-body action the
@@ -7889,11 +7901,18 @@ function createRenderer(c, viewport) {
         drawStoryMechanicDiagram(c,w,h,s.storyMoment,t*.25,cs.elapsedTotal??time,motion,sx,sy,v);
         break;
       }
-      case 'mid-wave-teach': {
-        // The live Pulse is enlarged into a visual verb. It is not an
-        // instruction panel and never replaces the actual enemies.
-        wash(.08);
-        drawStoryMechanicDiagram(c,w,h,s.storyMoment,t,cs.elapsedTotal??time,motion,sx,sy,v);
+      case 'mid-wave-tension': {
+        // The Pulse rim grows into the friendship line. The player is held for
+        // only this readable tell; no gameplay result is invented here.
+        wash(.1);
+        drawStoryMechanicDiagram(c,w,h,s.storyMoment,.12+.38*t,cs.elapsedTotal??time,motion,sx,sy,v);
+        break;
+      }
+      case 'mid-wave-pass': {
+        // The Watcher takes the impact so the Cutter can clear the rim. This is
+        // the story consequence and the actionable Pulse dodge in one motion.
+        wash(.07);
+        drawStoryMechanicDiagram(c,w,h,s.storyMoment,.5+.32*t,cs.elapsedTotal??time,motion,sx,sy,v);
         break;
       }
       case 'mid-wave-return': {

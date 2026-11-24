@@ -42,11 +42,12 @@ test('6A: each wave can carry one short story chip without changing the shot ord
   assert.equal(beats[1].chip.at,.2,'the chapter lands just after the seam opens');
 });
 
-test('6A: a mid-wave lesson is one nonblocking visual beat', () => {
+test('6A: the mid-wave lesson is a brief animated cutscene with a release handoff', () => {
   const beats=midWaveBeats('LET IT PASS.');
   assert.deepEqual(beats.map(beat=>beat.id),MID_WAVE_BEATS.map(beat=>beat.id));
   assert.equal(chipBudget(beats)[0],'LET IT PASS.');
-  assert.ok(beats.every(beat=>!beat.lockInput),'the lesson never steals a live launch');
+  assert.deepEqual(beats.map(beat=>!!beat.lockInput),[true,true,true,false]);
+  assert.equal(lockTicks(beats),48,'the read window is brief');
   assert.equal(beats[1].chip.at,.15);
 });
 
@@ -65,7 +66,7 @@ test('6A: the cinematic clocks match the shot lists at 60 tps', () => {
   assert.deepEqual(CUTSCENE_PACING,{
     coldOpen:{totalTicks:144,lockedTicks:120,releaseTicks:24,totalSeconds:2.4,lockedSeconds:2},
     sector:{totalTicks:60,lockedTicks:50,releaseTicks:10,totalSeconds:1,lockedSeconds:50/60},
-    midWave:{totalTicks:60,lockedTicks:0,releaseTicks:60,totalSeconds:1,lockedSeconds:0},
+    midWave:{totalTicks:72,lockedTicks:48,releaseTicks:24,totalSeconds:1.2,lockedSeconds:.8},
     shatter:{totalTicks:150,lockedTicks:120,releaseTicks:30,totalSeconds:2.5,lockedSeconds:2},
   });
 });
