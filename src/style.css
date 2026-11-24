@@ -2236,3 +2236,60 @@ body:has(#panel[open]) #hud {
 .teaching-guide .teaching-lesson-picker{display:flex;align-items:center;gap:7px;pointer-events:auto;color:#bfb3ca;font:700 9px var(--mono);letter-spacing:.08em}
 .teaching-guide .teaching-lesson-picker select{min-width:min(190px,28vw);max-width:230px}
 @media(max-width:600px){.teaching-guide .teaching-lesson-picker{font-size:8px}.teaching-guide .teaching-lesson-picker select{min-width:115px;max-width:150px}}
+
+/* ── NEXT TRAINING CHUNK: SELECT BY SIGHT ───────────────────────────────────
+   The old lesson dropdown opened straight into a wall of controls. The first
+   screen now shows the actual enemy silhouettes and one cue/action pair. The
+   prose remains available in the optional controls drawer after a lesson is
+   running, never as the selection surface. */
+.training-hub{padding:16px 14px 14px}
+.training-doors{margin:12px 0 0}
+.training-door{position:relative;overflow:hidden;min-height:172px;padding:13px 12px 11px}
+.training-door::before{display:grid;place-items:center;width:58px;height:58px;margin-bottom:2px;border:1px solid #665b79;background:#100e19;color:#ddff89;font:800 28px/1 'Space Grotesk',sans-serif;content:'↗';}
+.training-door[data-door=lessons]::before{content:'◇';}
+.training-door[data-door=drills]::before{content:'◌';}
+.training-copy{gap:5px}
+
+.teaching-guide[data-mode=picker] .teaching-picker{display:block}
+.teaching-guide[data-mode=picker] .teaching-stage,
+.teaching-guide[data-mode=picker] .teaching-menu,
+.teaching-guide[data-mode=picker] .teaching-directions,
+.teaching-guide[data-mode=picker] .teaching-meters,
+.teaching-guide[data-mode=picker] .teaching-announcement{visibility:hidden;pointer-events:none}
+.teaching-guide[data-mode=picker] .teaching-change-lesson{display:none}
+.teaching-guide .teaching-picker{position:absolute;z-index:2;inset:max(72px,calc(env(safe-area-inset-top) + 64px)) 0 0;overflow:auto;padding:18px max(18px,env(safe-area-inset-right)) max(24px) max(18px,env(safe-area-inset-left));background:radial-gradient(circle at 50% 0,#29263d 0,#100e19 56%);box-sizing:border-box}
+.teaching-guide .teaching-picker[hidden]{display:none}
+.teaching-picker-head{max-width:980px;margin:0 auto 14px;text-align:center}
+.teaching-picker-head small{display:block;color:#b9d98c;font:700 9px/1 var(--mono);letter-spacing:.2em}
+.teaching-picker-head h1{margin:7px 0 5px;color:#f5efdf;font:900 clamp(30px,5vw,54px)/.95 'Barlow Condensed',sans-serif;letter-spacing:.03em}
+.teaching-picker-head p{color:#9d93ae;font:700 9px/1 var(--mono);letter-spacing:.18em}
+.teaching-picker-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:980px;margin:0 auto}
+.teaching-lesson-card{display:flex;flex-direction:column;min-width:0;padding:0;background:#191726;border:1px solid #514761;color:#f4eddf;text-align:left;cursor:pointer;transition:transform .16s ease,border-color .16s ease,background .16s ease;overflow:hidden}
+.teaching-lesson-card:hover,.teaching-lesson-card:focus-visible,.teaching-lesson-card[aria-pressed=true]{transform:translateY(-3px);border-color:#ddff89;background:#222137;outline:none;box-shadow:0 0 0 1px #ddff8944,0 9px 22px #0005}
+.teaching-lesson-card canvas{display:block;width:100%;height:auto;aspect-ratio:280/150;background:#100e19;pointer-events:none}
+.teaching-lesson-card-copy{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;gap:4px 7px;padding:9px 10px 10px}
+.teaching-lesson-card-copy strong{grid-column:1/-1;color:#f5efdf;font:800 15px/1 'Space Grotesk',sans-serif;letter-spacing:.02em}
+.teaching-lesson-card-copy small{color:#b9d98c;font:700 8px/1 var(--mono);letter-spacing:.13em}
+.teaching-lesson-card-copy em{justify-self:end;color:#ddff89;font:800 8px/1 var(--mono);font-style:normal;letter-spacing:.12em}
+.teaching-picker-foot{display:block;margin:15px auto 0;text-align:center;color:#71667f;font:700 8px/1 var(--mono);letter-spacing:.16em}
+.teaching-guide .teaching-change-lesson{min-height:34px;padding:6px 9px;background:#252230;color:#ddff89;border-color:#716582}
+@media(max-width:900px){.teaching-picker-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){
+ .teaching-guide .teaching-picker{inset:max(63px,calc(env(safe-area-inset-top) + 58px)) 0 0;padding:12px 10px 18px}
+ .teaching-picker-head{margin-bottom:10px}
+ .teaching-picker-head h1{font-size:36px}
+ .teaching-picker-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .teaching-lesson-card-copy{padding:7px 7px 8px;gap:3px 4px}
+ .teaching-lesson-card-copy strong{font-size:12px}
+ .teaching-lesson-card-copy small,.teaching-lesson-card-copy em{font-size:7px}
+ .training-door{min-height:0}
+}
+@media(max-height:500px){
+ .teaching-guide .teaching-picker{padding-top:8px}
+ .teaching-picker-head{margin-bottom:7px}
+ .teaching-picker-head h1{font-size:30px}
+ .teaching-lesson-card canvas{aspect-ratio:2.1}
+ .teaching-lesson-card-copy{padding:5px 6px}
+ .teaching-lesson-card-copy strong{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){.teaching-lesson-card{transition:none}.teaching-lesson-card:hover,.teaching-lesson-card:focus-visible,.teaching-lesson-card[aria-pressed=true]{transform:none}}

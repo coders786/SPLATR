@@ -3,26 +3,59 @@ import {createRenderer} from './renderer.js';
 import {createInput} from './input.js';
 import {createClock} from './clock.js';
 import {healthDamageLabel} from './health-ui.js';
+import {drawTrainingCard} from './art/splatr-art-engine.js';
+
+/**
+ * The picker is a sight, not a paragraph and not a native select pretending to
+ * be a lesson. The short labels are the only visible copy; the real encounter
+ * is what teaches the detail after the card is chosen.
+ */
+export const LESSON_CARD_COPY=Object.freeze({
+ slash:Object.freeze({title:'SLASH WINDOW',signal:'TIMING',move:'CUT'}),
+ fang:Object.freeze({title:'FANG',signal:'CHARGE',move:'DODGE'}),
+ pulse:Object.freeze({title:'PULSE',signal:'RING WAVE',move:'PARRY'}),
+ prism:Object.freeze({title:'PRISM',signal:'SIGHTLINE',move:'STEP'}),
+ link:Object.freeze({title:'LINK',signal:'BEAM',move:'BREAK'}),
+ fork:Object.freeze({title:'FORK',signal:'SPLIT',move:'CUT TWICE'}),
+ bastion:Object.freeze({title:'BASTION',signal:'ARMOR',move:'BREAK PLATES'}),
+ rift:Object.freeze({title:'RIFT',signal:'BLINK',move:'STEP IN'}),
+ well:Object.freeze({title:'WELL',signal:'PULL',move:'ESCAPE'}),
+ crown:Object.freeze({title:'CROWN',signal:'VOLLEY',move:'PARRY'}),
+ monolith:Object.freeze({title:'MONOLITH',signal:'SEAM',move:'REACH'}),
+});
+
+function cardCopy(lesson){return LESSON_CARD_COPY[lesson.id]||{title:lesson.name,signal:'LIVE CUE',move:'WATCH'};}
 
 /** The shipped lesson surface: a real encounter with THE WATCH chip state. */
 export function createTeachingUI({resetInput=()=>{},motion=()=>true,onOpen=()=>{},onClose=()=>{}}={}){
  const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!=null)n.textContent=text;return n;};
- const dialog=el('dialog','teaching-guide');dialog.setAttribute('aria-labelledby','teaching-title');
+ const dialog=el('dialog','teaching-guide');dialog.setAttribute('aria-labelledby','teaching-title');dialog.dataset.mode='picker';
  const header=el('header'),identity=el('div'),title=el('h2','','LIVE TRAINING');title.id='teaching-title';identity.append(el('small','','THE WATCH / NO REWARDS'),title);
- const picker=el('label','teaching-lesson-picker','LESSON'),select=el('select');select.setAttribute('aria-label','Choose live training lesson');
- for(const lesson of TEACHING_SCENARIOS){const o=el('option','',lesson.name);o.value=lesson.id;select.append(o);}picker.append(select);
+ const picker=el('div','teaching-lesson-picker');
+ const select=el('select','sr');select.setAttribute('aria-label','Choose live training lesson');
+ for(const lesson of TEACHING_SCENARIOS){const o=el('option','',lesson.name);o.value=lesson.id;select.append(o);}
+ const changeLesson=el('button','teaching-change-lesson','CHOOSE SHAPE');changeLesson.type='button';picker.append(select,changeLesson);
  const close=el('button','teaching-close','CLOSE');close.type='button';close.onclick=()=>dialog.close();header.append(identity,picker,close);
- const menu=el('details','teaching-menu'),menuSummary=el('summary','','CONTROLS & COUNTERS');menu.append(menuSummary);
- const controls=el('p','teaching-controls','TAP a target or PULL BACK & RELEASE · ARROWS / WASD + SPACE · HOLD or SHIFT to focus');
- const healthHelp=el('p','teaching-health-help','REAL ATTACKS · A hit restarts this rehearsal · no score, wallet or fracture carries out.');
- const basics=el('details','teaching-basics'),summary=el('summary','','WHAT THE ARENA SHOWS');basics.append(summary,healthHelp);
- for(const [head,text] of [
-  ['CONTROLS','Tap a target, or pull back and release forward. Arrows / WASD aim and Space launches. Hold in flight or hold Shift to focus.'],
-  ['SLASH','A dash activates the blade. A cut is real; the first kill ends this rehearsal.'],
-  ['PARRY','An early dash can stop rings, needles and linked beams. It is not general invulnerability.'],
-  ['PRACTICE','Dying silently repeats the same encounter. Try At Speed unlocks after a real cut or reach.'],
- ]){const p=el('p');p.append(el('b','',head+' · '),document.createTextNode(text));basics.append(p);}
- menu.append(controls,basics);
+
+ const pickerScreen=el('section','teaching-picker');pickerScreen.setAttribute('aria-labelledby','teaching-picker-title');
+ const pickerHead=el('div','teaching-picker-head'),pickerTitle=el('h1','','CHOOSE A SHAPE');pickerTitle.id='teaching-picker-title';
+ pickerHead.append(el('small','','THE WATCH / LIVE SIGHT'),pickerTitle,el('p','','ONE CUE. ONE MOVE. THEN PLAY.'));
+ const cardGrid=el('div','teaching-picker-grid');
+ for(const lesson of TEACHING_SCENARIOS){
+  const copy=cardCopy(lesson),button=el('button','teaching-lesson-card');button.type='button';button.dataset.lesson=lesson.id;
+  button.setAttribute('aria-label',`${copy.title}. ${copy.signal}. ${copy.move}.`);
+  const preview=el('canvas','lesson-preview');preview.width=280;preview.height=150;preview.dataset.lesson=lesson.id;
+  const info=el('span','teaching-lesson-card-copy');info.append(el('strong','',copy.title),el('small','',copy.signal),el('em','',copy.move));
+  button.append(preview,info);
+  button.onclick=()=>{select.value=lesson.id;rebuild();};
+  cardGrid.append(button);
+ }
+ const pickerFoot=el('small','teaching-picker-foot','THE ARENA SHOWS THE REST.');pickerScreen.append(pickerHead,cardGrid,pickerFoot);
+
+ const menu=el('details','teaching-menu'),menuSummary=el('summary','','CONTROLS');menu.append(menuSummary);
+ const controls=el('p','teaching-controls','DASH · SPACE / TAP  ·  AIM · ARROWS / WASD  ·  FOCUS · SHIFT');
+ const healthHelp=el('p','teaching-health-help','HIT · REPEAT  ·  CUT · CLEAR  ·  NO REWARDS');
+ menu.append(controls,healthHelp);
  const stage=el('div','teaching-stage'),canvas=el('canvas');canvas.tabIndex=0;canvas.setAttribute('aria-label','Live enemy rehearsal. Tap a target, or pull back and release. Arrows or WASD aim; Space launches; Shift focuses.');stage.append(canvas);
  const directions=el('div','teaching-directions'),chip=el('div','watch-chip story-chip','WATCH IT.');chip.setAttribute('aria-live','polite');chip.setAttribute('role','status');
  const lessonMark=el('small','watch-lesson-mark'),trySpeed=el('button','watch-try-speed','TRY AT SPEED');trySpeed.type='button';trySpeed.hidden=true;
@@ -30,11 +63,26 @@ export function createTeachingUI({resetInput=()=>{},motion=()=>true,onOpen=()=>{
  const meters=el('div','teaching-meters'),blade=el('div','teaching-blade'),bladeName=el('b'),track=el('progress'),bladeTime=el('span');track.max=38;track.setAttribute('aria-label','Remaining active slash window');blade.append(bladeName,track,bladeTime);
  const stats=el('p','teaching-stats'),enemyState=el('p','teaching-enemy-state');meters.append(blade,stats,enemyState);
  const announce=el('p','teaching-announcement');announce.setAttribute('role','status');announce.setAttribute('aria-live','polite');
- dialog.append(stage,header,menu,directions,meters,announce);document.querySelector('#game').append(dialog);
- let session=null,renderer=null,input=null,raf=0,windowPeak=1,lastShots=-1,lastRestart=0;const clock=createClock();
+ dialog.append(pickerScreen,stage,header,menu,directions,meters,announce);document.querySelector('#game').append(dialog);
+ let session=null,renderer=null,input=null,raf=0,pickerMode=true,windowPeak=1,lastShots=-1,lastRestart=0;const clock=createClock();
  function teardown(){cancelAnimationFrame(raf);raf=0;input?.dispose();input=null;session?.dispose();session=null;renderer?.dispose();renderer=null;clock.reset();}
+ function paintPicker(now=0){
+  for(const button of cardGrid.querySelectorAll('.teaching-lesson-card')){
+   const lesson=teachingScenario(button.dataset.lesson),selected=lesson.id===select.value;
+   button.setAttribute('aria-pressed',String(selected));
+   drawTrainingCard(button.querySelector('canvas'),280,150,{lessonId:lesson.id,kind:lesson.kind,count:lesson.count||1,time:now,selected,motion:motion()});
+  }
+ }
+ function pickerFrame(now){
+  if(!dialog.open||!pickerMode)return;
+  paintPicker(now);
+  raf=requestAnimationFrame(pickerFrame);
+ }
+ function showPicker(id=select.value){
+  teardown();resetInput();pickerMode=true;select.value=teachingScenario(id).id;dialog.dataset.mode='picker';pickerScreen.hidden=false;paintPicker(0);const chosen=cardGrid.querySelector(`[data-lesson="${select.value}"]`);chosen?.focus({preventScroll:true});raf=requestAnimationFrame(pickerFrame);
+ }
  function rebuild(){
-  teardown();resetInput();const lesson=teachingScenario(select.value);dialog.dataset.lesson=lesson.id;
+  teardown();resetInput();pickerMode=false;dialog.dataset.mode='lesson';pickerScreen.hidden=true;const lesson=teachingScenario(select.value);dialog.dataset.lesson=lesson.id;
   const reducedMotion=!motion();
   renderer=createRenderer(canvas);renderer.reset(841);renderer.setTrainingScale(lesson.id==='slash'?1:lesson.id==='link'?1.15:1.3);renderer.setShakeLevel('off');
   session=createTeachingSession({scenario:lesson.id,rehearsal:true,reducedMotion,emit:(type,data)=>{
@@ -68,9 +116,10 @@ export function createTeachingUI({resetInput=()=>{},motion=()=>true,onOpen=()=>{
   renderer.draw(r,alpha,input.aim,motion());r.setView(renderer.questView());update();raf=requestAnimationFrame(frame);
  }
  trySpeed.onclick=()=>{if(session?.tryAtSpeed()){input?.reset();clock.reset();canvas.focus({preventScroll:true});update();}};
+ changeLesson.onclick=()=>showPicker(select.value);
  menu.addEventListener('toggle',()=>{input?.reset();clock.reset();});
  select.onchange=()=>{rebuild();};
  for(const type of ['keydown','keyup'])dialog.addEventListener(type,e=>{if(e.code==='Escape'||e.target!==canvas)e.stopPropagation();});
- dialog.addEventListener('close',()=>{teardown();resetInput();onClose();});
- return {open(id='slash'){if(dialog.open)return;onOpen();menu.open=false;dialog.showModal();select.value=teachingScenario(id).id;rebuild();},get isOpen(){return dialog.open;}};
+ dialog.addEventListener('close',()=>{teardown();pickerMode=false;pickerScreen.hidden=true;resetInput();onClose();});
+ return {open(id='slash'){if(dialog.open)return;onOpen();menu.open=false;select.value=teachingScenario(id).id;dialog.showModal();showPicker(select.value);},get isOpen(){return dialog.open;}};
 }

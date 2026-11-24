@@ -7758,6 +7758,70 @@ function createRenderer(c, viewport) {
         watcherMask(c, w / 2, h * 0.3, Math.min(w, h) * 0.0016 + 0.55, { glow: Math.max(0, 1 - t * 1.6), eye: Math.max(0, 1 - t) });
         break;
       }
+      case 'sector-locks': {
+        // The old room is visibly letting go: three anchor locks drop and
+        // flare instead of silently teleporting the player to a new counter.
+        wash(0.24 + 0.18 * (1 - t));
+        const fall = easeIn(t), glow = 0.35 + 0.65 * (1 - t);
+        for (let i = 0; i < 3; i++) {
+          const x = w * (0.28 + i * 0.22), y = h * 0.56 + fall * (h * 0.22 + i * 8);
+          c.save();
+          c.translate(x, y);
+          c.rotate((i - 1) * 0.42 + t * (i % 2 ? 1 : -1));
+          c.globalAlpha = glow;
+          c.fillStyle = '#171323'; c.strokeStyle = '#e1b878'; c.lineWidth = 3;
+          c.beginPath(); c.moveTo(0, -24); c.lineTo(24, 0); c.lineTo(0, 24); c.lineTo(-24, 0); c.closePath(); c.fill(); c.stroke();
+          c.globalAlpha = 0.8 * glow; c.strokeStyle = '#ddff89'; c.lineWidth = 2;
+          c.beginPath(); c.moveTo(-12, -2); c.lineTo(-3, 7); c.lineTo(14, -10); c.stroke();
+          c.restore();
+        }
+        break;
+      }
+      case 'sector-seam': {
+        // The Watcher is not a menu narrator. It is the thing opening the next
+        // room: its eyes wake, then the seam tears behind the player.
+        wash(0.18);
+        const breathe = 0.45 + 0.55 * Math.sin(t * Math.PI);
+        watcherMask(c, w / 2, h * 0.27, Math.min(w, h) * 0.00155 + 0.5, { glow: breathe * flash, eye: 0.25 + 0.75 * t });
+        const seamY = h * 0.66, reach = easeOut(Math.min(1, t * 1.2));
+        const pts = fracturePath(1200 + (s.narrative?.sector || 1), w / 2, seamY, w / 2 + (w * 0.46) * reach, seamY + Math.sin(t * Math.PI) * 18, 11);
+        c.globalAlpha = 0.55 + 0.45 * breathe; c.strokeStyle = '#ddff89'; c.lineWidth = 3; jaggedLine(c, pts); c.stroke();
+        c.globalAlpha = 0.28 * breathe; c.strokeStyle = '#ffb256'; c.lineWidth = 12; jaggedLine(c, pts); c.stroke();
+        c.globalAlpha = 1;
+        break;
+      }
+      case 'sector-rise': {
+        // A vertical lift gives the crossing a destination: the next arena is
+        // being pulled up through the wound, with real fragments moving toward
+        // the new horizon rather than an unexplained screen flash.
+        wash(0.12 * (1 - t));
+        const lift = easeOut(t), horizon = h * (0.78 - 0.42 * lift);
+        c.globalAlpha = 0.55 + 0.45 * lift;
+        c.strokeStyle = '#ddff89'; c.lineWidth = 3;
+        c.beginPath(); c.moveTo(0, horizon); c.lineTo(w, horizon); c.stroke();
+        for (let i = 0; i < 9; i++) {
+          const x = (i + 0.5) * w / 9, y0 = h + (i % 3) * 30, y1 = horizon + (i % 4) * 16;
+          c.globalAlpha = (0.14 + 0.08 * (i % 3)) * (0.35 + 0.65 * lift);
+          c.strokeStyle = i % 2 ? '#ffb066' : '#ddff89'; c.lineWidth = 2 + (i % 2);
+          c.beginPath(); c.moveTo(x, y0); c.lineTo(x + (i - 4) * 12 * lift, y1); c.stroke();
+        }
+        watcherMask(c, w / 2, horizon - h * 0.18, Math.min(w, h) * 0.0012 + 0.38, { glow: 0.55 * flash, eye: 0.9, split: 0.22 * lift });
+        c.globalAlpha = 1;
+        break;
+      }
+      case 'sector-release': {
+        // The new room is already underneath the live run. This is only the
+        // last breath of the crossing; control returns without a title card.
+        const fade = Math.max(0, 0.16 * (1 - t));
+        if (fade) { c.fillStyle = `rgba(8,7,20,${fade})`; c.fillRect(0, 0, w, h); }
+        for (let i = 0; i < 12; i++) {
+          const x = (hash(1411 + (s.narrative?.sector || 1), i, 3) % 1000) / 1000 * w;
+          const y = h * 0.32 + ((hash(1411, i, 5) % 1000) / 1000) * h * 0.42 - t * h * 0.12;
+          c.globalAlpha = Math.max(0, 0.5 * (1 - t)); c.fillStyle = i % 3 ? '#ddff89' : '#ffb066'; c.fillRect(x, y, 2, 5);
+        }
+        c.globalAlpha = 1;
+        break;
+      }
       case 'shatter-freeze': {
         wash(0.3);
         const snap = Math.min(1, t / 0.4);
@@ -9264,6 +9328,45 @@ function drawEnemyShape(ctx, spec = {}) {
   } finally {
     ctx.restore();
   }
+}
+
+/**
+ * A compact study card for THE WATCH. This belongs beside the rest of the art
+ * API so callers never grow a second, slightly different enemy renderer in a
+ * menu component. The card is a silhouette plus one live tell, not a tutorial
+ * screenshot and not a second combat simulation.
+ */
+export function drawTrainingCard(ctx, width = 280, height = 150, {
+  lessonId = 'fang', kind = 'fang', count = 1, time = 0, selected = false, motion = true,
+} = {}) {
+  const w = Math.max(1, Number(width) || 280), h = Math.max(1, Number(height) || 150);
+  const t = motion ? (Number.isFinite(time) ? time : 0) * 0.0015 : 0;
+  ctx.save();
+  try {
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#100e19'; ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = '#2c2740'; ctx.lineWidth = 1;
+    for (let x = 16; x < w; x += 28) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+    for (let y = 16; y < h; y += 28) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+    ctx.strokeStyle = selected ? '#ddff89' : '#5b5068'; ctx.lineWidth = selected ? 2 : 1; ctx.strokeRect(.75, .75, w - 1.5, h - 1.5);
+    const pulse = 1 + .06 * Math.sin(t * 4), cy = h * .48;
+    ctx.globalAlpha = .18; ctx.fillStyle = selected ? '#ddff89' : '#b99bd8'; ctx.beginPath(); ctx.arc(w / 2, cy, 34 * pulse, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+    const foeCard = (enemyKind, x, y, radius, angle = 0) => drawEnemyShape(ctx, {
+      kind: enemyKind, x, y, radius, angle,
+      options: { mode: 'tell', clock: Math.floor(t * 60), span: 1, aim: angle, hp: enemyKind === 'monolith' ? 10 : 2 },
+    });
+    if (lessonId === 'slash') {
+      foeCard('fang', w * .33, cy + 5, 18, -.22); foeCard('fang', w * .5, cy - 8, 21, 0); foeCard('fang', w * .67, cy + 5, 18, .22);
+    } else if (lessonId === 'link' || count > 1) {
+      ctx.strokeStyle = '#f3b1d4'; ctx.globalAlpha = .42; ctx.lineWidth = 3; ctx.setLineDash([6, 7]);
+      ctx.beginPath(); ctx.moveTo(w * .34, cy); ctx.lineTo(w * .66, cy); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+      foeCard(kind, w * .34, cy, 20, Math.sin(t) * .08); foeCard(kind, w * .66, cy, 20, -Math.sin(t) * .08);
+    } else {
+      const radius = lessonId === 'monolith' ? 34 : lessonId === 'crown' ? 27 : lessonId === 'bastion' ? 25 : 22;
+      foeCard(kind, w / 2, cy, radius, lessonId === 'rift' ? t * .35 : Math.sin(t) * .06);
+    }
+    ctx.fillStyle = '#dfff70'; ctx.globalAlpha = .82; ctx.fillRect(w / 2 - 18, h * .82, 36, 2); ctx.globalAlpha = 1;
+  } finally { ctx.restore(); }
 }
 function drawWorldBackdrop(ctx, width, height, worldId = "twilight", time = 0, camera = { x: 0, y: 0 }) {
   ctx.save();

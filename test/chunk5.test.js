@@ -2,7 +2,7 @@
  * CHUNK 5 — THE LEARNING GROUND.
  *
  * The training redesign, headless rules under test:
- *  - the hub door data is truthful and complete (three doors, three actions);
+ *  - the hub door data is visual-first (three doors, three concise actions);
  *  - every room of the course has an action line and a why line (TUTORIAL_LINES);
  *  - tutorialWhy() reads the same state the gates read;
  *  - stall escalation: objective text gains the directive prefix when a room
@@ -27,12 +27,13 @@ import {
 } from '../src/teaching.js';
 
 // ── THE HUB ───────────────────────────────────────────────────────────────
-test('CHUNK 5 hub: three doors, each with a truthful name and action', () => {
+test('CHUNK 5 hub: three visual doors, each with a concise action', () => {
   assert.equal(TRAINING_DOORS.length, 3);
   assert.deepEqual(TRAINING_DOORS.map(d => d.id), ['course', 'lessons', 'drills']);
   for (const door of TRAINING_DOORS) {
-    assert.ok(door.name && door.body && door.action, `${door.id} is fully described`);
-    assert.ok(door.body.length > 40, `${door.id} says what it is, not a slogan`);
+    assert.ok(door.name && door.tag && door.action, `${door.id} has a visible label and action`);
+    assert.ok(!door.body && !door.detail, `${door.id} has no old prose payload`);
+    assert.ok(door.tag.split(/\s+/).length <= 5, `${door.id} tag stays concise`);
     assert.match(door.action, /COURSE|ENEMY|DRILLS/, `${door.id}'s action is not a mystery`);
   }
 });

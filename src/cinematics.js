@@ -1,8 +1,8 @@
 /**
- * CHUNK 6A: THE TWO CUTSCENES, AS DATA.
+ * CHUNK 6A: THE STORY CUTSCENES, AS DATA.
  *
- * Pure module — the beat tables for the cold open (§3) and the SHATTER
- * cinematic (§5.4). Painters live in the art engine keyed off the beat id;
+ * Pure module — the beat tables for the cold open (§3), sector crossings, and
+ * the SHATTER cinematic (§5.4). Painters live in the art engine keyed off the beat id;
  * timing/skip/reduced-motion live in cutscene.js. The chips are declared
  * here so the chip budget is auditable by test.
  *
@@ -24,6 +24,19 @@ export const COLD_OPEN_BEATS = Object.freeze([
   { id: 'cold-fangs', ticks: 42, lockInput: true, chip: { text: 'CUT.', at: 0 } },
   // 3.3–4.0s — ready-cam settles; the HUD fades in piece by piece.
   { id: 'cold-settle', ticks: 42, lockInput: true, chip: { text: 'CUT THE WORLD.', at: 0 } },
+]);
+
+/**
+ * A sector crossing is a short visual sentence, not another briefing panel.
+ * The three locks have just fallen, the Watcher opens the seam, and the field
+ * lifts to the next room. The player gets control back before the new targets
+ * begin their first tell; no paragraph is needed to explain progression.
+ */
+export const SECTOR_BEATS = Object.freeze([
+  { id: 'sector-locks', ticks: 12, lockInput: true },
+  { id: 'sector-seam', ticks: 24, lockInput: true },
+  { id: 'sector-rise', ticks: 30, lockInput: true },
+  { id: 'sector-release', ticks: 24, lockInput: false },
 ]);
 
 /**

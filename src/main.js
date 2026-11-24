@@ -30,7 +30,7 @@ import { speedReadout, meterReadout, dialGeometry } from './motion.js';
 import { MAX_SPEED } from './physics.js';
 import { FRACTURE_TIERS, FRACTURE_KEY, clampPct, persistFracture, fractureTier } from './fracture.js';
 import { createCutscene, coldOpenOnce } from './cutscene.js';
-import { COLD_OPEN_BEATS, SHATTER_BEATS, lockTicks } from './cinematics.js';
+import { COLD_OPEN_BEATS, SECTOR_BEATS, SHATTER_BEATS, lockTicks } from './cinematics.js';
 let questUI, customize, waveUI, controlPractice, teaching;let learningGround=false,tutorial=null,lastTutorialHint=null,lastRiftObjective='',lastTutorialWhy='';
 const tutorialHintSpeech=Object.freeze({
  slice:'Slice the highlighted target. Tap it, or pull away and release toward it.',
@@ -142,6 +142,10 @@ function tickCutscene() {
       lockInput: snap.lockInput,
       reducedMotion: snap.reducedMotion,
     };
+    // The beat table owns the handoff: locked shots hold the live run, while
+    // the final release shot lets the player move again before the visual
+    // sentence fully fades. `endCutscene` still clears this on skip/finish.
+    run.state.inputLock = !!snap.lockInput;
   }
   // The chip is DOM, owned here; the engine never writes text.
   if (snap.chip && snap.t >= (snap.chip.at ?? 0)) {
@@ -374,6 +378,17 @@ function event(type, d) {
     case 'sonicBank': audio.strike('parry');break;
     case 'breachContact': audio.seamHit();break;
     case 'dimensionBreak': if(!run?.state.narrative)input?.reset();audio.shatter();break;
+    case 'sector':
+      audio.zone();
+      // Continuous mode has a real room-to-room story beat. Legacy wave mode
+      // also emits `sector` for its counter, but it must not inherit a cinematic
+      // that belongs only to the Watcher/seal route.
+      if (run?.state.narrative && (d?.band | 0) > 1) {
+        input?.reset();
+        audio.seamHit();
+        launchCutscene(SECTOR_BEATS, { reducedMotion: !opts.motion });
+      }
+      break;
     case 'waveStart': audio.zone(); break;
     // CHUNK 2: every fracture the run causes lands in storage immediately,
     // so an interrupted session never loses the seam it tore.
@@ -486,11 +501,6 @@ function event(type, d) {
       audio.strike('break');
       buzz(38);
       portal();
-      break;
-    case 'sector':
-      // CHUNK 6A (§4): the transition is a 1.4s chip, not a sentence. The
-      // ribbon/band numbers carry the lore weight; the words went.
-      audio.zone();
       break;
     case 'drive':
       audio.strike('drive');
