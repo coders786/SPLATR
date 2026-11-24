@@ -7477,6 +7477,44 @@ function createRenderer(c, viewport) {
     }
     c2.restore();
   }
+  function storyEmotionMotif(c,width,height,emotion,time,motion,intensity=.8){
+    if(!emotion)return;
+    const clock=motion?time:0,pulse=motion?(.5+.5*Math.sin(clock*.055)):.65,power=Math.max(0,Math.min(1,Number(intensity)||0));
+    if(!power)return;
+    c.save();c.lineCap='round';c.lineJoin='round';
+    if(emotion==='friendship'){
+      const x=width*.22,y=height*.17,gap=Math.min(width*.075,54),s=10+4*pulse;
+      c.globalAlpha=.16+.15*power;c.strokeStyle='#ffd68c';c.lineWidth=2;
+      c.beginPath();c.moveTo(x-gap,y);c.quadraticCurveTo(x,y-height*.035*(.7+pulse),x+gap,y);c.stroke();
+      c.globalAlpha=.32+.28*power;c.fillStyle='#ffe7a7';c.beginPath();c.arc(x+(pulse*2-1)*gap,y-height*.012,s*.24,0,Math.PI*2);c.fill();
+      for(const side of [-1,1]){c.save();c.translate(x+side*gap,y);c.rotate(side*(.12+.1*pulse));c.globalAlpha=.42+.2*power;c.fillStyle='#171323';c.strokeStyle='#ffd68c';c.lineWidth=2.5;c.beginPath();c.moveTo(0,-s);c.lineTo(s*.72,0);c.lineTo(0,s);c.lineTo(-s*.72,0);c.closePath();c.fill();c.stroke();c.fillStyle='#ddff89';c.globalAlpha=.72;c.beginPath();c.arc(0,0,2.4,0,Math.PI*2);c.fill();c.restore();}
+    }else if(emotion==='fear'){
+      const x=width*.5,y=height*.17,r=Math.min(width,height)*.14;
+      c.globalAlpha=.12+.13*power;c.strokeStyle='#ff7e6d';c.lineWidth=2;
+      for(let i=0;i<3;i++){const rr=r*(1+i*.24)+pulse*3;c.beginPath();c.arc(x,y,rr,-Math.PI*.18+clock*.002+i*.7,Math.PI*.72+clock*.002+i*.7);c.stroke();}
+      c.globalAlpha=.3+.2*power;c.strokeStyle='#ffb27a';c.beginPath();c.moveTo(x-r*1.25,y);c.lineTo(x-r*.92,y);c.moveTo(x+r*.92,y);c.lineTo(x+r*1.25,y);c.stroke();
+    }else if(emotion==='rage'){
+      const x=width*.5,y=height*.42,flare=.65+.35*pulse;
+      c.globalAlpha=(.12+.16*power)*flare;c.strokeStyle='#ff684f';c.lineWidth=3;
+      for(let i=0;i<7;i++){const a=-Math.PI*.92+i*Math.PI*.3+Math.sin(clock*.03+i)*.025,r0=Math.min(width,height)*.08,r1=r0+20+18*pulse;c.beginPath();c.moveTo(x+Math.cos(a)*r0,y+Math.sin(a)*r0);c.lineTo(x+Math.cos(a)*r1,y+Math.sin(a)*r1);c.stroke();}
+      c.globalAlpha=.34+.2*power;c.fillStyle='#ffb066';c.beginPath();c.arc(x,y,3+3*pulse,0,Math.PI*2);c.fill();
+    }else if(emotion==='ambition'){
+      const base=height*.52,top=height*.09,x=width*.74,step=Math.min(width*.055,42);
+      c.globalAlpha=.16+.16*power;c.strokeStyle='#ffe09a';c.lineWidth=2.5;
+      for(let i=0;i<4;i++){const y=base-i*(base-top)/4,xx=x-i*step;c.beginPath();c.moveTo(xx-step*1.5,y);c.lineTo(xx+step*.6,y);c.lineTo(xx+step*.6,y-(base-top)/4);c.stroke();}
+      c.globalAlpha=.34+.2*power;c.beginPath();c.moveTo(x-3*step,top+20);c.lineTo(x-3*step,top);c.lineTo(x-3*step-10,top+12);c.moveTo(x-3*step,top);c.lineTo(x-3*step+10,top+12);c.stroke();
+    }else if(emotion==='love'){
+      const y=height*.18,gap=Math.min(width*.13,88),x=width*.5;
+      c.globalAlpha=.16+.16*power;c.strokeStyle='#ffe0a0';c.lineWidth=2.5;c.beginPath();c.moveTo(x-gap,y);c.bezierCurveTo(x-gap*.38,y-height*.07,x+gap*.38,y-height*.07,x+gap,y);c.stroke();
+      c.globalAlpha=.28+.22*power;c.fillStyle='#ffe7ad';c.beginPath();c.arc(x+(pulse*2-1)*gap,y-height*.035*(.5+pulse),3+2*pulse,0,Math.PI*2);c.fill();
+      for(const side of [-1,1]){c.globalAlpha=.45+.2*power;c.fillStyle=side<0?'#ffd68c':'#ddff89';c.beginPath();c.arc(x+side*gap,y,5+2*pulse,0,Math.PI*2);c.fill();}
+    }else if(emotion==='resolve'){
+      const y=height*.25,gap=Math.min(width*.12,80),x=width*.5;
+      c.globalAlpha=.18+.14*power;c.strokeStyle='#ffe0a0';c.lineWidth=3;c.beginPath();c.moveTo(x-gap,y);c.lineTo(x-gap*.42,y-height*.055);c.lineTo(x+gap*.42,y-height*.055);c.lineTo(x+gap,y);c.stroke();
+      c.globalAlpha=.34+.2*power;c.fillStyle='#fff0b5';c.beginPath();c.arc(x,y-height*.055,4+3*pulse,0,Math.PI*2);c.fill();
+    }
+    c.restore();
+  }
   function narrativeBackdrop(n, width, height, time, motion) {
     if (!n) return;
     const clock=motion?time:0, sector=n.sector, chapter=n.chapter||'';
@@ -7509,6 +7547,9 @@ function createRenderer(c, viewport) {
       } else if(chapter==='landlord'){
         c.save();c.globalAlpha=.34;c.fillStyle='#ff996688';c.beginPath();c.arc(width*.5,height*.24,Math.min(width,height)*.16,0,Math.PI*2);c.fill();c.restore();
       }
+      // The chapter noun sets the place; the emotional motif sets the reason
+      // to keep cutting. It is animation, not an explanatory overlay.
+      storyEmotionMotif(c,width,height,n.emotion,clock,motion,.9);
     }
     // A small independent story silhouette never intercepts input or pauses play.
     if(n.intro||n.reaction){
@@ -7682,6 +7723,7 @@ function createRenderer(c, viewport) {
     const t = cs.t, easeOut = (u) => 1 - Math.pow(1 - u, 3), easeIn = (u) => u * u * u;
     const wash = (a) => { c.fillStyle = `rgba(4,4,10,${a})`; c.fillRect(0, 0, w, h); };
     c.save();
+    if(cs.beatId?.startsWith('sector-'))storyEmotionMotif(c,w,h,s.narrative?.emotion,cs.elapsedTotal??time,motion,.82);
     // Letterbox bars for the locked beats.
     if (cs.lockInput) {
       const barT = Math.min(1, Math.min(t, 1 - t) / 0.16);

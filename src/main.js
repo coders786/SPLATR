@@ -31,7 +31,7 @@ import { MAX_SPEED } from './physics.js';
 import { FRACTURE_TIERS, FRACTURE_KEY, clampPct, persistFracture, fractureTier } from './fracture.js';
 import { createCutscene, coldOpenOnce } from './cutscene.js';
 import { COLD_OPEN_BEATS, sectorBeats, SHATTER_BEATS, lockTicks } from './cinematics.js';
-import { storyChipForWave } from './story-arc.js';
+import { LANDLORD_STORY, storyChipForWave } from './story-arc.js';
 let questUI, customize, waveUI, controlPractice, teaching;let learningGround=false,tutorial=null,lastTutorialHint=null,lastRiftObjective='',lastTutorialWhy='';
 const tutorialHintSpeech=Object.freeze({
  slice:'Slice the highlighted target. Tap it, or pull away and release toward it.',
@@ -434,12 +434,12 @@ function event(type, d) {
       // for the one chip the spec allows.
       audio.shatter();
       buzz(90);
-      showStoryChip('THE LANDLORD WAKES.');
+      showStoryChip(LANDLORD_STORY.chip);
       break;
     case 'monolithDown':
       audio.strike('drive');
       buzz(120);
-      showStoryChip('THE SEAM KNOWS YOU.');
+      showStoryChip(LANDLORD_STORY.finishChip);
       break;
     case 'waveClear': input?.reset();if(!d.shattered){audio.waveClear();pop('CLEAR',60,3);}break;
     case 'waveRest': input?.reset();break;

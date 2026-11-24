@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRun} from '../src/run.js';
 import {createRenderer} from '../src/renderer.js';
-import {installDom,createDisplay} from './support/display.js';
+import {frameSignature,installDom,createDisplay} from './support/display.js';
 import {placePlayer, stopPlayer} from '../src/physics.js';
 
 function shotAt(run,x,y,dx=0,dy=-42,ticks=12){
@@ -55,6 +55,7 @@ test('sectors continue through 04 with new locks and nonblocking reactions',()=>
   const seal=n.seal;shotAt(run,seal.x,seal.y+130);
   assert.equal(n.sector,expected);assert.equal(run.world.arena.y,oldY-1000);
   assert.equal(n.chapter,{2:'eye',3:'conduits',4:'seam'}[expected]);
+  assert.equal(n.emotion,{2:'fear',3:'rage',4:'ambition'}[expected]);
   assert.equal(n.locks.filter(l=>!l.broken).length,3);assert.equal(n.reaction.kind,expected===2?'smug':expected===3?'alarm':'split');
   assert.equal(run.state.phase,'playing');assert.equal(run.state.wave.phase,'combat');
  }
@@ -87,4 +88,18 @@ test('sector-three conduit damage follows actual prism destruction',()=>{
  shotAt(run,prism.x,prism.y+130);
  assert.equal(run.combat.enemies.has(prism.id),false);assert.equal(n.conduits,2);assert.ok(n.sparkAge>0);
  run.dispose();
+});
+
+test('emotional chapters change the actual painted frame without adding a text panel',()=>{
+ const dom=installDom();
+ try{
+  const {canvas,ctx}=createDisplay(880,710),renderer=createRenderer(canvas),run=createRun(29,()=>{},{waveMode:true,continuous:true});
+  run.state.phase='playing';run.world.clock=42;run.state.narrative.chapter='seal';run.state.narrative.sector=1;
+  const frames=[];
+  for(const emotion of ['friendship','fear','rage','ambition','love','resolve']){
+   run.state.narrative.emotion=emotion;ctx.__reset();renderer.draw(run,1,null,true);frames.push(frameSignature(ctx));
+  }
+  assert.equal(new Set(frames).size,6,'each emotional turn changes the visible world');
+  renderer.dispose();run.dispose();
+ }finally{dom.uninstall();}
 });
