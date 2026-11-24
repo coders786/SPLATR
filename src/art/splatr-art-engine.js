@@ -7676,7 +7676,7 @@ function createRenderer(c, viewport) {
   }
 
   // ── CHUNK 6A: THE CUTSCENE OVERLAY ─────────────────────────────────────
-  // Screen-space painters for the two cutscenes, keyed off `s.cutscene`
+  // Screen-space painters for the story sequences, keyed off `s.cutscene`
   // (mirrored by the shell every tick). Draws after everything, before the
   // DOM HUD — the chips live in the DOM, not here.
   function watcherMask(c, x, y, scale, { glow = 0, split = 0, eye = 1 } = {}) {
@@ -7715,6 +7715,59 @@ function createRenderer(c, viewport) {
     }
     return pts;
   }
+  function drawStoryMechanicDiagram(c,w,h,moment,progress,clock,motion,sx,sy,v){
+    // This is the actual first-wave Pulse lesson, enlarged into a cinematic
+    // frame. The ring is whole—there is no invented gap—and the player glyph
+    // moves clear of its expanding rim while the Watcher holds the thread.
+    const phase=motion?Math.max(0,Math.min(1,progress)):0.72,
+      pulse=motion?(.5+.5*Math.sin(clock*.08)):.7,
+      cx=w*.56,cy=h*.43,scale=Math.min(w,h)/700,
+      acid='#ddff89',warm='#ffd487',hot='#ff8068',ink='#121020';
+    const watcherX=w*.17,watcherY=h*.2,ring=22*scale+phase*112*scale;
+    const escape=Math.max(0,Math.min(1,(phase-.12)/.7)),path=-.54,
+      cutterX=cx+Math.cos(path)*(ring+24*scale+escape*42*scale),
+      cutterY=cy+Math.sin(path)*(ring+24*scale+escape*42*scale);
+    const sourceX=Number.isFinite(moment?.targetX)&&Number.isFinite(v?.scale)
+      ? (moment.targetX-v.x)*v.scale : NaN,
+      sourceY=Number.isFinite(moment?.targetY)&&Number.isFinite(v?.scale)
+      ? (moment.targetY-v.y)*v.scale : NaN;
+    const valid=(x,y)=>Number.isFinite(x)&&Number.isFinite(y)&&x>24&&x<w-24&&y>36&&y<h-30;
+    const thread=(x0,y0,x1,y1,alpha,width=2)=>{
+      c.save();c.globalAlpha=alpha;c.strokeStyle=warm;c.lineWidth=width*scale;c.beginPath();
+      c.moveTo(x0,y0);c.quadraticCurveTo((x0+x1)*.5,Math.min(y0,y1)-26*scale,x1,y1);c.stroke();c.restore();
+    };
+    const ringLine=(r,alpha,width,color=hot)=>{c.save();c.globalAlpha=alpha;c.strokeStyle=color;c.lineWidth=width*scale;c.beginPath();c.arc(cx,cy,r,0,Math.PI*2);c.stroke();c.restore();};
+    c.save();c.lineCap='round';c.lineJoin='round';
+    if(valid(sourceX,sourceY)){
+      c.globalAlpha=.2;c.strokeStyle=warm;c.lineWidth=1.5;c.setLineDash([5,10]);c.beginPath();c.moveTo(sourceX,sourceY);c.lineTo(cx,cy);c.stroke();c.setLineDash([]);
+      c.globalAlpha=.55;c.strokeStyle=warm;c.lineWidth=2;c.beginPath();c.arc(sourceX,sourceY,18*scale+4*pulse*scale,0,Math.PI*2);c.stroke();
+    }
+    const threadEndX=phase>.8?watcherX+42*scale:cutterX,
+      threadEndY=phase>.8?watcherY+8*scale:cutterY;
+    thread(watcherX+40*scale,watcherY+5*scale,threadEndX,threadEndY,.38+.3*(1-phase),2.2);
+    // After the pass, the Watcher is still holding the far end; the connection
+    // is no longer a comfortable line between friends.
+    if(phase>.62&&motion){
+      const fx=cx+Math.cos(path)*(ring-4*scale),fy=cy+Math.sin(path)*(ring-4*scale);
+      c.globalAlpha=.65*(phase-.62)/.38;c.strokeStyle=hot;c.lineWidth=2*scale;
+      for(let i=0;i<4;i++){const a=-.8+i*.52;c.beginPath();c.moveTo(fx,fy);c.lineTo(fx+Math.cos(a)*18*scale,fy+Math.sin(a)*18*scale);c.stroke();}
+    }
+    // Trailing rings are afterimages of the same expanding annulus, not extra
+    // hazards. The leading solid rim is the actionable thing to read.
+    ringLine(Math.max(5,ring-46*scale),.1+.12*pulse,2,warm);
+    ringLine(Math.max(5,ring-22*scale),.18+.16*pulse,3,warm);
+    ringLine(ring,.52+.25*pulse,5,hot);
+    c.globalAlpha=.1+.06*pulse;c.fillStyle=acid;c.beginPath();c.arc(cx,cy,Math.max(3,ring-10*scale),0,Math.PI*2);c.fill();
+    foe(c,'pulse',cx,cy,24*scale,0,{time:clock,mode:'idle'});
+    // The Cutter exits the rim's path. This is the same moving-body action the
+    // live Pulse collision allows; the visual never claims the ring has a gap.
+    cube(c,cutterX,cutterY,17*scale,path+.2,0,1);
+    c.save();c.globalAlpha=.72+.2*pulse;c.strokeStyle=acid;c.lineWidth=3*scale;c.beginPath();
+    c.moveTo(cutterX,cutterY);c.lineTo(cutterX+Math.cos(path)*30*scale,cutterY+Math.sin(path)*30*scale);c.lineTo(cutterX+Math.cos(path)*22*scale-7*scale,cutterY+Math.sin(path)*22*scale-5*scale);c.moveTo(cutterX+Math.cos(path)*30*scale,cutterY+Math.sin(path)*30*scale);c.lineTo(cutterX+Math.cos(path)*22*scale-7*scale,cutterY+Math.sin(path)*22*scale+5*scale);c.stroke();c.restore();
+    const watcherGlow=phase>.78?.45:.72;
+    watcherMask(c,watcherX,watcherY,Math.min(w,h)*.00082+.22,{glow:watcherGlow,eye:.42+.45*(1-phase),split:phase>.82?(phase-.82)*.25:0});
+    c.restore();
+  }
   function drawCutsceneOverlay(c, w, h, s, v, p, time, motion) {
     const cs = s.cutscene;
     if (!cs) return;
@@ -7724,6 +7777,7 @@ function createRenderer(c, viewport) {
     const wash = (a) => { c.fillStyle = `rgba(4,4,10,${a})`; c.fillRect(0, 0, w, h); };
     c.save();
     if(cs.beatId?.startsWith('sector-'))storyEmotionMotif(c,w,h,s.narrative?.emotion,cs.elapsedTotal??time,motion,.82);
+    if(cs.beatId?.startsWith('mid-wave-'))storyEmotionMotif(c,w,h,s.storyMoment?.emotion,cs.elapsedTotal??time,motion,.72);
     // Letterbox bars for the locked beats.
     if (cs.lockInput) {
       const barT = Math.min(1, Math.min(t, 1 - t) / 0.16);
@@ -7826,6 +7880,26 @@ function createRenderer(c, viewport) {
       case 'cold-settle': {
         wash(0.55 * (1 - t));
         watcherMask(c, w / 2, h * 0.3, Math.min(w, h) * 0.0016 + 0.55, { glow: Math.max(0, 1 - t * 1.6), eye: Math.max(0, 1 - t) });
+        break;
+      }
+      case 'mid-wave-signal': {
+        // A mid-wave beat is a signal, not a pause: the Watcher points at the
+        // real Pulse while the live formation remains visible underneath.
+        wash(.06);
+        drawStoryMechanicDiagram(c,w,h,s.storyMoment,t*.25,cs.elapsedTotal??time,motion,sx,sy,v);
+        break;
+      }
+      case 'mid-wave-teach': {
+        // The live Pulse is enlarged into a visual verb. It is not an
+        // instruction panel and never replaces the actual enemies.
+        wash(.08);
+        drawStoryMechanicDiagram(c,w,h,s.storyMoment,t,cs.elapsedTotal??time,motion,sx,sy,v);
+        break;
+      }
+      case 'mid-wave-return': {
+        const fade=Math.max(0,.12*(1-t));
+        if(fade){c.fillStyle=`rgba(8,7,20,${fade})`;c.fillRect(0,0,w,h);}
+        drawStoryMechanicDiagram(c,w,h,s.storyMoment,.82+.18*t,cs.elapsedTotal??time,motion,sx,sy,v);
         break;
       }
       case 'sector-locks': {

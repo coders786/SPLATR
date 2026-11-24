@@ -7,8 +7,9 @@
  * here so the chip budget is auditable by test.
  *
  * Chip budget (§4): the cold open spends exactly two — `CUT.` and `CUT
- * THE WORLD.`; the SHATTER cinematic spends exactly one — `IT HOLDS.`
- * Reduced motion: ticks scale ×0.6, flash beats halve amplitude, no dolly.
+ * THE WORLD.`; the one mid-wave pulse spends `LET IT PASS.`; the SHATTER
+ * cinematic spends exactly one — `IT HOLDS.` Reduced motion: ticks scale ×0.6,
+ * flash beats halve amplitude, no dolly.
  */
 export const TPS = 60;
 
@@ -47,6 +48,26 @@ export function sectorBeats(chip = '') {
   if (!text) return SECTOR_BEATS;
   return Object.freeze(SECTOR_BEATS.map((beat, index) => index === 1
     ? Object.freeze({ ...beat, chip: { text, at: .2 } })
+    : beat));
+}
+
+/**
+ * The one mid-wave story pulse is deliberately not another stop-and-watch
+ * panel. It is a one-second, nonblocking visual demonstration triggered by the
+ * first wave's real midpoint formation. The Pulse and the Watcher remain
+ * legible while the formation stays live beneath it.
+ */
+export const MID_WAVE_BEATS = Object.freeze([
+  { id: 'mid-wave-signal', ticks: 10, lockInput: false },
+  { id: 'mid-wave-teach', ticks: 32, lockInput: false },
+  { id: 'mid-wave-return', ticks: 18, lockInput: false },
+]);
+
+export function midWaveBeats(chip = '') {
+  const text = String(chip || '').trim();
+  if (!text) return MID_WAVE_BEATS;
+  return Object.freeze(MID_WAVE_BEATS.map((beat, index) => index === 1
+    ? Object.freeze({ ...beat, chip: { text, at: .15 } })
     : beat));
 }
 
@@ -105,5 +126,6 @@ function pacingOf(beats) {
 export const CUTSCENE_PACING = Object.freeze({
   coldOpen:pacingOf(COLD_OPEN_BEATS),
   sector:pacingOf(SECTOR_BEATS),
+  midWave:pacingOf(MID_WAVE_BEATS),
   shatter:pacingOf(SHATTER_BEATS),
 });

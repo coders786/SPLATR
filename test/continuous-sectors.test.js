@@ -103,3 +103,19 @@ test('emotional chapters change the actual painted frame without adding a text p
   renderer.dispose();run.dispose();
  }finally{dom.uninstall();}
 });
+
+test('a midpoint kill threshold triggers one real, nonblocking story lesson per run',()=>{
+ const events=[],run=createRun(31,type=>events.push(type),{waveMode:true,continuous:true});run.state.phase='playing';run.state.wave.entry=0;run.state.invul=10000;
+ const enemies=[...run.combat.enemies.values()],half=Math.ceil(enemies.length/2);
+ for(const enemy of enemies.slice(0,half))run.combat.remove(enemy);
+ run.tick();
+ assert.ok(events.includes('storyMoment'),'the lesson is earned by actual enemy progress');
+ assert.equal(run.state.storyMoment.mechanic,'pulse');
+ assert.equal(run.state.midWaveStorySeen,true,'the guard is run-scoped, not wave-scoped');
+ assert.ok(run.state.storyMoment.targetId,'the visual points at a real Pulse body');
+ const count=events.filter(type=>type==='storyMoment').length;run.tick();assert.equal(events.filter(type=>type==='storyMoment').length,count,'the story event cannot repeat on the next tick');
+ // Even if a later wave carries a story-shaped payload, the run guard wins.
+ run.state.wave.storyMoment={...run.state.storyMoment};run.state.wave.remaining=6;run.state.wave.total=12;run.tick();
+ assert.equal(events.filter(type=>type==='storyMoment').length,count,'later waves cannot replay the set piece');
+ run.dispose();
+});

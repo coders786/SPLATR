@@ -8,6 +8,7 @@ import Matter from 'matter-js';
 import {placePlayer,stopPlayer,setPlayerVelocity,setBulletTime} from './physics.js';
 import {gainFracture,FRACTURE_PER_WAVE_CLEAR,FRACTURE_PER_DIMENSION_BREAK} from './fracture.js';
 import {upgradeOffers} from './upgrades.js';
+import {storyMomentForWave} from './story-arc.js';
 // ── CHUNK 6B: THE BIGGER ARENA ──────────────────────────────────────────
 //
 // CHUNK 1 grew the arena 1800 x 1550 -> 2340 x 2015 (~1.3x on both axes).
@@ -78,14 +79,14 @@ export const waveUpgradeOffers=upgradeOffers;
 export function createWaveDirector({seed,world,combat,state,emit=()=>{},baseDashSpeed=1,controlPractice=false,catalogRewards=false,onUpgrade=null}){
  let platformBody=null,dwell=0;
  const cells=new Map();let start=null;
- const wave=state.wave={number:controlPractice?5:1,phase:'combat',total:0,remaining:0,platform:null,offers:[],cleared:0};
+ const wave=state.wave={number:controlPractice?5:1,phase:'combat',total:0,remaining:0,platform:null,offers:[],cleared:0,storyMoment:null,storyMomentTarget:null};
  function removePlatform(){if(platformBody)Matter.Composite.remove(world.engine.world,platformBody);const index=world.geometry.indexOf(wave.platform);if(index>=0)world.geometry.splice(index,1);platformBody=null;wave.platform=null;wave.magnet=null;dwell=0;}
  function spawn(){
   const cycle=Math.floor((wave.number-1)/5);if(!state.dimension||state.dimension.cycle!==cycle)state.dimension=createDimensionField(cycle);
   if(!state.breakthrough||state.breakthrough.cycle!==cycle)state.breakthrough=createBreakthrough(cycle);
   // CHUNK 2: the formed cracks in the world field angrier formations.
   // `fracture.tier` is 0 for a fresh meter, so untouched saves behave as before.
-  const plan=planEncounter(seed,wave.number,world.player.position,state.fracture?.tier??0);wave.total=controlPractice?0:plan.total;wave.brief=plan;wave.pace=createSpeedPace(wave.number);wave.cleanBanks=createCleanBanks();wave.age=0;wave.entry=controlPractice?0:30;wave.breach=null;wave.paceNotified=false;wave.shattered=false;wave.shatterFx=null;wave.shatterTrace=null;
+  const plan=planEncounter(seed,wave.number,world.player.position,state.fracture?.tier??0);wave.total=controlPractice?0:plan.total;wave.brief=plan;wave.storyMoment=controlPractice?null:storyMomentForWave(wave.number,plan);wave.storyMomentTarget=null;wave.pace=createSpeedPace(wave.number);wave.cleanBanks=createCleanBanks();wave.age=0;wave.entry=controlPractice?0:30;wave.breach=null;wave.paceNotified=false;wave.shattered=false;wave.shatterFx=null;wave.shatterTrace=null;
   start={elapsed:state.elapsed,kills:state.kills,shots:state.shots,score:state.score,damage:state.damageTaken||0,credits:state.killLedger?.credits||0};
   const mods=state.upgradeModifiers||{};
   for(const spec of controlPractice?[]:plan.specs){
@@ -93,6 +94,9 @@ export function createWaveDirector({seed,world,combat,state,emit=()=>{},baseDash
    combat.add(hp==null?spec:{...spec,hp});
   }
   cells.clear();(controlPractice?[]:plan.links).forEach((link,i)=>cells.set(`wave-link/${i}`,{link:{...link}}));
+  wave.storyMomentTarget=wave.storyMoment
+    ? [...combat.enemies.values()].find(enemy=>enemy.kind===wave.storyMoment.mechanic)||null
+    : null;
   state.invul=Math.max(state.invul,30);
   // Persistent ward cards recharge at the start of each wave; legacy cards
   // still use the one-wave `waveShield` assignment in choose().
@@ -156,6 +160,16 @@ export function createWaveDirector({seed,world,combat,state,emit=()=>{},baseDash
    state.breakthrough=stepBreakthrough(state.breakthrough,{dt,active,paceHeld:wave.pace.held,atPace:wave.pace.speed>=wave.pace.target,holding:!!state.held});
    if(active&&wave.pace.held&&!wave.paceNotified){wave.paceNotified=true;emit('paceHeld',{number:wave.number});}
    wave.remaining=combat.enemies.size;
+   const storyActive=state.phase==='playing'&&!state.opening&&!state.tutorialActive&&wave.entry<=0&&!state.stop&&!state.cutscene;
+   // The first wave's real Pulse is the only authored mid-wave set piece. The
+   // guard lives on the run state, while the half-formation threshold makes
+   // the timing gameplay-earned rather than a timer-only interruption.
+   if(storyActive&&!state.midWaveStorySeen&&wave.storyMoment&&wave.remaining>0&&wave.total>0&&wave.remaining<=Math.max(1,Math.ceil(wave.total*.5))){
+    state.midWaveStorySeen=true;
+    const target=wave.storyMomentTarget;
+    state.storyMoment={...wave.storyMoment,targetId:target?.id||null,targetX:target?.x,targetY:target?.y,targetR:target?.r,age:0};
+    emit('storyMoment',{...state.storyMoment,number:wave.number});
+   }
    if((wave.phase==='monolith')&&wave.remaining===0){
     // The Monolith fell. The rest deck rises — the ordinary end-of-wave ritual.
     rest();

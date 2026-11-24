@@ -30,7 +30,7 @@ import { speedReadout, meterReadout, dialGeometry } from './motion.js';
 import { MAX_SPEED } from './physics.js';
 import { FRACTURE_TIERS, FRACTURE_KEY, clampPct, persistFracture, fractureTier } from './fracture.js';
 import { createCutscene, coldOpenOnce } from './cutscene.js';
-import { COLD_OPEN_BEATS, sectorBeats, SHATTER_BEATS, lockTicks } from './cinematics.js';
+import { COLD_OPEN_BEATS, midWaveBeats, sectorBeats, SHATTER_BEATS, lockTicks } from './cinematics.js';
 import { LANDLORD_STORY, storyChipForWave } from './story-arc.js';
 let questUI, customize, waveUI, controlPractice, teaching;let learningGround=false,tutorial=null,lastTutorialHint=null,lastRiftObjective='',lastTutorialWhy='';
 const tutorialHintSpeech=Object.freeze({
@@ -114,20 +114,26 @@ const active = () =>
 // owns input lock, the freeze, and the chip.
 const coldOpenGate = coldOpenOnce();
 let activeCutscene = null,
-  cutsceneOnDone = null;
-function launchCutscene(beats, { reducedMotion = !opts.motion, onDone = null } = {}) {
+  cutsceneOnDone = null,
+  cutsceneOwnsStop = false;
+function launchCutscene(beats, { reducedMotion = !opts.motion, onDone = null, preserveInput = false } = {}) {
   if (activeCutscene) return;
   const cs = createCutscene({ beats, reducedMotion, onDone: () => endCutscene() });
   activeCutscene = cs;
   cutsceneOnDone = onDone;
+  const lockedTicks = lockTicks(beats, reducedMotion);
+  cutsceneOwnsStop = lockedTicks > 0;
   if (run) {
-    run.state.inputLock = true;
+    // A mid-wave story pulse has no locking beats: the player keeps the live
+    // formation, aim, and current launch. Locked cutscenes still claim the
+    // stop window before their first tick so no frame slips through.
+    run.state.inputLock = cutsceneOwnsStop;
     run.state.cutscene = null;
-    // The world holds through every locked beat — freeze before creating the
-    // lock so no tick slips between "cinematic decided" and "world frozen".
-    run.state.stop = Math.max(run.state.stop || 0, lockTicks(beats, reducedMotion));
+    run.state.stop = cutsceneOwnsStop
+      ? Math.max(run.state.stop || 0, lockedTicks)
+      : run.state.stop || 0;
   }
-  input.reset();
+  if (!preserveInput) input.reset();
   dirty = true;
 }
 function tickCutscene() {
@@ -165,13 +171,16 @@ function endCutscene() {
   cutsceneOnDone = null;
   activeCutscene = null;
   hideStoryChip();
+  const ownsStop = cutsceneOwnsStop;
+  cutsceneOwnsStop = false;
   if (run) {
-    // A skipped cutscene may end before the lock window's pre-applied stop
-    // expires. Release the simulation immediately; otherwise a quick skip
-    // leaves the world frozen for the remainder of the visual handoff.
-    run.state.stop = 0;
+    // A skipped locked cutscene may end before its pre-applied stop expires.
+    // The nonblocking mid-wave pulse does not own the stop: live hitstop or
+    // movement state created underneath it must survive the handoff.
+    if (ownsStop) run.state.stop = 0;
     run.state.cutscene = null;
     run.state.inputLock = false;
+    run.state.storyMoment = null;
   }
   onDone?.();
 }
@@ -379,6 +388,13 @@ function event(type, d) {
     case 'sonicBank': audio.strike('parry');break;
     case 'breachContact': audio.seamHit();break;
     case 'dimensionBreak': if(!run?.state.narrative)input?.reset();audio.shatter();break;
+    case 'storyMoment':
+      // Mid-wave story is a nonblocking visual handoff: the live formation
+      // keeps moving while the Watcher demonstrates the next real verb.
+      if (run && d && !activeCutscene) {
+        launchCutscene(midWaveBeats(d.chip), { reducedMotion: !opts.motion, preserveInput: true });
+      }
+      break;
     case 'sector':
       audio.zone();
       // Continuous mode has a real room-to-room story beat. Legacy wave mode
@@ -1295,7 +1311,7 @@ function frame(now) {
       input.retry();
       run.setAim(input.aim);
       run.tick(); // owns the panic ray, grace and every other tick rule
-      tickCutscene(); // CHUNK 6A: advances the cold open / sector / SHATTER cuts
+      tickCutscene(); // CHUNK 6A: advances the cold open / mid-wave / sector / SHATTER cuts
       if(learningGround&&tutorial){tutorial.tick(input.engaged);const objective=tutorialObjective(tutorial.visual,run.combat.enemies,lastDevice),label=$('tutorial-objective');label.hidden=!objective;const speech=objective?tutorialAnnouncement(tutorial.visual,objective,lastDevice):'',objectiveKey=objective+'|'+speech;if(objectiveKey!==lastRiftObjective){if(!objective)lastTutorialHint=null;lastRiftObjective=objectiveKey;setText('tutorial-objective-text',objective);const room=TUTORIAL_LINES[Math.min(Math.max(tutorial.visual.stage|0,0),3)];if(room&&label.dataset.room!==room.title){label.dataset.room=room.title;}if(speech)say(speech);}const whyNow=objective?tutorialWhy(tutorial.visual,run.combat.enemies):'';if(whyNow!==lastTutorialWhy){lastTutorialWhy=whyNow;const why=$('tutorial-objective-why');if(why)why.textContent=whyNow;}const hint=tutorial.visual.guide?.kind;if(!objective&&hint&&hint!==lastTutorialHint){lastTutorialHint=hint;say(tutorialHintSpeech[hint]);}if(tutorial.finished){queueMicrotask(()=>{if(learningGround&&tutorial?.finished)finishTutorial();});}}
       else questUI.tick();
       audio.focus(run.state.phase === 'playing' && run.state.held && run.world.slow);

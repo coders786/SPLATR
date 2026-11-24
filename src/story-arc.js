@@ -24,6 +24,23 @@ export const LANDLORD_STORY = Object.freeze({
   emotion: 'resolve',
 });
 
+/**
+ * The one mid-wave story set piece. It is deliberately authored around the
+ * first real Pulse rather than selected from a catalogue of cinematic verbs:
+ * the Watcher holds the expanding wave long enough for the Cutter to learn
+ * that the rim is the danger and the space behind it is safe.
+ */
+export const MID_WAVE_STORY = Object.freeze({
+  id: 'hold-the-wave',
+  chip: 'LET IT PASS.',
+  mechanic: 'pulse',
+  lesson: 'Dodge the expanding rim; the space behind it is safe.',
+  consequence: 'The Watcher holds the wave so the Cutter can pass.',
+  chapter: 'seal',
+  emotion: 'friendship',
+  wave: 1,
+});
+
 export const WAVE_STORY = Object.freeze([
   Object.freeze({
     sector: 1,
@@ -32,6 +49,7 @@ export const WAVE_STORY = Object.freeze([
     chip: 'WE CUT TOGETHER.',
     line: 'The Watcher stayed behind; an old promise brings the Cutter back.',
     emotion: 'friendship',
+    mid: MID_WAVE_STORY,
   }),
   Object.freeze({
     sector: 2,
@@ -74,4 +92,15 @@ export function storyForWave(number = 1) {
 
 export function storyChipForWave(number = 1) {
   return storyForWave(number).chip;
+}
+
+/**
+ * The first formation owns the only mid-wave story event. Returning null for
+ * every later wave makes the one-time contract explicit instead of relying on
+ * a caller remembering not to replay a generic lesson selector.
+ */
+export function storyMomentForWave(number = 1, brief = {}) {
+  const n = Math.max(1, Math.floor(Number(number) || 1));
+  if (n !== MID_WAVE_STORY.wave || (brief?.counts?.pulse || 0) < 1) return null;
+  return MID_WAVE_STORY;
 }

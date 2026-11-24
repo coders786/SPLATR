@@ -14,6 +14,8 @@ import { installDom, createDisplay } from './support/display.js';
 import {
   COLD_OPEN_BEATS,
   CUTSCENE_PACING,
+  MID_WAVE_BEATS,
+  midWaveBeats,
   SECTOR_BEATS,
   sectorBeats,
   SHATTER_BEATS,
@@ -40,6 +42,14 @@ test('6A: each wave can carry one short story chip without changing the shot ord
   assert.equal(beats[1].chip.at,.2,'the chapter lands just after the seam opens');
 });
 
+test('6A: a mid-wave lesson is one nonblocking visual beat', () => {
+  const beats=midWaveBeats('LET IT PASS.');
+  assert.deepEqual(beats.map(beat=>beat.id),MID_WAVE_BEATS.map(beat=>beat.id));
+  assert.equal(chipBudget(beats)[0],'LET IT PASS.');
+  assert.ok(beats.every(beat=>!beat.lockInput),'the lesson never steals a live launch');
+  assert.equal(beats[1].chip.at,.15);
+});
+
 test('6A: the SHATTER cinematic spends exactly one chip', () => {
   assert.deepEqual(chipBudget(SHATTER_BEATS), ['IT HOLDS.']);
 });
@@ -55,6 +65,7 @@ test('6A: the cinematic clocks match the shot lists at 60 tps', () => {
   assert.deepEqual(CUTSCENE_PACING,{
     coldOpen:{totalTicks:144,lockedTicks:120,releaseTicks:24,totalSeconds:2.4,lockedSeconds:2},
     sector:{totalTicks:60,lockedTicks:50,releaseTicks:10,totalSeconds:1,lockedSeconds:50/60},
+    midWave:{totalTicks:60,lockedTicks:0,releaseTicks:60,totalSeconds:1,lockedSeconds:0},
     shatter:{totalTicks:150,lockedTicks:120,releaseTicks:30,totalSeconds:2.5,lockedSeconds:2},
   });
 });
@@ -129,7 +140,8 @@ test('6A: every cutscene beat painter renders headlessly, both motion modes, wit
     const { canvas } = createDisplay(880, 710);
     const renderer = createRenderer(canvas);
     const run = createRun(77, () => {}, { waveMode: true, fracturePct: 65 });
-    for (const beat of [...COLD_OPEN_BEATS, ...SECTOR_BEATS, ...SHATTER_BEATS]) {
+    run.state.storyMoment={emotion:'friendship',mechanic:'pulse',chip:'LET IT PASS.',lesson:'Dodge the expanding rim.'};
+    for (const beat of [...COLD_OPEN_BEATS, ...SECTOR_BEATS, ...MID_WAVE_BEATS, ...SHATTER_BEATS]) {
       for (const motion of [true, false]) {
         for (const t of [0.02, 0.5, 0.98]) {
           run.state.cutscene = {

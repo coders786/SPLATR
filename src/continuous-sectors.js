@@ -9,7 +9,7 @@ import {horizontalCutWidth} from './equipment-combat.js';
 import {upgradeOffers} from './upgrades.js';
 import {recommendWaveOffer} from './encounters.js';
 import {gainFracture,FRACTURE_PER_WAVE_CLEAR} from './fracture.js';
-import {LANDLORD_STORY,storyForWave} from './story-arc.js';
+import {LANDLORD_STORY,storyForWave,storyMomentForWave} from './story-arc.js';
 
 // The targets are Matter sensor shapes queried by the same forward blade ray
 // used for enemies. They are not proximity-triggered or timed objectives.
@@ -19,7 +19,7 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
  // from the live arena so the 1.3x arena keeps spawn clearance honest. Captured
  // once -- `arena.y` is mutated sector-to-sector as the world grows upward.
  const LIFT = -arena.y;
- const wave=state.wave={number:1,phase:'combat',entry:0,age:0,total:0,remaining:0,cleared:0,platform:null,spawnPadGone:false,offers:[],recommendation:null,upgradeChosen:false};
+ const wave=state.wave={number:1,phase:'combat',entry:0,age:0,total:0,remaining:0,cleared:0,platform:null,spawnPadGone:false,offers:[],recommendation:null,upgradeChosen:false,storyMoment:null,storyMomentTarget:null};
  const openingStory=storyForWave(1);
  const story=state.narrative={intro:!!intro,introAge:0,sector:1,chapter:openingStory.id,storyTitle:openingStory.title,storyChip:openingStory.chip,storyLine:openingStory.line,emotion:openingStory.emotion,locks:[],lockBursts:[],seal:null,fracture:null,reaction:null,rest:null,conduits:3};
  let targets=[],lastPosition={...world.player.position}, prismIds=new Set(),sealBody=null,sealGeometry=null;
@@ -49,7 +49,7 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
  }
  function encounter(){
   const p=world.player.position,plan=planEncounter(seed,wave.number,{x:p.x,y:p.y-arena.y-LIFT});
-  wave.brief=plan;wave.total=plan.total;wave.remaining=plan.total;
+  wave.brief=plan;wave.total=plan.total;wave.remaining=plan.total;wave.storyMoment=storyMomentForWave(wave.number,plan);wave.storyMomentTarget=null;
   const mods=state.upgradeModifiers||{};
   for(const spec of plan.specs){
    const hp=spec.kind==='bastion'&&Number.isFinite(mods.bastionArmor)?Math.max(1,2+mods.bastionArmor):undefined;
@@ -57,6 +57,9 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
   }
   const prisms=[...combat.enemies.values()].filter(e=>e.kind==='prism');
   prismIds=new Set(prisms.map(e=>e.id));
+  wave.storyMomentTarget=wave.storyMoment
+    ? [...combat.enemies.values()].find(enemy=>enemy.kind===wave.storyMoment.mechanic)||null
+    : null;
   cells.clear();for(let i=0;i+1<prisms.length;i+=2)cells.set(`link/${i}`,{link:{a:prisms[i].id,b:prisms[i+1].id,period:300+i*30,age:0}});
   state.dimension=createDimensionField(wave.number-1);state.breakthrough=createBreakthrough(wave.number-1);
   wave.pace=createSpeedPace(wave.number);wave.cleanBanks=createCleanBanks();
@@ -140,6 +143,15 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
    story.lockBursts=story.lockBursts.filter(burst=>burst.age<30);
   }
   wave.age+=t;wave.remaining=combat.enemies.size;
+  const storyActive=active&&wave.entry<=0&&!state.stop&&!state.cutscene;
+  // The first real Pulse is the only authored mid-wave set piece. The guard is
+  // run-scoped, not wave-scoped, so a later sector cannot replay it.
+  if(storyActive&&!state.midWaveStorySeen&&wave.storyMoment&&wave.remaining>0&&wave.total>0&&wave.remaining<=Math.max(1,Math.ceil(wave.total*.5))){
+   state.midWaveStorySeen=true;
+   const target=wave.storyMomentTarget;
+   state.storyMoment={...wave.storyMoment,targetId:target?.id||null,targetX:target?.x,targetY:target?.y,targetR:target?.r,age:0};
+   emit('storyMoment',{...state.storyMoment,number:wave.number,sector:story.sector});
+  }
   // CHUNK 4: the Monolith's fall is checked unconditionally, not inside the
   // blade gate — the seam opens even if the killing cut spent the blade.
   if(state.monolith&&![...combat.enemies.values()].some(e=>e.kind==='monolith')){
