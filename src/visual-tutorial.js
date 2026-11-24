@@ -1,5 +1,9 @@
 import {createRun} from './run.js';
-import {WAVE_ARENA} from './waves.js';
+// The course is authored against fixed room bounds. CHUNK 1 grew the shared
+// wave arena ~1.3x for the field game; pinning the tutorial to its authored
+// room keeps the handcrafted gates, walls and scripted bank legible instead of
+// stretching them across a bigger table they were never tuned for.
+const TUTORIAL_ARENA = Object.freeze({x:-900,y:-1250,w:1800,h:1550});
 import {placePlayer,stopPlayer} from './physics.js';
 import {zoneHits} from './slasher.js';
 import Matter from 'matter-js';
@@ -18,6 +22,34 @@ const WALLS=Object.freeze([
  {x:-900,y:-490,w:1420,h:30},{x:780,y:-490,w:120,h:30},
  {x:-900,y:-1110,w:250,h:30},{x:-400,y:-1110,w:400,h:30},
 ]);
+
+// CHUNK 5 — THE LEARNING GROUND's course banners. Every room has ONE
+// sentence for what to do and ONE for why the room exists. The why is the
+// difference between a player performing and a player learning.
+export const TUTORIAL_LINES=Object.freeze({
+ 0:Object.freeze({title:'THE RACK',why:'The blade is short. Let the shapes come to you — cut all three.'}),
+ 1:Object.freeze({title:'THE WALL',why:'Speed is the whole game. Bank off the marked wall.'}),
+ 2:Object.freeze({title:'THE RIFT',why:'It only fights what it can see. Step close — when the red circle comes, be outside it.'}),
+ 3:Object.freeze({title:'THE CROWN',why:'Three plates stand between you and the field.'}),
+});
+// After this many ticks with no objective-relevant progress, the guide
+// escalates from instruction to directive. ~6.5 seconds at 60Hz.
+export const STALL_TICKS=390;
+/** The why-line under the banner. Reads the same state the gate reads. */
+export function tutorialWhy(visual,enemies=null){
+ const line=TUTORIAL_LINES[Math.min(Math.max(visual?.stage|0,0),3)];
+ if(!line)return '';
+ if(visual.stage===2){
+  if(visual.dodged)return 'Two targets remain — cut the Rift, then the Fang.';
+  const mode=enemies?.get?.('tutorial/rift')?.mode;
+  if(mode==='idle'||mode==null)return 'It sleeps beyond its ring. Stepping closer WAKES it — that is the lesson.';
+  if(mode==='tell')return 'The red circle is its one dangerous moment. Be outside it.';
+  if(mode==='recover'||mode==='attack')return 'It just struck. Wait for the next circle — then be outside it.';
+  return 'It is awake. Watch for the red circle.';
+ }
+ if(visual.stage===1)return (visual.gateReady||visual.gateBroken)?'The bank is the mechanic. The rest of the game is more of this.':'The bank sets up everything after it. Aim for the wall, not the room.';
+ return line.why;
+}
 
 /** Resolve the next visual cue from real objectives and enemy warning state.
  * No cue opens a gate, changes combat, or automatically plays an input. */
@@ -72,12 +104,14 @@ export function riftObjective(visual,enemies,device='touch') {
  if(visual.gateReady)return visual.gateBroken?'3/3 · GO THROUGH THE OPEN GATE':'3/3 · SLICE THE GLOWING GATE';
  if(visual.dodged){const left=['tutorial/rift','tutorial/fang'].filter(id=>enemies.has(id)).length;return `${visual.successTicks>0?'GOOD! ':''}2/3 · SLICE SHAPES · ${left} LEFT`;}
  const kind=visual.guide?.kind;
+ const stall=visual.stall;
  if(kind==='dodge')return device==='keys'?`1/3 · HOLD ${escapeDirection(visual.guide).toUpperCase()} ARROW + SPACE`:`1/3 · ${device==='mouse'?'CLICK':'TAP'} THE GREEN DIAMOND`;
  if(kind==='resolve')return '1/3 · STAY OUTSIDE UNTIL IT STRIKES';
- if(kind==='wait-next')return '1/3 · WAIT FOR THE NEXT RED CIRCLE';
+ if(kind==='wait-next')return stall?'GO — WAIT FOR THE RED CIRCLE, THEN BE OUTSIDE IT':'1/3 · WAIT FOR THE NEXT RED CIRCLE';
  if(visual.dodgeFeedback>0)return 'MISSED · WAIT FOR THE NEXT RED CIRCLE';
- if(kind==='approach')return '1/3 · MOVE CLOSER TO THE SHAPE';
- return '1/3 · WAIT FOR THE RED CIRCLE';
+ if(kind==='approach')return stall?'GO — STEP INTO THE RING, THE CIRCLE COMES NEXT':'1/3 · STEP INTO THE RING · IT WAKES WHEN YOU GET CLOSE';
+ if(kind==='watch')return stall?'GO — WAIT FOR THE CIRCLE, THEN BE OUTSIDE IT':'1/3 · WAIT FOR THE RED CIRCLE';
+ return '1/3 · IT IS AWAKE · WAIT FOR THE RED CIRCLE';
 }
 
 function escapeDirection(guide) {
@@ -98,24 +132,25 @@ export function tutorialObjective(visual,enemies,device='touch') {
  if(visual.gateReady)return visual.gateBroken?'GO THROUGH THE OPEN GATE':'SLICE THE GLOWING GATE';
  if(visual.stage===0){
   const left=[...enemies.keys()].filter(id=>id.startsWith('tutorial/rack/')).length;
-  return `${device==='keys'?'ARROWS + SPACE':device==='mouse'?'CLICK A SHAPE':'TAP A SHAPE'} · ${left} LEFT`;
+  const action=`${device==='keys'?'ARROWS + SPACE':device==='mouse'?'CLICK A SHAPE':'TAP A SHAPE'} · ${left} LEFT`;
+  return visual.stall?`${action} — IT CANNOT HIT BACK, CUT FREELY`:action;
  }
- if(visual.stage===1)return 'BOUNCE OFF THE GLOWING RIGHT WALL';
+ if(visual.stage===1)return visual.stall?'GO — THE WALL IS MARKED, HIT IT':'BOUNCE OFF THE GLOWING RIGHT WALL';
  const crown=enemies.get('tutorial/crown');
- return crown?`SLICE THE SHAPE · ${crown.hp} ${crown.hp===1?'HIT':'HITS'} LEFT`:'';
+ return crown?(visual.stall?`GO — ${crown.hp} ${crown.hp===1?'HIT':'HITS'} LEFT · BREAK THE PLATES`:`SLICE THE SHAPE · ${crown.hp} ${crown.hp===1?'HIT':'HITS'} LEFT`):'';
 }
 
 /** One isolated physical course: opening a door never moves the player's body. */
 export function createVisualTutorial(seed,emit=()=>{}) {
  let run,stage=0,pending=null,finished=false,gateBody=null,gateRect=null,riftTell=null,refillTicks=0,gateTouch=false,parries=0;
  const structures=[];
- const visual={stage:0,age:0,guideUsed:false,guideFade:1,wallX:null,gate:null,gateTarget:GATES[0],gateReady:false,gateBroken:false,walls:[...WALLS],dodged:false,bumpAttempts:0,bumpCooldown:0,bumpFlash:0,finishDelay:0,wallAlpha:.22,guide:null,guideClock:0,guideIdle:150,guideVisible:true,guideEngaged:false};
+ const visual={stage:0,age:0,guideUsed:false,guideFade:1,wallX:null,gate:null,gateTarget:GATES[0],gateReady:false,gateBroken:false,walls:[...WALLS],dodged:false,bumpAttempts:0,bumpCooldown:0,bumpFlash:0,finishDelay:0,wallAlpha:.22,guide:null,guideClock:0,guideIdle:150,guideVisible:true,guideEngaged:false,stall:false,stallTicks:0,progressSig:''};
  function event(type,data){
   emit(type,data);
   if(stage===1&&type==='bank'&&data.nx<-.5)pending='bank';
   if(stage===2&&type==='parry')parries++;
  }
- run=createRun(seed,event,{waveMode:true,controlPractice:true});
+ run=createRun(seed,event,{waveMode:true,controlPractice:true,arena:TUTORIAL_ARENA});
  const s=run.state;s.visualTutorial=visual;s.teachingArena=true;s.tutorialActive=true;s.wave.phase='combat';s.wave.entry=0;s.invul=0;s.edge=s.edgeMax=3;
  // Move the existing launch pad, not the player after a transition. All four
  // rooms stay inside the real wave arena used by both physics and enemy AI.
@@ -138,10 +173,10 @@ export function createVisualTutorial(seed,emit=()=>{}) {
  for(let i=0;i<3;i++)spawn('fang',`tutorial/rack/${i}`,-305+i*62,-54-i*35,{pinned:true});
  installGate(GATES[0]);
  function enter(next){
-  stage=visual.stage=next;visual.age=0;visual.gateReady=false;visual.gateBroken=false;visual.guideIdle=150;visual.guideClock=0;pending=null;
-  s.edge=3;s.focus=1;run.combat.hazards.length=0;visual.wallX=next===1?WAVE_ARENA.x+WAVE_ARENA.w:null;
+  stage=visual.stage=next;visual.age=0;visual.gateReady=false;visual.gateBroken=false;visual.guideIdle=150;visual.guideClock=0;pending=null;visual.stall=false;visual.stallTicks=0;visual.progressSig='';
+  s.edge=3;s.focus=1;run.combat.hazards.length=0;visual.wallX=next===1?TUTORIAL_ARENA.x+TUTORIAL_ARENA.w:null;
   visual.gateTarget=GATES[next]||null;
-  if(next===2){visual.dodged=false;riftTell=null;run.world.tutorialEnemyBounds={x:15,y:-1095,w:885,h:605};spawn('rift','tutorial/rift',535,-665,{gentle:true,tutorialTargetPlayer:true,delay:45});}
+  if(next===2){visual.dodged=false;riftTell=null;run.world.tutorialEnemyBounds={x:15,y:-1095,w:885,h:605};spawn('rift','tutorial/rift',535,-665,{gentle:true,tutorialTargetPlayer:true,delay:45,wakeAt:330});}
   if(next===3){run.world.tutorialEnemyBounds=null;spawn('crown','tutorial/crown',-180,-810,{pinned:true});}
   if(next===4)visual.finishDelay=42;
   installGate(visual.gateTarget);
@@ -181,7 +216,19 @@ export function createVisualTutorial(seed,emit=()=>{}) {
   tick(engaged=false){
    if(finished)return;
    visual.guideEngaged=!!engaged;
-   visual.age++;if(visual.guideEngaged)visual.guideIdle=0;else visual.guideIdle++;visual.wallAlpha+=((s.held?.08:.22)-visual.wallAlpha)*.18;visual.bumpCooldown=Math.max(0,visual.bumpCooldown-1);visual.bumpFlash=Math.max(0,visual.bumpFlash-1);visual.dodgeFeedback=Math.max(0,(visual.dodgeFeedback||0)-1);visual.successTicks=Math.max(0,(visual.successTicks||0)-1);
+   visual.age++;
+   // ── CHUNK 5: STALL ESCALATION ─────────────────────────────────────
+   // Track objective-relevant progress per room; nothing changes → the
+   // banner escalates from instruction to directive.
+   const progress=(()=>{
+    if(stage===0)return `rack:${[...run.combat.enemies.keys()].filter(id=>id.startsWith('tutorial/rack/')).length}`;
+    if(stage===1)return `bank:${Number(pending==='bank')}:${Number(visual.gateReady)}`;
+    if(stage===2){const rift=run.combat.enemies.get('tutorial/rift');return `rift:${Number(visual.dodged)}:${rift?.mode||'gone'}:${run.combat.enemies.size}`;}
+    if(stage===3){const crown=run.combat.enemies.get('tutorial/crown');return `crown:${crown?crown.hp:'gone'}`;}
+    return 'end';})();
+   if(progress!==visual.progressSig){visual.progressSig=progress;visual.stallTicks=0;visual.stall=false;}
+   else if(++visual.stallTicks>STALL_TICKS)visual.stall=true;
+   if(visual.guideEngaged)visual.guideIdle=0;else visual.guideIdle++;visual.wallAlpha+=((s.held?.08:.22)-visual.wallAlpha)*.18;visual.bumpCooldown=Math.max(0,visual.bumpCooldown-1);visual.bumpFlash=Math.max(0,visual.bumpFlash-1);visual.dodgeFeedback=Math.max(0,(visual.dodgeFeedback||0)-1);visual.successTicks=Math.max(0,(visual.successTicks||0)-1);
    visual.guideFade=Math.max(0,visual.guideFade-(visual.guideUsed?.08:0));
    if(visual.gate&&++visual.gate.age>32)visual.gate=null;
    if(stage===4){if(--visual.finishDelay<=0)finished=true;updateGuide();return;}

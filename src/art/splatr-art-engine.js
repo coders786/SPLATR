@@ -336,6 +336,23 @@ var TYPES = {
     "Leave the inner marked circle or cut the core before it strikes.",
     { hazard: true }
   ),
+  monolith: species(
+    "Monolith",
+    "Slab",
+    // A slab of near-black stone — the one thing in the game the colour of
+    // the void between the stars could describe honestly. Nothing glows on it
+    // except the core, and the core never glows for free.
+    "#0d0b13",
+    [[-1.12, -1.5], [1.12, -1.5], [0.78, 1.5], [-0.78, 1.5]],
+    // CHUNK 6B: r 130 → 215. The slab hangs off the top of the seam at
+    // ordinary zoom — it does not threaten, it LANDLORDS. The outline is in
+    // units of r and scales with it; the sensor body scales the same way.
+    215,
+    2500,
+    "The landlord of the tear. Five plates; only a banked OVERCHARGED cut takes one.",
+    "Bank the rails to x4, then cut. Repeat five times.",
+    { hp: 10 }
+  ),
   crown: species(
     "Crown",
     "Octagon",
@@ -2173,11 +2190,79 @@ function drawRiftGlyph(c,col='#e0123a'){
  poly2(c,metal,[[.15,.02],[.39,.20],[.13,.48],[-.02,.27]],dark,.04);
  line(c,col,.085,-.31,.35,.32,-.32);
 }
+function drawMonolithSignals(c,x,y,r,opts={},scale=1,time=0){
+  if(!opts||!Number.isFinite(r))return;
+  const lash=Math.max(0,opts.lashTell|0),slam=Math.max(0,opts.slamTell|0),lens=Math.max(0,opts.lensTell|0),lensOn=Math.max(0,opts.lensT|0),inv=Math.max(.35,1/Math.max(.35,scale));
+  c.save();
+  c.lineCap='round';c.lineJoin='round';
+  const baseY=y+r*1.5;
+  if(lash>0){
+    const p=clamp(1-lash/54,0,1),pulse=.72+.28*Math.sin(time*.45);
+    c.save();c.globalAlpha=(.18+.62*p)*pulse;c.strokeStyle='#ffd7a1';c.lineWidth=2.1*inv;
+    for(let i=0;i<7;i++){
+      const a=Math.PI/2+(i-3)*.18,reach=(r*.9+r*1.35*p)*(1-Math.abs(i-3)*.045),steps=4;
+      c.beginPath();c.moveTo(x+Math.cos(a)*r*.24,baseY+Math.sin(a)*r*.08);
+      for(let j=1;j<=steps;j++){
+        const d=reach*j/steps,jag=Math.sin((i*19+j*11)*1.7)*r*.045;
+        c.lineTo(x+Math.cos(a)*d+Math.cos(a+Math.PI/2)*jag,baseY+Math.sin(a)*d+Math.sin(a+Math.PI/2)*jag);
+      }
+      c.stroke();
+    }
+    c.globalAlpha=.4+.35*p;c.strokeStyle='#fff5d5';c.lineWidth=1*inv;
+    arc(c,'#fff5d5',1*inv,x,baseY,r*.28,-Math.PI*.86,-Math.PI*.14);
+    c.restore();
+  }
+  if(slam>0){
+    const p=clamp(1-slam/30,0,1),dashPhase=(time*.08)%1;
+    c.save();c.globalAlpha=.34+.46*p;c.setLineDash([10*inv,7*inv]);c.lineDashOffset=-dashPhase*17*inv;
+    arc(c,'#ffe5b5',2.4*inv,x,baseY,150,-Math.PI,Math.PI);c.setLineDash([]);
+    c.globalAlpha=.35+.45*p;c.strokeStyle='#ffb45f';c.lineWidth=2.2*inv;
+    for(let i=0;i<5;i++){const a=-Math.PI*.82+i*Math.PI*.41,inner=20,outer=48+46*p;c.beginPath();c.moveTo(x+Math.cos(a)*inner,baseY+Math.sin(a)*inner);c.lineTo(x+Math.cos(a)*outer,baseY+Math.sin(a)*outer);c.stroke();}
+    c.restore();
+  }
+  if(lens>0||lensOn>0){
+    const p=lens>0?clamp(1-lens/45,0,1):1,coreY=y+r*.24,rad=42+r*.12+18*p;
+    c.save();c.globalAlpha=.2+.5*p+.15*(lensOn>0);c.strokeStyle=lensOn>0?'#bff8ff':'#ffe6b6';c.lineWidth=2*inv;
+    arc(c,c.strokeStyle,2*inv,x,coreY,rad,time*.02,time*.02+Math.PI*1.55);
+    arc(c,c.strokeStyle,1.1*inv,x,coreY,rad+13,-time*.025,-time*.025+Math.PI*1.2);
+    c.fillStyle=c.strokeStyle;
+    for(let i=0;i<8;i++){
+      const a=i*TAU/8+(lensOn>0?time*.025:0),rr=rad+8+Math.sin(i*2.4)*3;
+      c.beginPath();c.arc(x+Math.cos(a)*rr,coreY+Math.sin(a)*rr,Math.max(1.6,3*inv),0,TAU);c.fill();
+    }
+    if(lensOn>0){
+      c.globalAlpha=.11+.08*Math.sin(time*.2);c.fillStyle='#bff8ff';c.beginPath();c.arc(x,coreY,rad+32,0,TAU);c.fill();
+      c.globalAlpha=.75;c.strokeStyle='#d8ffff';c.lineWidth=1.4*inv;
+      for(let i=0;i<4;i++){const a=i*TAU/4+Math.PI/4,from=rad+30,to=rad+8;c.beginPath();c.moveTo(x+Math.cos(a)*from,coreY+Math.sin(a)*from);c.lineTo(x+Math.cos(a)*to,coreY+Math.sin(a)*to);c.stroke();}
+    }
+    c.restore();
+  }
+  c.restore();
+}
 function foe(c, kind, x, y, r, angle = 0, opts = {}) {
   const t = TYPES[kind], flash = typeof opts.flash === "number" ? opts.flash : opts.flash ? 1 : 0, col = flash > 0 ? blend(W, t.color, 1 - flash) : t.color, time = opts.time || 0;
   c.save();
   c.translate(x, y);
   c.rotate(angle);
+  // CHUNK 5: the attention ring. Drawn before the radius scale so it reads
+  // in world units: while the enemy is dormant the ring says HOW FAR its
+  // gaze reaches, which is the one fact a new player cannot infer.
+  if (opts.wake && opts.mode === "idle") {
+    c.save();
+    c.setLineDash([12, 10]);
+    c.strokeStyle = "rgba(255,213,143,0.55)";
+    c.lineWidth = 2.5;
+    c.beginPath();
+    c.arc(0, 0, opts.wake, 0, Math.PI * 2);
+    c.stroke();
+    c.setLineDash([2, 16]);
+    c.strokeStyle = "rgba(255,244,214,0.85)";
+    c.lineWidth = 4;
+    c.beginPath();
+    c.arc(0, 0, opts.wake, 0, Math.PI * 2);
+    c.stroke();
+    c.restore();
+  }
   c.scale(r, r);
   c.lineJoin = "round";
   if (opts.paper) {
@@ -2290,6 +2375,110 @@ function foe(c, kind, x, y, r, angle = 0, opts = {}) {
       disk(c,col,0,0,.43);arc(c,metal,.065,0,0,.43);
       poly2(c,dark,[[-.35,-.11],[-.19,-.27],[0,-.14],[.19,-.27],[.35,-.11],[.25,.12],[-.25,.12]]);
       for(let i=0;i<3;i++){const xx=(i-1)*.23;c.fillStyle=i<hp?metal:'#6a3543';c.fillRect(xx-.085,.17,.17,.12);}
+      break;
+    }
+    case 'monolith': {
+      // THE MONOLITH — five lit seams stand for five plates; as plates fall
+      // the seams go dark and the core burns through. Cold, flat, enormous.
+      const hpLeft = Math.max(0, Math.floor(opts.hp ?? t.hp));
+      const standing = Math.ceil(hpLeft / 2);
+      const lashTell = Math.max(0, opts.lashTell | 0),
+        slamTell = Math.max(0, opts.slamTell | 0),
+        slamPlate = opts.slamPlate == null ? -1 : opts.slamPlate | 0,
+        lensTell = Math.max(0, opts.lensTell | 0),
+        lensOn = Math.max(0, opts.lensT | 0);
+      // ── SEISMIC LASH telegraph — crack-lines crawl out of the base ──────
+      if (lashTell > 0) {
+        const progress = 1 - lashTell / 54;
+        c.save();
+        c.strokeStyle = '#cbb493';
+        c.lineWidth = 0.028;
+        c.lineCap = 'round';
+        for (let i = 0; i < 6; i++) {
+          const spread = (i - 2.5) * 0.38;
+          const reach = progress * (1.3 - Math.abs(i - 2.5) * 0.2);
+          let px = 0;
+          c.globalAlpha = 0.3 + progress * 0.6;
+          c.beginPath();
+          c.moveTo(0, 1.5);
+          for (let s = 1; s <= 4; s++) {
+            const step = (reach / 4) * s,
+              jag = Math.sin((i * 7 + s * 13) * 1.7) * 0.09;
+            px = Math.sin(spread) * step * 1.6 + jag;
+            c.lineTo(px, 1.5 + Math.cos(spread * 0.6) * step * 0.62 + s * 0.015);
+          }
+          c.stroke();
+        }
+        // Dust lifting off the seam.
+        c.fillStyle = '#e9dab9';
+        for (let i = 0; i < 10; i++) {
+          const seed = i * 137.5 + time * 0.04,
+            my = 1.5 - ((seed * 0.13 + time * 0.05) % 0.8);
+          c.globalAlpha = 0.14 + 0.28 * (0.5 + 0.5 * Math.sin(seed * 3.1 + time * 0.35));
+          c.fillRect(Math.sin(seed) * 1.05 - 0.022, my - 0.022, 0.045, 0.045);
+        }
+        c.restore();
+      }
+      poly2(c, '#0d0b13', t.outline, K, 0.13);
+      poly2(c, '#17141f', [[-0.78, -1.18], [0.78, -1.18], [0.55, 1.14], [-0.55, 1.14]], K, 0.055);
+      for (let i = 0; i < 5; i++) {
+        const yy = -0.92 + i * 0.46;
+        const alive = standing > i;
+        c.fillStyle = alive ? '#262130' : '#100d17';
+        c.fillRect(-0.64, yy, 1.28, 0.32);
+        if (alive) {
+          line(c, '#ff9c5a', 0.05, -0.64, yy + 0.155, 0.64, yy + 0.155);
+          line(c, '#ffd9a0', 0.018, -0.64, yy + 0.155, 0.64, yy + 0.155);
+        } else {
+          line(c, '#241f2c', 0.035, -0.64, yy + 0.155, 0.64, yy + 0.155);
+        }
+      }
+      // ── PLATE SLAM telegraph — the slotted plate hangs white, then drops ─
+      if (slamTell > 0 && slamPlate >= 0) {
+        const yy = -0.92 + slamPlate * 0.46,
+          drop = 1 - slamTell / 30;
+        c.save();
+        c.globalAlpha = 0.5 + 0.4 * (0.5 + 0.5 * Math.sin(time * 0.9));
+        line(c, '#ffffff', 0.055, -0.64, yy + 0.155, 0.64, yy + 0.155);
+        c.restore();
+        c.save();
+        c.translate(0, drop * 0.62);
+        c.rotate(drop * 0.16);
+        c.globalAlpha = 0.96;
+        c.fillStyle = '#2b2438';
+        c.fillRect(-0.64, yy, 1.28, 0.32);
+        line(c, '#ffffff', 0.04, -0.64, yy + 0.16, 0.64, yy + 0.16);
+        line(c, '#ff9c5a', 0.03, -0.64, yy + 0.02, 0.64, yy + 0.02);
+        c.restore();
+      }
+      // The core. Dim ember while the plates stand; the tear burns through
+      // once the face is mostly dark.
+      const coreGlow = Math.max(0.15, Math.min(1, 0.18 + (5 - standing) * 0.19));
+      // ── GRAVITY LENS — the iris dilates, the rim beads bright ──────────
+      const lensTellP = lensTell > 0 ? 1 - lensTell / 45 : 0,
+        lensBoost = lensTellP * 0.45 + (lensOn > 0 ? 0.42 + 0.06 * Math.sin(time * 0.7) : 0),
+        iris = 0.3 * (1 + lensBoost);
+      const ember = c.createRadialGradient(0, 0.24, 0, 0, 0.24, 0.56 + (lensOn > 0 ? 0.18 : lensTellP * 0.14));
+      ember.addColorStop(0, `rgba(255,${lensBoost > 0 ? 205 : 150},${lensBoost > 0 ? 145 : 70},${Math.min(1, coreGlow + lensTellP * 0.35 + (lensOn > 0 ? 0.3 : 0))})`);
+      ember.addColorStop(0.55, `rgba(215,74,48,${coreGlow * 0.62})`);
+      ember.addColorStop(1, 'rgba(215,74,48,0)');
+      c.fillStyle = ember;
+      c.fillRect(-0.58, -0.3, 1.16, 1.28);
+      disk(c, '#050308', 0, 0.24, iris);
+      arc(c, `rgba(255,226,186,${Math.min(1, 0.3 + coreGlow * 0.65 + lensTellP * 0.3 + (lensOn > 0 ? 0.25 : 0))})`, 0.055, 0, 0.24, iris);
+      if (lensTell > 0 || lensOn > 0) {
+        const bead = lensTell > 0 ? lensTellP : 1;
+        c.save();
+        c.fillStyle = `rgba(255,233,192,${0.35 + bead * 0.6})`;
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * TAU + (lensOn > 0 ? time * 0.05 : 0);
+          c.beginPath();
+          c.arc(Math.cos(a) * (iris + 0.075), 0.24 + Math.sin(a) * (iris + 0.075), 0.028 + bead * 0.02, 0, TAU);
+          c.fill();
+        }
+        c.restore();
+      }
+      if (flash > 0) { c.globalAlpha = flash * 0.55; poly2(c, '#ffffff', t.outline); c.globalAlpha = 1; }
       break;
     }
   }
@@ -2605,7 +2794,259 @@ function drawIndustrialDistrict(c,w,h,camera={},seed=41,band=1,time=0) {
   const shade=c.createRadialGradient(w*.5,h*.5,Math.min(w,h)*.27,w*.5,h*.5,Math.max(w,h)*.73);shade.addColorStop(0,"#080c1200");shade.addColorStop(1,"#080c1277");c.fillStyle=shade;c.fillRect(0,0,w,h);
   c.restore();
 }
+/**
+ * CHUNK 2: THE SKY FRACTURES. Drawn after the world backdrop and before any
+ * gameplay layer, so the seams sit behind play but inside the lens.
+ *
+ * Four sky stages, keyed off the persistent fracture meter (src/fracture.js
+ * is the source of truth for these thresholds; they are duplicated here
+ * because this module is deliberately import-free):
+ *   stage 1 @ 10%  first hairline crack, horizon embers
+ *   stage 2 @ 35%  three cracks, the light well dies, thin dust glow
+ *   stage 3 @ 60%  five cracks + rising embers, the sky itself splits
+ *   stage 4 @ 88%  the COLLAPSE SKY: a white-hot fissure and a red horizon
+ *
+ * `motion=false` freezes the pulse and the ember rise (Reduce Motion /
+ * Screen shake OFF); the crack geometry is always the same hashed polylines,
+ * so a still frame is identical frame to frame.
+ */
+function fractureCrack(c, w, h, seed, motion, time) {
+  const startX = (hash(seed, 11, 7) % 1000) / 1000 * w;
+  // ── The main seam: a deterministic jagged walk from above the top edge.
+  const walk = (fromX, fromY, fromAngle, count, stepBase) => {
+    let x = fromX, y = fromY, angle = fromAngle;
+    const pts = [[x, y]];
+    for (let k = 0; k < count; k++) {
+      const step = stepBase + (hash(seed, 20 + k + fromY, 3) % 22);
+      angle += (((hash(seed, 40 + k, 8) % 1000) / 1000) - 0.5) * 1.15;
+      angle = Math.max(0.35, Math.min(Math.PI - 0.35, angle));
+      x += Math.cos(angle) * step;
+      y += Math.sin(angle) * step;
+      pts.push([x, y]);
+    }
+    return { pts, angle };
+  };
+  const startAngle = Math.PI / 2 + (((hash(seed, 12, 9) % 1000) / 1000) - 0.5) * 1.15;
+  const segments = 9 + (hash(seed, 13, 5) % 6);
+  const main = walk(startX, -18, startAngle, segments, 14);
+  // ── A branch seam forks off the middle of the main one.
+  const forkIndex = 4 + (hash(seed, 60, 2) % 3);
+  const fork = main.pts[Math.min(forkIndex, main.pts.length - 1)];
+  const branchAngle = main.angle + ((hash(seed, 70, 4) % 1000) / 1000 < 0.5 ? -0.8 : 0.8);
+  const branch = walk(fork[0], fork[1], branchAngle, 5 + (hash(seed, 71, 6) % 4), 10);
+  const pulse = motion ? 0.72 + 0.28 * Math.sin(time * 0.055 + seed * 0.7) : 1;
+  // The wide ember pass, then the near-white core. Glow first, for both seams.
+  c.lineJoin = "round";
+  c.lineCap = "round";
+  for (const { pts } of [main, branch]) {
+    for (const [width, style] of [
+      [6.5, `rgba(255,118,64,${0.34 * pulse})`],
+      [1.6, `rgba(255,196,140,${0.62 * pulse})`],
+    ]) {
+      c.strokeStyle = style;
+      c.lineWidth = width;
+      c.beginPath();
+      c.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]);
+      c.stroke();
+    }
+  }
+}
+
+function drawFractureSky(c, w, h, pct, time, motion) {
+  const p = Math.max(0, Math.min(100, Number(pct) || 0));
+  if (p <= 0) return;
+  const stage = p >= 88 ? 4 : p >= 60 ? 3 : p >= 35 ? 2 : p >= 10 ? 1 : 0;
+  const cracks = [0, 1, 3, 5, 7][stage];
+  const glowA = [0, 0.07, 0.13, 0.22, 0.34][stage];
+  const dim = [0, 0, 0.05, 0.11, 0.19][stage];
+  c.save();
+  // The light well behind the district dies as the seam opens. Fixed alpha;
+  // no composite tricks — this is a paint, not a filter.
+  if (dim) {
+    c.fillStyle = `rgba(6,5,12,${dim})`;
+    c.fillRect(0, 0, w, h);
+  }
+  // The horizon heats up, brightest dead centre, like something below the floor.
+  const ember = c.createRadialGradient(w * 0.5, h * 1.05, 0, w * 0.5, h * 1.05, h * 0.95);
+  ember.addColorStop(0, `rgba(255,132,63,${glowA})`);
+  ember.addColorStop(0.55, `rgba(214,79,58,${glowA * 0.45})`);
+  ember.addColorStop(1, "rgba(214,79,58,0)");
+  c.fillStyle = ember;
+  c.fillRect(0, 0, w, h);
+  // The hairlines themselves.
+  for (let i = 0; i < cracks; i++) fractureCrack(c, w, h, hash(977, i, 13), motion, time);
+  // Stage 4: one white-hot COLLAPSE fissure, unmistakably the big one.
+  if (stage === 4) {
+    const pulse = motion ? 0.78 + 0.22 * Math.sin(time * 0.075 + 2.1) : 1;
+    const fx = w * (0.52 + (hash(977, 99, 17) % 100) / 100 * 0.12 - 0.06);
+    c.lineCap = "round";
+    for (const [width, style] of [
+      [14, `rgba(255,150,80,${0.30 * pulse})`],
+      [5.5, `rgba(255,208,150,${0.62 * pulse})`],
+      [1.8, `rgba(255,246,230,${0.9 * pulse})`],
+    ]) {
+      c.strokeStyle = style;
+      c.lineWidth = width;
+      c.beginPath();
+      let x = fx, y = -20;
+      c.moveTo(x, y);
+      for (let k = 0; k < 8; k++) {
+        const step = h * 0.075 + (hash(977, 300 + k, 19) % 26);
+        x += (hash(977, 340 + k, 23) % 1000) / 1000 * 92 - 46;
+        y += step;
+        c.lineTo(x, y);
+      }
+      c.stroke();
+    }
+  }
+  // Rising ember motes. Deterministic arcs so reduced motion can pin them.
+  if (stage >= 3) {
+    const rise = motion ? time * 0.9 : 0;
+    for (let i = 0; i < 15; i++) {
+      const spread = (hash(977, 500 + i, 29) % 1000) / 1000;
+      const depth = (hash(977, 540 + i, 31) % 1000) / 1000;
+      const x = spread * w;
+      const travel = h + 120;
+      const y = h + 40 - ((rise * (0.5 + depth) + i * 173) % travel);
+      const r = 0.8 + depth * 1.7;
+      c.globalAlpha = 0.26 + depth * 0.3;
+      c.fillStyle = depth > 0.72 ? "#ffd9a0" : "#ff9c5a";
+      c.beginPath();
+      c.arc(x, y, r, 0, Math.PI * 2);
+      c.fill();
+    }
+    c.globalAlpha = 1;
+  }
+  c.restore();
+}
+
+/**
+ * CHUNK 3: THE SHATTER EVENT. The meter hit 100 and the world tore.
+ *
+ * Two jobs:
+ *  1. While `s.shatter` is running (140 ticks from the trigger): the
+ *     singularity flash — the trash sky collapses into a point. A white-hot
+ *     bloom burns out early; the accretion-ringed disc swells and is gone.
+ *  2. For the rest of the run: the sky hangs in 12–16 hash-seeded shards —
+ *     slabs of plum night with ember light burning through the gaps. Static
+ *     geometry; only the breathing pulse and ember glow animate, both frozen
+ *     under Reduce Motion / Screen shake OFF.
+ *
+ * The four borders of the arena also go neon here (drawShatteredRails):
+ * 1.30x bumper rails in the fiction, bright enough to read as live wire.
+ */
+function drawShatteredSky(c, w, h, s, time, motion) {
+  c.save();
+  const t = Math.max(0, s?.shatter ?? 0);
+  const life = t > 0 ? 1 - t / 140 : 1;            // 0 at trigger → 1 when drained
+  const shardCount = 12 + (hash(4242, 7, 13) % 5); // 12..16, hash-seeded
+  // Ember light from below burns through every gap between the shards.
+  const ember = c.createRadialGradient(w * 0.5, h * 1.02, 0, w * 0.5, h * 1.02, h * 0.92);
+  ember.addColorStop(0, "rgba(255,120,60,0.52)");
+  ember.addColorStop(0.55, "rgba(205,70,55,0.20)");
+  ember.addColorStop(1, "rgba(205,70,55,0)");
+  c.fillStyle = ember;
+  c.fillRect(0, 0, w, h);
+  // The shards themselves.
+  for (let i = 0; i < shardCount; i++) {
+    const sx = (hash(977, i, 31) % 1000) / 1000 * (w + 200) - 100;
+    const sy = (hash(977, i, 47) % 1000) / 1000 * h * 0.40 - 40;
+    const sw = 34 + (hash(977, i, 59) % 118);
+    const sh = 30 + (hash(977, i, 71) % 132);
+    const slant = ((hash(977, i, 83) % 1000) / 1000 - 0.5) * 0.9;
+    const drift = motion ? Math.sin(time * 0.011 + i * 2.13) * 4 : 0;
+    const pulse = motion ? 0.72 + 0.28 * Math.sin(time * 0.05 + i) : 1;
+    c.save();
+    c.translate(sx + drift, sy);
+    c.rotate(slant * 0.22);
+    // Slab body.
+    c.fillStyle = i % 3 === 0 ? "#171220" : "#1d1726";
+    c.beginPath();
+    c.moveTo(-sw / 2, -sh / 2 + (hash(977, i, 5) % 20));
+    c.lineTo(sw / 2 - (hash(977, i, 9) % 26), -sh / 2);
+    c.lineTo(sw / 2, sh / 2 - (hash(977, i, 12) % 18));
+    c.lineTo(-sw / 2 + (hash(977, i, 14) % 24), sh / 2);
+    c.closePath();
+    c.fill();
+    // The under-rim: the ember light licking the bottom edge of the shard.
+    c.strokeStyle = `rgba(255,150,80,${0.75 * pulse})`;
+    c.lineWidth = 2.1;
+    c.beginPath();
+    c.moveTo(-sw / 2 + (hash(977, i, 14) % 24), sh / 2);
+    c.lineTo(sw / 2, sh / 2 - (hash(977, i, 12) % 18));
+    c.stroke();
+    // A hairline seam on the shard face.
+    c.strokeStyle = "rgba(255,196,140,0.28)";
+    c.lineWidth = 0.8;
+    c.beginPath();
+    c.moveTo(-sw * 0.18, -sh * 0.32);
+    c.lineTo((hash(977, i, 17) % 1000) / 1000 * sw * 0.4 - sw * 0.2, sh * 0.4);
+    c.stroke();
+    c.restore();
+  }
+  if (t <= 0) { c.restore(); return; }
+  // ── THE SINGULARITY FLASH ──
+  const cx = w * 0.5, cy = h * 0.38;
+  const flashA = Math.max(0, 1 - life * 2.15); // white-hot bloom, burned out by ~46% of the clock
+  if (flashA > 0) {
+    const burst = c.createRadialGradient(cx, cy, 0, cx, cy, h * 0.62);
+    burst.addColorStop(0, `rgba(255,255,250,${flashA})`);
+    burst.addColorStop(0.35, `rgba(255,224,190,${flashA * 0.75})`);
+    burst.addColorStop(1, "rgba(255,224,190,0)");
+    c.fillStyle = burst;
+    c.fillRect(0, 0, w, h);
+  }
+  // The disc: swells from nothing, collapses to a point, gone.
+  const grow = life < 0.34 ? life / 0.34 : Math.max(0.06, 1 - (life - 0.34) / 0.66);
+  const r = w * 0.135 * grow;
+  if (r > 1) {
+    const pulse = motion ? 0.8 + 0.2 * Math.sin(time * 0.3) : 1;
+    const glow = c.createRadialGradient(cx, cy, r * 0.4, cx, cy, r * 2.1);
+    glow.addColorStop(0, `rgba(255,140,70,${0.5 * pulse})`);
+    glow.addColorStop(1, "rgba(255,140,70,0)");
+    c.fillStyle = glow;
+    c.fillRect(cx - r * 2.2, cy - r * 2.2, r * 4.4, r * 4.4);
+    c.fillStyle = "#050308";
+    c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.fill();
+    c.lineWidth = Math.max(1.4, r * 0.16);
+    c.strokeStyle = `rgba(255,236,210,${0.9 * pulse})`;
+    c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.stroke();
+  }
+  c.restore();
+}
+
+/** The four borders, live: two passes of glow over a hot core, corner nodes. */
+function drawShatteredRails(c, w, h, v, arena, time, motion) {
+  if (!arena) return;
+  const pulse = motion ? 0.66 + 0.34 * Math.sin(time * 0.085) : 0.85;
+  const x0 = (arena.x - v.x) * v.scale, x1 = (arena.x + arena.w - v.x) * v.scale;
+  const y0 = (arena.y - v.y) * v.scale, y1 = (arena.y + arena.h - v.y) * v.scale;
+  c.save();
+  c.lineCap = "round";
+  for (const [lw, style] of [
+    [12, `rgba(255,93,177,${0.30 * pulse})`],
+    [4.4, `rgba(155,246,255,${0.88 * pulse})`],
+    [1.5, `rgba(255,255,255,${0.95 * pulse})`],
+  ]) {
+    c.strokeStyle = style;
+    c.lineWidth = lw;
+    c.beginPath();
+    c.moveTo(x0, y0); c.lineTo(x1, y0);
+    c.moveTo(x0, y1); c.lineTo(x1, y1);
+    c.moveTo(x0, y0); c.lineTo(x0, y1);
+    c.moveTo(x1, y0); c.lineTo(x1, y1);
+    c.stroke();
+  }
+  c.fillStyle = `rgba(255,255,255,${0.85 * pulse})`;
+  for (const [px, py] of [[x0, y0], [x1, y0], [x0, y1], [x1, y1]]) {
+    c.beginPath(); c.arc(px, py, 3.1, 0, Math.PI * 2); c.fill();
+  }
+  c.restore();
+}
+
 function drawEquipmentWorld(c, w, h, id, t = 0, camera = {}) {
+
   if(!id||id==="twilight"){drawIndustrialDistrict(c,w,h,camera,41,1,t);return;}
   c.save();
   if (id === "void") {
@@ -3659,7 +4100,8 @@ var CAMERA = Object.freeze({
    * would push the cube down toward the bottom of the screen and shrink the
    * space for targets ahead.
    */
-  lead: 0.12
+  // CHUNK 6B: 12% more lead so large aerial swings read against the taller arena.
+  lead: 0.1344
 });
 function dampedTarget(ideal, current, viewW, viewH) {
   const dx = ideal.x - current.x, dy = ideal.y - current.y, wx = viewW * MOTION.deadZone, wy = viewH * MOTION.deadZone;
@@ -3854,7 +4296,7 @@ function appear(name, age) {
   return 0.55 + 0.45 * curve(name, age);
 }
 function meterReadout(s) {
-  const hp = Math.max(0, s.hp | 0), edgeMax = s.edgeMax || 3, edge = clamp(s.edge ?? 0, 0, edgeMax), regenWindow = s.regenWindow || 76, regen = edge >= edgeMax ? 0 : clamp((s.recharge || 0) / regenWindow, 0, 1), focus = clamp(s.focus ?? 1, 0, 1);
+  const hp = Math.max(0, s.hp | 0), edgeMax = s.edgeMax || 3, edge = clamp(s.edge ?? 0, 0, edgeMax), regenWindow = s.regenWindow || 60, regen = edge >= edgeMax ? 0 : clamp((s.recharge || 0) / regenWindow, 0, 1), focus = clamp(s.focus ?? 1, 0, 1);
   return {
     hp,
     edge,
@@ -3885,11 +4327,14 @@ function dialGeometry(readout) {
 // consolidated/camera.js
 function createCamera() {
   let width = 1, height = 1, base = 1, x = 0, y = 0, zoom = 1, trainingScale = 1;
+  // CHUNK 1: a field-wide scale the arena modes can lower to see more of the
+  // (now ~1.3x larger) table. 1 = unchanged; below 1 pulls the lens back.
+  let fieldScale = 1;
   let prevX = x, prevY = y, prevZoom = zoom;
   let home = { x: 0, y: 0 }, last = home, docked = true, room = false, forward = 1;
   function frameScale() {
     const portrait = width < height * 0.85;
-    return room ? portrait ? width / 676 : Math.min(width / 830, height / 728) : portrait ? width / 792 : Math.min(width / 1330, height / 780);
+    return (room ? portrait ? width / 676 : Math.min(width / 830, height / 728) : portrait ? width / 792 : Math.min(width / 1330, height / 780)) * fieldScale;
   }
   const LEAD = CAMERA.lead;
   let leadX = 0, leadY = 0;
@@ -3939,6 +4384,7 @@ function createCamera() {
       snap(p, true);
     },
     setTrainingScale(value) {trainingScale=clamp(value,1,1.5);base=frameScale()*trainingScale;snap(last,docked);},
+    setFieldScale(value) {fieldScale=clamp(Number.isFinite(value)?value:1,0.75,1.1);base=frameScale()*trainingScale;snap(last,docked);},
     snap,
     /** The lens does NOT dolly. A fixed scale, with only the faintest lean
      *  into speed, because a zoom that moves while you aim is the fastest way
@@ -6103,6 +6549,17 @@ export function drawEnemyZone(c,zone,active=false,scale=1){
 // enemy as actively dangerous. Progress is derived from its live wind-up clock.
 const INTENT_VERBS=Object.freeze({fang:'RUSH',pulse:'RING',prism:'SHOT',fork:'SWIPE / SPLIT',bastion:'SLAM',rift:'BLINK STRIKE',well:'PULL / CRUSH',crown:'VOLLEY'});
 export function enemyIntent(enemy, hazards=[], links=[]) {
+ // CHUNK 6B: the landlord surfaces its three tells on the HUD — the same
+ // WINDUP/ATTACK language every other shape uses. Pinned enemies normally get
+ // nothing; the landlord is the exception that teaches itself.
+ if (enemy.kind === 'monolith') {
+   if (enemy.slamTell > 0) return {label:'MONOLITH / PLATE SLAM',state:'WINDUP',progress:clamp(1 - enemy.slamTell / 30, 0, 1)};
+   if (enemy.lashTell > 0) return {label:'MONOLITH / SEISMIC LASH',state:'WINDUP',progress:clamp(1 - enemy.lashTell / 54, 0, 1)};
+   if (enemy.lensTell > 0) return {label:'MONOLITH / GRAVITY LENS',state:'WINDUP',progress:clamp(1 - enemy.lensTell / 45, 0, 1)};
+   if (enemy.lensT > 0) return {label:'MONOLITH / PULLED',state:'ATTACK',progress:null};
+   if ((hazards || []).some(h => !h.spent && h.sourceId === enemy.id)) return {label:'MONOLITH',state:'ATTACK',progress:null};
+   return null;
+ }
  const verb=INTENT_VERBS[enemy.kind];if(!verb||enemy.paper||enemy.pinned)return null;
  const link=links.find(l=>(l.a.id===enemy.id||l.b.id===enemy.id)&&(l.mode==='tell'||l.mode==='live'));
  if(link)return {label:'LINK / BEAM',state:link.mode==='tell'?'WINDUP':'ATTACK',progress:link.mode==='tell'?clamp(link.f,0,1):null};
@@ -6901,7 +7358,7 @@ function createRenderer(c, viewport) {
       else c2.stroke();
       if(level>=3&&blip.mode==='tell'){c2.strokeStyle='#ffb491';c2.setLineDash([2,2]);c2.beginPath();c2.arc(blip.x,blip.y,blip.r+4,0,TAU);c2.stroke();c2.setLineDash([]);}
     }
-    if(level>=2){for(const h of (combat.hazards||[]).slice(0,24)){if(h.spent||!Number.isFinite(h.x)||!Number.isFinite(h.y))continue;const q=radar.project(h,3);if(q.outside)continue;c2.strokeStyle='#ffb080';c2.lineWidth=1.3;c2.beginPath();if(h.kind==='ring'||h.kind==='zone')c2.arc(q.x,q.y,4,0,TAU);else{c2.moveTo(q.x,q.y-4);c2.lineTo(q.x+4,q.y+3);c2.lineTo(q.x-4,q.y+3);c2.closePath();}c2.stroke();}}
+    if(level>=2){for(const h of (combat.hazards||[]).slice(0,24)){if(h.spent||!Number.isFinite(h.x)||!Number.isFinite(h.y))continue;const q=radar.project(h,3);if(q.outside)continue;c2.strokeStyle='#ffb080';c2.lineWidth=1.3;c2.beginPath();if(h.kind==='ring'||h.kind==='zone'||h.kind==='shock')c2.arc(q.x,q.y,4,0,TAU);else{c2.moveTo(q.x,q.y-4);c2.lineTo(q.x+4,q.y+3);c2.lineTo(q.x-4,q.y+3);c2.closePath();}c2.stroke();}}
     if (radar.portal) {
       const q2 = radar.portal;
       c2.save();
@@ -6991,6 +7448,345 @@ function createRenderer(c, viewport) {
     for(let i=0;i<3;i++){c.fillStyle=n.locks[i]?.broken?'#e6ff78':'#64515d';c.beginPath();c.arc(x,y+h-(i+1)*h/4,4,0,Math.PI*2);c.fill();}
     c.fillStyle=n.seal?.ready?'#efff8f':'#9b7a81';c.beginPath();c.moveTo(x,y-7);c.lineTo(x+5,y);c.lineTo(x,y+7);c.lineTo(x-5,y);c.closePath();c.fill();c.restore();
   }
+  // ── CHUNK 6A: THE SPINE ────────────────────────────────────────────────
+  // The FRACTURE meter, diegetic: a stress crack down the lower third of the
+  // playfield. Ember light seeps through, brighter as the meter fills; every
+  // kill sends a pulse travelling up the fault and a '+0.4' ember glyph
+  // drifts off the point of the cut. Reads progress without a word.
+  var spineLastKills = 0, spinePulses = [], spineFloaters = [];
+  function spinePathX(w, frac) {
+    const segs = 13, bot = 0.97, top = 0.56, q = 0; // frac 0 (bottom) → 1 (top)
+    const f = Math.max(0, Math.min(1, frac)) * segs;
+    const i0 = Math.min(segs - 1, Math.floor(f)), u = f - i0;
+    const off = (i) => i === 0 || i >= segs ? 0 : (((hash(1379, i, 7) % 1000) / 1000) - 0.5) * 76;
+    return w * 0.5 + (off(i0) * (1 - u) + off(i0 + 1) * u);
+  }
+  function drawSpine(c, w, h, s, motion, time) {
+    const pct = s.fracture?.pct ?? 0;
+    if (pct <= 0) { spineLastKills = s.kills | 0; spinePulses.length = spineFloaters.length = 0; return; }
+    const q = pct / 100, cx = w * 0.5, top = h * 0.56, bot = h * 0.97, segs = 13;
+    const pts = [];
+    for (let i = 0; i <= segs; i++) {
+      const y = bot - (bot - top) * (i / segs);
+      const off = i === 0 || i === segs ? 0 : (((hash(1379, i, 7) % 1000) / 1000) - 0.5) * (30 + 46 * q);
+      pts.push([cx + off, y]);
+    }
+    // Pulses and floaters spawn on kills.
+    const kills = s.kills | 0;
+    if (kills > spineLastKills) {
+      for (let k = 0; k < Math.min(3, kills - spineLastKills); k++) {
+        spinePulses.push({ frac: 0, age: 0 });
+        spineFloaters.push({ x: cx + ((hash(991, kills, k) % 100) - 50) * 0.8, y: bot - 26, age: 0 });
+      }
+      spineLastKills = kills;
+    } else if (kills < spineLastKills) spineLastKills = kills;
+    c.save();
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    // The fault itself.
+    c.strokeStyle = '#0a0812';
+    c.lineWidth = 3.2 + 3.6 * q;
+    c.globalAlpha = Math.min(1, 0.35 + 0.6 * q);
+    c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke();
+    // Ember light seeping through.
+    const grad = c.createLinearGradient(0, top, 0, bot);
+    grad.addColorStop(0, 'rgba(255,196,110,0)');
+    grad.addColorStop(0.35, `rgba(255,170,80,${0.18 + 0.4 * q})`);
+    grad.addColorStop(1, `rgba(255,120,60,${0.3 + 0.5 * q})`);
+    c.strokeStyle = grad; c.lineWidth = 1.3 + 1.7 * q; c.globalAlpha = 1;
+    c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke();
+    // Fault glints when the meter runs hot.
+    if (pct >= 60) for (let i = 1; i < segs; i++) {
+      const flicker = motion ? 0.5 + 0.5 * Math.sin(time * 0.055 + i * 1.7) : 0.85;
+      c.globalAlpha = (pct >= 75 ? 0.55 : 0.3) * flicker;
+      c.fillStyle = '#ffd88a';
+      c.beginPath(); c.arc(pts[i][0], pts[i][1], 1.6 + q, 0, Math.PI * 2); c.fill();
+    }
+    // Kill pulses travelling toward the top.
+    for (let i = spinePulses.length - 1; i >= 0; i--) {
+      const pulse = spinePulses[i];
+      pulse.age++; pulse.frac = Math.min(1, pulse.age / 42);
+      if (pulse.frac >= 1) { spinePulses.splice(i, 1); continue; }
+      const y = bot - (bot - top) * pulse.frac, x = spinePathX(w, pulse.frac), flare = 1 - pulse.frac;
+      c.globalAlpha = 0.35 + 0.55 * flare;
+      c.fillStyle = '#ffe9b0';
+      c.beginPath(); c.arc(x, y, 2.4 + 3.2 * flare, 0, Math.PI * 2); c.fill();
+      c.globalAlpha = 0.18 * flare;
+      c.beginPath(); c.arc(x, y, 7 + 8 * flare, 0, Math.PI * 2); c.fill();
+    }
+    // '+0.4' glyphs drifting up off the cut.
+    if (spineFloaters.length > 12) spineFloaters.splice(0, spineFloaters.length - 12);
+    c.font = "700 11px 'Space Mono',monospace"; c.textAlign = 'center';
+    for (let i = spineFloaters.length - 1; i >= 0; i--) {
+      const f = spineFloaters[i];
+      f.age++; f.y -= 0.85;
+      if (f.age > 56) { spineFloaters.splice(i, 1); continue; }
+      c.globalAlpha = Math.max(0, 0.9 - f.age / 56);
+      c.fillStyle = '#e6ff9e';
+      c.fillText('+0.4', f.x, f.y);
+    }
+    c.restore();
+  }
+
+  // ── CHUNK 6A: THE CUTSCENE OVERLAY ─────────────────────────────────────
+  // Screen-space painters for the two cutscenes, keyed off `s.cutscene`
+  // (mirrored by the shell every tick). Draws after everything, before the
+  // DOM HUD — the chips live in the DOM, not here.
+  function watcherMask(c, x, y, scale, { glow = 0, split = 0, eye = 1 } = {}) {
+    c.save();
+    c.translate(x, y); c.scale(scale, scale);
+    if (glow > 0) { c.shadowColor = '#ffd98c'; c.shadowBlur = 26 * glow; }
+    for (const side of [-1, 1]) {
+      c.save();
+      if (split > 0) c.translate(side * split * 46, -split * 10);
+      c.fillStyle = '#141020'; c.strokeStyle = '#e8b45e'; c.lineWidth = 7;
+      c.beginPath();
+      c.moveTo(side * 4, 54); c.lineTo(side * 90, 54); c.lineTo(side * 92, -55);
+      c.lineTo(side * 62, -30); c.lineTo(side * 35, -91); c.lineTo(side * 4, -46);
+      c.closePath(); c.fill(); c.stroke();
+      // Eye slit, ignited to ember.
+      c.shadowBlur = 0;
+      c.globalAlpha = 0.3 + 0.7 * eye;
+      c.fillStyle = '#dff58c';
+      c.fillRect(side < 0 ? -69 : 24, -7, 45, 9);
+      c.restore();
+    }
+    c.restore();
+  }
+  function jaggedLine(c, pts) {
+    c.beginPath();
+    pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y));
+  }
+  function fracturePath(seed, x0, y0, x1, y1, segs = 9) {
+    const pts = [];
+    for (let i = 0; i <= segs; i++) {
+      const u = i / segs, bow = Math.sin(u * Math.PI) * (hash(seed, 3, 9) % 120 - 60);
+      const nx = x0 + (x1 - x0) * u, ny = y0 + (y1 - y0) * u;
+      const off = (i === 0 || i === segs) ? 0 : (hash(seed, i, 21) % 1000 / 1000 - 0.5) * 120 + bow;
+      const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy) || 1;
+      pts.push([nx - dy / len * off, ny + dx / len * off]);
+    }
+    return pts;
+  }
+  function drawCutsceneOverlay(c, w, h, s, v, p, time, motion) {
+    const cs = s.cutscene;
+    if (!cs) return;
+    const flash = motion ? 1 : 0.35;
+    const sx = (p.x - v.x) * v.scale, sy = (p.y - v.y) * v.scale;
+    const t = cs.t, easeOut = (u) => 1 - Math.pow(1 - u, 3), easeIn = (u) => u * u * u;
+    const wash = (a) => { c.fillStyle = `rgba(4,4,10,${a})`; c.fillRect(0, 0, w, h); };
+    c.save();
+    // Letterbox bars for the locked beats.
+    if (cs.lockInput) {
+      const barT = Math.min(1, Math.min(t, 1 - t) / 0.16);
+      const barH = 30 * easeOut(barT);
+      c.fillStyle = '#050510';
+      c.fillRect(0, 0, w, barH); c.fillRect(0, h - barH, w, barH);
+    }
+    switch (cs.beatId) {
+      case 'cold-dark': {
+        wash(0.96 - 0.06 * t);
+        // Sparks falling from the dark.
+        for (let i = 0; i < 26; i++) {
+          const x = hash(11, i, 3) % 1000 / 1000 * w;
+          const y = ((hash(11, i, 5) % 1000) / 1000 * h * 0.35 + t * h * 0.42);
+          const size = 1 + (hash(11, i, 7) % 1000) / 1000 * 2.2;
+          c.globalAlpha = (0.35 + 0.65 * ((hash(11, i, 9) % 1000) / 1000)) * (1 - t * 0.4);
+          c.fillStyle = hash(11, i, 13) % 3 ? '#ffb066' : '#ffe9b0';
+          c.fillRect(x, y, size, size * 1.8);
+        }
+        // Two eyes open, very slowly.
+        const eye = Math.max(0, Math.min(1, (t - 0.22) / 0.55));
+        if (eye > 0) for (const side of [-1, 1]) {
+          c.save();
+          c.translate(w / 2 + side * 52, h * 0.4); c.rotate(side * 0.16); c.scale(1, Math.max(0.06, eye));
+          const g = c.createRadialGradient(0, 0, 0, 0, 0, 40);
+          g.addColorStop(0, `rgba(255,233,176,${0.9 * eye})`);
+          g.addColorStop(0.45, `rgba(255,176,102,${0.55 * eye})`);
+          g.addColorStop(1, 'rgba(255,176,102,0)');
+          c.fillStyle = g; c.beginPath(); c.ellipse(0, 0, 40, 13, 0, 0, Math.PI * 2); c.fill();
+          c.fillStyle = `rgba(20,16,8,${0.9 * eye})`; c.beginPath(); c.ellipse(0, 0, 3.2, 10.5, 0, 0, Math.PI * 2); c.fill();
+          c.restore();
+        }
+        c.globalAlpha = 1;
+        break;
+      }
+      case 'cold-watcher': {
+        wash(0.88);
+        // The seam breathes below it.
+        const breathe = 0.5 + 0.5 * Math.sin(t * Math.PI * 2);
+        const sy = h * 0.66, pts = fracturePath(335, w * 0.08, sy, w * 0.92, sy, 13);
+        const glow = c.createRadialGradient(w / 2, sy, 0, w / 2, sy, h * 0.34);
+        glow.addColorStop(0, `rgba(221,255,137,${0.16 + 0.3 * breathe})`); glow.addColorStop(1, 'rgba(221,255,137,0)');
+        c.fillStyle = glow; c.fillRect(0, sy - h * 0.34, w, h * 0.68);
+        c.globalAlpha = 0.85; c.strokeStyle = '#0a0812'; c.lineWidth = 13; c.lineJoin = 'miter'; jaggedLine(c, pts); c.stroke();
+        c.globalAlpha = 0.45 + 0.5 * breathe; c.strokeStyle = '#ddff89'; c.lineWidth = 3; jaggedLine(c, pts); c.stroke();
+        c.globalAlpha = 1;
+        watcherMask(c, w / 2, h * 0.3, Math.min(w, h) * 0.0016 + 0.55, { glow: easeIn(t), eye: 0.2 + 0.8 * t });
+        break;
+      }
+      case 'cold-tear': {
+        const f = t < 0.18 ? t / 0.18 : t > 0.62 ? Math.max(0, 1 - (t - 0.62) / 0.38) : 1;
+        wash(0.5);
+        c.fillStyle = `rgba(255,244,214,${f * flash})`; c.fillRect(0, 0, w, h);
+        // The crack races the seam line.
+        const origin = [w / 2, h * 0.66], cornerTargets = [[0, 0], [w, 0], [0, h], [w, h], [w / 2, 0]];
+        const reach = easeOut(Math.min(1, t / 0.55));
+        cornerTargets.forEach(([tx, ty], i) => {
+          const pts = fracturePath(411 + i, origin[0], origin[1], origin[0] + (tx - origin[0]) * reach, origin[1] + (ty - origin[1]) * reach, 8);
+          c.globalAlpha = f; c.strokeStyle = '#ffb256'; c.lineWidth = 9; jaggedLine(c, pts); c.stroke();
+          c.globalAlpha = f; c.strokeStyle = '#fffdf2'; c.lineWidth = 2.5; jaggedLine(c, pts); c.stroke();
+        });
+        // Shards drift down like snow.
+        for (let i = 0; i < 22; i++) {
+          const x = hash(517, i, 3) % 1000 / 1000 * w;
+          const y = h * 0.66 + t * (h * 0.3 + (hash(517, i, 5) % 200));
+          const rot = (hash(517, i, 7) % 628) / 100;
+          c.save(); c.globalAlpha = Math.max(0, 1 - t * 0.85); c.translate(x, y); c.rotate(rot);
+          c.fillStyle = hash(517, i, 11) % 4 ? '#2a2136' : '#ddff89';
+          c.fillRect(-3, -5, 6, 10); c.restore();
+        }
+        c.globalAlpha = 1;
+        break;
+      }
+      case 'cold-fangs': {
+        wash(0.62 - 0.3 * t);
+        const e = easeOut(t);
+        const fang = (x, size, lean) => {
+          c.save(); c.translate(x, -90 + (h * 0.58 + 90) * e); c.rotate(lean);
+          c.fillStyle = '#e8e4d8'; c.strokeStyle = '#0b0a10'; c.lineWidth = 3.4;
+          c.beginPath(); c.moveTo(0, size * 0.62); c.lineTo(-size * 0.34, -size * 0.5); c.lineTo(-size * 0.1, -size * 0.18); c.lineTo(size * 0.34, -size * 0.5); c.closePath(); c.fill(); c.stroke();
+          c.fillStyle = '#0b0a10'; c.beginPath(); c.arc(-size * 0.11, 0, size * 0.055, 0, Math.PI * 2); c.arc(size * 0.11, 0, size * 0.055, 0, Math.PI * 2); c.fill();
+          c.restore();
+        };
+        fang(w / 2 - 160, 56, -0.12); fang(w / 2, 70, 0); fang(w / 2 + 160, 56, 0.12);
+        // The pad slams forward.
+        if (t > 0.55) {
+          const k = (t - 0.55) / 0.45;
+          c.globalAlpha = Math.min(0.85, k * 0.85 * flash); c.fillStyle = '#fff8ea';
+          c.fillRect(0, h * 0.86, w, h * 0.14);
+          c.globalAlpha = Math.max(0, 0.8 * (1 - k));
+          c.strokeStyle = '#ffe9b0'; c.lineWidth = 3;
+          for (let i = 0; i < 10; i++) {
+            const x = (hash(631, i, 3) % 1000) / 1000 * w, r = 6 + k * 46;
+            c.beginPath(); c.arc(x, h * 0.88, r, Math.PI, 0); c.stroke();
+          }
+        }
+        c.globalAlpha = 1;
+        break;
+      }
+      case 'cold-settle': {
+        wash(0.55 * (1 - t));
+        watcherMask(c, w / 2, h * 0.3, Math.min(w, h) * 0.0016 + 0.55, { glow: Math.max(0, 1 - t * 1.6), eye: Math.max(0, 1 - t) });
+        break;
+      }
+      case 'shatter-freeze': {
+        wash(0.3);
+        const snap = Math.min(1, t / 0.4);
+        watcherMask(c, w / 2, h * 0.22, Math.min(w, h) * 0.0013 + 0.4, { glow: snap * flash, eye: t < 0.5 ? 1 : 0.55, split: 0 });
+        break;
+      }
+      case 'shatter-core': {
+        wash(0.2);
+        const r = 10 + 62 * easeOut(t);
+        const g = c.createRadialGradient(sx, sy, 0, sx, sy, r);
+        g.addColorStop(0, '#05060c'); g.addColorStop(0.62, '#05060c');
+        g.addColorStop(0.85, '#241c12'); g.addColorStop(1, 'rgba(221,255,137,0)');
+        c.fillStyle = g; c.beginPath(); c.arc(sx, sy, r, 0, Math.PI * 2); c.fill();
+        c.globalAlpha = 0.5 + 0.5 * t; c.strokeStyle = '#ddff89'; c.lineWidth = 2.4;
+        c.shadowColor = '#ddff89'; c.shadowBlur = 24;
+        c.beginPath(); c.arc(sx, sy, r * 0.86, 0, Math.PI * 2); c.stroke();
+        c.shadowBlur = 0; c.globalAlpha = 0.45 + 0.3 * t;
+        c.setLineDash([10, 14]); c.lineDashOffset = -t * 90; c.lineWidth = 2;
+        c.beginPath(); c.arc(sx, sy, r * 1.35, 0, Math.PI * 2); c.stroke();
+        c.setLineDash([]);
+        // The world bends: vignette pulls inward.
+        const pull = c.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.32, w / 2, h / 2, Math.max(w, h) * 0.78);
+        pull.addColorStop(0, 'rgba(6,5,14,0)'); pull.addColorStop(1, `rgba(6,5,14,${0.62 * t})`);
+        c.globalAlpha = 1; c.fillStyle = pull; c.fillRect(0, 0, w, h);
+        break;
+      }
+      case 'shatter-crack': {
+        const f = t < 0.22 ? 1 : Math.max(0, 1 - (t - 0.22) / 0.78);
+        const g = c.createRadialGradient(sx, sy, 0, sx, sy, Math.max(w, h) * 1.15 * easeOut(Math.min(1, t / 0.6 + 0.12)));
+        g.addColorStop(0, `rgba(255,252,238,${f * flash})`); g.addColorStop(0.35, `rgba(255,214,140,${0.8 * f * flash})`); g.addColorStop(1, 'rgba(255,190,110,0)');
+        c.fillStyle = g; c.fillRect(0, 0, w, h);
+        const reach = easeOut(Math.min(1, t / 0.5));
+        for (const [tx, ty] of [[0, 0], [w, 0], [0, h], [w, h]]) {
+          const pts = fracturePath(771, sx, sy, sx + (tx - sx) * reach, sy + (ty - sy) * reach, 9);
+          c.globalAlpha = f; c.strokeStyle = '#ffbe6e'; c.lineWidth = 9; jaggedLine(c, pts); c.stroke();
+          c.globalAlpha = f; c.strokeStyle = '#fffdf2'; c.lineWidth = 2.6; jaggedLine(c, pts); c.stroke();
+        }
+        // Shards lift in rings.
+        for (let i = 0; i < 16; i++) {
+          const ang = (hash(881, i, 3) % 628) / 100, ring = 120 + (hash(881, i, 5) % 340), rr = easeOut(t) * ring;
+          const x = sx + Math.cos(ang) * rr, y = sy + Math.sin(ang) * rr * 0.82 - t * 26;
+          c.save(); c.globalAlpha = Math.max(0, 0.9 - t * 0.45); c.translate(x, y); c.rotate(ang + t);
+          c.fillStyle = hash(881, i, 7) % 4 ? '#241c32' : '#ffd98c';
+          c.fillRect(-4, -6, 8 + (hash(881, i, 9) % 8), 12); c.restore();
+        }
+        c.globalAlpha = 1;
+        break;
+      }
+      case 'shatter-sky': {
+        wash(0.24);
+        // The COLLAPSE SKY drops in; the shards settle and STAY.
+        c.globalAlpha = 0.35 + 0.65 * easeOut(t);
+        drawShatteredSky(c, w, h, { shatter: Math.max(6, Math.round(56 - 44 * t)) }, motion ? time : 0, motion);
+        c.globalAlpha = 1;
+        // The Watcher splits down the middle.
+        watcherMask(c, w / 2, h * 0.24, Math.min(w, h) * 0.00135 + 0.42, { glow: 0.4 * flash, eye: 0.8, split: easeOut(t) });
+        break;
+      }
+      case 'shatter-borders': {
+        wash(0.1);
+        // One pulse travelling clockwise around the borders.
+        const inset = 22, per = 2 * (w - 2 * inset) + 2 * (h - 2 * inset), head = (t * 1.15 % 1) * per;
+        const seg = per / 4, side = Math.floor(head / seg), local = (head - side * seg) / seg;
+        const edge = (a, b, u) => [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u];
+        const corners = [[inset, inset], [w - inset, inset], [w - inset, h - inset], [inset, h - inset], [inset, inset]];
+        c.strokeStyle = '#ddff89'; c.globalAlpha = 0.4; c.lineWidth = 6;
+        c.strokeRect(inset, inset, w - 2 * inset, h - 2 * inset);
+        const [a, b] = [corners[side], corners[side + 1]];
+        const [x0, y0] = edge(a, b, Math.max(0, local - 0.12)), [x1, y1] = edge(a, b, local);
+        c.globalAlpha = 0.95; c.lineWidth = 9; c.shadowColor = '#ddff89'; c.shadowBlur = 20;
+        c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.shadowBlur = 0;
+        // Aurora band + ember rain.
+        const aurora = c.createLinearGradient(0, 0, 0, h * 0.15);
+        aurora.addColorStop(0, `rgba(221,255,137,${0.34 + 0.14 * Math.sin(time * 0.09)})`); aurora.addColorStop(1, 'rgba(221,255,137,0)');
+        c.globalAlpha = 1; c.fillStyle = aurora; c.fillRect(0, 0, w, h * 0.15);
+        for (let i = 0; i < 44; i++) {
+          const x = hash(993, i, 3) % 1000 / 1000 * w;
+          const y = h * 0.16 + ((hash(993, i, 5) % 1000) / 1000 * h * 0.2 + t * h * 0.62);
+          c.globalAlpha = 0.8 * (1 - t * 0.3); c.fillStyle = hash(993, i, 7) % 3 ? '#ffb066' : '#ffe9b0';
+          c.beginPath(); c.arc(x, y, 1.4 + (hash(993, i, 9) % 1000) / 1000 * 2.4, 0, Math.PI * 2); c.fill();
+        }
+        c.globalAlpha = 1;
+        break;
+      }
+      case 'shatter-dolly': {
+        // Second-long white flicker as the world, not the cube, takes focus.
+        const flick = t < 0.12 ? (t < 0.06 ? 0.5 : 0.32) * flash : 0;
+        if (flick > 0) { c.fillStyle = `rgba(255,255,255,${flick})`; c.fillRect(0, 0, w, h); }
+        // The spine bursts full-bright.
+        if (t < 0.42) {
+          const k = 1 - t / 0.42;
+          const g = c.createLinearGradient(0, h, 0, h * 0.3);
+          g.addColorStop(0, `rgba(255,250,226,${0.85 * k})`); g.addColorStop(0.5, `rgba(255,214,140,${0.4 * k})`); g.addColorStop(1, 'rgba(255,214,140,0)');
+          c.globalAlpha = 1; c.fillStyle = g;
+          c.fillRect(w * 0.5 - (3 + 9 * k), h * 0.3, 6 + 18 * k, h * 0.7);
+        }
+        break;
+      }
+      case 'shatter-release': {
+        const fade = Math.max(0, 0.22 - t * 0.22);
+        if (fade > 0) { c.fillStyle = `rgba(255,255,255,${fade * flash})`; c.fillRect(0, 0, w, h); }
+        break;
+      }
+      default:
+        break;
+    }
+    c.restore();
+  }
   function draw(run, alpha, aim, motion, device = "mouse") {
     transform();
     const { world, state: s, combat } = run, v = lastView = camera.view(alpha), p = bodyPose(world.player, alpha), nearest = run.nearest(), time = mix(world.previousClock, world.clock, alpha);
@@ -7027,7 +7823,26 @@ function createRenderer(c, viewport) {
     if (s.opening) back.bench(v);
     else if (["tokyo", "foundry", "manga", "synth", "void"].includes(s.equipment?.world)) drawEquipmentWorld(c, w, h, s.equipment.world, motion ? time : 0,{x:v.panX*v.scale,y:v.panY*v.scale,scale:v.scale});
     else back.world(v, s.seed, s.band,motion?time:0);
+    // CHUNK 2/3: the sky breaks before the words do. The meter is on the run;
+    // once the event is spent the sky stays in shards for the rest of the run.
+    if (s.arenaMode === 'SHATTERED' || s.shatter > 0) {
+      drawShatteredSky(c, w, h, s, motion ? time : 0, motion);
+      drawShatteredRails(c, w, h, v, world.arena, motion ? time : 0, motion);
+    } else {
+      drawFractureSky(c, w, h, s.fracture?.pct ?? 0, motion ? time : 0, motion);
+    }
     narrativeBackdrop(s.narrative,w,h,time,motion);
+    // CHUNK 6B: the arena behind the landlord darkens one level, so the slab
+    // reads against the sky and not against the pips.
+    for (const e of combat.enemies.values()) {
+      if (e.kind === 'monolith') {
+        c.save();
+        c.fillStyle = 'rgba(6,5,16,0.34)';
+        c.fillRect(0, 0, w, h);
+        c.restore();
+        break;
+      }
+    }
     narrativeTrack(s.narrative,w,h);
     if(s.narrative&&!s.narrative.intro&&s.narrative.seal){
       const n=s.narrative,live=n.locks.filter(lock=>!lock.broken),q=live.length?live.reduce((best,lock)=>Math.hypot(lock.x-p.x,lock.y-p.y)<Math.hypot(best.x-p.x,best.y-p.y)?lock:best,live[0]):n.seal;
@@ -7356,7 +8171,7 @@ function createRenderer(c, viewport) {
       }
       c.restore();
     }
-    if ((aim?.power && !s.visualTutorial) || (aim?.power && !aim.anchor) || s.story && s.opening?.rest && s.edge > 0 && !s.opening.finishing) {
+    if ((aim?.power && !s.visualTutorial) || (aim?.power && !aim.anchor) || s.story && s.opening?.rest && s.edge > 0 && !s.opening.finishing || s.phaseLineTicks > 0) {
       const shot = drawArc(
         c,
         run,
@@ -7406,7 +8221,9 @@ function createRenderer(c, viewport) {
       const anticipation=resolveFangAnticipation(e,motion);
       if(e.kind==='fang'&&(e.mode==='tell'||e.mode==='rush')){c.translate(q.x,q.y);c.rotate(e.aim||0);c.translate(anticipation.offset,0);c.scale(anticipation.x,anticipation.y);c.rotate(-(e.aim||0));c.translate(-q.x,-q.y);}
       if(reaction&&motion){const age=18-reaction.life,k=(.045+(reaction.contact?.strength??.3)*.09)*Math.exp(-age*.3);c.translate(q.x,q.y);c.rotate(reaction.contact?.angle||0);c.scale(1-k,1+k*.6);c.rotate(-(reaction.contact?.angle||0));c.translate(-q.x,-q.y);}
+      if(e.kind==='monolith')drawMonolithSignals(c,q.x,q.y,e.r,{lashTell:e.lashTell,slamTell:e.slamTell,lensTell:e.lensTell,lensT:e.lensT},v.scale,time);
       foe(c, e.kind, q.x, q.y, e.r, q.angle, {
+        wake: e.wakeAt,
         hp: e.hp,
         paper: e.paper,
         // Eased hit flash. `e.flash` counts DOWN from ANIM.flash.life, so the
@@ -7418,6 +8235,13 @@ function createRenderer(c, viewport) {
         fault: e.fault,
         mode:e.mode,clock:e.clock,span:e.span,aim:e.aim,
         active:e.mode==='rush'||combat.hazards.some(h=>!h.spent&&h.sourceId===e.id),
+        // CHUNK 6B: the landlord's tells — crack-crawl, the dropped plate,
+        // and the dilating iris — travel through opts to the painter.
+        lashTell: e.lashTell || 0,
+        slamTell: e.slamTell || 0,
+        slamPlate: e.slamPlate ?? -1,
+        lensTell: e.lensTell || 0,
+        lensT: e.lensT || 0,
         time:motion?time:0
       });c.restore();
       if (s.equipment?.world === "manga") c.restore();
@@ -7431,6 +8255,31 @@ function createRenderer(c, viewport) {
         c.globalAlpha = a.spent ? 0.26 : 1;
         arc(c, "#b93863", 6, x, y, mix(a.previousRadius, a.radius, alpha));
         arc(c, "#ffb7c8", 2, x, y, mix(a.previousRadius, a.radius, alpha));
+        c.restore();
+      } else if (a.kind === "shock") {
+        // CHUNK 6B: the landlord's slam — a bone-white concussion ring, not a
+        // Pulse. Cracked and amber, spent fading.
+        c.save();
+        c.globalAlpha = a.spent ? 0.3 : Math.max(0.25, 1 - a.radius / ((a.maxRadius || 150) + 30));
+        arc(c, "#7d6a52", 7, x, y, mix(a.previousRadius, a.radius, alpha));
+        arc(c, "#ffe4b3", 2.4, x, y, mix(a.previousRadius, a.radius, alpha));
+        c.restore();
+      } else if (a.source === "monolith") {
+        // Debris off the slab — a tumbling ember rock, not a needle.
+        c.save();
+        c.translate(x, y);
+        c.rotate(a.angle);
+        const markerScale = Math.min(1.8, Math.max(1, 0.85 / v.scale));
+        c.scale(markerScale, markerScale);
+        poly2(
+          c,
+          "#241a14",
+          [[11,0],[2,-8],[-8,-6],[-13,2],[-6,9],[5,7]],
+          INK.black,
+          Math.max(1.8,1.4/v.scale/markerScale)
+        );
+        line(c, '#ff8f4d', Math.max(1.5,1.35/v.scale/markerScale), -7, 1, 4, 3);
+        line(c, '#ffd9a0', Math.max(1.2,1.1/v.scale/markerScale), -4, -3, 5, -2);
         c.restore();
       } else {
         c.save();
@@ -7825,6 +8674,44 @@ function createRenderer(c, viewport) {
         const by = dash ? 1 + (dash.sy - 1) * settle : 1;
         c.scale(clamp(bx, STRETCH_ACROSS, STRETCH_ALONG), clamp(by, STRETCH_ACROSS, STRETCH_ALONG));
       }
+      {
+        // ── CHUNK 3: THE F=m·a AURA ─────────────────────────────────────
+        //
+        // A SHATTERED arena pays its border tax back to the player: the
+        // kinetic stage rides on the cube as a ring of banked force —
+        // ×2 cyan, ×3 magenta, ×4 OVERCHARGED white-hot with orbiting
+        // flecks and the formula etched beneath it.
+        const kin = s.arenaMode === 'SHATTERED' ? Math.min(4, Math.max(1, s.kineticStage | 0)) : 0;
+        if (kin > 1) {
+          const col = kin >= 4 ? '#ffffff' : kin === 3 ? '#ff5db1' : '#9bf6ff';
+          const breathe = motion ? 0.68 + 0.32 * Math.sin(time * 0.13 + 1.7) : 1;
+          c.globalAlpha = 0.34 + 0.15 * kin * breathe;
+          c.strokeStyle = col;
+          c.lineWidth = Math.max(0.8, (1.4 + 1.15 * kin) / v.scale);
+          c.beginPath(); c.arc(0, 0, R * (1.3 + 0.14 * kin), 0, Math.PI * 2); c.stroke();
+          c.globalAlpha = 0.16 + 0.1 * kin * breathe;
+          c.beginPath(); c.arc(0, 0, R * (1.65 + 0.18 * kin), 0, Math.PI * 2); c.stroke();
+          if (kin >= 3) {
+            // The formula, etched small beneath the cube.
+            c.globalAlpha = 0.62 * breathe;
+            c.fillStyle = col;
+            c.font = `600 ${Math.max(7, Math.round(9 / v.scale))}px ui-monospace, Menlo, monospace`;
+            c.textAlign = 'center';
+            c.fillText('F=m·a', 0, R * 1.98);
+          }
+          if (kin >= 4) {
+            // Orbiting flecks: overcharged matter thrown off the sphere.
+            for (let i = 0; i < 6; i++) {
+              const a = (hash(977, i, 91) % 360) * Math.PI / 180 + (motion ? time * 0.075 : 0);
+              const rr = R * 1.02;
+              c.globalAlpha = 0.55 + 0.35 * breathe;
+              c.fillStyle = i % 2 ? '#ffffff' : '#ffe6a8';
+              c.beginPath(); c.arc(Math.cos(a) * rr, Math.sin(a) * rr, Math.max(0.7, 1.9 / v.scale), 0, Math.PI * 2); c.fill();
+            }
+          }
+          c.globalAlpha = 1;
+        }
+      }
       cube(c, 0, 0, R, p.angle, motion ? time : 0, facing, {
         // The two expression channels the pose system computes. `lift` is the
         // falling scarf plus a little air-speed, so the character reads as
@@ -7999,7 +8886,7 @@ function createRenderer(c, viewport) {
           c.fillRect(x - 3.5 * ux, y, 7 * ux, 3.6 * ux);
           if (i === s.edge) {
             c.fillStyle = INK.paper;
-            c.fillRect(x - 3.5 * ux, y, 7 * ux * s.recharge / 76, 3.6 * ux);
+            c.fillRect(x - 3.5 * ux, y, 7 * ux * Math.min(1, (s.recharge || 0) / (s.regenWindow || 60)), 3.6 * ux);
           }
         }
     }
@@ -8100,6 +8987,13 @@ function createRenderer(c, viewport) {
       minimap(c, world, combat, v, s, motion);
       c.restore();
     }
+    // CHUNK 6A: the diegetic spine under the DOM HUD, and the cutscene
+    // overlay above everything (the chips themselves are DOM).
+    c.save();
+    c.setTransform(viewport.width / w, 0, 0, viewport.height / h, 0, 0);
+    drawSpine(c, w, h, s, motion, time);
+    drawCutsceneOverlay(c, w, h, s, v, p, time, motion);
+    c.restore();
   }
   return {
     reset,
@@ -8113,6 +9007,8 @@ function createRenderer(c, viewport) {
     // OFF / LOW / FULL. Pulled from options rather than passed every frame so
     // a mid-run change takes effect on the very next frame.
     setTrainingScale(value) {camera.setTrainingScale(value);lastView=camera.view(1);},
+    // CHUNK 1: arena modes pull the lens back a touch so the 1.3x table reads.
+    setFieldScale(value) {camera.setFieldScale(value);lastView=camera.view(1);},
     setShakeLevel(level) {
       shakeLevel = level === "off" || level === "low" ? level : "full";
     },

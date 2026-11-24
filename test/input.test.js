@@ -171,7 +171,8 @@ test('dispose removes every owned listener, cancels buffered inputs and is idemp
  }}finally{globalThis.window=previous;}
 });
 test('sub-threshold pointer jitter is always a target tap, never a weak drag',()=>{
- const r=gestureRig();try{r.canvasEvents.get('pointerdown')(r.ev(100,100));r.events.get('pointermove')(r.ev(108,104));assert.deepEqual(r.input.aim,{x:0,y:-25,power:.8,lock:null,anchor:{x:100,y:100}});r.events.get('pointerup')(r.ev(108,104));assert.equal(r.shots.length,1);assert.equal(r.shots[0].x,0);assert.equal(r.shots[0].y,-25);}finally{r.restore();}
+ // The deadzone is 8px screen space (CHUNK 2): 6.7px of jitter is a tap.
+ const r=gestureRig();try{r.canvasEvents.get('pointerdown')(r.ev(100,100));r.events.get('pointermove')(r.ev(106,103));assert.deepEqual(r.input.aim,{x:0,y:-25,power:.8,lock:null,anchor:{x:100,y:100}});r.events.get('pointerup')(r.ev(106,103));assert.equal(r.shots.length,1);assert.equal(r.shots[0].x,0);assert.equal(r.shots[0].y,-25);}finally{r.restore();}
 });
 
 test('short intentional pulls have a visible launch floor in every direction',()=>{

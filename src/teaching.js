@@ -13,6 +13,7 @@ export const TEACHING_SCENARIOS=Object.freeze([
  {id:'rift',name:'RIFT / STAR',kind:'rift'},
  {id:'well',name:'WELL / PENTAGON',kind:'well'},
  {id:'crown',name:'CROWN / OCTAGON',kind:'crown'},
+ {id:'monolith',name:'MONOLITH / THE LANDLORD',kind:'monolith'},
 ].map(Object.freeze));
 
 // Each objective is tied to an event or state in the same real combat simulation.
@@ -25,7 +26,8 @@ export const TEACHING_STEPS=Object.freeze({
  link:[['tell','WATCH THE LINK','The line between these two Prisms charges before becoming dangerous.'],['attack','WATCH THE BEAM','The live beam hurts along the line between the two sentries.'],['clear','TRY IT','Cut either sentry to stop its link; clear both to finish. Early dash parry can block the beam.']],
  fork:[['tell','WATCH THE CROSS','The dashed cross marks a Fork swipe. Its body is still safe to touch.'],['attack','WATCH THE SWIPE','The solid cross is the active strike. Leave it or early-parry through it.'],['split','CUT THE FORK','Launch through the cross-shaped enemy. It splits into two small Fangs.'],['clear','CLEAR THE OFFSPRING','Cut both small Fangs. Their bodies hurt only while charging.']],
  bastion:[['tell','WATCH THE WEDGE','Bastion marks the direction and area of its shield slam.'],['attack','WATCH THE SLAM','The solid wedge is the active strike. Move out or early-parry it.'],['armor','CRACK THE ARMOR','Cut Bastion once. The first plate breaks and interrupts its attack.'],['clear','BREAK THE LAST PLATE','Launch through it again. Armor upgrades can remove more plates per cut.']],
- rift:[['tell','WATCH THE MARKER','The dashed circle marks where Rift will blink and strike. Leave the circle.'],['attack','WATCH THE LANDING','The solid landing circle is the strike; touching the Rift body alone is safe.'],['clear','TRY IT','Cut Rift before the blink to interrupt it, or follow after the strike.']],
+ rift:[['approach','STEP INTO ITS RING','The Rift only fights what it can see. Beyond its dashed ring it sleeps; step inside it and it wakes.'],['tell','WATCH THE WARNING','The dashed circle marks where Rift will blink and strike. Leave the circle.'],['clear','TRY IT','Cut Rift before the blink to interrupt it, or follow after the strike. The body itself never hurts.']],
+ monolith:[['approach','GET UNDER IT','The Monolith never moves. It is not guarding the seam — it IS the seam. Reach its face.'],['charge','BANK THE RAILS','Ordinary cuts chip it one point. A banked OVERCHARGED cut (stage 4) takes a whole plate — build pace, clean-bank a wall.'],['clear','FIVE PLATES','Each OVERCHARGED cut takes one plate. Ten ordinary cuts still fell it — the wall is a choice, not a lockout.']],
  well:[['tell','WATCH THE COMPRESSION','The large dashed field pulls launched cubes. The smaller dashed circle warns of a strike.'],['attack','WATCH THE STRIKE','The solid inner circle is the damaging compression; leave it or interrupt Well.'],['pull','FEEL THE PULL','Launch near the larger field to feel the inward pull. The pull itself does not damage.'],['clear','TRY IT','Launch out of the field or cut through the core.']],
  crown:[['tell','WATCH THE SPOKES','The ten dashed spokes show the directions of Crown’s volley.'],['attack','WATCH THE VOLLEY','Needles travel out along those spokes; the lines themselves are only warnings.'],['armor','CRACK THE SHELL','Dodge or parry the needles, then cut a plate from Crown.'],['clear','BREAK THE CROWN','Cut the remaining plates. Defeating Crown restores one health, up to your maximum.']],
 });
@@ -35,11 +37,12 @@ export function teachingScenario(id){return TEACHING_SCENARIOS.find(s=>s.id===id
 export function createTeachingSession({scenario='slash',emit=()=>{}}={}){
  const lesson=teachingScenario(scenario),events=[],observed=new Set();let stepIndex=0,waiting=false;
  const run=createRun(841,(type,data)=>{events.push(type);if(events.length>32)events.shift();if(type==='tell'&&lesson.id!=='link')observed.add('tell');if(type==='cut')observed.add('cut');if(type==='armor')observed.add('armor');emit(type,data);},{waveMode:true,controlPractice:true});
+ if(lesson.id==='monolith'){run.state.arenaMode='SHATTERED';run.world.arenaMode='SHATTERED';run.state.kineticStage=1;run.state.kineticBounces=0;}
  run.state.phase='playing';run.state.wave.entry=0;run.state.teachingArena=true;
  placePlayer(run.world,{x:0,y:0});stopPlayer(run.world);
- const positions=lesson.id==='link'?[[130,-190],[300,-110]]:lesson.count===3?[[160,-90],[255,-120],[350,-150]]:[[220,-120]];
+ const positions=lesson.id==='monolith'?[[30,-280]]:lesson.id==='link'?[[130,-190],[300,-110]]:lesson.count===3?[[160,-90],[255,-120],[350,-150]]:[[220,-120]];
  for(let i=0;i<positions.length;i++){
-  const [x,y]=positions[i];run.combat.add({id:`lesson-${i}`,kind:lesson.kind,x,y,home:'wave',slot:i,wave:true,wavePlaced:true,delay:30+i*16,sentry:lesson.id==='link',pinned:lesson.id==='slash'});
+  const [x,y]=positions[i];const extra=lesson.id==='rift'?{wakeAt:200}:null;run.combat.add({id:`lesson-${i}`,kind:lesson.kind,x,y,home:'wave',slot:i,wave:true,wavePlaced:true,delay:30+i*16,sentry:lesson.id==='link',pinned:lesson.id==='slash'||lesson.id==='monolith',...extra});
  }
  if(lesson.id==='link')run.setPracticeLinks([{a:'lesson-0',b:'lesson-1',period:210}]);
  run.state.wave.total=run.combat.enemies.size;let disposed=false;
@@ -49,6 +52,11 @@ export function createTeachingSession({scenario='slash',emit=()=>{}}={}){
   tick(aim=null){if(disposed||waiting||this.complete||run.state.phase!=='playing')return;
    const before=[...run.combat.enemies.values()];
    if(lesson.id==='well'&&run.world.launched&&before.some(e=>e.kind==='well'&&Math.hypot(e.x-run.world.player.position.x,e.y-run.world.player.position.y)<234))observed.add('pull');
+   if(lesson.id==='rift'&&before.some(e=>e.kind==='rift'&&Math.hypot(e.x-run.world.player.position.x,e.y-run.world.player.position.y)<200))observed.add('approach');
+   if(lesson.id==='monolith'){
+    if(before.some(e=>e.kind==='monolith'&&Math.hypot(e.x-run.world.player.position.x,e.y-run.world.player.position.y)<180))observed.add('approach');
+    if(run.state.kineticStage>=4)observed.add('charge');
+   }
    run.setAim(aim);run.tick();const live=[...run.combat.enemies.values()];
    if(run.state.shots>0)observed.add('launch');
    if(lesson.id==='fork'&&live.some(e=>e.kind==='fang'&&e.small))observed.add('split');

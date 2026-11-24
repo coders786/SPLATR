@@ -5,6 +5,7 @@ import {disturbDimension,stepDimensionField} from './dimension-field.js';
 import {stepCleanBanks,steerBank} from './clean-banks.js';
 import {swordProfile,effectiveSword,swordAttack,advanceSwordAttacks} from './swords.js';
 import {WAVE_ARENA,createWaveDirector} from './waves.js';
+import { createFractureState, gainFracture, consumeFracture, FRACTURE_PER_KILL, FRACTURE_MAX, FRACTURE_PER_MONOLITH } from './fracture.js';
 import {createContinuousDirector} from './continuous-sectors.js';
 import { MOVEMENT, flightEnvelope } from './movement-model.js';
 import { EQUIPMENT_LIMITS, nearestEquipmentTarget, aimPull, horizontalCutWidth } from './equipment-combat.js';
@@ -17,15 +18,51 @@ import {
   placePlayer,
   stepPhysics,
   launch,
-  holdSpeed,
   setBulletTime,
   destroyPhysics,
   MAX_SPEED,
+  MAX_PINBALL_SPEED,
   RELEASE_GRAVITY,
   boostPlayer,
   dampPlayer,
   setPlayerVelocity,
 } from './physics.js';
+import { MOMENTUM, createMomentum, stepMomentum, gainMomentum, pipCeilingScale, hyperChainFor } from './momentum.js';
+import { upgradeById, upgradeFields } from './upgrades.js';
+
+/** ── SPEED-PRESERVING VECTOR REDIRECT ───────────────────────────────────────
+ *
+ * Steering at speed is a redirect, never a reset. `steerRetention` is the
+ * fraction of the speed the cube ALREADY owns that survives the steer.
+ *
+ *   ordinary   <= 75°   1.00 — or 1.05 when the cube already owns more speed
+ *              than an ordinary launch can build (a banked rally / hyper);
+ *              banking momentum is worth a little extra, never less.
+ *              75°..90° linear fall 1.00 → 0.85; >= 90° 0.85.
+ *   hyper      <= 75°   1.05 — always: the line you chose is the line you
+ *              keep. 75°..120° linear fall 1.05 → 0.90. >= 120° 0.90 — even a
+ *              full reversal keeps nine tenths of it. A hyper-speed steer
+ *              NEVER drops the cube to ordinary speed and never below nine
+ *              tenths of the speed it owned.
+ *
+ * A hyper-speed steer may therefore NEVER drop the cube back to
+ * BASE_DASH_SPEED (42), and the applied direction is exactly the aim.
+ * Exported so the curve is asserted directly, not inferred from a sim.
+ */
+const STEER_GENTLE = 75 * Math.PI / 180;
+const STEER_REVERSAL = 90 * Math.PI / 180;
+const STEER_HYPER_REVERSAL = 120 * Math.PI / 180;
+export function steerRetention(speed, angleDiff, hyper = false) {
+  if (hyper) {
+    if (angleDiff <= STEER_GENTLE) return 1.05;
+    if (angleDiff >= STEER_HYPER_REVERSAL) return 0.9;
+    const t = (angleDiff - STEER_GENTLE) / (STEER_HYPER_REVERSAL - STEER_GENTLE);
+    return 1.05 - 0.15 * t;
+  }
+  if (angleDiff <= STEER_GENTLE) return speed > MAX_SPEED ? 1.05 : 1;
+  if (angleDiff >= STEER_REVERSAL) return 0.85;
+  return 1 - 0.15 * ((angleDiff - STEER_GENTLE) / (STEER_REVERSAL - STEER_GENTLE));
+}
 import { panicWindow, panicScale } from './aim.js';
 import { DASH, SPLAT } from './animation.js';
 import { SPAWN, PAD, ARENA as DEFAULT_ARENA, BAND, createStream, bandAt, district, clamp, PLAYER_SIZE } from './levels.js';
@@ -155,6 +192,9 @@ export const FLOOR_IGNORE_TICKS = MOVEMENT.floorIgnore;
  *  brief is that aiming slows falling, and a player with an empty meter still
  *  has to be able to save themselves. */
 export const AIM_FALL_KEEP = MOVEMENT.aimFallKeep;
+/** A drag released this close to a pip finishing is remembered and fires on the
+ *  exact tick the pip lands. 120ms at 60 ticks/s. */
+export const EDGE_BUFFER_TICKS = 7;
 
 /** The fall-speed cap: one screen height per 1.2 seconds.
  *
@@ -277,19 +317,74 @@ export function ballisticAim(from, to, speed) {
   const t = Math.sqrt((2 * d2) / (b + Math.sqrt(disc)));
   return { x: dx / t, y: dy / t - 0.5 * RELEASE_GRAVITY * t, power: speed / MAX_SPEED };
 }
+
+/**
+ * Resolve the run-length cards into the small set of lanes the simulation
+ * already understands. The chooser owns records; physics consumes this
+ * projection. Keeping it pure makes the before/after card math and the active
+ * run state use the same source of truth.
+ */
+export function resolveUpgradeModifiers(owned = [], temporary = null) {
+  const list = [...(Array.isArray(owned) ? owned : [])];
+  if (temporary && !list.some(x => x?.id === temporary.id)) list.push(temporary);
+  const out = {
+    speed: 1, reach: 1, width: 1, armor: 0, blade: 0, score: 1, guard: 0,
+    shield: 0, reboundBonus: 0, reboundCap: 0, hyperRefund: 0, pacePip: 0,
+    reboundMultiplier: 1, aimFallGravity: .1, bladeDecay: 1,
+    executeThreshold: 0, executeMultiplier: 1, healthMax: Infinity,
+    secondTargetDamage: 1, shatteredRail: 1.3, shatteredRailTicks: 0,
+    flawlessScore: 1, bastionArmor: 0, monolithMaxHp: 0, shatterMaxHp: 0,
+    fractureClear: 0, startFracture: 0, shatterFracture: 6, credits: 1,
+    flags: [], ids: [],
+  };
+  for (const upgrade of list) {
+    if (!upgrade) continue;
+    const projected = upgradeFields(upgrade);
+    const f = upgrade.fields || (Object.keys(projected).length ? projected : upgrade);
+    if (!f || typeof f !== 'object') continue;
+    out.ids.push(upgrade.id);
+    for (const key of ['speed', 'reach', 'width', 'score', 'credits']) if (Number.isFinite(f[key])) out[key] *= f[key];
+    for (const key of ['armor', 'blade', 'guard', 'shield', 'hyperRefund', 'pacePip', 'fractureClear', 'startFracture']) if (Number.isFinite(f[key])) out[key] += f[key];
+    if (Number.isFinite(f.shatterFracture)) out.shatterFracture = f.shatterFracture;
+    if (Number.isFinite(f.reboundBonus)) out.reboundBonus += f.reboundBonus;
+    if (Number.isFinite(f.reboundCap)) out.reboundCap = Math.max(out.reboundCap, f.reboundCap);
+    if (Number.isFinite(f.reboundMultiplier)) out.reboundMultiplier *= f.reboundMultiplier;
+    if (Number.isFinite(f.aimFallGravity)) out.aimFallGravity = Math.max(out.aimFallGravity, f.aimFallGravity);
+    if (Number.isFinite(f.bladeDecay)) out.bladeDecay *= f.bladeDecay;
+    if (Number.isFinite(f.executeThreshold)) out.executeThreshold = Math.max(out.executeThreshold, f.executeThreshold);
+    if (Number.isFinite(f.executeMultiplier)) out.executeMultiplier *= f.executeMultiplier;
+    if (Number.isFinite(f.healthMax)) out.healthMax = Math.min(out.healthMax, f.healthMax);
+    if (Number.isFinite(f.secondTargetDamage)) out.secondTargetDamage = Math.max(out.secondTargetDamage, f.secondTargetDamage);
+    if (Number.isFinite(f.shatteredRail)) out.shatteredRail = Math.max(out.shatteredRail, f.shatteredRail);
+    if (Number.isFinite(f.shatteredRailTicks)) out.shatteredRailTicks = Math.max(out.shatteredRailTicks, f.shatteredRailTicks);
+    for (const key of ['firstHitBlock', 'flawlessScore', 'flawlessFracture', 'revealLucky', 'luckyEvery', 'bastionArmor', 'monolithMaxHp', 'shatterMaxHp', 'phaseLineTicks', 'slashEchoEvery', 'slashEchoDamage', 'crownPace', 'crownFracture', 'crownCredits', 'monolithDamage', 'luckyTwice', 'finalMultiplier', 'stampedSteel']) if (f[key] !== undefined) out[key] = f[key];
+    for (const flag of ['afterburn', 'bankloop', 'secondwind', 'doublejoint', 'restlessedge', 'executioner', 'ironnerve', 'hollowbonus', 'covenant', 'ashreader', 'gambler', 'kingmaker', 'godsmother', 'tearborn', 'phaseline', 'ghostlash', 'crowncinders', 'landlordskey', 'wheelofwatcher', 'theending']) if (upgrade.id === flag && !out.flags.includes(flag)) out.flags.push(flag);
+  }
+  out.ids = Object.freeze(out.ids);
+  out.flags = Object.freeze(out.flags);
+  return Object.freeze(out);
+}
+
+export function upgradeHas(state, id) {
+  return !!state?.upgradeModifiers?.ids?.includes(id) || !!state?.upgrades?.some(x => x?.id === id);
+}
+
 export function createRun(
   seed,
   emit = () => {},
-  { warmup = false, staged = warmup, viewport = null, combatTrace = null, equipment = null, waveMode = false, controlPractice = false, continuous = false, lockdownIntro = false } = {},
+  { warmup = false, staged = warmup, viewport = null, combatTrace = null, equipment = null, waveMode = false, controlPractice = false, continuous = false, lockdownIntro = false, arena = null, fracturePct = 0, catalogRewards = false } = {},
 ) {
   // Stream the normal neighbourhood, but keep its other bodies off the
   // Hold the rest of the stream until the first live Fang is cut (or the
   // player leaves it). A strong launch gets one short decision beat after it
   // crosses empty sky. That is not a phantom hit: no score, freeze or refund.
-  const ARENA=waveMode?(continuous?{...WAVE_ARENA}:WAVE_ARENA):DEFAULT_ARENA;
+  // Handcrafted courses (the visual tutorial) pin their authored bounds;
+  // everything else gets the wave arena (grown in CHUNK 1) or the open world.
+  const ARENA=arena||(waveMode?(continuous?{...WAVE_ARENA}:WAVE_ARENA):DEFAULT_ARENA);
   const loadout = normalizeEquipment(equipment), rules = equipmentRules(loadout), edgeMax = rules.edgeMax;
   let wingsUsed = false, focusRecovery = 0, needleCooldown = 0, bumpGuard = rules.bumpGuard, aimAngle = null;
   let cutThisTick = false;
+  let cutBatchHits = 0;
   let solo = staged,
     glideAt = Infinity,
     // Identity of the physics contact already shown, so one collision does
@@ -298,7 +393,7 @@ export function createRun(
   const waiting = [];
   const world = createPhysics({ seed, spawn: SPAWN, pad: PAD, arena: ARENA }),
     origin = { ...SPAWN },
-    combat = createCombat(world, (e) => emit('tell', e)),
+    combat = createCombat(world, (e) => emit('tell', e), (m) => emit('bossCast', m)),
     // ── NO ENEMY MAY ENTER OUTSIDE THE WALLS ──────────────────────────────
     //
     // Every enemy in the game arrives through `combat.add`, and this is the only
@@ -336,8 +431,36 @@ export function createRun(
     ),
     lesson = warmup ? createOpening(seed,world,combat) : null;
   const s = {
+    isAiming: false,
+    edgeBuffer: null,
+    /** CHUNK 3: the arena mode. `null` = ordinary; `'SHATTERED'` once the
+     * SHATTER EVENT has been spent this run — physics reads it for 1.30x
+     * bumper rails, the ascent cap and the kinetic charge. */
+    arenaMode: null,
+    /** Kinetic charge, ×1 → ×4. 4 is OVERCHARGED: hits are LETHAL. Built by
+     * bumper bounces in a SHATTERED arena, spent on any cut, reset at rest. */
+    kineticStage: 1,
+    kineticBounces: 0,
+    shatteredRailTicks: 0,
+    phaseLineTicks: 0,
+    /** Ticks remaining of the singularity-flash FX after the trigger. */
+    shatter: 0,
+    shatterDone: false,
+    // CHUNK 6A: THE CUTSCENES. While true, dash/focus/aim are all dead —
+    // the shell holds the lock and the cinematic holds the world.
+    inputLock: false,
+    /** Mirror of the live cutscene (set by the shell; painters read it). */
+    cutscene: null,
+    /** CHUNK 6A: how many SHATTERs this run has already spent — escalates
+     *  the cinematic's rung, never the rules. */
+    shatterRung: 1,
     phase: 'ready',
     practice:!!controlPractice,killLedger:waveMode&&!controlPractice?createKillLedger():null,shatters:0,cleanBankTotal:0,bestCleanBankChain:0,
+    // CHUNK 6: the MOMENTUM ledger — three pips earned by cutting at pace
+    // and banking at pace. Holds the ceiling floor at 1.25x from two pips;
+    // three pips bring the Hyper gate down to a 5-link chain. Never pays
+    // velocity outright, and bounces fill nothing.
+    momentum: createMomentum(),
     opening: lesson?.state ?? null,
     staged,
     net: false,
@@ -405,7 +528,6 @@ export function createRun(
      *  for a shot the player played -- see the bank block in tick. */
     sinceDash: false,
     /** Ticks of refill cooldown left after touching a rail. */
-    floorCool: 0,
     /** True while the cube is clear of every rail band. Gate for the floor's
      *  one-pip recovery: you have to have LEFT the floor to be paid for
      *  arriving on it again. */
@@ -463,6 +585,9 @@ export function createRun(
     shots: 0,
     blade: 0,
     parry: 0,
+    // CHUNK 6B: staggered by the Monolith slam — mid-air control is off for
+    // 0.35s. Dashing is not, ever.
+    stun: 0,
     equipmentFx: {projectiles:[],echoes:[],bursts:[]},
     equipment: loadout,
     sword:swordProfile(loadout),
@@ -470,6 +595,17 @@ export function createRun(
     swordCharge:0,
     swordContacts:0,
     waveShield:0,
+    // CHUNK 6C: owned run-length rewards. `waveBuff` remains the compatibility
+    // slot for the legacy temporary eleven; `upgrades` survives every rest
+    // deck and is projected into `upgradeModifiers` below.
+    upgrades: [],
+    upgradeModifiers: resolveUpgradeModifiers(),
+    upgradeReadLock: 0,
+    upgradeDeal: 0,
+    monoliths: 0,
+    firstHitUpgradeWave: null,
+    startFractureApplied: false,
+    lastSlashEchoShot: -1,
     damageTaken:0,
     flightRules: MOVEMENT,
     launchGrace: 0,
@@ -477,6 +613,16 @@ export function createRun(
     edgeMax,
     edge: edgeMax,
     recharge: 0,
+    // CHUNK 1: one real second (60 ticks) of missing cuts refills a pip,
+    // in the air or not. The HUD sweeps the owed pip off this window.
+    regenWindow: MOVEMENT.recharge,
+    pacePipTicks: 0,
+    // CHUNK 1: +1 per cleared wave; spent additively in the cut scorer, capped there.
+    waveMult: 0,
+    // CHUNK 2: the persistent Dimension Fracture. Seeded from the shell's
+    // storage via the `fracturePct` option; the meter itself lives in
+    // `src/fracture.js` and survives restarts. Chunk 3 spends it at 100.
+    fracture: createFractureState(fracturePct),
     focus: 1,
     held: false,
     depleted: false,
@@ -515,8 +661,62 @@ export function createRun(
     // is measured from here, not from the start of the run.
     chainFrom: 0,
   };
+  // `waveBuff` can still be assigned directly by old integrations/tests, so
+  // this projection is intentionally live rather than cached only on choose.
+  const upgradeMods = () => resolveUpgradeModifiers(s.upgrades, s.waveBuff);
+  const upgradeBuff = () => {
+    const m = upgradeMods();
+    return { id: s.waveBuff?.id || s.upgrades.at(-1)?.id, speed: m.speed, reach: m.reach, width: m.width, armor: m.armor, blade: m.blade, score: m.score, guard: m.guard };
+  };
+  const effectiveHull = () => {
+    const mods = upgradeMods();
+    const runBonus = (s.shatterDone ? (mods.shatterMaxHp || 0) : 0) + ((s.monoliths || 0) > 0 ? (mods.monolithMaxHp || 0) : 0);
+    return Math.max(1, Math.min(rules.healthMax + runBonus, Number.isFinite(mods.healthMax) ? mods.healthMax : Infinity));
+  };
+  const refreshUpgradeState = () => {
+    s.upgradeModifiers = upgradeMods();
+    s.hpMax = effectiveHull();
+    s.hp = Math.min(s.hp, s.hpMax);
+    s.dashSpeed = rules.dashSpeed * s.upgradeModifiers.speed;
+  };
+  const stepCatalogPacePip = (dt, active) => {
+    const required = upgradeMods().pacePip;
+    if (!required || !active || s.opening || s.practice || s.phase !== 'playing') {
+      if (!required || !active || s.opening || s.practice) s.pacePipTicks = 0;
+      return;
+    }
+    if (Math.hypot(world.player.velocity.x, world.player.velocity.y) < 31) {
+      s.pacePipTicks = 0;
+      return;
+    }
+    s.pacePipTicks += dt;
+    if (s.pacePipTicks >= required) {
+      s.pacePipTicks = 0;
+      if (s.edge < edgeMax) {
+        s.edge++;
+        s.edgeReturn = 14;
+        emit('recover', { edge: s.edge, id: 'secondwind' });
+      }
+    }
+  };
+  const applyCatalogUpgrade = buff => {
+    if (!catalogRewards || !buff?.fields || s.upgrades.some(x => x?.id === buff.id)) return false;
+    s.upgrades = [...s.upgrades, buff];
+    refreshUpgradeState();
+    const fields = buff.fields || {};
+    if (Number.isFinite(fields.shatteredRailTicks) && s.arenaMode === 'SHATTERED') s.shatteredRailTicks = Math.max(s.shatteredRailTicks, fields.shatteredRailTicks);
+    if (Number.isFinite(fields.phaseLineTicks) && s.arenaMode === 'SHATTERED') s.phaseLineTicks = Math.max(s.phaseLineTicks, fields.phaseLineTicks);
+    if (Number.isFinite(fields.startFracture) && !s.startFractureApplied) {
+      s.startFractureApplied = true;
+      gainFracture(s, fields.startFracture, emit);
+    }
+    emit('upgradeApplied', { id: buff.id, owned: s.upgrades.map(x => x.id), hpMax: s.hpMax });
+    return true;
+  };
   if(viewport)world.viewport={...viewport};
-  const waveDirector=waveMode?(continuous?createContinuousDirector({seed,world,combat,state:s,emit,intro:lockdownIntro}):createWaveDirector({seed,world,combat,state:s,emit,baseDashSpeed:rules.dashSpeed,controlPractice})):null;
+  // 6C stays opt-in: focused harnesses and future modes can request the
+  // catalog, while ordinary gameplay keeps the 6B reward path unchanged.
+  const waveDirector=waveMode?(continuous?createContinuousDirector({seed,world,combat,state:s,emit,intro:lockdownIntro,catalogRewards,onUpgrade:applyCatalogUpgrade}):createWaveDirector({seed,world,combat,state:s,emit,baseDashSpeed:rules.dashSpeed,controlPractice,catalogRewards,onUpgrade:applyCatalogUpgrade})):null;
   if (!lesson && !waveMode) stream.sync(SPAWN, s.line);
   function nearest() {
     const p = world.player.position;
@@ -591,9 +791,11 @@ export function createRun(
     return best;
   }
   function disturbRoom(kind,data){
-    if(s.dimension&&['combat','breach'].includes(s.wave?.phase)&&s.phase==='playing'&&!s.opening&&!s.tutorialActive)s.dimension=disturbDimension(s.dimension,kind,data);
+    if(s.dimension&&['combat','breach','monolith'].includes(s.wave?.phase)&&s.phase==='playing'&&!s.opening&&!s.tutorialActive)s.dimension=disturbDimension(s.dimension,kind,data);
   }
   function focus(on) {
+    // CHUNK 6A: no inputs while the world is being told.
+    if (s.inputLock) on = false;
     if (on && s.panicTicks > 0) {
       s.panic = null;
       s.panicTicks = 0;
@@ -605,36 +807,128 @@ export function createRun(
       !s.opening?.returning &&
       !s.opening?.finishing &&
       s.phase === 'playing' &&
-      !world.grounded;
+      !world.grounded &&
+      // CHUNK 6B: a slam staggers flight — no mid-air control while it lasts.
+      s.stun <= 0;
+    s.isAiming = s.held;
     if (!on) s.depleted = false;
     setBulletTime(world, s.held && !s.depleted && s.focus > 0.01, !on);
   }
+  // Steering at speed is a redirect, never a reset — see `steerRetention` at
+  // module scope. It reads `s.hyper` at the dash() call site, so hyper steers
+  // keep the hyper curve and ordinary steers keep the ordinary one.
+  /** ── CHUNK 3: WHAT 100% BUYS ────────────────────────────────────────────
+   *
+   *  0.4 a cut, 2.5 a wave, 6.0 a Dimension Shatter — the meter fills, and on
+   *  the tick it fills the world tears:
+   *
+   *   - SIX FRAMES OF FREEZE. The whole world holds; entities included. It is
+   *     the anime impact frame the whole game builds toward, spent for real.
+   *   - THE TRASH SKY COLLAPSES INTO A SINGULARITY (renderer, ~78 ticks of
+   *     flash and shards, 140 ticks), and the sky is left in 12–16 drifting shards for
+   *     the rest of the run.
+   *   - +1 HULL, and never fewer than 2 on the way out of it.
+   *   - THE DASH RACK IS REFILLED — every pip, full focus of the bank.
+   *   - THE ARENA BECOMES SHATTERED: all four borders go neon at 1.30x
+   *     restitution (cap MAX_PINBALL_SPEED) and the kinetic charge begins.
+   *
+   *  The meter is spent to zero, persisted via the shell. The event is
+   *  one-time per run; the next fill earns the next tear.
+   */
+  function shatterEvent() {
+    if (s.shatterDone) return;
+    s.shatterDone = true;
+    const spent = consumeFracture(s);
+    s.arenaMode = 'SHATTERED';
+    world.arenaMode = 'SHATTERED';
+    // Dimension cards are live rules, not presentation promises: TEARBORN's
+    // extra hull is granted at the instant the world tears, before the +1
+    // Shatter rescue is paid.
+    refreshUpgradeState();
+    s.shatteredRailTicks = upgradeMods().shatteredRailTicks || 0;
+    s.phaseLineTicks = upgradeMods().phaseLineTicks || 0;
+    // Six frames — the next six ticks will not integrate physics at all.
+    s.stop = Math.max(s.stop || 0, 6);
+    // +1 hull; nobody walks away from the end of the world on one hit.
+    s.hp = Math.min(s.hpMax || 3, (s.hp ?? s.hpMax ?? 3) + 1);
+    if (s.hp < 2) s.hp = 2;
+    // Dash refill. All of it.
+    s.edge = edgeMax;
+    s.recharge = 0;
+    s.edgeBuffer = null;
+    // Kinetic baseline: first border is ×1, as the ladder promises.
+    s.kineticStage = 1;
+    s.kineticBounces = 0;
+    // Singularity-flash clock for the renderer. CHUNK 6A: the flash now
+    // runs 140 ticks — long enough to seat the 4.2s cinematic before the
+    // shards settle into the permanent post-tear sky.
+    s.shatter = 140;
+    // CHUNK 6A: each SHATTER this run escalates the show one rung. The
+    // rules never change; the light does.
+    s.shatterRung = 1 + (s.shatters | 0);
+    s.shatters = (s.shatters | 0) + 1;
+    emit('shatterEvent', { x: world.player.position.x, y: world.player.position.y, spent, hp: s.hp });
+  }
   function dash(v) {
+    // CHUNK 6A: the cutscene holds the world. No launches through a tear.
+    if (s.inputLock) return false;
     const pv = world.player.velocity, incomingVelocity={x:pv.x,y:pv.y},
       speedBeforeLaunch = Math.hypot(pv.x, pv.y);
+    let angleDiff = 0;
+    if (speedBeforeLaunch > 1 && v) {
+      const vlen = Math.hypot(v.x, v.y) || 1,
+        cos = (pv.x * v.x + pv.y * v.y) / (speedBeforeLaunch * vlen);
+      angleDiff = Math.acos(Math.min(1, Math.max(-1, cos)));
+    }
+    const retention = steerRetention(speedBeforeLaunch, angleDiff, s.hyper);
     // Do not drop a quick escape release before settled-deck recovery matures.
     // Only a genuine upward launch from a stationary supported deck qualifies.
     const deckEscape=s.wave?.phase==='combat'&&s.edge<=0&&world.grounded&&world.geometry.length>0&&speedBeforeLaunch<1&&v?.y<0;
-    if (
-      !['ready', 'playing'].includes(s.phase) ||
-      s.wave?.phase==='choose' ||
-      !v ||
-      (s.opening && !s.opening.rest) ||
-      (!s.opening?.free && s.edge <= 0 && !deckEscape) ||
-      !launch(world, v)
-    )
+    const eligible =
+      ['ready', 'playing'].includes(s.phase) &&
+      s.wave?.phase!=='choose' &&
+      v &&
+      !(s.opening && !s.opening.rest);
+    const pipShort = !s.opening?.free && s.edge <= 0 && !deckEscape;
+    // ── CHUNK 2: THE 120ms PRE-RELOAD BUFFER ────────────────────────────
+    //
+    // A drag released in the last ~120ms before a pip finishes recharging is
+    // NOT refused. It is remembered and fired on the exact tick the pip
+    // lands — never earlier, never dropped. A release with a full pip cycle
+    // still to go (>7 ticks) is refused as before: that is a dry stock, not
+    // a timing question.
+    if (eligible && pipShort) {
+      const remaining = MOVEMENT.recharge - (s.recharge || 0);
+      if (remaining > 0 && remaining <= EDGE_BUFFER_TICKS) {
+        s.edgeBuffer = { x: v.x, y: v.y, power: v.power, lock: v.lock };
+        return true; // input layer must NOT also wall-clock buffer the shot
+      }
       return false;
+    }
+    if (!eligible || pipShort || !launch(world, v, { storedSpeed: speedBeforeLaunch, retention, maxCeiling: MAX_PINBALL_SPEED }))
+      return false;
+    // The launch may have preserved bank/hyper speed far above the ordinary
+    // 42px/tick limit. Ratchet the running ceiling to whatever the launch
+    // actually produced (bounded by MAX_PINBALL_SPEED) so the substep cap in
+    // physics does not silently hand the momentum straight back.
+    {
+      const lv = world.player.velocity, sp = Math.hypot(lv.x, lv.y);
+      if (sp > (world.playerCeiling || MAX_SPEED)) {
+        world.playerCeiling = Math.min(sp, MAX_PINBALL_SPEED);
+        s.ceiling = world.playerCeiling;
+      }
+    }
     if (!s.opening && !s.hyper && s.dashSpeed !== 1) {
       const vel=world.player.velocity;
       world.playerCeiling=Math.max(world.playerCeiling,MAX_SPEED*s.dashSpeed);
       setPlayerVelocity(world,vel.x*s.dashSpeed,vel.y*s.dashSpeed);
     }
     s.phase = 'playing';
-    if(s.breakthrough&&['combat','breach'].includes(s.wave?.phase)){
+    if(s.breakthrough&&['combat','breach','monolith'].includes(s.wave?.phase)){
       const surge=launchSurge(s.breakthrough);s.breakthrough=surge.state;
       if(surge.boost){if(!s.hyper){const vv=world.player.velocity,sp=Math.hypot(vv.x,vv.y),next=Math.min(BREAKTHROUGH.ceiling,sp*BREAKTHROUGH.surgeFactor);world.playerCeiling=Math.max(world.playerCeiling,next);if(sp>0)setPlayerVelocity(world,vv.x*next/sp,vv.y*next/sp);}emit('hyperSurge',{...world.player.position});}
     }
-    const sword=effectiveSword(s.sword,s.waveBuff);
+    const sword=effectiveSword(s.sword,upgradeBuff());
     if(!s.opening&&(!s.wave||s.wave.phase==='combat')){
       if(sword.family==='echo')s.swordFx.push(swordAttack(sword,world.player.position,Math.atan2(v.y,v.x),s.shots+1));
       if(sword.family==='pulse'&&s.swordCharge>=sword.chargeMax){s.swordFx.push(swordAttack(sword,world.player.position,Math.atan2(v.y,v.x),s.shots+1));s.swordCharge=0;emit('swordPulse',{...world.player.position});}
@@ -643,6 +937,7 @@ export function createRun(
     s.launchGrace = MOVEMENT.launchGrace;
     s.caught = false;
     s.held = s.depleted = false;
+    s.isAiming = false;
     s.shots++;
     s.sinceDash = true;
     s.breath = 0;
@@ -668,35 +963,17 @@ export function createRun(
     // could never announce itself.
     s.tier = tierOf(speedBeforeLaunch, MAX_SPEED).index;
     s.swingStart = world.clock;
+    // `effectiveSword` already folds the live catalogue blade modifier into
+    // `sword.ticks`; do not add that same duration a second time here.
     s.blade = (16 + 15 * Math.min(1, Math.hypot(v.x, v.y) / MAX_SPEED)) / (s.opening ? 1 : s.dashSpeed) + (s.opening ? 0 : rules.bladeExtra+sword.ticks);
-    // ── A DASH MUST NOT ERASE HYPER ────────────────────────────────────────
+    // ── A DASH MUST NOT ERASE HYPER — Nor ordinary BANK speed ────────────
     //
-    // `launch()` clamps its input to MAX_SPEED (physics.js line ~219), which is
-    // right for an ordinary launch and catastrophic here: dashing mid-hyper
-    // reset the cube from 279 to 31 in a single tick and dropped the state on
-    // the next one. Measured: hyper ended on a launch tick 1 tick after it
-    // began, over and over. The dash is how a hyper player STEERS -- it must
-    // redirect the speed, never spend it.
-    //
-    // So the launch sets the heading and hyper restores the magnitude along it.
-    // The speed is re-asserted against the CURRENT heading rather than the
-    // aim's, because the aim vector is already scaled by launch()'s clamp.
-    // PRESERVE, never refill.
-    //
-    // Two failures bracket this line and it sits between them:
-    //   refill to HYPER.speed  -> hyper is INFINITE (measured 1650 ticks, 27s,
-    //                             never ends, because each dash repaired
-    //                             everything gravity took)
-    //   holdSpeed(world) alone -> hyper is 14 TICKS (measured), because
-    //                             launch() above has ALREADY clamped velocity to
-    //                             MAX_SPEED, so "preserve" preserved the damage
-    //
-    // So the speed is taken from BEFORE the launch (already captured as
-    // speedBeforeLaunch) and re-applied along the NEW heading. The dash still
-    // owns direction; the state owns magnitude; and nothing is repaired, so
-    // gravity and drag remain the only drains.
-    if (s.hyper)
-      holdSpeed(world, Math.min(speedBeforeLaunch, world.playerCeiling || HYPER.speed));
+    // `launch()` now owns speed preservation for EVERY launch: the speed it
+    // starts with is the speed it is aimed at, times the steer retention
+    // (1.0 clean, 1.05 bank-steer, >=0.85 even on a reversal), bounded only by
+    // MAX_PINBALL_SPEED. This block used to re-assert the pre-launch speed
+    // for HYPER only, after `launch()` had already clamped the input to
+    // MAX_SPEED — two writers, one property. There is exactly one writer now.
     s.previousSlash = s.slashAngle = Math.atan2(v.y, v.x);
     // Every dash is a swing. Restarting the clock here (rather than on contact)
     // is what makes the attack read as something the PLAYER did: the wind-up
@@ -747,9 +1024,13 @@ export function createRun(
     // hyper again you have to build a NEW run of seven. That is also what the
     // brief means by "fast nail 7 consecutive chains" -- consecutive means a
     // fresh streak, not a lingering one.
+    // CHUNK 6: three MOMENTUM pips bring the gate down to a 5-link chain.
+    // The ordinary 7-link gate is unchanged; the 14-dash budget is unchanged;
+    // the rising-edge rule is unchanged. The pips buy *entry*, never speed.
+    const pipChain = hyperChainFor(s.momentum?.count, HYPER.chain);
     if (
       !s.hyper &&
-      s.chain >= HYPER.chain &&
+      s.chain >= pipChain &&
       s.shots - (s.chainFrom ?? s.shots) <= HYPER.dashes &&
       s.chain > s.hyperChain
     ) {
@@ -777,6 +1058,7 @@ export function createRun(
         count: s.hyperCount,
         chain: s.chain,
         shots: s.shots,
+        via: s.chain >= HYPER.chain ? 'chain' : 'momentum',
       });
     }
     if (s.hyper) {
@@ -868,7 +1150,7 @@ export function createRun(
     fx.projectiles=fx.projectiles.filter(p=>p.ticks>0);
     for(const echo of fx.echoes) {
       echo.ticks-=dt;
-      for(const enemy of [...combat.enemies.values()]) if(enemy.kind==='fang'&&!echo.hits.has(enemy.id)&&Math.hypot(enemy.x-echo.x,enemy.y-echo.y)<75) {
+      for(const enemy of [...combat.enemies.values()]) if(enemy.id!==echo.sourceId&&!echo.hits.has(enemy.id)&&Math.hypot(enemy.x-echo.x,enemy.y-echo.y)<75) {
         echo.hits.add(enemy.id);cut(enemy,true,true);
       }
     }
@@ -887,6 +1169,11 @@ export function createRun(
     }
     if (cutThisTick) return false;
     if (s.opening || s.phase !== 'playing' || s.invul > 0) {if(combatTrace)traceCombat('damage-blocked',{cause,reason:s.opening?'practice':s.invul>0?'invulnerability':'inactive'});return false;}
+    const upgradeState=upgradeMods();
+    const waveKey=s.wave?.number??0;
+    if(upgradeState.firstHitBlock&&s.firstHitUpgradeWave!==waveKey){
+      s.firstHitUpgradeWave=waveKey;s.invul=45;s.lastDefense={kind:'upgrade',id:'ironnerve',tick:s.elapsed};equipmentBurst(p,'guard');emit('upgradeBlock',{...p,id:'ironnerve',cause});return false;
+    }
     if(bumpGuard && cause==='Fang' && attack?.kind==='fang-rush') {
       bumpGuard=false;s.guardSpent=true;s.lastDefense={kind:'iron',tick:s.elapsed};
       const v=world.player.velocity;
@@ -968,7 +1255,7 @@ export function createRun(
     // body. That is the part that fixes the recording's complaint, and it does
     // not touch the physics.
     if (!fromShear) {
-      s.cutGrace = Math.max(s.cutGrace, CUT_GRACE+(s.waveBuff?.guard||0));
+      s.cutGrace = Math.max(s.cutGrace, CUT_GRACE+upgradeMods().guard);
       s.cutGraceFrom = e.id;
     }
     glideAt = Infinity;
@@ -985,7 +1272,32 @@ export function createRun(
     if (!fromShear) s.landAge = 0;
     const hpBefore = e.hp;
     combat.interrupt(e);
-    e.hp -= secondary ? 1 : s.drive > 0 ? 3 : (!fromShear && ['crown','bastion'].includes(e.kind) ? rules.armorDamage+effectiveSword(s.sword,s.waveBuff).armor : fromShear ? SHEAR.damage : 1);
+    // ── CHUNK 3: F = m·a ─────────────────────────────────────────────────
+    //
+    // A SHATTERED arena's banked rails are not decoration: the kinetic stage
+    // MULTIPLIES the cut. ×2 and ×3 bank three stages of pinball fury into a
+    // single contact; OVERCHARGED is LETHAL — armour, plates and gimmick
+    // wards do not get a vote. Spending the cut drains the charge to ×1.
+    const kin = s.arenaMode === 'SHATTERED' ? Math.min(4, Math.max(1, s.kineticStage | 0)) : 1;
+    if (s.kineticStage !== 1) { s.kineticStage = 1; s.kineticBounces = 0; }
+    const kineticBase = secondary ? 1 : s.drive > 0 ? 3 : (!fromShear && ['crown','bastion'].includes(e.kind) ? rules.armorDamage+effectiveSword(s.sword,upgradeBuff()).armor : fromShear ? SHEAR.damage : 1);
+    // ── CHUNK 4: THE MONOLITH ──────────────────────────────────────────
+    //
+    // Five plates, two health each, and only one key: a cut banked to
+    // OVERCHARGED takes a whole plate. Anything weaker chips one point —
+    // crown kits, armor plates, every reward the run handed out — because the
+    // landlord does not negotiate. Ten chips or five A-frames; the arena is
+    // the only thing that opens it either way.
+    // CHUNK 6B: during the GRAVITY LENS window the slab takes +1 from
+    // anything it pulls through it — it doesn't get to choose what hits it.
+    const lensBonus = e.kind === 'monolith' && e.lensT > 0 ? 1 : 0;
+    const mods = upgradeMods();
+    const execute = mods.executeThreshold > 0 && e.kind !== 'monolith' && e.hp <= (TYPES[e.kind]?.hp||e.hp) * mods.executeThreshold ? mods.executeMultiplier : 1;
+    const secondTarget = !secondary && !fromShear && cutBatchHits++ === 1 ? (mods.secondTargetDamage || 1) : 1;
+    if (e.kind === 'monolith') {
+      const overcharge = kin >= 4 ? (mods.monolithDamage || 1) : 1;
+      e.hp -= (kin >= 4 ? 2 : 1) * overcharge * secondTarget + lensBonus;
+    } else e.hp -= Math.max(1, Math.floor((kin >= 4 ? e.hp + 1 : kineticBase * kin) * execute * secondTarget));
     if(!secondary && rules.coil && !s.opening) {
       const victim=nearestEquipmentTarget(combat.enemies.values(),e,160,e.id);
       if(victim){equipmentBurst(victim,'spark',e);cut(victim,true,true);}
@@ -1035,13 +1347,27 @@ export function createRun(
       s.cutGrace = Math.max(s.cutGrace, ARMOR_GRACE);
       s.cutGraceFrom = e.id;
       e.fault = s.slashAngle - e.angle;
-      emit('armor', { entityId:e.id,x: e.x, y: e.y, r: e.r, cut: s.slashAngle, hp: e.hp, hpBefore, kind: e.kind,contact,upgrade:s.waveBuff?.id,equipment:{...s.equipment},sword:s.sword,armorRemoved:Math.min(hpBefore,Math.max(0,hpBefore-e.hp)),secondary:!!secondary||!!fromShear });
+      emit('armor', { entityId:e.id,x: e.x, y: e.y, r: e.r, cut: s.slashAngle, hp: e.hp, hpBefore, kind: e.kind,contact,upgrade:s.waveBuff?.id||s.upgrades.at(-1)?.id,equipment:{...s.equipment},sword:s.sword,armorRemoved:Math.min(hpBefore,Math.max(0,hpBefore-e.hp)),secondary:!!secondary||!!fromShear });
       return;
     }
     if(!s.opening && !e.paper && e.kind==='crown' && s.hp===1) emit('challenge',{id:'oni'});
     combat.remove(e);
     stream.mark(e);
     s.kills++;
+    // CHUNK 6C: SLASHBACK returns a measured 0.35s of the Hyper budget on a
+    // real cut, never on a miss or a secondary visual echo.
+    if(s.hyper&&upgradeMods().hyperRefund>0)s.hyperAge=Math.max(0,(s.hyperAge||0)-upgradeMods().hyperRefund);
+    // CHUNK 6: a cut executed at pace feeds MOMENTUM — the ledger that
+    // pays for speed. Killing a slow shape pays points, never pips; a dash
+    // or a rally through a target pays one, capped at three.
+    if (!s.opening && !s.practice && s.phase === 'playing' && s.momentum) {
+      const cutSpeed = Math.hypot(world.player.velocity.x, world.player.velocity.y);
+      if (cutSpeed >= MOVEMENT.maxSpeed * MOMENTUM.paceRatio) gainMomentum(s.momentum, 'cut');
+    }
+    // CHUNK 2: every cut feeds the Dimension Fracture. The gain is small on
+    // purpose — the number only moves because the player did something.
+    // Lessons and no-stakes practice do not fracture the world.
+    if (!s.opening && !s.practice) gainFracture(s, FRACTURE_PER_KILL, emit);
     // A streak that starts now begins its own dash budget. Hyper's gate is
     // "seven links within fourteen dashes", and that budget belongs to the
     // STREAK, not to the run: measuring against the run-wide dash counter meant
@@ -1062,8 +1388,11 @@ export function createRun(
       s.drive = 175;
       if (fresh) emit('drive', {});
     }
-    const mult = Math.min(8, s.chain) * (s.drive > 0 ? 2 : 1),
-      base = Math.floor((e.small ? 45 : TYPES[e.kind].points) * mult * rules.scoreMultiplier * (s.waveBuff?.score||1) * (s.hp===1 ? rules.lastHullBonus : 1)),
+    // CHUNK 1: +1 per cleared wave, additive with the chain ladder and capped
+    // at its ceiling (+8). Entering Overdrive still doubles the whole thing.
+    const waveBonus = Math.min(8, s.waveMult || 0),
+      mult = Math.min(8, s.chain) * (s.drive > 0 ? 2 : 1) + waveBonus,
+      base = Math.floor((e.small ? 45 : TYPES[e.kind].points) * mult * rules.scoreMultiplier * upgradeMods().score * (s.hp===1 ? rules.lastHullBonus : 1)),
       stroke = s.stroke || (s.bladeLedger ??= Object.assign(beginStroke(world.player.position,s.slashAngle,s.shots),{equipment:loadout})),
       // ── PRE-EXISTING CRASH, FLAGGED ────────────────────────────────────
       //
@@ -1081,7 +1410,7 @@ export function createRun(
         // `released`/`points`/`kills` on the same object, so passing null was
         // never an option -- it just crashed further down the line.
         stroke || (s.bladeLedger ??= beginStroke(world.player.position, s.slashAngle, s.shots)),
-        e, base, fromShear, s.slashAngle, hpBefore, rules.scoreMultiplier * (s.waveBuff?.score||1) * (s.hp===1 ? rules.lastHullBonus : 1),
+        e, base, fromShear, s.slashAngle, hpBefore, rules.scoreMultiplier * upgradeMods().score * (s.hp===1 ? rules.lastHullBonus : 1),
       ),
       { points, release } = ledger;
     // A small kill is still an impact: a short beat, never a free full
@@ -1094,17 +1423,35 @@ export function createRun(
       );
     }
     if(!secondary && !s.opening) {
+      const mods=upgradeMods();
       if(rules.echo && s.chain%3===0) {
         const p=world.player.position;
-        s.equipmentFx.echoes.push({x:p.x-Math.cos(s.slashAngle)*65,y:p.y-Math.sin(s.slashAngle)*65,ticks:30,hits:new Set()});
+        s.equipmentFx.echoes.push({x:p.x-Math.cos(s.slashAngle)*65,y:p.y-Math.sin(s.slashAngle)*65,ticks:30,hits:new Set(),sourceId:e.id});
         if(s.equipmentFx.echoes.length>EQUIPMENT_LIMITS.echoes)s.equipmentFx.echoes.shift();
+      }
+      if(mods.slashEchoEvery>0&&s.shots>0&&s.shots%mods.slashEchoEvery===0&&s.lastSlashEchoShot!==s.shots) {
+        const p=world.player.position;
+        s.lastSlashEchoShot=s.shots;
+        s.equipmentFx.echoes.push({x:p.x-Math.cos(s.slashAngle)*72,y:p.y-Math.sin(s.slashAngle)*72,ticks:30,hits:new Set(),sourceId:e.id,upgradeEcho:true});
+        if(s.equipmentFx.echoes.length>EQUIPMENT_LIMITS.echoes)s.equipmentFx.echoes.shift();
+        emit('upgradeEcho',{x:p.x,y:p.y,id:'ghostlash'});
       }
     }
     equipmentBurst(e,loadout.slash);
     focusRecovery = rules.focusRecoveryTicks;
     if (!s.bestStroke || stroke.points > s.bestStroke.points) s.bestStroke = stroke;
     s.score += points;
-    if(s.killLedger&&s.wave?.phase==='combat'&&!s.opening&&!s.tutorialActive)s.killLedger=recordEnemyReward(s.killLedger,{kind:e.kind,small:!!e.small,paper:!!e.paper,points});
+    // CHUNK 4: the tear's landlord pays its tribute. The biggest single
+    // fracture gain in the game — second only to the tear itself.
+    if (e.kind === 'monolith') {
+      s.monoliths = (s.monoliths || 0) + 1;
+      refreshUpgradeState();
+      gainFracture(s, FRACTURE_PER_MONOLITH, emit);
+      emit('monolithDown', { x: e.x, y: e.y, monoliths: s.monoliths, hpMax: s.hpMax });
+    }
+    // CHUNK 4: the Monolith pays like any field kill — the ledger gate is
+    // 'combat' plus the boss's own phase ('monolith'), never the breach.
+    if(s.killLedger&&['combat','monolith'].includes(s.wave?.phase)&&!s.opening&&!s.tutorialActive)s.killLedger=recordEnemyReward(s.killLedger,{kind:e.kind,small:!!e.small,paper:!!e.paper,points,creditMultiplier:upgradeMods().credits});
     s.edge = Math.min(edgeMax, s.edge + 1);
     s.focus = 1;
     s.blade = Math.min(38, s.blade + 7);
@@ -1129,7 +1476,7 @@ export function createRun(
       kind: e.kind,
       cut: s.slashAngle,
       hpBefore,
-      upgrade:s.waveBuff?.id,equipment:{...s.equipment},sword:s.sword,armorRemoved:['bastion','crown'].includes(e.kind)?hpBefore:0,secondary:!!secondary||!!fromShear,
+      upgrade:s.waveBuff?.id||s.upgrades.at(-1)?.id,equipment:{...s.equipment},sword:s.sword,armorRemoved:['bastion','crown'].includes(e.kind)?hpBefore:0,secondary:!!secondary||!!fromShear,
       fault: e.fault,
       small: !!e.small,
       paper: !!e.paper,
@@ -1154,9 +1501,9 @@ export function createRun(
       for (const victim of combat.forwardHits(e, end, SHEAR.width)) cut(victim, true);
     }
     if (e.kind === 'fork') combat.kids(e);
-    if (e.kind === 'crown' && s.hp < rules.healthMax) {
+    if (e.kind === 'crown' && s.hp < s.hpMax) {
       s.hp++;
-      emit('repair', {});
+      emit('repair', { hp: s.hp, hpMax: s.hpMax });
     }
   }
   /** Record one contact: where, which way, how hard. `depth` is the closing
@@ -1200,52 +1547,44 @@ export function createRun(
       q.y >= a.y + a.h - half - pad
     );
   }
+  /** ── CHUNK 2: THE 120ms PRE-RELOAD BUFFER, FLUSH SIDE ───────────────────
+   *
+   *  A drag released within EDGE_BUFFER_TICKS of a pip finishing was stored
+   *  in dash() instead of refused. Refill sites call this the SAME tick they
+   *  grant a pip, so the remembered dash fires on the exact tick the pip
+   *  arrives — never before (the pip would not exist), never after.
+   */
+  function flushEdgeBuffer() {
+    const pending = s.edgeBuffer;
+    if (!pending) return;
+    s.edgeBuffer = null;
+    dash(pending);
+  }
   function recharge(dt) {
-    // A settled solid deck can otherwise strand a zero-cut cube forever:
-    // airborne recharge is intentionally disabled there. Restore ONE escape
-    // cut after a short rest, never fill the rack or award anything.
+    // A settled solid deck can otherwise strand a zero-cut cube forever.
+    // Restore ONE escape cut after a short rest, never fill the rack.
     if(s.wave?.phase==='combat'&&s.phase==='playing'&&s.edge===0&&world.grounded&&Math.hypot(world.player.velocity.x,world.player.velocity.y)<1&&world.geometry.length){
       s.deckRecovery=(s.deckRecovery||0)+dt;
-      if(s.deckRecovery>=24){s.edge=1;s.deckRecovery=0;s.recharge=0;}
+      if(s.deckRecovery>=24){s.edge=1;s.deckRecovery=0;s.recharge=0;flushEdgeBuffer();}
       return;
     }
     s.deckRecovery=0;
-    // ── THE DRIP ONLY RUNS IN THE AIR ──────────────────────────────────────
+    // ── CHUNK 1: A CLEAN 1.0s AUTO-RELOAD, ANYWHERE ───────────────────────
     //
-    // A pip comes back every 76 dt-units. That timer is load-bearing: it is
-    // what keeps a whiffed start recoverable without a kill, and removing it
-    // outright measured as four broken pacing tests (a player who misses twice
-    // is simply stuck).
-    //
-    // What made it a FARM was that it ran while the cube sat on the floor. So
-    // it is gated on `world.grounded` instead of being deleted: touch the rail
-    // and the clock stops. The floor still hands back ONE pip on contact (see
-    // the rail block in tick), so you can never be soft-locked down there --
-    // but the floor can no longer be a pip factory, because the only thing it
-    // pays is the single edge that lets you leave.
-    if (s.edge >= edgeMax) return void (s.recharge = 0);
-    // Refuse to drip while the cube is IN CONTACT RANGE of a rail, not merely
-    // while `grounded` is set. `grounded` is a single-tick flag derived from a
-    // contact that is published once per arrival, and a cube bouncing on the
-    // floor spends most of its time between arrivals -- so the flag was false
-    // on exactly the ticks the drip needed to be suppressed.
-    // ── AND THE DRIP STOPS AT THE RAIL BAND ────────────────────────────
-    //
-    // Proximity alone was not enough. A bounce throws the cube ~1000px clear of
-    // the floor, so by the time the ripening counter mattered it was nowhere
-    // near a rail and the drip paid out mid-air -- measured, a cube that only
-    // fell bounced once and then collected two free pips while climbing away.
-    //
-    // So touching the floor STOPS the clock for a full window rather than just
-    // pausing it while the cube is close. The window is longer than the timer,
-    // which means a bounce can never generate a pip on its own; only sustained
-    // flight can. That is what makes the floor a way out instead of a source.
-    if (s.floorCool > 0) return void (s.recharge = 0);
-    if (world.grounded || railNear(world)) return void (s.recharge = 0);
+    // Slash & drag charges (3 pips under the Cube) refill on a fixed one-second
+    // timer whenever the stock is below three. There is no airborne gate, no
+    // rail-band gate and no cooldown debt: the player never has to tail-bounce
+    // a wall to reload, which is the failure mode the old air-only drip + 160-
+    // tick bounce moratorium produced. One second. Every tick counts. The pip
+    // being refilled sweeps a fill directly inside itself in the HUD
+    // (`s.recharge / s.regenWindow`), and the walls are back to being what the
+    // design asks for: gentle soft bounds, never reload stations.
+    if (s.edge >= edgeMax) { s.recharge = 0; flushEdgeBuffer(); return; }
     s.recharge += dt;
     if (s.recharge >= MOVEMENT.recharge) {
       s.edge++;
       s.recharge = 0;
+      flushEdgeBuffer();
     }
   }
   // ── resetRunState: THE CUTTING ROOM DOES NOT PAY ─────────────────────────
@@ -1292,6 +1631,17 @@ export function createRun(
     // than leaving a launch the player cannot see.
     s.edge = edgeMax;
     s.recharge = 0;
+    s.edgeBuffer = null;
+    s.pacePipTicks = 0;
+    s.arenaMode = null;
+    s.kineticStage = 1;
+    s.kineticBounces = 0;
+    s.shatter = 0;
+    s.shatterDone = false;
+    s.shatteredRailTicks = 0;
+    s.phaseLineTicks = 0;
+    s.monolith = false;
+    s.waveMult = 0;
     s.depleted = false;
     stopPlayer(world);
     // ── AND THE BANNERS GO WITH IT ────────────────────────────────────────
@@ -1325,6 +1675,16 @@ export function createRun(
     s.reach = s.drive > 0 ? DRIVE_REACH : 1;
     s.edge = edgeMax;
     s.recharge = 0;
+    s.edgeBuffer = null;
+    s.pacePipTicks = 0;
+    s.arenaMode = null;
+    s.kineticStage = 1;
+    s.kineticBounces = 0;
+    s.shatter = 0;
+    s.shatterDone = false;
+    s.shatteredRailTicks = 0;
+    s.phaseLineTicks = 0;
+    s.monolith = false;
     s.focus = 1;
     s.launchGrace = 0;
     s.blade = s.parry = s.stop = 0;
@@ -1338,6 +1698,7 @@ export function createRun(
   }
   function tick() {
     cutThisTick = false;
+    cutBatchHits = 0;
     try { return tickCore(); } finally { cutThisTick = false; }
   }
   function tickCore() {
@@ -1356,7 +1717,18 @@ export function createRun(
     // physics step reads to decide whether a touch is a kick or a landing.
     // Published every tick so it can never go stale.
     world.floorIgnore = s.floorIgnore;
-    // Speed tier crossings. The tier is read from the cube's LIVE velocity,
+    // ── CHUNK 3: THE SHATTER EVENT ─────────────────────────────────────
+    //
+    // The SHATTER EVENT bar at 100% does not wait to be asked. It fires on
+    // the next tick after the gain that filled it — one-time per run, for
+    // every gain path (cuts, wave clears, Dimension Shatters) — and it
+    // spends the bar: the meter drops to zero and must be rebuilt for the
+    // next one.
+    // Never inside the opening lesson or outside play — the tear belongs to
+    // the field, not to a scripted rack of targets.
+    if (!s.shatterDone && s.phase === 'playing' && !s.opening && (s.fracture?.pct ?? 0) >= FRACTURE_MAX) shatterEvent();
+    if (s.shatter > 0) s.shatter--;
+    // ── Speed tier crossings. The tier is read from the cube's LIVE velocity,
     // so it can change mid-flight as gravity bleeds a launch or a chain
     // accelerates one. Only a crossing UPWARD is celebrated: announcing that
     // you got slower would punish the player for the physics they cannot see.
@@ -1567,9 +1939,13 @@ export function createRun(
         // substep after every trampoline launch. Measured: -13.5 in, -35.5 out,
         // and a 1,700px climb from a rule that promises one third of a screen.
         (dt) => {
-          world.playerGravityMultiplier = s.held && !s.depleted && world.player.velocity.y > 0 ? rules.aimFallGravity : 1;
+          const liveMods=upgradeMods();
+          world.playerGravityMultiplier = s.held && !s.depleted && world.player.velocity.y > 0 ? Math.max(rules.aimFallGravity, liveMods.aimFallGravity) : 1;
+          world.railRestitution = s.arenaMode === 'SHATTERED' && s.shatteredRailTicks > 0 ? Math.max(1.3, Math.min(1.5, liveMods.shatteredRail || 1.3)) : 1.3;
           world.floorIgnore = s.floorIgnore;
-          if(!s.wave||(s.wave.phase==='combat'&&s.wave.entry<=0))combat.move(dt, s.band);
+          // CHUNK 6B: the landlord acts during his own phase — the field is
+          // swept, the fight is his. (Breach stays frozen on purpose.)
+          if(!s.wave||(['combat','monolith'].includes(s.wave.phase)&&s.wave.entry<=0))combat.move(dt, s.band);
           if(rules.gravityPull && s.held) for(const enemy of combat.enemies.values()) {
             const point=aimPull(enemy,world.player.position,aimAngle ?? s.slashAngle,dt);
             if(point){enemy.x=point.x;enemy.y=point.y;Matter.Body.setPosition(enemy.body,point);}
@@ -1621,7 +1997,8 @@ export function createRun(
     // the exemption is latched on `s.floorIgnore`, which is exactly the half
     // second the floor owns after a kick.
     if (!stopped) {
-      const limits=flightEnvelope(s,world.banked),velocity=world.player.velocity;
+      const velocity=world.player.velocity,
+        limits=flightEnvelope(s,world.banked,Math.hypot(velocity.x,velocity.y));
       const y=Math.max(limits.minVy,Math.min(limits.maxVy,velocity.y));
       if(y!==velocity.y)setPlayerVelocity(world,velocity.x,y);
       if(s.launchGrace>0)s.launchGrace--;
@@ -1687,6 +2064,22 @@ export function createRun(
     // One contact per tick, straight from Matter's resolved normal. A wall,
     // a deck, a plate that stops the blade: the pose bends the same way.
     const hitSurface = world.struck;
+    // ── CHUNK 3: NEON RAILS FEED THE KINETIC CHARGE ──────────────────────
+    //
+    // Every border reflect (physique publishes `world.bumped`) banks one
+    // stage: ×1 → ×2 → ×3 → OVERCHARGED. At rest (pad contact) the charge
+    // drains back to ×1. Only a SHATTERED arena feeds it; anywhere else the
+    // flag is consumed and ignored.
+    if (world.bumped) {
+      world.bumped = false;
+      if (s.arenaMode === 'SHATTERED') {
+        s.kineticStage = Math.min(4, s.kineticStage + 1);
+        s.kineticBounces++;
+        if (s.kineticStage >= 4) emit('kineticOvercharge', { stage: 4, bounces: s.kineticBounces });
+        else emit('kineticStage', { stage: s.kineticStage });
+      }
+    }
+    if (world.grounded && s.kineticStage !== 1) { s.kineticStage = 1; s.kineticBounces = 0; }
     // ── THE FLOOR PAYS, ONCE PER TOUCH ────────────────────────────────────
     //
     // The brief for the bottom line is exact: every touch kicks the cube up a
@@ -1715,9 +2108,13 @@ export function createRun(
         // edges gets the bounce and the flash but not a fourth pip; a player
         // with none gets a way back into the game. This is the anti-farm: the
         // cap is the reward ceiling, not a cooldown.
-        if (s.edge < edgeMax) {
+        // A 1.30x restitutive slap on the floor in a SHATTERED arena pays
+        // speed, not a pip — otherwise the floor becomes a pip farm. The
+        // trampoline kick (rescue !== false) still does.
+        if (s.edge < edgeMax && kick.rescue !== false) {
           s.edge++;
           s.edgeReturn = 14;
+          flushEdgeBuffer();
         }
         if(rules.floorBoost!==1) {
           const v=world.player.velocity;setPlayerVelocity(world,v.x,v.y*rules.floorBoost);
@@ -1797,6 +2194,7 @@ export function createRun(
         s.edge++;
         s.edgeReturn = 14;
         emit('recover', { edge: s.edge });
+        flushEdgeBuffer();
       }
       // (An earned bounce further down this block may add one more; the cap is
       // edgeMax either way, so a fast arrival can go 0 -> 2 but never 0 -> 3.)
@@ -1836,6 +2234,9 @@ export function createRun(
         // then the state decays as designed. So the boom is armed on entry and
         // spent by the first rail contact; later bounces are ordinary.
         boom = s.hyper && s.hyperBoom,
+        bankUpgrade = upgradeMods(),
+        reboundCap = bankUpgrade.reboundCap > 0 ? (bankUpgrade.reboundCap >= 1 ? bankUpgrade.reboundCap : 1 + bankUpgrade.reboundCap) : Infinity,
+        bankBonus = Math.min(reboundCap, 1 + (bankUpgrade.reboundBonus || 0) * Math.min(3, s.banks + 1)),
         BOOST = boom
           ? Math.min(HYPER.reboundCap, 1 + (speed / HYPER.speed) * HYPER.bankGain)
           : s.hyper
@@ -1844,8 +2245,8 @@ export function createRun(
               // 3.9%, so hyper ran 1440+ ticks and never ended. A wall during
               // hyper is a turn, not a reward -- the one reward is the boom.
               1
-            : 1.14,
-        CEIL = boom ? HYPER.speed * HYPER.reboundCap : s.hyper ? HYPER.speed : MAX_SPEED * 2.1;
+            : Math.min(reboundCap, 1.14 * (bankUpgrade.reboundMultiplier || 1) * (bankBonus || 1)),
+        CEIL = boom ? HYPER.speed * HYPER.reboundCap : s.hyper ? HYPER.speed : s.arenaMode === 'SHATTERED' ? MAX_PINBALL_SPEED : MAX_SPEED * 2.1;
       // ── 0.4s, THE NUMBER THE BRIEF ASKS FOR ──────────────────────────
       //
       // This was 8 ticks (0.13s), which is a debounce, not a cooldown. On a
@@ -1871,7 +2272,13 @@ export function createRun(
       // allowed a burst well above the limit -- that is the bank's whole reward
       // -- but the permission itself is capped, so a good rally is fast for a
       // moment rather than permanently faster.
-      const rally = Math.min(RALLY_CEIL, (world.playerCeiling || MAX_SPEED) + 1.6);
+      // A SHATTERED border bank is a 1.30x launch, not a suggestion: the rally
+      // ratchet opens all the way to MAX_PINBALL_SPEED, because the reflect in
+      // physics.js already raised the ceiling to the arriving speed and this
+      // block must never pull it back under the reflect.
+      const rally = s.arenaMode === 'SHATTERED'
+        ? Math.min(MAX_PINBALL_SPEED, Math.max(world.playerCeiling || MAX_SPEED, speed) + 1.6)
+        : Math.min(RALLY_CEIL, (world.playerCeiling || MAX_SPEED) + 1.6);
       world.playerCeiling = boom
         ? HYPER.speed * HYPER.reboundCap
         : s.hyper
@@ -1908,9 +2315,6 @@ export function createRun(
       const earned = s.sinceDash && !floorKicked;
       if (floorKicked) s.sinceDash = false;
 
-      // Touching a rail stops the refill clock for longer than the timer takes
-      // to ripen, so a bounce can never pay for itself. See `recharge`.
-      s.floorCool = 160;
       if (earned && !floorKicked && speed < CEIL) boostPlayer(world, BOOST, CEIL);
       // An unearned bounce is NOT a free elastic reflection. Left perfectly
       // elastic it is a perpetual motion machine -- the cube comes back up at
@@ -1945,12 +2349,14 @@ export function createRun(
       // ignore window and would otherwise be a perpetual-motion rally.
       else if (!earned && !(s.floorIgnore > 0) && !(world.wallBounced > 0))
         dampPlayer(world, 0.82);
-      // ...and only an earned bounce returns a pip. The floor's own recovery
-      // (one edge, chain reset) is handled above and is deliberately separate:
-      // it is the way OUT of trouble, not a reward for touching a wall.
-      // The floor's own pip is paid in the trampoline block above; paying again
-      // here would make one touch worth two pips.
-      if (earned && !floorKicked) s.edge = Math.min(edgeMax, s.edge + 1);
+      // ── CHUNK 1: WALLS NO LONGER RELOAD YOU ─────────────────────────────
+      //
+      // An earned bounce used to hand back a pip, which made the rails a reload
+      // station and rewarded orbiting the border instead of fighting. The 1.0s
+      // auto-reload now owns refills outright, everywhere, on one timer; kills
+      // still refund a pip on the spot, and the floor's one-pip rescue (the
+      // way OUT of trouble) is untouched above. The bank itself -- speed,
+      // ceiling ratchet, sonic boom -- is exactly as it was.
       s.banks++;
       s.blade = Math.max(s.blade, 14);
       // Publish the shockwave for the renderer. Only worth drawing at speed:
@@ -1988,7 +2394,7 @@ export function createRun(
       const side=s.wave.cleanBanks.lastSide;
       const clearance=side==='left'?p.x-a.x:side==='right'?a.x+a.w-p.x:side==='top'?p.y-a.y:Infinity;
       const result=stepCleanBanks(s.wave.cleanBanks,{dt:world.engine.timing.timeScale,
-        active:!stopped&&s.phase==='playing'&&['combat','breach'].includes(s.wave.phase)&&s.wave.entry<=0&&!s.opening&&!s.tutorialActive,
+        active:!stopped&&s.phase==='playing'&&['combat','breach','monolith'].includes(s.wave.phase)&&s.wave.entry<=0&&!s.opening&&!s.tutorialActive,
         distance:s.moved,speed:Math.hypot(v.x,v.y),target:s.wave.pace.target,shot:s.shots,clearance,arena:a,
         contact:hitSurface?.surface==='rail'?{...hitSurface,outgoingX:v.x,outgoingY:v.y}:null});
       s.wave.cleanBanks=result.state;
@@ -1996,6 +2402,11 @@ export function createRun(
         if(s.impact&&Math.hypot(s.impact.x-result.event.x,s.impact.y-result.event.y)<45)s.impact={...s.impact,source:'bank'};
         if(s.boom&&Math.hypot(s.boom.x-result.event.x,s.boom.y-result.event.y)<45)s.boom={...s.boom,source:'bank'};
         s.cleanBankTotal++;s.bestCleanBankChain=Math.max(s.bestCleanBankChain,result.state.best);
+      // CHUNK 6: a bank at pace — one that the clean-bank recogniser itself
+      // certified — feeds MOMENTUM. An ordinary grazed wall pays points and
+      // an edge at best; this is the bounce half of "good slashes and some
+      // bounces".
+      if(!s.opening&&!s.tutorialActive&&s.momentum)gainMomentum(s.momentum,'bank');
         const before={x:v.x,y:v.y};
         if(s.held&&aimAngle!==null){const steered=steerBank(before,{x:hitSurface.nx,y:hitSurface.ny},{x:Math.cos(aimAngle),y:Math.sin(aimAngle)});setPlayerVelocity(world,steered.x,steered.y);result.state.steered=Math.hypot(steered.x-before.x,steered.y-before.y)>.01;if(result.state.steered)s.launchGrace=Math.max(s.launchGrace,MOVEMENT.launchGrace);}
         if(s.breakthrough){const reward=bankBreakthrough(s.breakthrough);s.breakthrough=reward.state;if(reward.sonic){if(!s.hyper){const vv=world.player.velocity,sp=Math.hypot(vv.x,vv.y),next=Math.min(BREAKTHROUGH.ceiling,sp*BREAKTHROUGH.sonicFactor);world.playerCeiling=Math.max(world.playerCeiling,next);if(sp>0)setPlayerVelocity(world,vv.x*next/sp,vv.y*next/sp);}emit('sonicBank',{...world.player.position});}}
@@ -2020,7 +2431,15 @@ export function createRun(
       else world.playerCeiling = Math.max(floor, world.playerCeiling - 0.6);
       s.ceiling = world.playerCeiling;
     } else if (world.playerCeiling > MAX_SPEED * s.dashSpeed) {
-      world.playerCeiling = Math.max(MAX_SPEED * s.dashSpeed, world.playerCeiling - 0.22);
+      const ordinary = MAX_SPEED * s.dashSpeed,
+        // CHUNK 6: two or more MOMENTUM pips hold the boosted floor (1.25x)
+        // OPEN for permission a bank already earned — the ceiling decays
+        // down to it and stops, instead of collapsing to the ordinary limit
+        // on the very next ticks. A ceiling below the boosted floor is not
+        // raised to meet it; pips never grant speed, only longevity.
+        boosted = ordinary * pipCeilingScale(s.momentum?.count),
+        pipFloor = world.playerCeiling >= boosted ? boosted : ordinary;
+      world.playerCeiling = Math.max(pipFloor, world.playerCeiling - 0.22);
       s.ceiling = world.playerCeiling;
     }
     const dt = world.engine.timing.timeScale;
@@ -2030,7 +2449,8 @@ export function createRun(
     if (!s.opening) s.reach = (s.drive > 0 ? DRIVE_REACH : 1) + (s.locked ? 0.12 : 0);
     if (s.blade > 0) {
       s.slashAngle = Math.atan2(world.player.velocity.y, world.player.velocity.x);
-      combat.sweepBlade(s.slashAngle, s.reach*effectiveSword(s.sword,s.waveBuff).reach, horizontalCutWidth(s.slashAngle,rules)*s.sword.width, rules.closeWidth);
+      const drawn=effectiveSword(s.sword,upgradeBuff());
+      combat.sweepBlade(s.slashAngle, s.reach*drawn.reach, horizontalCutWidth(s.slashAngle,rules)*s.sword.width*upgradeMods().width, rules.closeWidth);
     }
     // Resolve this step's contact batch using one attack eligibility snapshot.
     // A presentation/refund from an earlier contact cannot change whether a
@@ -2061,8 +2481,21 @@ export function createRun(
     tickEquipment(dt);
     combat.attacks(dt, (h) => {
       const facing = h.kind === 'needle' && Math.cos(s.slashAngle - h.angle) < -0.2;
+      // CHUNK 6B: the slam concussion — not damage. A live blade or parry
+      // window walks through; otherwise the cube is shoved straight out from
+      // the epicenter and staggered (no mid-air control for 0.35s).
+      if (h.kind === 'shock') {
+        h.spent = true;
+        if (s.blade > 0 || s.parry > 0) { s.lastDefense = { kind: 'parry', tick: s.elapsed }; emit('parry', { x: h.x, y: h.y, angle: 0 }); return; }
+        const px = world.player.position, dx = px.x - h.x, dy = px.y - h.y, dist = Math.hypot(dx, dy) || 1, nx = dx / dist, ny = dy / dist;
+        placePlayer(world, { x: clamp(px.x + nx * 220, ARENA.x + PLAYER_SIZE, ARENA.x + ARENA.w - PLAYER_SIZE), y: clamp(px.y + ny * 220, ARENA.y + PLAYER_SIZE, ARENA.y + ARENA.h - PLAYER_SIZE) });
+        setPlayerVelocity(world, nx * 14, ny * 14);
+        s.stun = Math.max(s.stun || 0, 21);
+        emit('slamShove', { x: h.x, y: h.y, nx, ny });
+        return;
+      }
       const zoneNames={fork:['Fork swipe','fork-swipe'],bastion:['Bastion slam','bastion-slam'],rift:['Rift strike','rift-strike'],well:['Well compression','well-compression']};
-      const [cause,kind]=h.kind==='zone'?zoneNames[h.source]:h.kind==='ring'?['Pulse wave','pulse-ring']:[`${TYPES[h.source].name} needle`,h.source==='crown'?'crown-needle':'prism-needle'];
+      const [cause,kind]=h.kind==='zone'?zoneNames[h.source]:h.kind==='ring'?['Pulse wave','pulse-ring']:h.source==='monolith'?['Monolith debris','monolith-debris']:[`${TYPES[h.source].name} needle`,h.source==='crown'?'crown-needle':'prism-needle'];
       if (s.blade <= 0 || !(facing || s.parry > 0))
         hurt(cause, h, Object.freeze({kind,sourceId:h.sourceId,attackId:h.attackId,angle:h.kind==='needle'||h.source==='bastion'?h.angle:Math.atan2(world.player.position.y-h.y,world.player.position.x-h.x)}));
       else {s.lastDefense={kind:'parry',tick:s.elapsed};emit('parry', { x: h.x, y: h.y, angle: h.angle||0 });}
@@ -2079,8 +2512,9 @@ export function createRun(
     // keeping the blade alive converts every shape the cube touches into chaos
     // instead of damage. No new collision code, no special case in the fight --
     // hyper just refuses to let the blade expire.
-    s.blade = s.hyper ? Math.max(s.blade, 1) : Math.max(0, s.blade - dt);
+    s.blade = s.hyper ? Math.max(s.blade, 1) : Math.max(0, s.blade - dt * upgradeMods().bladeDecay);
     s.parry = Math.max(0, s.parry - dt);
+    if (s.stun > 0) s.stun = Math.max(0, s.stun - dt);
     // ── THE GRACE WINDOW IS A DISTANCE, NOT A DURATION ──────────────────
     //
     // It must not burn down during a hitstop. The whole point is "you cannot be
@@ -2123,9 +2557,10 @@ export function createRun(
     // with the cooldown still reading 23. A head start you give yourself is
     // only a head start if it runs down.
     if (s.bankCool > 0) s.bankCool--;
-    if (s.floorCool > 0) s.floorCool--;
     if (s.floorIgnore > 0) s.floorIgnore--;
     if (s.floorFlash > 0) s.floorFlash--;
+    if (s.shatteredRailTicks > 0) s.shatteredRailTicks--;
+    if (s.phaseLineTicks > 0) s.phaseLineTicks--;
     // ── AIMING SLOWS THE FALL BY 90%, FOCUS OR NOT ──────────────────────
     //
     // The brief asks for this as a physical rule, not a focus perk: holding aim
@@ -2138,8 +2573,17 @@ export function createRun(
     //
     // Evaluated every tick from the live holding state, which is the only thing
     // that is actually true.
-    if (s.phase === 'playing' && s.held && world.player.velocity.y > 0) {
-      world.player.velocity.y *= AIM_FALL_KEEP;
+    // ── ...BUT NEVER AT OVER-SPEED ───────────────────────────────────────
+    //
+    // This 90% fall-slow is the ordinary chain's rule. Applied to a body
+    // already travelling faster than an ordinary launch can build (a banked
+    // rally or hyper) it is the "aim-hold velocity drain" the brief calls
+    // out: every held tick it deleted 90% of the vertical speed, and with it
+    // the whole hypotenuse. A held aim may SLOW an ordinary fall; it must
+    // never spend stored kinetic speed.
+    {
+      const av = world.player.velocity, heldSpeed = Math.hypot(av.x, av.y);
+      if (s.phase === 'playing' && s.held && av.y > 0 && heldSpeed <= MOVEMENT.maxSpeed) av.y *= AIM_FALL_KEEP;
     }
     // "Away from the rails" is a fact about where the cube IS, not a timer.
     // It is what makes the floor's one-pip recovery an entry rather than a
@@ -2152,10 +2596,14 @@ export function createRun(
     // start of the tick; see `s.railAway` there.
     s.chainTime = Math.max(0, s.chainTime - dt);
     if (!s.chainTime) s.chain = 0;
+    // CHUNK 6: the ledger's quiet tick. Held pips wither after 14 idle
+    // seconds; menus and pauses never count against them.
+    stepMomentum(s.momentum, { dt, active: s.phase === 'playing' });
+    stepCatalogPacePip(dt, !stopped);
     hyperStep();
     const p = world.player.position;
     s.peak = Math.max(s.peak, origin.y - p.y);
-    if(waveDirector){s.dimension=stepDimensionField(s.dimension,{dt,active:!stopped&&s.phase==='playing'&&['combat','breach'].includes(s.wave.phase)&&!s.opening&&!s.tutorialActive,x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,distance:s.moved});if(!s.visualTutorial)waveDirector.tick(dt);if(s.wave.phase!=='combat'){s.swordFx.length=0;s.swordCharge=0;s.equipmentFx={projectiles:[],echoes:[],bursts:[]};s.drive=0;}return;}
+    if(waveDirector){s.dimension=stepDimensionField(s.dimension,{dt,active:!stopped&&s.phase==='playing'&&['combat','breach','monolith'].includes(s.wave.phase)&&!s.opening&&!s.tutorialActive,x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,distance:s.moved});if(!s.visualTutorial)waveDirector.tick(dt);if(s.wave.phase!=='combat'){s.swordFx.length=0;s.swordCharge=0;s.equipmentFx={projectiles:[],echoes:[],bursts:[]};s.drive=0;}return;}
     s.oldLine = s.line;
     s.line = Math.min(s.line - dt * (0.38 + Math.min(6, s.band) * 0.07), origin.y - s.peak + 1180);
     // The cut-room safety net is gone with the Redline.
@@ -2331,13 +2779,21 @@ export function createRun(
       return tempoOf(s);
     },
     /** The live steering range for this run, one source for corridor + snap. */
-    assist: (o = {}) =>
-      assistRange(s, {
+    assist: (o = {}) => {
+      const stunned = s.stun > 0;
+      return assistRange(s, {
         ...o,
+        // CHUNK 6B (ruling): the slam stagger locks mid-air steering for its
+        // 0.35s — no airborne widening and no focus widening of the aim
+        // corridor while it burns. The frame is exactly as tight as the
+        // tempo corridor allows. Dashing is a commitment, not steering, and
+        // stays live.
+        focus: stunned ? false : o.focus,
         // In flight the player has already committed: widen the help without
         // making the caller remember to ask. On the ground it stays tighter.
-        airborne: o.airborne ?? !world.grounded,
-      }),
+        airborne: stunned ? false : (o.airborne ?? !world.grounded),
+      });
+    },
     skipOpening: () => enterField(false),
     retire,
     chooseWaveBuff:id=>waveDirector?.choose(id)||false,

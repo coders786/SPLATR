@@ -35,7 +35,7 @@ test('portable engine draws visible restrained full/reduced cues without mutatin
 });
 test('actual launched wall bank adds evidence; clear settles transients, next cycle resets',()=>{
  const r=createRun(41,()=>{},{waveMode:true});try{
- r.state.invul=99999;r.state.wave.entry=0;placePlayer(r.world,{x:820,y:-450});r.dash({x:42,y:0,power:1});assert.ok(r.state.dimension.impulses.some(i=>i.kind==='launch'));
+ r.state.invul=99999;r.state.wave.entry=0;placePlayer(r.world,{x:1450,y:-450});r.dash({x:42,y:0,power:1});assert.ok(r.state.dimension.impulses.some(i=>i.kind==='launch'));
  for(let i=0;i<6;i++)r.tick();assert.ok(r.state.dimension.scars.some(i=>i.kind==='bank'));
  for(const e of [...r.combat.enemies.values()])r.combat.remove(e);r.tick();assert.equal(r.state.wave.phase,'return');assert.equal(r.state.dimension.impulses.length,0);assert.ok(r.state.dimension.scars.length>0);
  r.state.wave.phase='choose';r.state.wave.offers=[{id:'test'}];r.chooseWaveBuff('test');assert.ok(r.state.dimension.scars.length>0,'same room remembers across waves');

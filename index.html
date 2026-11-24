@@ -133,6 +133,14 @@
               <svg class="icon"><use href="#i-options" /></svg>Options
             </button>
           </nav>
+          <!-- CHUNK 2: the SHATTER EVENT bar on the main menu. It is the
+               run-persistent fracture meter, framed as progress toward the
+               event it unlocks. -->
+          <div id="title-fracture" class="fracture-mount fracture-menu" data-tier="stable" role="img" aria-label="Dimension fracture: 0 percent, Stable" hidden>
+            <div class="fracture-menu-head"><span class="fracture-name"><i class="slashes"></i>SHATTER EVENT</span><b class="fracture-pct">0%</b></div>
+            <span class="fracture-track"><i class="fracture-fill"></i><b class="fracture-tick" style="left:25%"></b><b class="fracture-tick" style="left:50%"></b><b class="fracture-tick" style="left:75%"></b></span>
+            <div class="fracture-menu-foot"><span class="fracture-tier">STABLE</span><em>Persists across runs · feeds off every cut</em></div>
+          </div>
         </div>
         <div class="title-best">
           <svg class="icon"><use href="#i-trophy" /></svg
@@ -147,6 +155,14 @@
         </div>
       </section>
       <section id="hud" aria-label="Run HUD" hidden>
+        <!-- CHUNK 2: the persistent Dimension Fracture. The bar instance on
+             the field. Menu and RUN ENDED carry their own; all three are kept
+             in step by src/fracture.js and the shell. -->
+        <div id="fracture-hud" class="fracture-mount fracture-ribbon" data-tier="stable" role="img" aria-label="Dimension fracture: 0 percent, Stable" hidden>
+          <span class="fracture-name">SHATTER EVENT</span>
+          <span class="fracture-track"><i class="fracture-fill"></i><b class="fracture-tick" style="left:25%"></b><b class="fracture-tick" style="left:50%"></b><b class="fracture-tick" style="left:75%"></b></span>
+          <span class="fracture-read"><b class="fracture-pct">0%</b><small class="fracture-tier">STABLE</small></span>
+        </div>
         <span id="hybrid-title" hidden></span>
         <div class="score-lock">
           <span class="small"><i class="slashes"></i> Score</span><strong id="score">000000</strong>
@@ -187,9 +203,9 @@
           </button>
           <div id="callout" hidden></div>
         </div>
-        <div class="district">
-          <span class="small" id="sector">Sector 01</span><strong id="district">Undercut</strong>
-        </div>
+        <!-- CHUNK 6A: SECTOR/WAVE readout — 1.4s on transition, then gone.
+             The persistent readouts were §4 text. -->
+        <span id="sector" class="sector-chip" aria-hidden="true" hidden></span>
         <div id="speedo" role="img" aria-label="Speed 0">
           <svg class="speedo-dial" viewBox="0 0 120 74" aria-hidden="true">
             <path class="speedo-track" d="M10 62a50 50 0 0 1 100 0" />
@@ -223,10 +239,22 @@
             <div id="tier-pips"><i></i><i></i><i></i><i></i><i></i></div>
             <span id="tier-name" hidden></span>
           </div>
+          <div class="momentum-pips speedo-pips" aria-hidden="true"><i></i><i></i><i></i></div>
         </div>
         <span id="story-alt" class="sr" role="status"></span>
       </section>
-      <div id="tutorial-objective" aria-hidden="true" hidden></div>
+      <div id="tutorial-objective" aria-hidden="true" hidden><span id="tutorial-objective-text"></span><small id="tutorial-objective-why"></small></div>
+      <!-- CHUNK 6A: THE STORY CHIP. One chip, ≤4 words, the only legible
+           text allowed mid-play. Purely decorative — combat-relevant content
+           always ships via ordinary focus order. -->
+      <div id="story-chip" class="story-chip" aria-hidden="true" hidden></div>
+      <!-- CHUNK 6B: THE LANDLORD'S BAR — Minecraft parity. One cell per plate;
+           fills drain bottom-up as plates fall. Purely a projection of the
+           boss's plates; it can never disagree with the sim. -->
+      <div id="bossbar" role="progressbar" aria-label="The Monolith — plates remaining" aria-valuemin="0" aria-valuemax="5" aria-valuenow="5" aria-valuetext="5 of 5 plates" hidden>
+        <span class="bossbar-name" aria-hidden="true">⟠ THE MONOLITH · SEAMKEEPER ⟠</span>
+        <div class="bossbar-rail" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
       <button id="rack-skip" type="button" aria-label="Skip tutorial" hidden><span>SKIP</span><svg viewBox="0 0 18 14" aria-hidden="true"><path d="M1 1 8 7 1 13ZM9 1 16 7 9 13Z"/></svg></button>
     </main>
     <dialog id="panel" aria-labelledby="panel-heading">
@@ -263,7 +291,7 @@
           <button class="back">← Back</button>
         </section>
         <section id="manual-page" hidden>
-          <div class="visual-manual" aria-label="Interactive controls and enemy training"></div>
+          <div class="visual-manual" aria-label="The Learning Ground — every way to practice the game"></div>
           <button class="back" id="manual-back">BACK</button>
         </section>
         <section id="result-page" hidden>
@@ -311,7 +339,18 @@
                 <dt id="result-stage-label">Wave</dt>
                 <dd id="result-sector"></dd>
               </div>
+              <div class="result-best-wave">
+                <dt>Best wave</dt>
+                <dd id="result-best-wave">01</dd>
+              </div>
             </dl>
+            <!-- CHUNK 2: the SHATTER EVENT bar on the debrief. What the
+                 run fed the meter, and how close the next one is. -->
+            <div id="result-fracture" class="fracture-mount fracture-result" data-tier="stable" role="img" aria-label="Dimension fracture: 0 percent, Stable" hidden>
+              <div class="fracture-result-head"><span class="fracture-name"><i class="slashes"></i>DIMENSION FRACTURE</span><b class="fracture-pct">0%</b></div>
+              <span class="fracture-track"><i class="fracture-fill"></i><b class="fracture-tick" style="left:25%"></b><b class="fracture-tick" style="left:50%"></b><b class="fracture-tick" style="left:75%"></b></span>
+              <div class="fracture-result-foot"><span class="fracture-tier">STABLE</span><em class="fracture-gained">+0.0 THIS RUN</em></div>
+            </div>
             <p id="run-record" class="keys"></p>
             <button id="retry-btn" class="choice primary">New run <kbd>↵</kbd></button
             ><button id="home-btn" class="choice quiet">Main menu</button>

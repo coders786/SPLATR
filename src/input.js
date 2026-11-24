@@ -139,8 +139,19 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
     keyboard = null;
     shift = false;
     keys.clear();
-    const travel = clamp(Math.min(canvas.clientWidth, canvas.clientHeight) * 0.215, 62, 150),
-      world = point(e.clientX, e.clientY);
+    // ── CHUNK 2: CSS-TO-CANVAS SCALED POINTER MATH ───────────────────────
+    // The canvas may be displayed at a different size than its layout box, and
+    // it is almost never at (0,0) on the page. Measure both ONCE per press and
+    // scale every client pixel by the same factor. The drag vector, the world
+    // anchor and the aim target are all computed from canvas-local coordinates
+    // — never raw e.clientX / e.clientY, never a world coordinate that shifts
+    // under a camera pan or the 1.3x arena zoom.
+    const rect = canvas.getBoundingClientRect?.() ?? { left: 0, top: 0, width: canvas.clientWidth || 800, height: canvas.clientHeight || 600 };
+    const cssW = canvas.clientWidth || rect.width || 1, cssH = canvas.clientHeight || rect.height || 1;
+    const scaleX = rect.width > 0 ? cssW / rect.width : 1, scaleY = rect.height > 0 ? cssH / rect.height : 1;
+    const localX = (e.clientX - rect.left) * scaleX, localY = (e.clientY - rect.top) * scaleY;
+    const travel = clamp(Math.min(cssW, cssH) * 0.215, 62, 150),
+      world = point(localX, localY);
     const r = get();
     pointer = beginPull({
       type:e.pointerType||'mouse',
@@ -149,11 +160,14 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
       y: e.clientY,
       toX: e.clientX,
       toY: e.clientY,
+      scaleX,
+      scaleY,
       travel,
       world,
       target: r.aimAt(world, aimAssist()).target,
     });
-    showGesture();canvas.setPointerCapture(e.pointerId);
+    showGesture();
+    try { canvas.setPointerCapture?.(e.pointerId); } catch { /* capture is a convenience, never a requirement */ }
     canvas.style.cursor = 'grabbing';
     r.focus(true);
   });
@@ -163,6 +177,10 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
       showGesture();
     }
   },true);
+  // CHUNK 2: the off-canvas release safety net. An up/cancel that is NOT on
+  // the canvas still reaches this window-level handler, so a fast drag that
+  // ends over the HUD, outside the element, or mid capture-loss always runs
+  // the same release path: no stuck aim, no "holding" state that never ends.
   listen(window, 'pointerup', (e) => {
     if (pointer?.id !== e.pointerId) return;
     if (!enabled()) {
@@ -172,10 +190,14 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
     pointer=movePull(pointer,e.clientX,e.clientY);
     fire(pointerAim());
   },true);
-  for (const name of ['lostpointercapture', 'pointercancel'])
+  for (const name of ['lostpointercapture', 'pointercancel']) {
     listen(canvas, name, (e) => {
       if (pointer?.id === e.pointerId) cancel();
     });
+    listen(window, name, (e) => {
+      if (pointer?.id === e.pointerId) cancel();
+    }, true);
+  }
   listen(canvas, 'contextmenu', (e) => e.preventDefault());
   listen(window, 'orientationchange', cancel);
   listen(window, 'blur', cancel);

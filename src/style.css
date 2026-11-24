@@ -368,7 +368,6 @@ dd {
   clip-path: polygon(0 0, 100% 0, 94% 78%, 97% 77%, 91% 100%, 0 100%);
 }
 .score-lock .small,
-.district .small,
 .hull small {
   color: #d4becd;
   font-size: 10px;
@@ -730,6 +729,54 @@ dd {
   height: 5px;
   margin-top: -1px;
 }
+/* The MOMENTUM ledger: three diamonds the player can point at. Earned only
+   by a cut at pace or a certified bank at pace — they are the difference
+   between "I am fast" and "I am fast because I did that". Cumulative fill,
+   acid colour — never the tier rail's hue, never confused with the Edge
+   rack. Shared by the (normally hidden) dial and the wave HUD panel. */
+.momentum-pips {
+  display: flex;
+  gap: 4px;
+}
+.momentum-pips i {
+  width: 9px;
+  height: 9px;
+  background: #33401f;
+  border: 1px solid #57683a;
+  transform: rotate(45deg);
+  transition:
+    background 180ms linear,
+    box-shadow 180ms linear,
+    border-color 180ms linear;
+}
+.momentum-pips i.on {
+  background: #ddff89;
+  border-color: #f2ffc4;
+  box-shadow: 0 0 8px #ddff89;
+}
+.speedo-pips {
+  position: absolute;
+  bottom: -27px;
+}
+.momentum-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid #9aab6460;
+}
+.momentum-label {
+  font: 8px/1 var(--mono);
+  letter-spacing: 0.18em;
+  color: #8fa463;
+}
+@media (prefers-reduced-motion: reduce) {
+  .momentum-pips i {
+    transition: background 180ms linear;
+  }
+}
 #tier-name {
   font: 8px/1 var(--mono);
   letter-spacing: 0.14em;
@@ -748,22 +795,6 @@ dd {
 }
 #hud[data-place='room'] #speedo {
   display: none;
-}
-.district {
-  position: absolute;
-  bottom: var(--foot);
-  left: var(--gutter);
-  border-left: 3px solid var(--hot);
-  padding-left: 10px;
-}
-.district strong {
-  display: block;
-  font: italic 800 24px/1 var(--type);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.district .small {
-  font-size: 9px;
 }
 #chain {
   width: max-content;
@@ -1077,9 +1108,6 @@ body:has(#panel[open]) #hud {
   .score-lock #score {
     font-size: 44px;
   }
-  .district strong {
-    font-size: 19px;
-  }
 }
 @media (max-height: 640px) and (max-aspect-ratio: 17/20) {
   .title-stack {
@@ -1153,9 +1181,6 @@ body:has(#panel[open]) #hud {
   }
   .score-lock #score {
     font-size: 38px;
-  }
-  .district strong {
-    font-size: 17px;
   }
   .panel-inner {
     padding: 15px 20px;
@@ -1460,8 +1485,7 @@ body:has(#panel[open]) #hud {
 }
 /* The first-run bench is wordless. Keep the actual score, pause control
    and contact award; the proof strip uses the rest of the lower gutter. */
-#hud[data-place='room'] :is(.hull,.district,.score-lock>.small,#stroke-name),
-#arena[data-scene] ~ #hud .district {display:none;}
+#hud[data-place='room'] :is(.hull,.score-lock>.small,#stroke-name){display:none;}
 #opening-note {
   color: var(--dim);
   font-size: 12px;
@@ -2023,3 +2047,171 @@ body:has(#panel[open]) #hud {
 /* A single, non-interactive edge caption; the action stays in the arena. */
 #tutorial-objective:not([hidden]){position:absolute;z-index:8;top:max(15px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);max-width:calc(100% - 155px);padding:9px 13px;background:#171520e8;border-left:3px solid #e4ff9c;color:#f8f8e8;font:700 12px/1.25 var(--mono);text-align:center;letter-spacing:.02em;pointer-events:none}
 @media(max-width:500px){#tutorial-objective:not([hidden]){left:max(12px,env(safe-area-inset-left));transform:none;max-width:calc(100% - 110px);font-size:11px}}
+
+/* ── CHUNK 1: wave pip row + best-wave highlight ───────────────────────────
+   A slim segmented bar under the WAVE 0N headline: one pip per remaining
+   shape, dimming as the field empties. Reduced motion is respected by
+   design — there is no animation here at all. */
+.wave-pips{display:flex;gap:3px;justify-content:center;align-items:center;padding:1px 2px 0}
+.wave-pips[hidden]{display:none}
+.wave-pips i{width:10px;height:4px;border-radius:2px;background:#333a2c;transition:background .15s linear}
+.wave-pips[data-dense=true] i{width:6px}
+.wave-pips i[data-live=true]{background:#d8f19c;box-shadow:0 0 5px #d8f19c66}
+.result-best-wave{background:#191d2e;border:1px solid #b2c76a66;border-radius:6px;padding:2px 10px;box-shadow:inset 0 0 12px #b2c76a14}
+.result-best-wave dt{color:#d8f19c;letter-spacing:1px}
+.result-best-wave dd{color:#eaffab;text-shadow:0 0 12px #d8f19c55}
+
+/* ── CHUNK 2: THE SHATTER EVENT BAR ──────────────────────────────────
+   One component, three mounts: the slim ribbon across the top of the arena
+   HUD, the panel bar on the main menu and the debrief. The meter it drives
+   is persistent (storage key `riot.fracturePct`) and only moves because the
+   player moves it. Tier colours escalate: STABLE -> TREMORS -> FAULT LINES
+   -> CRITICAL COLLAPSE. */
+.fracture-mount{--frac:#8d7f9e;--frac-glow:rgba(141,127,158,.32);--frac-ink:#cbbfdf;--frac-deep:#241f30;}
+.fracture-mount[data-tier=tremors]{--frac:#e3b54b;--frac-glow:rgba(227,181,75,.34);--frac-ink:#f4d98c;--frac-deep:#2c2416;}
+.fracture-mount[data-tier=faultlines]{--frac:#e0703c;--frac-glow:rgba(224,112,60,.36);--frac-ink:#ffb287;--frac-deep:#2e2015;}
+.fracture-mount[data-tier=critical]{--frac:#ed466e;--frac-glow:rgba(237,70,110,.42);--frac-ink:#ff9db4;--frac-deep:#2f1821;}
+.fracture-mount[data-ready=true]{--frac:#fff3d6;--frac-glow:rgba(255,243,214,.55);--frac-ink:#fff8e8;}
+.fracture-mount[hidden]{display:none!important;}
+.fracture-name{display:flex;align-items:center;gap:6px;font:700 9px 'Space Mono',monospace;letter-spacing:2px;color:#9f93b1;white-space:nowrap;}
+.fracture-name .slashes{display:inline-block;width:10px;height:8px;border-left:2px solid var(--frac);border-right:2px solid var(--frac);transform:skewX(-18deg);}
+.fracture-track{position:relative;display:block;height:5px;background:#262033;border-radius:3px;overflow:hidden;box-shadow:inset 0 1px 2px #0008;}
+.fracture-fill{position:absolute;left:0;top:0;bottom:0;width:0%;border-radius:3px;background:linear-gradient(90deg,var(--frac),var(--frac-ink));box-shadow:0 0 9px var(--frac-glow);transition:width .28s cubic-bezier(.2,.8,.3,1);}
+.fracture-tick{position:absolute;top:-2px;bottom:-2px;width:2px;background:#100e18;opacity:.9;}
+.fracture-pct{font:700 11px 'Space Mono',monospace;color:var(--frac-ink);letter-spacing:1px;white-space:nowrap;}
+.fracture-tier{font:700 8px 'Space Mono',monospace;letter-spacing:2px;color:var(--frac-ink);white-space:nowrap;}
+.fracture-mount[data-ready=true] .fracture-fill{animation:fracture-ready 1.05s ease-in-out infinite;}
+@keyframes fracture-ready{0%,100%{filter:brightness(.9);}50%{filter:brightness(1.45);}}
+@media (prefers-reduced-motion:reduce){.fracture-mount[data-ready=true] .fracture-fill{animation:none;}}
+
+/* The arena ribbon: full-width, slim, subordinate to the wave HUD. */
+.fracture-ribbon{position:absolute;top:0;left:0;right:0;height:20px;display:flex;align-items:center;gap:10px;padding:0 10px;background:#0e0d16d9;border-bottom:1px solid #2b2438;z-index:5;pointer-events:none;}
+.fracture-ribbon .fracture-name{font-size:8px;}
+.fracture-ribbon .fracture-track{flex:1;height:4px;}
+.fracture-ribbon .fracture-read{display:flex;align-items:baseline;gap:8px;}
+.fracture-ribbon .fracture-pct{font-size:10px;}
+
+/* The menu mount: sits under the nav, reads as a persistent progression. */
+.fracture-menu{margin:16px auto 0;padding:10px 12px 9px;width:min(360px,84vw);border:1px solid #2f2940;background:#141222cc;box-shadow:0 0 24px #0007,inset 0 1px 0 #ffffff0d;text-align:left;}
+.fracture-menu-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:7px;}
+.fracture-menu-head .fracture-pct{font-size:13px;}
+.fracture-menu .fracture-track{height:7px;}
+.fracture-menu-foot{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:6px;}
+.fracture-menu-foot em{font:400 8px 'Space Mono',monospace;font-style:normal;letter-spacing:.4px;color:#6f647f;text-align:right;}
+
+/* The RUN ENDED mount: same anatomy, set into the bank panel. */
+.fracture-result{margin:8px 0 10px;padding:10px 12px 9px;border:1px solid #2f2940;background:#161325cc;box-shadow:inset 0 1px 0 #ffffff0d;}
+.fracture-result-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:7px;}
+.fracture-result-head .fracture-pct{font-size:13px;}
+.fracture-result .fracture-track{height:7px;}
+.fracture-result-foot{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:6px;}
+.fracture-gained{font:700 9px 'Space Mono',monospace;font-style:normal;letter-spacing:1px;color:#9fdc7c;}
+
+/* Keep the wave HUD clear of the ribbon. (Desktop only: the small-screen
+   layouts park the wave HUD below the meters on their own.) */
+@media(min-width:601px){.wave-hud{top:28px;}}
+@media(min-width:601px) and (max-height:500px){.wave-hud{top:22px;}}
+@media(max-width:600px){.fracture-ribbon .fracture-name{display:none;}}
+
+/* ── CHUNK 5: THE LEARNING GROUND ──────────────────────────────────────────
+   One front door, three honest doors. Panels and type follow the manual's
+   existing anatomy; nothing here glows for free. */
+.training-hub{margin:14px auto 0;padding:18px 16px 16px;width:min(880px,96vw);background:#141222cc;border:1px solid #2f2940;box-shadow:0 0 24px #0007,inset 0 1px 0 #ffffff0d;text-align:left}
+.training-head small{display:block;font:700 9px 'Space Mono',monospace;letter-spacing:2px;color:#9fdc7c}
+.training-head h2{margin:6px 0 4px;font:800 clamp(26px,4.6vw,40px)/1.02 'Space Grotesk',sans-serif;letter-spacing:-.03em;color:#f8f6ff}
+.training-head p{margin:0;font:400 12px/1.45 'Space Mono',monospace;color:#9c93b3;max-width:56ch}
+.training-doors{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0 12px}
+@media(max-width:760px){.training-doors{grid-template-columns:1fr}}
+.training-door{display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;padding:14px 13px 12px;background:#191726;border:1px solid #2c2740;border-left:3px solid #e4ff9c;cursor:pointer;transition:transform .16s ease,border-color .16s ease,background .16s ease}
+.training-door:hover:not(:disabled),.training-door:focus-visible{transform:translateY(-2px);background:#1f1c30;border-color:#e4ff9c;outline:none}
+.training-door:disabled{opacity:.45;cursor:not-allowed;border-left-color:#574f6e}
+.training-index{font:800 26px 'Space Grotesk',sans-serif;color:#3d3752;letter-spacing:-.02em}
+.training-door:hover:not(:disabled) .training-index{color:#e4ff9c}
+.training-copy{display:flex;flex-direction:column;gap:6px}
+.training-copy>b{font:700 15px 'Space Grotesk',sans-serif;letter-spacing:.02em;color:#f8f6ff}
+.training-copy em{font:700 8px 'Space Mono',monospace;font-style:normal;letter-spacing:1.6px;color:#e4ff9c}
+.training-copy small{font:400 11px/1.5 'Space Mono',monospace;color:#b9b2cd}
+.training-detail{font:400 8px/1.6 'Space Mono',monospace;letter-spacing:.6px;color:#6f647f}
+.training-cta{font:700 10px 'Space Mono',monospace;letter-spacing:1.4px;color:#e4ff9c;border-top:1px solid #2c2740;padding-top:8px;width:100%}
+.training-foot{margin:0;font:400 9px 'Space Mono',monospace;letter-spacing:.4px;color:#6f647f;text-align:center}
+
+/* Narration banner: the action on line one, the why on line two. */
+#tutorial-objective small{display:block;margin-top:3px;font:400 10px/1.35 'Space Mono',monospace;letter-spacing:.01em;color:#d9d4c7;opacity:.82}
+
+/* ── CHUNK 6B: THE LANDLORD'S BAR ───────────────────────────────────────────
+   Minecraft parity, pulled ~15% toward the game's own violet. Five cells, one
+   per plate; the name is gold with a 1px black border. Hidden unless the
+   landlord stands in the seam. Shake is 6px and only on a plate falling. */
+#bossbar{position:absolute;bottom:max(14px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:6;width:min(560px,74vw);display:flex;flex-direction:column;gap:5px;align-items:center;pointer-events:none;user-select:none}
+#bossbar[hidden]{display:none}
+#bossbar .bossbar-name{font:700 9px/1 'Space Mono',monospace;letter-spacing:.22em;color:#ffd75e;text-shadow:1px 1px 0 #000,-1px 1px 0 #000,1px -1px 0 #000,-1px -1px 0 #000,0 0 6px rgba(0,0,0,.85);white-space:nowrap}
+#bossbar .bossbar-rail{display:flex;gap:3px;width:100%;padding:5px 6px;background:#3c2f4a;border:1px solid #0d0b13;box-shadow:0 0 0 1px rgba(255,255,255,.06) inset,0 2px 10px rgba(0,0,0,.55)}
+#bossbar .bossbar-rail i{flex:1;height:14px;background:#241c30;box-shadow:0 0 0 1px rgba(0,0,0,.6) inset;position:relative;overflow:hidden}
+#bossbar .bossbar-rail i.on{background:linear-gradient(#cda4ff,#b77cff 45%,#8d5ae8);box-shadow:0 0 6px rgba(183,124,255,.55) inset,0 0 10px rgba(183,124,255,.35)}
+#bossbar .bossbar-rail i.on::after{content:'';position:absolute;left:0;right:0;top:20%;height:1px;background:rgba(255,255,255,.55)}
+#bossbar.crack .bossbar-rail{animation:bossbar-shake .34s cubic-bezier(.2,.9,.3,1.4)}
+#bossbar.sweep .bossbar-rail::after{content:'';position:absolute;left:0;top:0;bottom:0;width:64px;background:linear-gradient(90deg,transparent,#ffd9a0cc,transparent);animation:bossbar-sweep .5s ease-out forwards;pointer-events:none}
+#bossbar .bossbar-rail{position:relative;overflow:hidden}
+@keyframes bossbar-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+@keyframes bossbar-sweep{0%{transform:translateX(-80px);opacity:0}15%{opacity:1}100%{transform:translateX(120vw);opacity:0}}
+@media(max-width:600px){#bossbar{width:min(420px,88vw);bottom:max(10px,env(safe-area-inset-bottom))}#bossbar .bossbar-rail i{height:10px}}
+@media(max-height:500px){#bossbar{width:min(420px,64vw);bottom:max(6px,env(safe-area-inset-bottom));gap:3px}#bossbar .bossbar-rail{padding:3px 4px}#bossbar .bossbar-rail i{height:9px}#bossbar .bossbar-name{font-size:8px;letter-spacing:.18em}}
+@media(prefers-reduced-motion:reduce){#bossbar.crack .bossbar-rail{animation:none}#bossbar.sweep .bossbar-rail::after{display:none}}
+
+/* ── CHUNK 6A: THE STORY CHIP ───────────────────────────────────────────────
+   The ONLY legible text allowed mid-play. One chip, ≤4 words, acid on
+   #101310, slight skew. Fade in fast, fade out slow; never blinks, never
+   stacks. aria-hidden by contract. */
+.story-chip{position:absolute;left:50%;top:60%;transform:translate(-50%,-50%) skewX(-6deg);z-index:8;pointer-events:none;user-select:none;font:600 17px/1 'Space Grotesk',sans-serif;letter-spacing:.18em;color:#101310;background:#ddff89;padding:.38em .95em;box-shadow:0 2px 18px rgba(221,255,137,.35),0 0 0 1px #101310 inset;opacity:0;transition:opacity .7s ease}
+.story-chip.on{opacity:1;transition:opacity .22s ease}
+.story-chip[hidden]{display:none}
+@media(prefers-reduced-motion:reduce){.story-chip{transition:none}}
+@media(max-width:600px){.story-chip{font-size:14px;top:64%}}
+
+/* CHUNK 6A: SECTOR/WAVE readout — a 1.4s flash on transition, then gone. */
+.sector-chip{position:absolute;bottom:var(--foot);left:var(--gutter);z-index:6;pointer-events:none;user-select:none;font:700 10px 'Space Mono',monospace;letter-spacing:.24em;color:#ddff89;background:#0e0d16cc;border-left:3px solid var(--hot);padding:4px 10px 4px 9px;opacity:0;transition:opacity .45s ease}
+.sector-chip.on{opacity:1}
+.sector-chip[hidden]{display:none}
+@media(prefers-reduced-motion:reduce){.sector-chip{transition:none}}
+
+/* ── CHUNK 6A: THE RIBBON, PROMOTED (§8.2) ─────────────────────────────────
+   20px → 34px; the label decorates at 7px; the % doubles; the tier word
+   grows 1.4×; every fill plays a bright sweep; tier changes surge the
+   frame edges inward. The demoted player is a decoration, never an
+   instruction — but it is now impossible to miss. */
+.fracture-ribbon{height:34px;padding:0 12px}
+.fracture-ribbon .fracture-name{font-size:7px}
+.fracture-ribbon .fracture-pct{font-size:20px}
+.fracture-ribbon .fracture-tier{font-size:11px}
+.fracture-ribbon .fracture-track{flex:1;height:8px}
+.fracture-ribbon.gain .fracture-fill{animation:fracture-gain .6s cubic-bezier(.2,.8,.3,1)}
+.fracture-ribbon.gain .fracture-fill::after{content:'';position:absolute;top:-2px;bottom:-2px;width:72px;background:linear-gradient(100deg,transparent,#fffdf2cc 45%,transparent);animation:fracture-gain-sweep .6s ease-out forwards}
+@keyframes fracture-gain{0%{filter:brightness(1.7)}100%{filter:brightness(1)}}
+@keyframes fracture-gain-sweep{0%{transform:translateX(-80px);opacity:1}100%{transform:translateX(120%);opacity:.2}}
+/* Tier change: the frame itself inhales. */
+#game.fracture-surge::after{content:'';position:absolute;inset:0;z-index:4;pointer-events:none;background:radial-gradient(ellipse at center,transparent 52%,rgba(8,6,16,.42) 100%);animation:fracture-surge .72s ease-out forwards}
+#game.fracture-surge .fracture-tick{animation:fracture-glint .72s ease-out}
+@keyframes fracture-surge{0%{opacity:0}22%{opacity:1}100%{opacity:0}}
+@keyframes fracture-glint{0%,100%{background:#100e18}35%{background:#e9ffd2}}
+@media(prefers-reduced-motion:reduce){.fracture-ribbon.gain .fracture-fill,.fracture-ribbon.gain .fracture-fill::after,#game.fracture-surge::after,#game.fracture-surge .fracture-tick{animation:none!important}}
+
+/* CHUNK 6A: the HUD fades in piece by piece when the cold open lands. */
+#hud.hud-fade-in{animation:hud-fade-in .7s ease-out}
+@keyframes hud-fade-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){#hud.hud-fade-in{animation:none}}
+
+/* CHUNK 6C: cards teach the math before the pick. The first three deals land
+   at 90ms intervals; the 300ms read lock lives in the chooser, not CSS. */
+@keyframes upgrade-card-deal{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+.wave-upgrade-cards button[data-catalog=true]{animation:upgrade-card-deal .28s cubic-bezier(.2,.8,.3,1) var(--deal-delay,0ms) both}
+.upgrade-comparison{display:flex;flex-direction:column;gap:3px;margin-top:2px;padding:3px 0;border-top:1px solid #ffffff12}
+.upgrade-comparison-row{display:grid;grid-template-columns:minmax(70px,1fr) 42px 42px auto;align-items:center;gap:4px;min-width:0;color:#bcb1c7;font:7px/1.1 'Space Mono',monospace;letter-spacing:.02em}
+.upgrade-comparison-row>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.upgrade-comparison-row>i{display:block;height:4px;background:#ffffff18;position:relative;overflow:hidden}
+.upgrade-comparison-row>i::after{content:'';position:absolute;inset:0 auto 0 0;width:var(--bar-fill,0%);background:#8d789f}
+.upgrade-comparison-row>i.stat-after::after{background:#d8f19c}
+.upgrade-comparison-row>b{font-size:7px;color:#e9e1ee;white-space:nowrap}
+.wave-upgrade-cards button[data-catalog=true][data-tier=D]{border-top-color:#e7c978;background:linear-gradient(135deg,#302a2a,#211d2d)}
+.wave-upgrades[data-read-lock='300'] .wave-upgrade-cards button{cursor:wait}
+@media(prefers-reduced-motion:reduce){.wave-upgrade-cards button[data-catalog=true]{animation:none}.upgrade-comparison-row>i::after{transition:none}}
+@media(max-width:600px){.upgrade-comparison-row{grid-template-columns:minmax(55px,1fr) 30px 30px auto;font-size:6px}.upgrade-comparison-row>b{font-size:6px}.upgrade-comparison{gap:2px}}

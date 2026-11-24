@@ -1,3 +1,5 @@
+import {upgradeById,upgradePresentation} from './upgrades.js';
+
 /** Player-facing language: describe the action, not invented equipment lore. */
 const entries={
  reach:['LONGER CUT','Reach farther enemies','Reach +20%',''],
@@ -17,7 +19,16 @@ export const BUFF_PRESENTATION=Object.freeze(Object.fromEntries(Object.entries(e
 /** One stat source for the chooser, accessibility copy and active HUD.
  * Lucky labels derive from applied numbers, never a separately authored string. */
 export function buffPresentation(buff){
- const base=BUFF_PRESENTATION[buff?.id];if(!base)return null;
+ const base=BUFF_PRESENTATION[buff?.id];
+ // CHUNK 6C: the expanded run catalogue shares the existing chooser. Keep
+ // the old eleven-card copy byte-for-byte stable, but project every new card
+ // through the same presentation boundary so the UI never invents a stat.
+ if(!base){
+  const projected=upgradePresentation(buff);
+  if(!projected)return null;
+  const usual=projected.lucky?upgradePresentation(upgradeById(buff.id)):projected;
+  return {...projected,name:projected.name,effect:projected.effect,stat:projected.stat,cost:projected.cost,lucky:projected.lucky,accessibleName:projected.lucky?`${projected.accessibleName}. Lucky roll`:projected.accessibleName,usualStat:usual?.stat||projected.stat};
+ }
  if(!buff.lucky)return {...base,lucky:false,accessibleName:base.name};
  const percent=value=>Math.round((value-1)*100);
  const stats={fleet:()=>`Speed +${percent(buff.speed)}%`,reach:()=>`Reach +${percent(buff.reach)}%`,bounty:()=>`Score +${percent(buff.score)}%`,linger:()=>`Slash time +${(buff.blade/60).toFixed(2)}s`,guard:()=>`Exit window +${(buff.guard/60).toFixed(2)}s`};

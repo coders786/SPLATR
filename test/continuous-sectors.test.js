@@ -47,7 +47,7 @@ test('sectors continue through 04 with new locks and nonblocking reactions',()=>
   const n=run.state.narrative,oldY=run.world.arena.y;
   for(const l of n.locks)shotAt(run,l.x,l.y+130);
   const seal=n.seal;shotAt(run,seal.x,seal.y+130);
-  assert.equal(n.sector,expected);assert.equal(run.world.arena.y,oldY-850);
+  assert.equal(n.sector,expected);assert.equal(run.world.arena.y,oldY-1000);
   assert.equal(n.locks.filter(l=>!l.broken).length,3);assert.equal(n.reaction.kind,expected===2?'smug':expected===3?'alarm':'split');
   assert.equal(run.state.phase,'playing');assert.equal(run.state.wave.phase,'combat');
  }

@@ -1,0 +1,14 @@
+import {createTeachingSession} from '../src/teaching.js';
+import {placePlayer,stopPlayer} from '../src/physics.js';
+const events=[],s=createTeachingSession({scenario:'rift',emit:(t,d)=>events.push(t)});
+placePlayer(s.run.world,{x:120,y:-80});stopPlayer(s.run.world);
+for(let i=0;i<300&&!s.waiting;i++)s.tick();
+const e=[...s.run.combat.enemies.values()][0];
+console.log('after wake: waiting',s.waiting,'step',s.step?.[0],'mode',e.mode,'zone?',!!e.attackZone,'hazards',s.run.combat.hazards.length);
+placePlayer(s.run.world,{x:-500,y:-500});stopPlayer(s.run.world);s.continueStep();
+console.log('after continue: step',s.step?.[0],'waiting',s.waiting);
+if(s.waiting)s.continueStep();
+console.log('after 2nd continue: step',s.step?.[0],'waiting',s.waiting);
+for(let i=0;i<300&&!s.run.combat.hazards.some(h=>h.kind==='zone');i++)s.tick();
+const hz=s.run.combat.hazards.find(h=>h.kind==='zone');
+console.log('hazard?',!!hz,'ticks zone age',hz?.age,'mode',e.mode,'waiting',s.waiting);

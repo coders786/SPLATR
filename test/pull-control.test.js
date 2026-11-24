@@ -8,9 +8,12 @@ test('pull session latches without rendering, maps CSS distance continuously and
  const relaxed=movePull(s,100,113);assert.equal(resolvePull(relaxed).gesture.kind,'pull');assert.equal(resolvePull(movePull(relaxed,100,102)).gesture.kind,'cancel');
  }
 });
-test('zero-cut cube on launch deck recovers exactly one escape cut instead of a permanent softlock',()=>{
- const r=createRun(12,()=>{},{waveMode:true});try{r.state.phase='playing';r.state.invul=99999;r.state.edge=0;for(let i=0;i<300;i++)r.tick();assert.ok(r.world.grounded);assert.equal(r.state.edge,1);assert.equal(r.state.shots,0);assert.equal(r.state.score,0);
- for(let i=0;i<300;i++)r.tick();assert.equal(r.state.edge,1,'deck does not fill rack');const y=r.world.player.position.y;assert.equal(r.dash({x:0,y:-30,power:30/42}),true);for(let i=0;i<8;i++)r.tick();assert.ok(r.world.player.position.y<y-30);assert.equal(r.state.shots,1);
+test('zero-cut cube on launch deck refills on the one-second timer, capped at three, never softlocks',()=>{
+ const r=createRun(12,()=>{},{waveMode:true});try{r.state.phase='playing';r.state.invul=99999;r.state.edge=0;for(let i=0;i<300;i++)r.tick();assert.ok(r.world.grounded);assert.equal(r.state.shots,0);assert.equal(r.state.score,0);
+ // CHUNK 1: refill is a flat 60-tick auto-reload that works anywhere, deck
+ // included. 300 ticks pays pips at ticks 60/120/180 and caps at the rack.
+ assert.equal(r.state.edge,3);
+ for(let i=0;i<300;i++)r.tick();assert.equal(r.state.edge,3,'never more than three');const y=r.world.player.position.y;assert.equal(r.dash({x:0,y:-30,power:30/42}),true);for(let i=0;i<8;i++)r.tick();assert.ok(r.world.player.position.y<y-30);assert.equal(r.state.shots,1);
  }finally{r.dispose();}
 });
 

@@ -17,6 +17,20 @@ export const STEP_MS = MOVEMENT.stepMs;
 // Everything downstream reads this one constant (aim, impact stretch, the
 // speedometer normalisation), so the whole game scales with it.
 export const MAX_SPEED = MOVEMENT.maxSpeed;
+/** Alias kept for spec traceability: the speed a full-power dash produces. */
+export const BASE_DASH_SPEED = MAX_SPEED;
+/** Absolute velocity ceiling for ANY body in the world. Hyper (280) and a banked
+ * rally fit inside it; the 1.30x pinball rails of a shattered arena (CHUNK 3)
+ * may never exceed it. Only `launch()` and the rail solver may write it. */
+export const MAX_PINBALL_SPEED = 320;
+/** The SHATTERED arena's rail restitution: an arrival leaves at 1.30x its
+ * speed (never past MAX_PINBALL_SPEED). Nothing else in the game may
+ * exceed 1.0 on a reflect. */
+export const PINBALL_RESTITUTION = 1.3;
+/** Arrival speed (px/tick) above which the SHATTERED floor is a 1.30x
+ * bumper instead of the trampoline kick — below it the anti-softlock
+ * kick and its one-pip rescue stay live. Same scale as ARRIVE. */
+export const SHATTER_FLOOR_MIN = 8;
 export const MAX_PULL = MOVEMENT.maxPull; // world pixels, NOT CSS or backing-store pixels
 export const BASE_GRAVITY = MOVEMENT.gravityScale;
 const GRAVITY_Y = MOVEMENT.gravityY;
@@ -25,11 +39,16 @@ const MAX_TRAVEL = MOVEMENT.maxTravel; // maximum corner travel per collision sa
 // Held aim deliberately slows simulation by 90%; release immediately restores
 // the committed launch. Automatic breath/panic still follow tempo preferences.
 export const SLOW_MIN = MOVEMENT.focusScale;
-/** Deliberate aim floor; also normalises the gravity easing. */
-export function slowFloor() {
-  // Deliberate held aim gets the requested 90% slowdown. Automatic breath
-  // and panic pacing still follow the selected tempo in pace.js.
-  return SLOW_MIN;
+/** Deliberate aim floor. At over-speed (a banked rally or hyper) the world
+ * holds at MOVEMENT.focusFastFloor instead — a held aim may steer an
+ * over-speed cube without the world collapsing into a crawl, which read as
+ * "aim-hold deletes hyper speed". Ordinary flight keeps SLOW_MIN. */
+export function slowFloor(speed = 0) {
+  const v = Number(speed);
+  return Number.isFinite(v) && v > MOVEMENT.focusFastAt ? MOVEMENT.focusFastFloor : SLOW_MIN;
+}
+function playerSpeed(world) {
+  return Math.hypot(world.player.velocity.x, world.player.velocity.y);
 }
 const DEAD_ZONE = MOVEMENT.deadZone;
 
@@ -180,13 +199,14 @@ function capVelocity(body, ceiling = MAX_SPEED) {
 export function setBulletTime(world, on, immediate = false) {
   world.slow = Boolean(on);
   if (immediate) {
-    world.engine.timing.timeScale = world.focusScale = on ? slowFloor() : 1;
-    world.engine.gravity.scale = BASE_GRAVITY * (on ? 0.1 : 1);
+    const floor = slowFloor(playerSpeed(world));
+    world.engine.timing.timeScale = world.focusScale = on ? floor : 1;
+    world.engine.gravity.scale = BASE_GRAVITY * (on ? floor : 1);
   }
 }
 
 function advanceTiming(world, pace) {
-  const floor = slowFloor();
+  const floor = slowFloor(playerSpeed(world));
   const target=world.slow?floor:1;
   // Snappier in, snappier out: the slower the transition, the more the world
   // reads as "lurching" rather than as speed changing.
@@ -196,7 +216,12 @@ function advanceTiming(world, pace) {
   // time without changing the committed parabola. Only *held* focus
   // lightens gravity and spends focus; the two never multiply.
   world.engine.timing.timeScale=Math.min(world.focusScale,pace);
-  world.engine.gravity.scale=BASE_GRAVITY*(1-.9*(1-world.focusScale)/(1-floor));
+  // Gravity keeps exactly the fraction of itself the clock does: 10% at an
+  // ordinary held aim, 55% at an over-speed one. (The previous curve eased
+  // to 10% no matter how fast the cube was travelling — algebraically this
+  // is identical for every ordinary-flight hold, since the ordinary floor
+  // IS SLOW_MIN.)
+  world.engine.gravity.scale=BASE_GRAVITY*world.focusScale;
 }
 
 
@@ -248,10 +273,10 @@ export function boostPlayer(world, factor, ceiling) {
  *  alone if it is already faster.
  *
  *  This is the counterpart to `launch()` for states where the speed limit is
- *  lifted. `launch()` deliberately clamps its input to MAX_SPEED, so a dash
- *  during hyper reset 279 to 31 in one tick and destroyed the state on the
- *  next. A dash is how a hyper player STEERS: it owns the heading, the state
- *  owns the magnitude. Returns the speed actually set.
+ *  lifted. `launch()` no longer clamps its input to MAX_SPEED (CHUNK 2); it
+ *  preserves the speed it is handed along the aimed heading. `holdSpeed`
+ *  remains for callers that need to re-assert a floor along the CURRENT
+ *  heading without re-aiming. Returns the speed actually set.
  */
 export function holdSpeed(world, speed = 0) {
   const v = world.player.velocity,
@@ -264,13 +289,25 @@ export function holdSpeed(world, speed = 0) {
   return keep;
 }
 
-export function launch(world, velocity) {
+/** Launch along the aim, preserving the speed the cube already owns.
+ *
+ *  `storedSpeed` is the magnitude BEFORE this launch was committed to (the
+ *  caller measures it); `retention` is the steered fraction of it (1.0 =
+ *  gentle/medium, 1.05 = clean bank-steer, >= 0.85 on a full reversal).
+ *  BASE_DASH_SPEED — what THIS input would produce under the ordinary rules —
+ *  is the floor, so a deliberate weak pull is never promoted to full speed,
+ *  and a hyper-speed steer is never demoted to it either.
+ */
+export function launch(world, velocity, { storedSpeed = 0, retention = 1, maxCeiling = MAX_PINBALL_SPEED } = {}) {
   const length = Math.hypot(velocity.x, velocity.y);
   if (!Number.isFinite(length) || length < 0.001) return false;
-  const k = Math.min(1, MAX_SPEED / length);
+  const pv = world.player.velocity;
+  const currentSpeed = Math.max(storedSpeed, Math.hypot(pv.x, pv.y));
+  const baseDashSpeed = Math.min(length, MAX_SPEED);
+  const launchSpeed = Math.min(Math.max(baseDashSpeed, currentSpeed * retention), Math.max(maxCeiling, baseDashSpeed));
   setBulletTime(world, false, true);
   Body.setVelocity(world.player, { x: 0, y: 0 });
-  Body.setVelocity(world.player, { x: velocity.x * k, y: velocity.y * k });
+  Body.setVelocity(world.player, { x: (velocity.x / length) * launchSpeed, y: (velocity.y / length) * launchSpeed });
   // ── THE CUBE DOES NOT SPIN. EVER. ────────────────────────────────────────
   //
   // This line added angular velocity proportional to the launch, up to 0.105
@@ -449,13 +486,31 @@ export function trampolineRise(vy) {
   return (vy * vy) / (2 * GRAVITY_PX);
 }
 
+/** CHUNK 3: after any reflect in a SHATTERED arena, the cube may never
+ * exceed MAX_PINBALL_SPEED — restitution 1.3 compounds, the ceiling does not.
+ * The reflect has to survive the per-substep velocity cap, so the running
+ * ceiling is lifted to the reflected speed, exactly the way every bank
+ * reward in this codebase pays its speed out. The ordinary bleed in the run
+ * brings it back down. */
+function capPinball(v, world) {
+  const sp = Math.hypot(v.x, v.y);
+  const after = Math.min(sp, MAX_PINBALL_SPEED);
+  if (sp > MAX_PINBALL_SPEED) {
+    const k = MAX_PINBALL_SPEED / sp;
+    v.x *= k; v.y *= k;
+  }
+  if (world) world.playerCeiling = Math.max(world.playerCeiling || MAX_SPEED, after);
+  return after;
+}
+
 function railBounce(world) {
-  const a = world.arena;
+  const a = world.arena, SHATTERED = world.arenaMode === 'SHATTERED';
   if (!a) return;
   const incomingX=world.player.velocity.x,incomingY=world.player.velocity.y;
   const p = world.player.position,
     v = world.player.velocity,
     RESTITUTION = 0.9,
+    SHATTER_RESTITUTION = SHATTERED ? Math.max(PINBALL_RESTITUTION, Math.min(1.5, Number(world.railRestitution) || PINBALL_RESTITUTION)) : PINBALL_RESTITUTION,
     half = PLAYER_SIZE / 2,
     // ── ARRIVING AT A RAIL IS AN EVENT, RESTING ON ONE IS NOT ──────────────
     //
@@ -531,11 +586,12 @@ function railBounce(world) {
       if (!(wallIgnore.left > world.clock)) {
         if (-v.x < ARRIVE) v.x = 0;
         else {
-          v.x = -v.x * WALL_KEEP;
+          v.x = -v.x * (SHATTERED ? SHATTER_RESTITUTION : WALL_KEEP);
           // The hop is a LIFT, so it only ever adds upward speed. A cube already
           // climbing keeps its own -- adding a fixed number here would make a
           // fast climb even faster and break the ascent cap's assumptions.
           v.y = Math.min(v.y, -WALL_HOP);
+          if (SHATTERED) { capPinball(v, world); world.bumped = true; }
           wallIgnore.left = world.clock + WALL_IGNORE;
           // Tells run.js that this wall already applied its own fixed
           // reduction, so the generic cushion damper must not apply a second.
@@ -551,8 +607,9 @@ function railBounce(world) {
       if (!(wallIgnore.right > world.clock)) {
         if (v.x < ARRIVE) v.x = 0;
         else {
-          v.x = -v.x * WALL_KEEP;
+          v.x = -v.x * (SHATTERED ? SHATTER_RESTITUTION : WALL_KEEP);
           v.y = Math.min(v.y, -WALL_HOP);
+          if (SHATTERED) { capPinball(v, world); world.bumped = true; }
           wallIgnore.right = world.clock + WALL_IGNORE;
           world.wallBounced = 2;
           side = 'right';
@@ -567,7 +624,8 @@ function railBounce(world) {
     if (v.y < 0) {
       if (-v.y < ARRIVE) v.y = 0;
       else {
-        v.y = -v.y * RESTITUTION;
+        v.y = -v.y * (SHATTERED ? SHATTER_RESTITUTION : RESTITUTION);
+        if (SHATTERED) { capPinball(v, world); world.bumped = true; }
         side = 'top';
         ny = 1;
       }
@@ -649,7 +707,19 @@ function railBounce(world) {
     // it. A cube that has just been kicked is above the line with upward
     // velocity, so it cannot be kicked again, whatever the timer says.
     const atFloor = p.y >= y1 - 0.5;
-    if (v.y > 0 && atFloor && !(world.floorIgnore > 0)) {
+    if (SHATTERED && v.y >= SHATTER_FLOOR_MIN && atFloor && !(world.floorIgnore > 0)) {
+      // The 4th border is a bumper too: an arrival slams back at 1.30x its own
+      // speed, capped. A fall too gentle to slam still gets the trampoline
+      // kick below — the one-pip rescue is not negotiable, even here.
+      v.y = -v.y * SHATTER_RESTITUTION;
+      capPinball(v, world);
+      world.floorKick = { vy: Math.abs(v.y), speed: Math.hypot(v.x, v.y), rescue: false };
+      world.bumped = true;
+      Body.setVelocity(world.player, { x: v.x, y: v.y });
+      world.kickHold = { y: v.y };
+      side = 'bottom';
+      ny = -1;
+    } else if (v.y > 0 && atFloor && !(world.floorIgnore > 0)) {
       const kick = trampolineVy(world, world.viewH);
       v.y = -kick;
       // AN ABSOLUTE KICK, WRITTEN THROUGH THE BODY.

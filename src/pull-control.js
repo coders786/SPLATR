@@ -1,8 +1,8 @@
 import {readGesture} from './gesture.js';
 import {MOVEMENT} from './movement-model.js';
 /** Immutable screen-space session. Event sampling owns latching, never drawing. */
-export function beginPull({x,y,type='mouse',travel=120,...metadata}){
- return {...metadata,x,y,toX:x,toY:y,type,travel:Math.max(32,travel),dragged:false};
+export function beginPull({x,y,type='mouse',travel=120,scaleX=1,scaleY=1,...metadata}){
+ return {...metadata,x,y,toX:x,toY:y,scaleX,scaleY,type,travel:Math.max(32,travel),dragged:false};
 }
 export function movePull(session,x,y){
  const next={...session,toX:x,toY:y};

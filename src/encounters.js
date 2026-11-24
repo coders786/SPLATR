@@ -31,24 +31,39 @@ export function encounterBrief(number,seed){
  const threat=Object.entries(counts).filter(([kind,n])=>kind!=='fang'&&n>0).map(([kind,n])=>`${n} ${kind.toUpperCase()}`).join(' / ')||'LIGHT TARGETS';
  return Object.freeze({...theme,number,total,cycle,milestone:theme.id==='regent',counts:Object.freeze(counts),threat});
 }
-export function planEncounter(seed,number,player={x:0,y:0}){
+/**
+ * CHUNK 2: `intensity` is the Dimension Fracture tier (0-3). Higher cracks
+ * mean angrier formations: bonus light Fangs are drafted into the same grid,
+ * so the escalation never moves a spawn outside the arena and never touches
+ * the teaching spine. STABLE fields exactly what it fielded before.
+ */
+export function planEncounter(seed,number,player={x:0,y:0},intensity=0){
  player={x:Number.isFinite(player?.x)?player.x:0,y:Number.isFinite(player?.y)?player.y:0};
- const brief=encounterBrief(number,seed);let n=((seed>>>0)^Math.imul(brief.number,2654435761))>>>0;
+ const brief=encounterBrief(number,seed);
+ const bonus=Math.min(6,Math.max(0,Math.floor(Number(intensity)||0))*2);
+ // Total fields this wave: the base budget plus the fracture escalation,
+ // still under the 36-cell grid minus player-clearance slack.
+ const budget=Math.min(34,brief.total+bonus);
+ let n=((seed>>>0)^Math.imul(brief.number,2654435761))>>>0;
  const random=()=>{n=(Math.imul(n,1664525)+1013904223)>>>0;return n/4294967296;};
  const formation=['ladder','chevron','split'][Math.floor(random()*3)],positions=[];
+ // CHUNK 1: the arena grew ~30% on both axes; the formation grid grew with it
+ // so early waves spread across the new sightlines instead of clustering in the
+ // old 1800px band. Counts (plan.total) are unchanged -- only spacing moved.
+ const ARENA_SCALE=1.3;
  // 36 cells leave slack for a player-clearance exclusion even at the 30-body cap.
  for(let row=0;row<6;row++)for(let col=0;col<6;col++){
-  const x=(formation==='split'?(col<3?-1:1)*(210+Math.abs(col-(col<3?2:3))*230):-650+col*260)+(random()-.5)*24;
-  const y=-200-row*180+(formation==='chevron'?-Math.abs(col-2.5)*16:0)+(random()-.5)*14;
+  const x=(formation==='split'?(col<3?-1:1)*(210+Math.abs(col-(col<3?2:3))*230)*ARENA_SCALE:(-650+col*260)*ARENA_SCALE)+(random()-.5)*24*ARENA_SCALE;
+  const y=-200*ARENA_SCALE-row*180*ARENA_SCALE+(formation==='chevron'?-Math.abs(col-2.5)*16*ARENA_SCALE:0)+(random()-.5)*14*ARENA_SCALE;
   if(Math.hypot(x-player.x,y-player.y)>=205)positions.push({x,y});
  }
  // Candidate slack is deterministic, not a random retry loop. This fallback is
  // only relevant to injected non-finite player coordinates, handled below.
- if(positions.length<brief.total)throw new RangeError('Encounter has insufficient safe spawn cells');
+ if(positions.length<budget)throw new RangeError('Encounter has insufficient safe spawn cells');
  // Shuffle safe cells too: runs no longer fill the same front rows first.
  for(let i=positions.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[positions[i],positions[j]]=[positions[j],positions[i]];}
  const kinds=[];for(const [kind,count]of Object.entries(brief.counts))if(kind!=='fang')for(let i=0;i<count;i++)kinds.push(kind);
- while(kinds.length<brief.total)kinds.push('fang');
+ while(kinds.length<budget)kinds.push('fang');
  // Mix the enemy roles through the formation instead of hiding all hard targets
  // in the last row. Seed changes placement, never increases the budget.
  for(let i=kinds.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[kinds[i],kinds[j]]=[kinds[j],kinds[i]];}
@@ -64,7 +79,7 @@ export function planEncounter(seed,number,player={x:0,y:0}){
  const specs=kinds.map((kind,i)=>Object.freeze({id:`wave/${brief.number}/${i}`,kind,...positions[i],home:'wave',slot:i,wave:true,wavePlaced:true,delay:brief.number===1&&i===0?25:brief.number===1&&i===1?120:70+(i%6)*16,phase:random()*Math.PI*2}));
  const prismIds=specs.filter(e=>e.kind==='prism').map(e=>e.id),links=[];
  for(let i=0;i+1<prismIds.length;i+=2)links.push(Object.freeze({a:prismIds[i],b:prismIds[i+1],period:300+i*30,age:0}));
- return Object.freeze({...brief,formation,specs:Object.freeze(specs),links:Object.freeze(links)});
+ return Object.freeze({...brief,total:budget,fractureIntensity:Math.max(0,Math.floor(Number(intensity)||0)),formation,specs:Object.freeze(specs),links:Object.freeze(links)});
 }
 export function recommendWaveOffer(offers,{next,sword,hp=3,previous}={}){
  const ranked=offers.map((buff,index)=>{
