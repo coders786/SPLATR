@@ -28,7 +28,18 @@ const LESSONS = [
  ['STYLE','paceHeld','HOLD YOUR PACE','Stay above the speed target to charge Hyper. Brief dips allow recovery.',[1,1,1]],
  ['CLIMB','dimensionBreak','BREAK THROUGH','In a break wave, bank during Hyper, then launch through the ready breach.',[1,1,1]],
 ];
-const learningQuests=LESSONS.flatMap(([category,kind,label,instruction,goals,target],step)=>goals.map((goal,variant)=>Object.freeze({id:`learn-${step}-${variant}`,category,tier:0,label,instruction,goal,kind,target,points:3,lesson:true,step:Math.floor(step/3)})));
+/**
+ * CHUNK 5: what a lesson pays.
+ *
+ * It was 3. Nine lessons — the whole learning ladder — could therefore pay 27
+ * credits against a first cosmetic priced at 100, so a player could finish the
+ * entire tutorial and own nothing. A lesson is the single most expensive thing
+ * to ask of a new player (it is a stranger telling them how to play), and it
+ * was priced at 3% of a hat. One board of three lessons now pays close to a
+ * cosmetic on its own.
+ */
+export const LESSON_POINTS = 30;
+const learningQuests=LESSONS.flatMap(([category,kind,label,instruction,goals,target],step)=>goals.map((goal,variant)=>Object.freeze({id:`learn-${step}-${variant}`,category,tier:0,label,instruction,goal,kind,target,points:LESSON_POINTS,lesson:true,step:Math.floor(step/3)})));
 export const QUESTS = Object.freeze([
   ...learningQuests,
   q('fang5', 'SMASH', 0, '5 FANGS', 5, 'cut', 'fang'),
@@ -61,10 +72,20 @@ export const QUESTS = Object.freeze([
   q('air30', 'CLIMB', 2, '30 SECONDS AIR', 1800, 'air'),
   q('sector2', 'CLIMB', 0, 'SECTOR 02', 2, 'sector'),
 ]);
+/**
+ * CHUNK 5: the ladder pays for the ladder.
+ *
+ * These were 100 / 150 / 200. The first hat cost more than the entire learning
+ * ladder could earn (9 lessons x 3 points = 27), so the reward screen's whole
+ * promise was unpayable without grinding rounds forever. A full board of
+ * lessons now pays ~90, so the first cosmetic lands in about one run and the
+ * set is complete in a short session. The shop is still a place to save for —
+ * it is just no longer a place to stare at.
+ */
 export const PARTS = Object.freeze([
-  { id: 'halo', label: 'GOLD HALO', cost: 100 },
-  { id: 'wings', label: 'PRISM WINGS', cost: 150 },
-  { id: 'crown', label: 'CUBE CROWN', cost: 200 },
+  { id: 'halo', label: 'GOLD HALO', cost: 40 },
+  { id: 'wings', label: 'PRISM WINGS', cost: 75 },
+  { id: 'crown', label: 'CUBE CROWN', cost: 120 },
 ]);
 export function loadProfile(raw) {
   let p;
@@ -82,6 +103,12 @@ export function loadProfile(raw) {
     recent: Array.isArray(p?.recent)?p.recent.filter(id=>QUESTS.some(q=>q.id===id)).slice(-9):[],
     coins: n(p?.coins),
     unlock: n(p?.unlock),
+    // CHUNK 5: consecutive runs where EVERY contract completed. This is the one
+    // number that survives between runs, and the reason to protect a board
+    // instead of abandoning it. Additive to the save format — an old profile
+    // simply loads a streak of zero.
+    streak: n(p?.streak),
+    bestStreak: Math.max(n(p?.streak), n(p?.bestStreak)),
     owned: PARTS.filter((x) => p?.owned?.includes(x.id)).map((x) => x.id),
     heads: Object.fromEntries(
       QUESTS.map((x) => [
@@ -101,6 +128,49 @@ export function offers(random = Math.random) {
     }),
   );
 }
+/**
+ * CHUNK 5: THE THREE LANES.
+ *
+ * The board used to be filed as AIM & TARGETS / CUT TECHNIQUE / WAVE RHYTHM — a
+ * taxonomy, and one that assumes the player already knows what a "wave rhythm"
+ * is. A lane is now a PROMISE: the verb, one line of what that run is like.
+ * The category ids are unchanged (`SMASH`/`STYLE`/`CLIMB`) because the ticket,
+ * the profile and every save file key on them.
+ */
+export const LANES = Object.freeze([
+  Object.freeze({ id: 'SMASH', name: 'SMASH', promise: 'Break things', detail: 'Kill counts and species. The direct route.' }),
+  Object.freeze({ id: 'STYLE', name: 'STYLE', promise: 'Cut like a pro', detail: 'Precision: power cuts, doubles, banks, pace.' }),
+  Object.freeze({ id: 'CLIMB', name: 'CLIMB', promise: 'Get further', detail: 'Distance: sectors reached, sevens and clean runs.' }),
+]);
+
+/**
+ * One line that answers "why am I doing this?" for a whole board.
+ *
+ * A contract's value is its points; a board's value is its points plus the
+ * all-complete bonus plus the streak it is defending. These three numbers were
+ * scattered across the screen (and the biggest one was inside a fold), so the
+ * player had to add them up themselves. Returns the parts and one sentence.
+ *
+ * @param {{rows?:object[], bonus?:boolean, prize?:string, streak?:number}} ticket
+ */
+export function boardSummary(ticket = {}) {
+  const rows = Array.isArray(ticket.rows) ? ticket.rows : [];
+  const points = rows.reduce((n, r) => n + (Number(r?.points) || 0), 0) * (ticket.bonus ? 2 : 1);
+  const done = rows.filter((r) => r?.done).length;
+  const streak = Math.max(0, Math.floor(Number(ticket.streak) || 0));
+  const complete = rows.length > 0 && done === rows.length;
+  const line = complete
+    ? `BOARD CLEARED · +${points} CREDITS${streak > 1 ? ` · ${streak} IN A ROW` : ''}`
+    : `${done}/${rows.length} CONTRACTS · WORTH ${points} CREDITS`;
+  return Object.freeze({ points, done, total: rows.length, complete, streak, line });
+}
+
+/** Does a finished board keep the streak alive? Every contract, not two of three. */
+export function streakHolds(ticket = {}) {
+  const rows = Array.isArray(ticket.rows) ? ticket.rows : [];
+  return rows.length > 0 && rows.every((r) => r?.done);
+}
+
 /** Seeded template grammar: stable IDs preserve per-contract Head Starts.
  * Offers vary goal, target and technique, not just decorative wording. Recent
  * contracts are deprioritized; unavailable late species are gated by mastery.

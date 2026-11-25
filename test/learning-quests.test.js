@@ -1,11 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {learningOffers,createTicket,loadProfile,questInstruction} from '../src/quests.js';
+import {learningOffers,createTicket,loadProfile,questInstruction,POINTS} from '../src/quests.js';
 test('procedural teaching is deterministic, varied, reachable and low stakes',()=>{
  const seen=new Set();for(let seed=1;seed<=40;seed++){
  const a=learningOffers({seed});assert.deepEqual(a,learningOffers({seed}));seen.add(a.flat().map(q=>q.id).join());
  assert.deepEqual(a.flat().map(q=>q.kind),['any','power','waveClear']);
- for(const q of a.flat()){assert.ok(q.points<=3);assert.ok(q.label.split(' ').length<=4);assert.ok(questInstruction(q).length>30);}
+ // CHUNK 5: 'low stakes' used to mean `points <= 3`, and 3 credits a lesson
+ // against a 100-credit hat is why the whole ladder was unpayable. The property
+ // worth pinning is RELATIVE: a lesson never out-pays a real contract, so
+ // practice is never the efficient way to earn. (POINTS tops out at 60.)
+ for(const q of a.flat()){assert.ok(q.points<=30,`lesson pays ${q.points}`);assert.ok(q.points<POINTS[2],'practice never beats mastery');assert.ok(q.label.split(' ').length<=4);assert.ok(questInstruction(q).length>30);}
  }assert.ok(seen.size>5);
 });
 test('only demonstrated live skills unlock the next lesson; purchases and deaths cannot skip',()=>{

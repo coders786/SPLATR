@@ -42,20 +42,22 @@ test('test_portal_to_vault_bestowal', () => {
     resume() {},
     view: () => ({ x: -400, y: -500, w: 800, h: 600 }),
   });
-  assert.equal(document.querySelectorAll('.quest-option').length, 3);
+  // CHUNK 5: the board is three lanes with ONE contract each (it used to be
+  // nine buttons plus a prize picker). The payout is now stamped on every card
+  // instead of living behind a fold, and the ladder is always on the board, so
+  // there is no aria-pressed prize selection left to assert.
+  assert.equal(document.querySelectorAll('.bounty-card').length, 3);
+  assert.equal(document.querySelectorAll('.bounty-lane').length, 3);
+  assert.equal(document.querySelectorAll('.bounty-pay').length, 3, 'every contract shows what it pays');
+  assert.equal(document.querySelectorAll('.bounty-prize-row .prize-option').length, 3);
   assert.equal(
-    document.querySelectorAll('.quest-option[aria-pressed=true]').length,
-    3,
-  );
-  assert.equal(
-    document.querySelectorAll('.prize-option[aria-pressed=true]').length,
+    document.querySelectorAll('.bounty-prizes').length,
     1,
+    'the reward ladder is on the board, not behind <details>',
   );
-  // Choose easy STYLE; default is balanced, not all easy.
-  document
-    .querySelectorAll('.quest-columns>div')[1]
-    .querySelector('button')
-    .click();
+  assert.equal(document.querySelectorAll('details.lesson-rewards').length, 0, 'no fold hides the reward');
+  // Pick the STYLE lane's contract.
+  document.querySelectorAll('.bounty-lane')[1].querySelector('button').click();
   ui.start();
   assert.equal(document.querySelectorAll('.quest-mini .quest-row').length, 0);
   assert.equal(document.querySelectorAll('.quest-pip').length, 3);
@@ -82,7 +84,9 @@ test('test_portal_to_vault_bestowal', () => {
   assert.equal(document.querySelector('.vault-scene').hidden, false);
   const p = JSON.parse(values.get('quests'));
   assert.ok(p.owned.includes('halo'));
-  assert.equal(p.coins, 9, 'teaching rewards are modest; skills, not a credit grind');
+  // CHUNK 5: three lessons at 30 each = 90 credits. (It was 9 total, i.e. 3 a
+  // lesson, against a hat that cost 100 — the ladder could not buy anything.)
+  assert.equal(p.coins, 90, 'a full learning board pays for a cosmetic');
   document.querySelector('.vault-actions button').click();
   assert.equal(ui.vault, false);
   assert.equal(run.state.questPortal, null);

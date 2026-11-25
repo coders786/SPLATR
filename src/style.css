@@ -1720,6 +1720,81 @@ body:has(#panel[open]) #hud {
 .picker-kept {color:#ffd773;}
 .quest-option:focus:not(:focus-visible) {outline:none;background:#262032;filter:none;}
 .quest-columns:has(.pointer-hover) .quest-option:not(.pointer-hover) {background:#262032;filter:none;}
+/* ══ CHUNK 5: THE BOUNTY BOARD ══════════════════════════════════════════════
+   The old board was nine identical boxes at one visual weight: title, tier,
+   goal and reward all 9-12px in the same grey. Nothing said "this pays" and
+   nothing said "this one". Three lanes, one contract each, with the PAYOUT as
+   the loudest thing on the card (band-inverted, gold) and the instruction as
+   the quietest. The layout is 3 across on desktop, 1 across on a phone. */
+.bounty-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:10px}
+.bounty-title{display:flex;flex-direction:column;gap:2px;min-width:0}
+.bounty-title>b{font-size:15px;letter-spacing:.16em;color:#efffc0}
+.bounty-title>small{font-size:10px;color:#beb0d0;letter-spacing:.06em}
+
+.bounty-streak{display:flex;align-items:baseline;gap:10px;padding:6px 10px;margin-bottom:10px;
+  border-left:3px solid #ffd166;background:#221d15}
+.bounty-streak>b{font:700 13px 'Space Mono',monospace;color:#ffd166;letter-spacing:.1em;white-space:nowrap}
+.bounty-streak>small{font-size:9px;line-height:1.4;color:#b3a486}
+
+.bounty-lanes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.bounty-lane{display:flex;flex-direction:column;gap:6px;min-width:0}
+.bounty-promise{display:flex;align-items:baseline;gap:7px;border-bottom:1px solid #4a3f58;padding-bottom:4px}
+.bounty-promise>b{font-size:11px;letter-spacing:.14em;color:#e1f79b}
+.bounty-promise>span{font-size:9px;color:#9d8fae;letter-spacing:.02em}
+
+/* The card. The payout is a solid gold band across the top of the card — the
+   first thing the eye lands on, and the answer to "why am I doing this". */
+.bounty-card{position:relative;display:flex;flex-direction:column;gap:5px;width:100%;
+  text-align:left;cursor:pointer;padding:0 0 9px;overflow:hidden;
+  background:#241f30;border:1px solid #5d4d6b;color:#e9dfe9;
+  transition:transform .14s ease-out,border-color .14s ease-out,background .14s ease-out}
+.bounty-card:hover,.bounty-card.pointer-hover{transform:translateY(-2px);border-color:#8e7aa0;background:#2c2639}
+.bounty-card:active{transform:translateY(0) scale(.99)}
+.bounty-card:focus-visible{outline:2px solid #e0ff9a;outline-offset:2px}
+.bounty-top{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:5px 9px;background:#ffd166;color:#241f2e}
+.bounty-tier{font-size:8px;letter-spacing:.14em;font-weight:400;color:#5a4720}
+.bounty-pay{font:700 15px 'Space Mono',monospace;letter-spacing:.02em}
+.bounty-pay:before{content:'◈ ';font-size:11px;opacity:.75}
+.bounty-card>strong{padding:0 9px;font-size:15px;line-height:1.15;letter-spacing:.01em;color:#f4ecff}
+.bounty-how{padding:0 9px;font-size:9.5px;line-height:1.45;color:#b5a4bc}
+.bounty-detail{padding:0 9px;font-size:8.5px;line-height:1.4;color:#7d7190;font-style:normal}
+.bounty-progress{padding:0 9px;display:flex;flex-direction:column;gap:3px}
+.bounty-track{height:4px;background:#3d3348;overflow:hidden}
+.bounty-fill{display:block;height:100%;background:#bd8cff}
+.bounty-progress>small{font-size:8px;letter-spacing:.1em;color:#a08cc0}
+
+/* Tier reads as difficulty without adding another word to the card: a hairline
+   down the left edge, cool to hot. */
+.bounty-card[data-tier=quick]{box-shadow:inset 3px 0 #6f8fb0}
+.bounty-card[data-tier=skill]{box-shadow:inset 3px 0 #b08fd0}
+.bounty-card[data-tier=mastery]{box-shadow:inset 3px 0 #d0705a}
+.bounty-card[data-tier=practice]{box-shadow:inset 3px 0 #8fbc6a}
+
+/* The ladder, on the board. Was <details>Optional rewards</details>. */
+.bounty-prizes{margin-top:14px;padding-top:10px;border-top:1px solid #3f3549}
+.bounty-prizes-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:7px}
+.bounty-prizes-head>b{font-size:10px;letter-spacing:.14em;color:#beb0d0}
+.bounty-prize-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.bounty-prize-row .prize-option{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px;margin:0}
+.bounty-prize-row .prize-option>small{font-size:8px;letter-spacing:.1em;color:#b5a4bc}
+.bounty-prize-row .prize-option>b{font:700 12px 'Space Mono',monospace;color:#ffd773}
+.bounty-prize-row .prize-option[data-owned=true]{opacity:.55;cursor:default;border-color:#4a3f58}
+.bounty-prize-row .prize-option[data-owned=true]>b{color:#99ffac;font-size:9px}
+.bounty-prize-row .prize-preview{width:72px;height:61px}
+
+@media(max-width:640px){
+  .bounty-lanes{grid-template-columns:1fr;gap:7px}
+  .bounty-head{flex-direction:column;gap:8px}
+  .bounty-card>strong{font-size:14px}
+  .bounty-prize-row .prize-preview{width:58px;height:50px}
+}
+@media(max-height:620px) and (min-width:641px){
+  .bounty-lanes{gap:6px}
+  .bounty-card>strong{font-size:13px}
+  .bounty-how{display:none}
+  .bounty-detail{display:none}
+}
 .quest-option.pointer-hover {background:#4b365a!important;filter:brightness(1.2)!important;}
 @media(max-height:650px) {
  #panel:has(#result-page:not([hidden])) .panel-body {padding:10px 16px;}

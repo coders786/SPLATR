@@ -10,6 +10,9 @@ import {
   PARTS,
   loadProfile,
   createTicket,
+  LANES,
+  boardSummary,
+  streakHolds,
 } from './quests.js';
 import { ARENA } from './levels.js';
 
@@ -196,91 +199,120 @@ export function createQuestUI({
       );
     return meter;
   }
+  /**
+   * CHUNK 5: THE BOUNTY BOARD.
+   *
+   * What was here was three columns x three tiers = nine near-identical
+   * `GOAL · 2` buttons, with the only part that answers "why?" — the prize —
+   * folded inside <details>Optional rewards</details>, under a switch already
+   * labelled GUIDED QUESTS ON. The board asked for work and hid the pay.
+   *
+   * It is now three lanes, one contract each, every contract carrying its own
+   * credit value on its face, and the prize ladder visible above it. One
+   * contract per lane is deliberate: a choice between nine is not a choice, it
+   * is a menu, and this screen is the last thing a player reads before a run.
+   */
   function drawPicker() {
     picker.replaceChildren();
-    const toggle=el('button','quest-toggle',questsEnabled?'GUIDED QUESTS · ON':'GUIDED QUESTS · OFF');
-    toggle.type='button';toggle.setAttribute('aria-pressed',String(questsEnabled));
-    toggle.onclick=()=>{questsEnabled=!questsEnabled;storage.set('optional-quests',questsEnabled?'on':'off');drawPicker();};
-    picker.append(el('b','menu-credit-wallet',unlimited ? '◈ ∞ SANDBOX CREDITS' : `◈ ${profile.coins.toLocaleString()} CREDITS`),toggle,el('small','quest-optional-note','Learn by playing. Three small lessons are picked for your skills. No setup needed.'));
-    if(!questsEnabled)return;
-    const board=el('div','quest-board-heading');
-    board.append(el('b','','YOUR NEXT SKILLS'));
-    const reroll=el('button','quest-shuffle','VARY PRACTICE');reroll.type='button';
-    reroll.onclick=()=>{offerNonce++;choices=newOffers();selected=choices.map((c,i)=>c[0].id);drawPicker();};
-    board.append(reroll);picker.append(board);
-    const top = el('div', 'prize-pick');
-    top.append(el('b', '', 'YOUR PRIZE'));
-    const rewards = [
-      ...PARTS.filter((p) => !profile.owned.includes(p.id)),
-      { id: 'chest', label: 'CREDIT CHEST' },
-    ];
-    if (!rewards.some((p) => p.id === prize)) prize = nextPrize(profile).id;
-    for (const p of rewards) {
-      const b = el('button', 'prize-option', `◇ ${p.label}`);
-      b.type = 'button';
-      b.setAttribute('aria-pressed', p.id === prize);
-      const preview = el('canvas', 'prize-preview');
-      preview.width = 100;
-      preview.height = 85;
-      preview.dataset.part = p.id;
-      b.prepend(preview);
-      b.onclick = () => {
-        prize = p.id;
-        drawPicker();
-      };
-      if (p.id === prize) b.append(prizeMeter(profile.unlock, p.cost || 100));
-      top.append(b);
+    const sum = boardSummary({ rows: choices.map((c) => c[0]), streak: profile.streak || 0 });
+
+    /* ── the header: what this screen is, and what it pays ── */
+    const head = el('div', 'bounty-head');
+    const title = el('div', 'bounty-title');
+    title.append(el('b', '', 'BOUNTY BOARD'));
+    title.append(el('small', '', sum.line));
+    head.append(title);
+    const toggle = el('button', 'quest-toggle', questsEnabled ? 'BOUNTIES · ON' : 'BOUNTIES · OFF');
+    toggle.type = 'button';
+    toggle.setAttribute('aria-pressed', String(questsEnabled));
+    toggle.onclick = () => { questsEnabled = !questsEnabled; storage.set('optional-quests', questsEnabled ? 'on' : 'off'); drawPicker(); };
+    head.append(toggle);
+    picker.append(head);
+
+    /* ── the streak: the one number that outlives a run ── */
+    if ((profile.streak || 0) > 0 || (profile.bestStreak || 0) > 0) {
+      const streak = el('div', 'bounty-streak');
+      streak.append(el('b', '', `STREAK ${profile.streak || 0}`));
+      streak.append(el('small', '', profile.streak > 0
+        ? 'Complete every contract in a run to keep it. One short and it resets.'
+        : `Your best was ${profile.bestStreak || 0}. Clear a full board to start again.`));
+      picker.append(streak);
     }
-    const rewardsFold=el('details','lesson-rewards');rewardsFold.append(el('summary','','Optional rewards'),top);picker.append(rewardsFold);
-    const grid = el('div', 'quest-columns');
+
+    if (!questsEnabled) {
+      picker.append(el('p', 'quest-total', 'Free play. No contracts, no credit bounties — the run pays its round reward only.'));
+      return;
+    }
+
+    /* ── the three contracts ── */
+    const lanes = el('div', 'bounty-lanes');
     choices.forEach((col, i) => {
-      const box = el('div');
-      box.append(el('b', '', ['AIM & TARGETS','CUT TECHNIQUE','WAVE RHYTHM'][i]));
-      col.forEach((q) => {
-        const b = el('button', 'quest-option');
-        b.type = 'button';
-        b.title=questInstruction(q);
-        b.setAttribute('aria-label',`${q.label}. ${questInstruction(q)}`);
-        b.setAttribute('aria-pressed', selected[i] === q.id);
-        b.append(
-          el('small', '', q.lesson?'PRACTICE': ['QUICK', 'SKILL', 'MASTERY'][q.tier]),
-          el('strong', '', q.label),
-          el('span', '', q.lesson?`GOAL · ${q.goal}`:`+${q.points} PTS`),
-        );
-        b.title=questInstruction(q);prependIcon(b,/LINK|PRISM/.test(q.label)?'bolt':/BANK|WALL/.test(q.label)?'bank':/REST|LAND/.test(q.label)?'land':/PACE|SPEED/.test(q.label)?'speed':/ARMOR|PLATE/.test(q.label)?'shield':'target');
-        b.onclick = () => {
-          selected[i] = q.id;
-          drawPicker();
-        };
-        if(selected[i]===q.id)b.append(el('em','quest-instruction',questInstruction(q)));
-        const kept = profile.heads[q.id] || 0;
-        if (kept) {
-          const edge = el('i', 'picker-head');
-          edge.style.width = `${(100 * kept) / q.goal}%`;
-          b.append(edge, el('small', 'picker-kept', `${kept}/${q.goal} KEPT!`));
-        }
-        b.onpointerenter = () => {
-          for (const cell of picker.querySelectorAll('.quest-option'))
-            cell.classList.remove('pointer-hover');
-          b.classList.add('pointer-hover');
-        };
-        b.onpointerleave = () => b.classList.remove('pointer-hover');
-        box.append(b);
-      });
-      grid.append(box);
+      const lane = LANES[i];
+      const q = col[0];
+      const box = el('div', 'bounty-lane');
+      box.dataset.lane = lane.id;
+      const promise = el('div', 'bounty-promise');
+      promise.append(el('b', '', lane.name), el('span', '', lane.promise));
+      box.append(promise);
+
+      const b = el('button', 'bounty-card');
+      b.type = 'button';
+      b.dataset.tier = q.lesson ? 'practice' : ['quick', 'skill', 'mastery'][q.tier];
+      b.setAttribute('aria-pressed', 'true');
+      b.setAttribute('aria-label', `${q.label}. ${questInstruction(q)} Pays ${q.points} credits.`);
+
+      const top = el('div', 'bounty-top');
+      top.append(el('small', 'bounty-tier', q.lesson ? 'PRACTICE' : ['QUICK', 'SKILL', 'MASTERY'][q.tier]));
+      top.append(el('b', 'bounty-pay', `+${q.points}`));
+      b.append(top);
+      b.append(el('strong', '', q.label));
+      b.append(el('span', 'bounty-how', questInstruction(q)));
+
+      // The contract's own progress, if this one has been worked before.
+      const kept = profile.heads[q.id] || 0;
+      if (kept > 0) {
+        const pips = el('div', 'bounty-progress');
+        const track = el('div', 'bounty-track');
+        const fill = el('i', 'bounty-fill');
+        fill.style.width = `${(100 * kept) / q.goal}%`;
+        track.append(fill);
+        pips.append(track, el('small', '', `${kept}/${q.goal} CARRIED OVER`));
+        b.append(pips);
+      }
+      b.append(el('em', 'bounty-detail', lane.detail));
+      b.onpointerenter = () => { for (const c of picker.querySelectorAll('.bounty-card')) c.classList.remove('pointer-hover'); b.classList.add('pointer-hover'); };
+      b.onpointerleave = () => b.classList.remove('pointer-hover');
+      box.append(b);
+      lanes.append(box);
     });
-    picker.append(grid);
-    const chosen = choices.flat().filter((q) => selected.includes(q.id)),
-      hard = chosen.every((q) => q.tier === 2),
-      total = chosen.reduce((n, q) => n + q.points, 0) * (hard ? 2 : 1);
-    picker.append(
-      el(
-        'p',
-        'quest-total',
-        'Start a run whenever you’re ready. Press Q during play to review these steps.',
-      ),
-    );
+    picker.append(lanes);
+
+    /* ── the reward ladder, ON the board, not behind a fold ── */
+    const prizes = el('div', 'bounty-prizes');
+    const phead = el('div', 'bounty-prizes-head');
+    phead.append(el('b', '', 'WHAT IT PAYS OUT'));
+    const wallet = el('span', 'menu-credit-wallet', unlimited ? '◈ ∞ SANDBOX' : `◈ ${profile.coins.toLocaleString()}`);
+    phead.append(wallet);
+    prizes.append(phead);
+    const row = el('div', 'bounty-prize-row');
+    for (const p of PARTS) {
+      const owned = profile.owned.includes(p.id);
+      const b = el('button', 'prize-option');
+      b.type = 'button';
+      b.disabled = owned;
+      b.dataset.owned = String(owned);
+      b.setAttribute('aria-label', owned ? `${p.label}, owned` : `${p.label}, ${p.cost} credits`);
+      const preview = el('canvas', 'prize-preview');
+      preview.width = 100; preview.height = 85; preview.dataset.part = p.id;
+      b.append(preview, el('small', '', p.label), el('b', '', owned ? 'OWNED' : `◈ ${p.cost}`));
+      row.append(b);
+    }
+    prizes.append(row);
+    picker.append(prizes);
+
+    picker.append(el('p', 'quest-total', 'Press Q during a run to check these off. Contracts pay once each.'));
   }
+
   function row(q, end = false, index = 0) {
     const e = el('div', 'quest-row');
     e.dataset.id = q.id;
@@ -576,6 +608,14 @@ export function createQuestUI({
         profile.rounds++;
         profile.bestBand=Math.max(profile.bestBand,Number.isFinite(run.state.band)?run.state.band:1);
         if(roundQuests)profile.recent=[...profile.recent,...ticket.rows.map(q=>q.id)].slice(-9);
+        // CHUNK 5: THE STREAK. A full board extends it, one short contract
+        // resets it — the only state in this system that outlives a run, and
+        // the reason to protect a board instead of abandoning it.
+        if (roundQuests) {
+          const held = streakHolds(ticket);
+          profile.streak = held ? (profile.streak || 0) + 1 : 0;
+          profile.bestStreak = Math.max(profile.bestStreak || 0, profile.streak);
+        }
         profile.owned = [...settlement.owned];
         const receipt = settlement.receipt;
         save();
