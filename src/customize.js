@@ -1,3 +1,4 @@
+import {SHOP_GROUPS,SLOT_LABELS,shopGroup,shopItems,classifyItem,shopStudy} from './shop-catalog.js';
 import {PART_PERKS} from './part-perks.js';
 import {shopDemoFrame} from './shop-demo.js';
 import {storyRole} from './equipment-stories.js';
@@ -9,7 +10,7 @@ import {powerReadout,buildReadout} from './power-readout.js';
 import { mutationMatches, mutationTitle } from './hybrids.js';
 import { ITEMS,SLOTS,loadEquipment,normalizeEquipment,randomEquipment,buyEquipment } from './equipment.js';
 import { corePalette } from './harmony.js';
-import {drawPartPerkDemo,dashElement,drawShopDemo,drawShopCardArt,drawPreviewScene,evaluatePreviewPose,drawEquipmentStory} from './art/splatr-art-engine.js';
+import {createArtBake,drawShopItemStudy,drawPartPerkDemo,dashElement,drawShopDemo,drawShopCardArt,drawPreviewScene,evaluatePreviewPose,drawEquipmentStory} from './art/splatr-art-engine.js';
 const drawLabCard=(ctx,width,height,equipment,slot,time=0,active=false,motion=true)=>drawShopCardArt(ctx,width,height,{equipment,slot,time,selected:active,motion});
 const drawLabScene=(ctx,equipment,time,mode,scene,options)=>drawPreviewScene(ctx,{equipment,time,mode,state:scene.state,options});
 import {createLabScene} from './lab-scene.js';
@@ -18,6 +19,8 @@ import {labPoint,labPullTarget} from './lab-input.js';
 
 export function createCustomize({storage,unlimited=false,wallet,ownedParts,purchase,resetInput,motion=()=>true,snap=()=>{}}){
  let state=loadEquipment(storage.get('equipment','{}')),slot='head',selected=state.equipped.head,action='slice',openedAt=0,forgeAt=-Infinity,fusionAt=-Infinity,lastMutation='',selectedPreset=0,hovered=null,frameNo=0,lastTime=0,accumulator=0;
+ let itemFilter='all',raf=0,disposed=false,lastPaint=-Infinity;
+ const thumbBake=createArtBake({surface:()=>document.createElement('canvas'),maxEntries:20});
  let activePointer=null,press=null,renderedEquipment=null,recipePreview=null,pendingBuild=null;
  let demoPlaying=true,demoStarted=0,demoHeld=0,demoKey='';let cards=[],codexCards=[];const scene=createLabScene(),cursor={x:0,y:0},gaze={x:0,y:0};
  const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text)n.textContent=text;return n;};
@@ -28,7 +31,7 @@ export function createCustomize({storage,unlimited=false,wallet,ownedParts,purch
  const previewToggle=button('SHOW PRACTICE CONTROLS',()=>{const on=root.dataset.tools!=='on';root.dataset.tools=on?'on':'off';previewToggle.textContent=on?'HIDE PRACTICE CONTROLS':'SHOW PRACTICE CONTROLS';previewToggle.setAttribute('aria-expanded',String(on));},'shop-preview-toggle');previewToggle.setAttribute('aria-expanded','false');root.querySelector('.custom-lab>canvas').after(previewToggle);
  root.querySelector('.custom-lab-label').firstChild.textContent='SELECTED PART / LIVE DEMO';
  const demoControls=el('div','shop-demo-controls');
- const demoMode=el('select','shop-demo-mode');demoMode.setAttribute('aria-label','Preview type');demoMode.onchange=()=>{demoKey='';};for(const [value,label]of [['story','ITEM STORY'],['dash','ELEMENTAL DASH'],['slash','WEAPON SLASH'],['arrow','DRAG ARROW']]){const option=el('option','',label);option.value=value;demoMode.append(option);}
+ const demoMode=el('select','shop-demo-mode');demoMode.setAttribute('aria-label','Preview type');demoMode.onchange=()=>{demoKey='';};for(const [value,label]of [['story','PART IN ACTION'],['dash','ELEMENTAL DASH'],['slash','WEAPON SLASH'],['arrow','DRAG ARROW']]){const option=el('option','',label);option.value=value;demoMode.append(option);}
  const demoName=el('strong','shop-demo-name'),demoState=el('span','shop-demo-state','LOOPING DEMO');
  const demoPlay=button('PAUSE',()=>{const now=performance.now();if(demoPlaying)demoHeld=now-demoStarted;else demoStarted=now-demoHeld;demoPlaying=!demoPlaying;demoPlay.textContent=demoPlaying?'PAUSE':'PLAY';demoPlay.setAttribute('aria-pressed',String(demoPlaying));},'shop-demo-play');demoPlay.setAttribute('aria-label','Play or pause the selected item demonstration');demoPlay.setAttribute('aria-pressed','true');demoControls.append(demoMode,demoState,demoPlay);root.querySelector('.custom-lab-label').after(demoName);root.querySelector('.custom-lab>canvas').after(demoControls);
  root.querySelector('.custom-shop>nav').after(root.querySelector('.custom-detail'));
@@ -55,7 +58,17 @@ export function createCustomize({storage,unlimited=false,wallet,ownedParts,purch
  const view=root.querySelector('.custom-view-switch');view.append(button('SHOP',()=>root.dataset.pane='shop'),button('PREVIEW',()=>root.dataset.pane='preview'));root.dataset.pane='shop';prependIcon(view.firstElementChild,'shop');prependIcon(view.lastElementChild,'play');
  root.addEventListener('close',()=>{clearDrag();resetInput();scene.reset();});
  for(const dialog of [root,codex]){dialog.addEventListener('keydown',e=>e.stopPropagation());dialog.addEventListener('keyup',e=>e.stopPropagation());}
- for(const s of SLOTS){const b=button(s==='trajectory'?'VECTOR':s.toUpperCase(),()=>{recipePreview=null;slot=s;selected=state.equipped[s];if(s==='dash')demoMode.value='dash';else if(s==='pointer')demoMode.value='arrow';else demoMode.value='story';root.querySelector('.custom-grid').scrollTop=0;render();});prependIcon(b,s==='slash'?'crescent':s==='dash'?'bolt':['pointer','radar','trajectory'].includes(s)?'target':s);b.dataset.slot=s;if(s==='trajectory')b.setAttribute('aria-label','Trajectory viewer');root.querySelector('.custom-shop>nav').append(b);}
+ const groupNav=el('nav','shop-groups');groupNav.setAttribute('aria-label','Shop categories');
+ root.querySelector('.custom-shop>nav').before(groupNav);
+ const slotNav=root.querySelector('.custom-shop>nav:not(.shop-groups)');slotNav.classList.add('shop-slots');
+ function selectSlot(next){recipePreview=null;hovered=null;slot=next;selected=state.equipped[slot];demoMode.value=slot==='dash'?'dash':slot==='slash'?'slash':slot==='pointer'?'arrow':'story';demoKey='';itemFilter='all';filter.value='all';gridViewport.scrollTop=0;render();}
+ for(const group of SHOP_GROUPS){const b=button(group.label,()=>selectSlot(group.slots.includes(slot)?slot:group.slots[0]),'shop-group');b.dataset.group=group.id;prependIcon(b,group.icon);groupNav.append(b);}
+ for(const s of SLOTS){const b=button(SLOT_LABELS[s],()=>selectSlot(s));prependIcon(b,s==='slash'?'crescent':s==='dash'?'bolt':['pointer','radar','trajectory'].includes(s)?'target':s);b.dataset.slot=s;b.setAttribute('aria-label',SLOT_LABELS[s]);slotNav.append(b);}
+ const browse=el('div','shop-browse'),breadcrumb=el('span','shop-breadcrumb');
+ const filter=el('select','shop-filter');filter.setAttribute('aria-label','Item availability');
+ for(const [value,label]of [['all','All items'],['owned','Owned'],['affordable','Can afford'],['challenge','Challenges']]){const o=el('option','',label);o.value=value;filter.append(o);}
+ filter.onchange=()=>{itemFilter=filter.value;render();};browse.append(breadcrumb,filter);root.querySelector('.custom-detail').after(browse);
+
  for(const mode of ['slice','aim','dash','bounce','hit']){const b=button(mode.toUpperCase(),()=>{clearDrag();action=mode;openedAt=performance.now();scene.reset();updateModes();});prependIcon(b,{slice:'blade',aim:'target',dash:'bolt',bounce:'bank',hit:'shield'}[mode]);b.dataset.action=mode;root.querySelector('.custom-actions').append(b);}
  function updateModes(){for(const b of root.querySelectorAll('[data-action]'))b.setAttribute('aria-pressed',String(b.dataset.action===action));}
  const presets=root.querySelector('.custom-presets');
@@ -77,18 +90,23 @@ export function createCustomize({storage,unlimited=false,wallet,ownedParts,purch
   const savedScroll=root.querySelector('.custom-grid').scrollTop;
   for(const b of destinations.children)b.setAttribute('aria-pressed',String(b.classList.contains('destination-'+root.dataset.section)));
   const eq=previewBuild(),palette=corePalette(eq.core);renderedEquipment=eq;root.dataset.motion=String(motion());root.style.setProperty('--core',palette.primary);root.style.setProperty('--core-secondary',palette.secondary);root.querySelector('.custom-wallet').textContent=unlimited?'∞ SANDBOX CREDITS':`${wallet().toLocaleString()} CREDITS`;prependIcon(root.querySelector('.custom-wallet'),'coin');
-  for(const b of root.querySelectorAll('[data-slot]'))b.setAttribute('aria-pressed',String(b.dataset.slot===slot));
+  const group=shopGroup(slot);root.dataset.group=group.id;
+  for(const b of groupNav.children)b.setAttribute('aria-pressed',String(b.dataset.group===group.id));
+  for(const b of slotNav.children){b.hidden=!group.slots.includes(b.dataset.slot);b.setAttribute('aria-pressed',String(b.dataset.slot===slot));}
+  breadcrumb.textContent=`${group.label} / ${SLOT_LABELS[slot]} · ${ITEMS.filter(i=>i.slot===slot&&state.owned.includes(i.id)).length}/${ITEMS.filter(i=>i.slot===slot).length} owned`;
+
   const trying=!!recipePreview||selected!==state.equipped[slot];root.dataset.preview=String(trying);root.querySelector('.custom-lab-label b').textContent=trying?'FREE PREVIEW':'YOUR EQUIPPED BUILD';root.querySelector('.custom-note').textContent=trying?'Trying a part is free. Buy to own it, then Equip to use it.':'Tap to cut. Pull back to launch forward. Your equipped parts are saved.';
   discoveryNotice.textContent=lastDiscovery?`DISCOVERED / ${lastDiscovery}`:'';discoveryNotice.hidden=!lastDiscovery;
   const sword=swordProfile(eq);root.querySelector('.custom-hybrid').textContent=`${sword.tier.toUpperCase()} / ${sword.name} · ${sword.buildTitle}`;root.querySelector('.core-signature').textContent=`${eq.core.toUpperCase()} / CORE BLOODLINE`;
   root.querySelector('.custom-lab-label span').textContent=buildReadout(eq).label;root.dataset.sword=sword.family;root.dataset.tier=sword.tier;
   renderPills(eq);updateModes();for(const b of presets.querySelectorAll('[data-preset]')){b.setAttribute('aria-pressed',String(Number(b.dataset.preset)===selectedPreset));b.dataset.filled=String(!!state.presets[Number(b.dataset.preset)]);}
   const grid=root.querySelector('.custom-grid');grid.replaceChildren();cards=[];
-  for(const it of ITEMS.filter(x=>x.slot===slot)){
+  for(const it of shopItems(slot,{owned:state.owned,wallet:wallet(),filter:itemFilter})){
    const b=button('',()=>{recipePreview=null;lastDiscovery='';selected=it.id;snapTo();render();inspect(it);root.querySelector(`[data-item="${it.id}"]`)?.focus({preventScroll:true});},'custom-card');b.dataset.item=it.id;b.setAttribute('aria-pressed',String(selected===it.id));b.setAttribute('aria-label',`${it.name}, ${state.owned.includes(it.id)?'owned':it.price===null?'challenge locked':it.price+' CREDITS'}`);
-   const canvas=el('canvas');canvas.width=300;canvas.height=184;const label=el('div','card-caption');label.append(el('strong','',it.name),el('small','power-card-tag',powerReadout(it).short),el('span','',state.equipped[slot]===it.id?'✓ EQUIPPED':state.owned.includes(it.id)?'OWNED':it.price===null?'CHALLENGE':`${it.price} CREDITS`));const role=storyRole(it),badge=el('span','part-role');badge.append(iconNode(role.icon));badge.title=role.label+(role.cosmetic?' · No combat change':'');badge.setAttribute('aria-label',badge.title);b.append(canvas,label,badge);grid.append(b);
-   const entry={button:b,canvas,eq:normalizeEquipment({...state.equipped,[slot]:it.id}),slot,id:it.id,started:0,lastStory:null};cards.push(entry);b.onpointerenter=()=>{hovered=it.id;entry.started=performance.now();inspect(it);};b.onpointerleave=()=>{entry.started=0;hovered=null;inspect();};b.onblur=()=>{entry.started=0;hovered=null;};b.onfocus=()=>{hovered=it.id;entry.started=performance.now();inspect(it);};drawLabCard(canvas.getContext('2d'),300,184,entry.eq,slot,18,selected===it.id,false);
+   const canvas=el('canvas');canvas.width=300;canvas.height=184;const label=el('div','card-caption');label.append(el('strong','',it.name),el('small','power-card-tag',powerReadout(it).short),el('span','',state.equipped[slot]===it.id?'✓ EQUIPPED':state.owned.includes(it.id)?'OWNED':it.price===null?'CHALLENGE':`${it.price} CREDITS`));const category=classifyItem(it);label.append(el('small','item-class',category.label+' · '+category.trigger));const role=storyRole(it),badge=el('span','part-role');badge.append(iconNode(role.icon));badge.title=role.label+(role.cosmetic?' · No combat change':'');badge.setAttribute('aria-label',badge.title);b.append(canvas,label,badge);grid.append(b);
+   const entry={button:b,canvas,eq:normalizeEquipment({...state.equipped,[slot]:it.id}),slot,id:it.id,started:0,lastStory:null};cards.push(entry);b.onpointerenter=()=>{hovered=it.id;entry.started=performance.now();inspect(it);};b.onpointerleave=()=>{entry.started=0;hovered=null;inspect();};b.onblur=()=>{entry.started=0;hovered=null;};b.onfocus=()=>{hovered=it.id;entry.started=performance.now();inspect(it);};thumbBake.paint(canvas.getContext('2d'),JSON.stringify(entry.eq)+':'+slot,300,184,c=>drawLabCard(c,300,184,entry.eq,slot,18,false,false));
   }
+  if(!grid.children.length)grid.append(el('p','shop-empty','No items in this filter. Choose All items to see this slot.'));
   const it=ITEMS.find(x=>x.id===selected),detail=root.querySelector('.custom-detail'),power=powerReadout(it);detail.replaceChildren();
   const copy=el('div','detail-copy');
   if(recipePreview){
@@ -112,7 +130,7 @@ export function createCustomize({storage,unlimited=false,wallet,ownedParts,purch
   }
   root.querySelector('.return-to-build')?.remove();
   if(root.dataset.section==='parts'&&pendingBuild){const back=button(`BACK TO ${pendingBuild.title.toUpperCase()}`,()=>{recipePreview=pendingBuild;root.dataset.section='parts';root.dataset.pane='shop';render();},'return-to-build');root.querySelector('.custom-detail').append(back);}
-  root.querySelector('.inspection-tag').textContent='PART';inspect();
+  root.querySelector('.inspection-tag').textContent='PART';inspect();grid.scrollTop=savedScroll;lastPaint=-Infinity;
  }
  let codexFilter='all';
  const filters=el('nav','build-filters');filters.setAttribute('aria-label','Discovery filters');for(const [id,label]of [['all','ALL'],['owned','DISCOVERED']]){const b=button(label,()=>{codexFilter=id;openCodex();});b.dataset.filter=id;filters.append(b);}codex.querySelector('header').after(filters);
@@ -128,8 +146,8 @@ export function createCustomize({storage,unlimited=false,wallet,ownedParts,purch
  }if(!grid.children.length)grid.append(el('p','discovery-empty','No discoveries yet. Mix and equip parts, then test your creature. Any mutation you find will appear here.'));codex.showModal();}
  root.querySelector('.custom-recipes').textContent='YOUR DISCOVERIES';root.querySelector('.custom-recipes').onclick=openCodex;root.querySelector('.custom-hybrid').onclick=()=>swordDesk.open(previewBuild(),state.equipped);
  const gridViewport=root.querySelector('.custom-grid');
- function sizeCards(){const h=gridViewport.clientHeight;if(h>0)gridViewport.style.setProperty('--card-height',`${Math.floor((h-18)/2)}px`);}
- new ResizeObserver(sizeCards).observe(gridViewport);
+ function sizeCards(){const h=gridViewport.clientHeight;if(h>0)gridViewport.style.setProperty('--card-height',`${Math.max(130,Math.floor((h-18)/2))}px`);}
+ const sizeObserver=new ResizeObserver(sizeCards);sizeObserver.observe(gridViewport);
  const canvas=root.querySelector('.custom-lab canvas');
  function point(e){return labPoint(canvas.getBoundingClientRect(),e.clientX,e.clientY);}
  function clearDrag(){const id=activePointer;activePointer=null;press=null;scene.state.drag=null;if(id!==null&&canvas.hasPointerCapture(id))canvas.releasePointerCapture(id);}
@@ -142,8 +160,11 @@ export function createCustomize({storage,unlimited=false,wallet,ownedParts,purch
  canvas.onlostpointercapture=e=>{if(e.pointerId===activePointer)clearDrag();};
  canvas.onkeydown=e=>{if(e.code==='Space'){e.preventDefault();if(e.repeat)return;clearDrag();adoptAutoPose();scene.fire(scene.state.dummy.x,scene.state.dummy.y);}};
  function frame(now){
+  raf=0;if(disposed||(!root.open&&!codex.open&&!swordDesk.isOpen)){lastTime=0;return;}
+  raf=requestAnimationFrame(frame);if(document.hidden){lastTime=0;return;}
+  if(now-lastPaint<1000/30)return;lastPaint=now;
   const dt=Math.min(100,now-(lastTime||now));lastTime=now;frameNo++;
-  if(root.open&&!codex.open&&!swordDesk.isOpen){accumulator+=dt;while(accumulator>=16.667){scene.tick();accumulator-=16.667;}gaze.x+=(cursor.x-gaze.x)*.1;gaze.y+=(cursor.y-gaze.y)*.1;
+  if(root.open&&!codex.open&&!swordDesk.isOpen){if(root.dataset.tools==='on'||scene.state.manual||scene.state.drag){accumulator+=dt;while(accumulator>=16.667){scene.tick();accumulator-=16.667;}}gaze.x+=(cursor.x-gaze.x)*.1;gaze.y+=(cursor.y-gaze.y)*.1;
    canvas.dataset.hits=String(scene.state.hits);canvas.dataset.testMode=scene.state.drag?'aiming':scene.state.manual?'manual':action;canvas.dataset.playerX=String(scene.state.x);canvas.dataset.playerY=String(scene.state.y);root.dataset.motion=String(motion());
    const storyIdle=root.dataset.tools!=='on'&&!scene.state.manual&&!scene.state.drag;const t=motion()?(now-openedAt)/16.667:0;if(!storyIdle)drawLabScene(canvas.getContext('2d'),renderedEquipment,t,action,scene,{cursor:gaze,motion:motion(),forgeAt,now,slot,fusionElapsed:now-fusionAt,sword:swordProfile(renderedEquipment),pressOrigin:press?{...labPoint(canvas.getBoundingClientRect(),press.x,press.y),power:Math.min(1,Math.hypot(press.toX-press.x,press.toY-press.y)/150),cancel:readGesture(press).kind==='cancel'}:null});
    if(storyIdle){
@@ -151,16 +172,15 @@ export function createCustomize({storage,unlimited=false,wallet,ownedParts,purch
     const it=ITEMS.find(it=>it.id===id&&it.slot===slot);demoName.textContent=it?.name||'YOUR BUILD';demoPlay.disabled=!motion()||demoMode.value==='arrow';demoState.textContent=demoMode.value==='arrow'?'STATIC PREVIEW':!motion()?'STILL / REDUCED':demoPlaying?'LOOPING DEMO':'PAUSED';
     const frame=shopDemoFrame(demoPlaying?now-demoStarted:demoHeld,motion());
     const storyEquipment=normalizeEquipment({...renderedEquipment,[slot]:id});root.dataset.previewElement=dashElement(storyEquipment,swordProfile(storyEquipment));
-    drawShopDemo(canvas.getContext('2d'),640,400,{id,slot,equipment:storyEquipment,sword:swordProfile(storyEquipment),time:frame.time,motion:motion(),veil:frame.veil,demoMode:demoMode.value});
-    if(PART_PERKS[id])drawPartPerkDemo(canvas.getContext('2d'),640,400,{...PART_PERKS[id],time:frame.time,motion:motion()});
+    if(demoMode.value==='story')drawShopItemStudy(canvas.getContext('2d'),640,400,{study:shopStudy(it,demoPlaying?now-demoStarted:demoHeld,motion()),equipment:storyEquipment,sword:swordProfile(storyEquipment)});
+    else drawShopDemo(canvas.getContext('2d'),640,400,{id,slot,equipment:storyEquipment,sword:swordProfile(storyEquipment),time:frame.time,motion:motion(),veil:frame.veil,demoMode:demoMode.value});
    }
 
 
 
   }
   if(codex.open&&frameNo%2===0)for(const entry of codexCards){const bounds=entry.canvas.getBoundingClientRect(),viewport=codex.getBoundingClientRect();if(bounds.bottom<viewport.top||bounds.top>viewport.bottom)continue;const c=entry.canvas.getContext('2d');drawShopCardArt(c,320,190,{equipment:entry.eq,slot:'body',time:motion()?now/16.667:0,selected:entry.known,motion:motion(),locked:!entry.known,sword:swordProfile(entry.eq)});}
-  requestAnimationFrame(frame);
  }
- requestAnimationFrame(frame);
- return {unlock(id){if(!['oni','glass'].includes(id)||state.owned.includes(id))return false;state.owned.push(id);save();return true;},open(){recipePreview=null;pendingBuild=null;root.dataset.section='parts';root.dataset.pane='shop';root.dataset.tools='off';previewToggle.textContent='SHOW PRACTICE CONTROLS';previewToggle.setAttribute('aria-expanded','false');lastDiscovery='';sync();selected=state.equipped[slot];demoMode.value=slot==='pointer'?'arrow':slot==='dash'?'dash':slot==='slash'?'slash':'story';openedAt=performance.now();demoStarted=openedAt;demoKey='';demoPlaying=true;demoPlay.textContent='PAUSE';demoPlay.setAttribute('aria-pressed','true');scene.reset();render();resetInput();root.showModal();},snapshot(){sync();return normalizeEquipment(state.equipped,state.owned);},get isOpen(){return root.open||codex.open||swordDesk.isOpen;}};
+ raf=requestAnimationFrame(frame);
+ return {dispose(){disposed=true;cancelAnimationFrame(raf);sizeObserver.disconnect();thumbBake.clear();swordDesk.dispose?.();for(const dialog of [root,codex,powerSheet]){if(dialog.open)dialog.close();dialog.remove();}},unlock(id){if(!['oni','glass'].includes(id)||state.owned.includes(id))return false;state.owned.push(id);save();return true;},open(){recipePreview=null;pendingBuild=null;root.dataset.section='parts';root.dataset.pane='shop';root.dataset.tools='off';previewToggle.textContent='SHOW PRACTICE CONTROLS';previewToggle.setAttribute('aria-expanded','false');lastDiscovery='';sync();selected=state.equipped[slot];demoMode.value=slot==='pointer'?'arrow':slot==='dash'?'dash':slot==='slash'?'slash':'story';openedAt=performance.now();demoStarted=openedAt;demoKey='';demoPlaying=true;demoPlay.textContent='PAUSE';demoPlay.setAttribute('aria-pressed','true');scene.reset();render();resetInput();root.showModal();if(!raf)raf=requestAnimationFrame(frame);},snapshot(){sync();return normalizeEquipment(state.equipped,state.owned);},get isOpen(){return root.open||codex.open||swordDesk.isOpen;}};
 }

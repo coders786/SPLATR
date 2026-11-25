@@ -80,8 +80,10 @@ export function createSwordDesk({resetInput,motion=()=>true}){
   run.tick();age++;
   if(age>=PRACTICE_TICKS||run.combat.enemies.size===0){finished=true;dialog.dataset.status='complete';results[comparisonKey(loadout)]=observe();resultNotice.textContent=`Trial complete. ${trialReceipt(observe())}`;drawComparison();}
  }
+ let raf=0,disposed=false;
  function frame(now){
-  if(dialog.open&&run&&!document.hidden){const dt=Math.min(80,last?now-last:0);acc+=dt;while(acc>=1000/60){step();acc-=1000/60;}render();}last=now;requestAnimationFrame(frame);
- }requestAnimationFrame(frame);
- return{open(eq,current=eq){preview=normalizeEquipment(eq);baseline=normalizeEquipment(current);equipment=preview;loadout='preview';scenario='lane';auto=false;results={};scenarioSelect.value=scenario;loadoutSelect.value=loadout;rebuild();resetInput();dialog.showModal();render();},get isOpen(){return dialog.open;}};
+  raf=0;if(disposed||!dialog.open)return;
+  if(dialog.open&&run&&!document.hidden){const dt=Math.min(80,last?now-last:0);acc+=dt;while(acc>=1000/60){step();acc-=1000/60;}render();}last=now;raf=requestAnimationFrame(frame);
+ }
+ return{dispose(){disposed=true;cancelAnimationFrame(raf);clearPointer();run?.dispose();run=null;if(dialog.open)dialog.close();dialog.remove();},open(eq,current=eq){preview=normalizeEquipment(eq);baseline=normalizeEquipment(current);equipment=preview;loadout='preview';scenario='lane';auto=false;results={};scenarioSelect.value=scenario;loadoutSelect.value=loadout;rebuild();resetInput();dialog.showModal();last=0;acc=0;render();if(!raf)raf=requestAnimationFrame(frame);},get isOpen(){return dialog.open;}};
 }

@@ -10892,3 +10892,68 @@ export function drawDimensionImpact(c,w,h,{x=w*.5,y=h*.5,angle=-.5,age=0,major=f
  }
  }finally{c.restore();}
 }
+
+/** Bounded LRU raster bake. Callers supply a surface factory; the portable
+ * engine never reaches into the DOM. Cached pixels are explicitly released. */
+export function createArtBake({surface,maxEntries=20,maxPixels=1600000}={}){
+ const entries=new Map();let pixels=0;
+ const drop=key=>{const e=entries.get(key);if(!e)return;pixels-=e.w*e.h;e.canvas.width=e.canvas.height=1;entries.delete(key);};
+ return {
+  paint(c,key,w,h,draw){
+   if(!surface||w*h>maxPixels){draw(c);return false;}
+   let e=entries.get(key);
+   if(e&&(e.w!==w||e.h!==h)){drop(key);e=null;}
+   if(!e){
+    while(entries.size&&(entries.size>=maxEntries||pixels+w*h>maxPixels))drop(entries.keys().next().value);
+    const canvas=surface(w,h);if(!canvas){draw(c);return false;}canvas.width=w;canvas.height=h;const context=canvas.getContext('2d');
+    if(!context){draw(c);return false;}draw(context);e={canvas,w,h};entries.set(key,e);pixels+=w*h;
+   }else{entries.delete(key);entries.set(key,e);}
+   c.drawImage(e.canvas,0,0,w,h);return true;
+  },
+  clear(){for(const key of entries.keys())drop(key);},
+  stats:()=>({entries:entries.size,pixels}),
+ };
+}
+
+/** One-part study. The selected part is large and always visible. No collateral
+ * explosions, noisy tiny dummies, or new gameplay rules are invented here. */
+export function drawShopItemStudy(c,w,h,{study={},equipment={},sword=null}={}){
+ if(!c)return;
+ const {id='',slot='head',family='baseline',progress=0,phase='RESULT',motion=true,perk=null}=study;
+ if(slot==='radar'||slot==='trajectory'){drawSensorPreview(c,w,h,{slot,level:sensorTier(id,slot),time:progress*75,motion});return;}
+ if(slot==='pointer'){drawDragArrowPreview(c,w,h,{equipment,sword,power:.75});return;}
+ if(slot==='dash'){drawShopElementDash(c,w,h,{equipment,sword,time:progress*850,motion});return;}
+ if(slot==='slash'){drawShopElementSlash(c,w,h,{equipment,sword,time:progress*850,motion});return;}
+ c.save();try{
+ c.fillStyle='#14101e';c.fillRect(0,0,w,h);c.scale(w/480,h/300);
+ if(slot==='world')drawWorldBackdrop(c,480,300,id,motion?progress*70:0);
+ const act=phase==='READY'?0:progress,focus=family==='focus',bounce=family==='movement',hit=family==='defense';
+ const x=bounce?155+Math.sin(act*Math.PI)*70:150,y=focus?173-act*20:176;
+ c.strokeStyle='#51435f';c.lineWidth=2;c.beginPath();c.moveTo(34,235);c.lineTo(446,235);c.stroke();
+ if(bounce){c.fillStyle='#51435f';c.fillRect(262,74,7,162);}
+ const pose={aiming:focus,combo:family==='chain'?Math.round(act*5):0,overdrive:id==='blaze'&&act>.5,blink:1,bank:bounce?act:0};
+ // Calm, frontal close-up preserves the material, eyes and selected silhouette.
+ drawCubeHero(c,{x,y,radius:49,angle:bounce?-act*.15:0,time:motion?act*48:32,equipment,pose});
+ if(focus){
+  c.strokeStyle='#00f0ff';c.lineWidth=2;c.beginPath();c.arc(x,y,62,-Math.PI*.5,-Math.PI*.5+Math.PI*2*(.45+act*.5));c.stroke();
+ }else if(family==='chain'){
+  for(let i=0;i<4;i++){c.strokeStyle=i<Math.round(act*4)?'#dfff00':'#51435f';c.lineWidth=3;c.beginPath();c.ellipse(295+i*26,166,16,8,-.4,0,Math.PI*2);c.stroke();}
+ }else if(family==='score'){
+  c.fillStyle='#dfff00';c.font='bold 32px monospace';c.fillText(`+${perk?.value||0}%`,284,170);
+  c.font='12px monospace';c.fillStyle='#eee8f3';c.fillText('QUALIFYING SCORE',280,193);
+ }else if(hit){
+  foe(c,'fang',318-act*75,174,25,Math.PI,{hp:1});if(act>.6){c.strokeStyle='#00f0ff';c.lineWidth=3;c.beginPath();c.arc(x+9,y,62,-1.2,1.2);c.stroke();}
+ }else if(family==='combat'){
+  if(id==='coil'&&act>.5){c.strokeStyle='#00f0ff';c.lineWidth=3;c.beginPath();c.moveTo(x+40,y-20);c.lineTo(278,132);c.lineTo(265,161);c.lineTo(330,161);c.stroke();}
+  foe(c,'fang',335,170,26,0,{hp:1});
+ }
+ c.fillStyle='#a99bb7';c.font='12px monospace';c.fillText(phase==='READY'?'1  READY':phase==='TRIGGER'?'2  '+(study.trigger||'TRIGGER'):'3  RESULT',28,35);
+ c.fillStyle='#dfff00';c.font='bold 13px monospace';c.fillText((study.benefit||'BASELINE BUILD').slice(0,48),28,276);
+ // Perk delta gauges are intentionally labelled; this is not a combat replay.
+ if(perk&&(perk.stat==='focus'||perk.stat==='recovery'||perk.stat==='grace'||perk.stat==='blade')){
+  const label=perk.stat==='focus'?'AIM COST':perk.stat==='recovery'?'RECOVERY':perk.stat==='grace'?'CHAIN WINDOW':'BLADE WINDOW';
+  c.font='11px monospace';c.fillStyle='#eee8f3';c.fillText(label,280,102);
+  for(let i=0;i<2;i++){const delta=perk.stat==='focus'?-perk.value:perk.value;c.fillStyle=i?'#00f0ff':'#81728f';c.fillRect(280,116+i*25,(i?100+delta:100)*(.3+act*.7),10);c.fillText(i?`PART ${delta>0?'+':''}${delta}${['focus','recovery'].includes(perk.stat)?'%':' TICKS'}`:'BASE',280,113+i*25);}
+ }
+ }finally{c.restore();}
+}
