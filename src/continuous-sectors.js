@@ -10,6 +10,9 @@ import {upgradeOffers} from './upgrades.js';
 import {recommendWaveOffer} from './encounters.js';
 import {gainFracture,FRACTURE_PER_WAVE_CLEAR} from './fracture.js';
 import {LANDLORD_STORY,storyForWave,storyMomentForWave} from './story-arc.js';
+// CHUNK 3: the landlord's cadence and the live bonus goal are rules, not
+// director trivia — see flow.js for why each one is shaped the way it is.
+import {landlordDue,goalFor,goalProgress,goalPayout} from './flow.js';
 
 // The targets are Matter sensor shapes queried by the same forward blade ray
 // used for enemies. They are not proximity-triggered or timed objectives.
@@ -64,10 +67,68 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
   state.dimension=createDimensionField(wave.number-1);state.breakthrough=createBreakthrough(wave.number-1);
   wave.pace=createSpeedPace(wave.number);wave.cleanBanks=createCleanBanks();
   wave.startDamage=state.damageTaken||0;wave.startScore=state.score||0;wave.startCredits=state.killLedger?.credits||0;
-  emit('waveStart',{number:wave.number,total:wave.total});
+  // CHUNK 3: the goal's "since this sector started" baseline. Taken from the
+  // live counters, not assumed to be zero, because banks and crown kills are
+  // run-scoped totals that a previous sector already moved.
+  wave.startKills=state.kills||0;
+  wave.startBanks=wave.cleanBanks.total||0;
+  wave.startCrowns=state.killLedger?.rows?.crown?.kills||0;
+  wave.startTicks=wave.age||0;
+  wave.firstKillTick=-1;
+  // CHUNK 3: ONE LIVE BONUS GOAL PER SECTOR. Chosen from what the field can
+  // actually serve (no Crown, no crown goal) and never the same goal twice in a
+  // row. It is announced with the sector so the player can play toward it from
+  // the first cut rather than discovering it at the payout.
+  wave.goal=goalFor({number:wave.number,seed,hasCrown:[...combat.enemies.values()].some(e=>e.kind==='crown')});
+  wave.goalPaid=null;
+  emit('waveStart',{number:wave.number,total:wave.total,goal:wave.goal.id});
  }
  function startSector(){install();encounter();}
+ // CHUNK 3: the live goal's counters. Everything here already existed per
+ // sector (kills, banks, crowns); the goal is the first thing to READ them
+ // mid-fight instead of only at the receipt.
+ function goalMetrics(){
+  return {
+   kills:Math.max(0,(state.kills||0)-(wave.startKills||0)),
+   hits:Math.max(0,(state.damageTaken||0)-(wave.startDamage||0)),
+   banks:Math.max(0,(wave.cleanBanks?.total||0)-(wave.startBanks||0)),
+   crowns:Math.max(0,(state.killLedger?.rows?.crown?.kills||0)-(wave.startCrowns||0)),
+   paceHeld:!!wave.pace?.held,
+   overdrive:(state.overdriveBest||0)>0,
+   firstKillTicks:Number.isFinite(wave.firstKillTick)?wave.firstKillTick-wave.startTicks:-1,
+   ticks:Math.max(0,(wave.age||0)-(wave.startTicks||0)),
+  };
+ }
+ // Read by the HUD every frame: {goal, fraction, met, text}. Cheap and
+ // side-effect free so the presentation layer can call it as often as it likes.
+ function goalReadout(){
+  const m=goalMetrics(),p=goalProgress(wave.goal,m);
+  return {goal:wave.goal,fraction:p.fraction,met:p.met,value:p.value,target:p.target,line:p.met?`${wave.goal.label} ✓`:wave.goal.line};
+ }
+ // Pays the goal exactly once, at the clear boundary, beside the flawless and
+ // crown-pace payments rather than as a separate ceremony. Practice runs keep
+ // their habit of banking nothing.
+ function settleGoal(){
+  if(state.practice||!wave.goal||wave.goalPaid)return null;
+  const paid=goalPayout(wave.goal,goalMetrics());
+  wave.goalPaid=paid?paid.id:false;
+  if(!paid)return null;
+  gainFracture(state,paid.fracture,emit);
+  // The credit row goes through the same ledger shape every kill uses, so the
+  // receipt that itemises a run cannot be missing the one payment that was not
+  // a kill.
+  if(state.killLedger&&Number.isFinite(paid.credits)&&paid.credits>0){
+   const rows={...state.killLedger.rows},old=rows.goal||{kills:0,credits:0,points:0};
+   state.killLedger={...state.killLedger,credits:Math.min(10000,(state.killLedger.credits||0)+paid.credits),rows:{...rows,goal:{kills:old.kills,credits:old.credits+paid.credits,points:old.points}}};
+  }
+  if(Number.isFinite(paid.credits))state.score=(state.score||0)+paid.credits*25;
+  emit('goalPaid',{...paid,sector:wave.number});
+  return paid;
+ }
  function settleSectorReward(){
+  // The goal is settled even in practice (where it is a no-op) so the flag is
+  // set and a later real clear cannot re-pay the same sector's goal.
+  settleGoal();
   if(state.practice)return;
   const mods=state.upgradeModifiers||{},hits=Math.max(0,(state.damageTaken||0)-(wave.startDamage||0)),score=Math.max(0,(state.score||0)-(wave.startScore||0));
   if(hits===0){
@@ -143,6 +204,9 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
    story.lockBursts=story.lockBursts.filter(burst=>burst.age<30);
   }
   wave.age+=t;wave.remaining=combat.enemies.size;
+  // CHUNK 3: a speed goal needs a timestamp, and the director is the only
+  // place that knows when the sector's clock started.
+  if(wave.firstKillTick<0&&(state.kills||0)>(wave.startKills||0))wave.firstKillTick=wave.age;
   const storyActive=active&&wave.entry<=0&&!state.stop&&!state.cutscene;
   // The first real Pulse is the only authored mid-wave set piece. The guard is
   // run-scoped, not wave-scoped, so a later sector cannot replay it.
@@ -191,7 +255,15 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
     }
     const seal=story.seal;seal.ready=targets.every(x=>x.broken);if(seal.ready&&sealBody)removeSeal();
     // CHUNK 4: a torn arena does not let the seam open. The Monolith answers.
-    if(seal.ready&&state.arenaMode==='SHATTERED'&&!state.monolith){
+    // CHUNK 3: and it answers on ITS OWN cadence, not only when the world has
+    // already torn. The old rule required `arenaMode==='SHATTERED'`, which tied
+    // the boss to a different system's progress bar — a player who never filled
+    // the fracture never met the landlord at all, and the fight the game is
+    // built around could be missed entirely in a short session. `landlordDue`
+    // raises it on sectors 3, 7, 11… regardless; a torn arena still brings it
+    // early, which is the one thing a tear is for.
+    const landlord = landlordDue(wave.number) || state.arenaMode==='SHATTERED';
+    if(seal.ready&&landlord&&!state.monolith){
     // Ordinary enemies still on the field are swept when the Monolith seats;
     // the seam is not for them.
     for(const e of [...combat.enemies.values()])combat.remove(e);combat.hazards.length=0;combat.links.length=0;
@@ -227,5 +299,5 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
   }
   lastPosition={x:p.x,y:p.y};
  }
- return {tick,cells,choose,setPracticeLinks:()=>false,skipBreach:()=>false,dispose(){removeSeal();targets=[];cells.clear();}};
+ return {tick,cells,choose,goal:goalReadout,setPracticeLinks:()=>false,skipBreach:()=>false,dispose(){removeSeal();targets=[];cells.clear();}};
 }

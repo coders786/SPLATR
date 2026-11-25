@@ -110,6 +110,16 @@ export function createQuestUI({
     pipButton.setAttribute('aria-expanded', String(!!allowed));
   }
   pipButton.addEventListener('click', () => peek(drawer.hidden));
+  // CHUNK 3: the bonus goal is the one payment in a run that is NOT a kill, so
+  // it cannot ride the kill receipt. It gets the same toast the skill rows use,
+  // because that is the toast the player has already learned to read.
+  function goalToast(text) {
+    toast.textContent = text;
+    toast.hidden = false;
+    lastToast = performance.now();
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.hidden = true; }, 1600);
+  }
   let qPressedAt = null;
   document.addEventListener('keydown', (e) => {
     if (
@@ -507,6 +517,10 @@ export function createQuestUI({
     },
     event(type, d) {
       const run = getRun();
+      // CHUNK 3: the bonus goal is announced even in a run with no quest
+      // ticket (a practice or dev session has none), so this check sits before
+      // the ticket gate. It is a run event, not a quest event.
+      if (type === 'goalPaid' && d) goalToast(`BONUS ${d.label} ✓ +${d.credits} CREDITS`);
       if (!ticket || !run || run.state.practice || (type === 'over' && death)) return;
       liveKills.textContent=`KILLS ${run.state.kills||0}`;
       if(type==='waveClear'||type==='dimensionBreak'){

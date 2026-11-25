@@ -20,6 +20,10 @@ function comparisonBars(copy){
 }
 export function createWaveUI({getRun,resetInput,motion=()=>!matchMedia('(prefers-reduced-motion: reduce)').matches}){
  const hud=document.createElement('section');hud.className='wave-hud';hud.hidden=true;hud.setAttribute('aria-label','Wave progress');document.querySelector('#game').append(hud);
+ // CHUNK 3: the sector's bonus goal. Built once, moved back into the HUD each
+ // frame (the HUD is a replaceChildren target, so a child it owned would be
+ // wiped), and hidden whenever there is no goal to show.
+ const goalChip=document.createElement('div');goalChip.className='wave-goal';goalChip.hidden=true;goalChip.setAttribute('role','status');
  // CHUNK 6B: THE LANDLORD'S BAR — Minecraft parity, bottom center. Five
  // cells, one per plate; a pure projection of the boss's plates, read once a
  // frame. Appended to #game (not inside the rebuilt .wave-hud) so the wipe can
@@ -103,7 +107,47 @@ const paceAction=pace.querySelector('.pace-action'),paceSpeed=pace.querySelector
   // CHUNK 1: +N WAVE BONUS is folded into the sub line so the multiplier
   // feels banked, not hidden.
   const waveBonus=Math.min(8,run.state.waveMult||0);if(waveBonus>0)sub=`${sub?sub+' / ':''}+${waveBonus} WAVE`;
+  // CHUNK 3: the goal chip is a live readout, so its own contents are NOT part
+  // of the receipt key — but the chip must survive the replaceChildren below,
+  // which wipes every child of the HUD. It is re-appended at the end of this
+  // block and again after the rebuild, so it is always the last child.
   const receiptKey=text+sub+(activeBuff?.id||'')+run.state.waveShield;if(hud.dataset.receipt!==receiptKey){hud.dataset.receipt=receiptKey;hud.replaceChildren();const main=document.createElement('strong'),style=document.createElement('span');main.textContent=text;style.textContent=sub;style.hidden=!sub;hud.append(main,style);if(activeBuff){const badge=document.createElement('div');badge.className='active-wave-upgrade';badge.dataset.buff=activeBuff.id;badge.dataset.spent=String(activeBuff.shield&&!run.state.waveShield);badge.setAttribute('aria-label',`${activeCopy.accessibleName}: ${activeCopy.stat}.${activeCopy.cost?' Cost: '+activeCopy.cost+'.':''} This wave only.${activeBuff.shield&&!run.state.waveShield?' Shield spent.':''}`);badge.title=badge.getAttribute('aria-label');badge.append(iconNode(BUFF_ICONS[activeBuff.id]||'blade'));const stat=document.createElement('b');const label=document.createElement('span');label.className='active-buff-name';label.textContent=activeCopy.name;if(activeCopy.lucky)label.append(luckyStamp(activeCopy));badge.dataset.lucky=String(activeCopy.lucky);badge.append(label);stat.textContent=activeBuff.shield?(run.state.waveShield?'BLOCK ×'+run.state.waveShield+(activeBuff.speed?' / DASH −10%':''):'SPENT'):activeCopy.stat;badge.append(stat);hud.append(badge);}}
+
+  // ── CHUNK 3: THE LIVE BONUS GOAL ────────────────────────────────────────
+  // One chip, one line, in the HUD the player is already reading. It is a
+  // DIRECTIVE ("BREAK A CROWN"), not a scoreboard, and it carries its own
+  // progress so the sector's objective is never a thing you discover on the
+  // receipt. Nothing about the goal is stored here: every frame reads the
+  // director, which owns the counters.
+  //
+  // ORDER MATTERS: this block sits AFTER the receipt's replaceChildren above.
+  // The receipt wipes every child of the HUD when the wave text changes (any
+  // body leaving the field), so a chip appended before it would be erased on
+  // exactly the frames the player is winning. Appending after the rebuild is
+  // what makes the chip survive — there is no second re-append hiding a bug
+  // here, and test/chunk3-flow.test.js pins it by killing a body.
+  {
+   const readout=run.waveGoal?run.waveGoal():null;
+   const show=!!readout&&!!readout.goal&&wave.phase==='combat';
+   goalChip.hidden=!show;
+   if(show){
+    const key=`${readout.goal.id}/${readout.met}/${readout.value}`;
+    if(goalChip.dataset.key!==key){
+     goalChip.dataset.key=key;
+     goalChip.dataset.met=String(!!readout.met);
+     goalChip.replaceChildren();
+     const label=document.createElement('span');label.textContent='BONUS';
+     const body=document.createElement('b');body.textContent=readout.met?`${readout.goal.label} ✓`:readout.goal.line;
+     goalChip.append(label,body);
+     if(!readout.met&&!readout.goal.bool&&!readout.goal.lower){
+      const fill=document.createElement('i');
+      fill.style.setProperty('--fill',`${Math.round((readout.fraction||0)*100)}%`);
+      goalChip.append(fill);
+     }
+    }
+    if(goalChip.parentNode!==hud)hud.append(goalChip);
+   }else if(goalChip.parentNode)goalChip.remove();
+  }
 
   const local=(wave.number-1)%5;
   cycle.setAttribute('aria-label',`Dimension ${Math.floor((wave.number-1)/5)+1}. Wave ${local+1} of 5. Fifth wave is the break wave.`);

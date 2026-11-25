@@ -7,6 +7,10 @@ import {swordProfile,effectiveSword,swordAttack,advanceSwordAttacks} from './swo
 import {WAVE_ARENA,createWaveDirector} from './waves.js';
 import { createFractureState, gainFracture, consumeFracture, FRACTURE_PER_KILL, FRACTURE_MAX, FRACTURE_PER_MONOLITH } from './fracture.js';
 import {createContinuousDirector} from './continuous-sectors.js';
+// CHUNK 3: OVERDRIVE's length is a named rule now, not a literal at the two
+// places that happened to agree on it (setting it here, drawing its bar in
+// main.js). 5s is the doc's ask and the HUD reads the same constant.
+import {OVERDRIVE} from './flow.js';
 import { MOVEMENT, flightEnvelope } from './movement-model.js';
 import { EQUIPMENT_LIMITS, nearestEquipmentTarget, aimPull, horizontalCutWidth } from './equipment-combat.js';
 import { normalizeEquipment, equipmentRules } from './equipment.js';
@@ -640,6 +644,9 @@ export function createRun(
     hitAge: -1,
     stop: 0,
     drive: 0,
+    /** CHUNK 3: highest tick count Overdrive has ever been at this run — the
+     *  bonus goal 'reach Overdrive' reads it, and it cannot be re-earned. */
+    overdriveBest: 0,
     elapsed: 0,
     peak: 0,
     band: 1,
@@ -1414,7 +1421,10 @@ export function createRun(
     s.chainMax = s.chainTime;
     if (s.chain % rules.overdriveKills === 0) {
       const fresh = s.drive <= 0;
-      s.drive = 175;
+      s.drive = OVERDRIVE.ticks;
+      // Recorded at the grant, not after the first tick of drain, so "reached
+      // Overdrive" means the full bank was actually awarded.
+      if (s.drive > s.overdriveBest) s.overdriveBest = s.drive;
       if (fresh) emit('drive', {});
     }
     // CHUNK 1: +1 per cleared wave, additive with the chain ladder and capped
@@ -2607,6 +2617,7 @@ export function createRun(
       if (!s.cutGrace) s.cutGraceFrom = null;
     }
     s.invul = Math.max(0, s.invul - dt);
+    if (s.drive > s.overdriveBest) s.overdriveBest = s.drive;
     s.drive = Math.max(0, s.drive - dt);
     recharge(world.focusScale);
     if (s.opening) {
@@ -2872,6 +2883,9 @@ export function createRun(
     skipOpening: () => enterField(false),
     retire,
     chooseWaveBuff:id=>waveDirector?.choose(id)||false,
+    // CHUNK 3: the live bonus goal, read by the HUD every frame and by the
+    // tests. Null in every mode that has no continuous director.
+    waveGoal:()=>waveDirector?.goal?waveDirector.goal():null,
     setPracticeLinks:links=>waveDirector?.setPracticeLinks(links)||false,
     skipBreach:()=>waveDirector?.skipBreach()||false,
     dispose() {

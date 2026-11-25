@@ -11,6 +11,7 @@ import {healthSegments,damageFeedback,dmgLabel,bearingWord,SAFE_BLINK_TICKS,HIT_
 import {sliceStates,sweepGeometry} from './slice-safe.js';
 import {lawHintVisible} from './color-law.js';
 import {reticleFor} from './pointer-reticle.js';
+import {OVERDRIVE} from './flow.js';
 import {bossChargeReadout,shortDamageLine,damageBearing,hintVisible} from './hud-copy.js';
 import {combatStatus} from './combat-status.js';
 import {runCoaching} from './run-coach.js';
@@ -391,6 +392,9 @@ function event(type, d) {
     case 'breachOpen': input?.reset();audio.zone();break;
     case 'breachReady': audio.lock();break;
     case 'hyperSurge': audio.strike('drive');break;
+    // CHUNK 3: the bonus goal's payout is a real beat, not a ledger row — it is
+    // the one payment in a sector that arrives without a kill to punctuate it.
+    case 'goalPaid': audio.lock();break;
     case 'sonicBank': audio.strike('parry');break;
     case 'breachContact': audio.seamHit();break;
     case 'dimensionBreak': if(!run?.state.narrative)input?.reset();audio.shatter();break;
@@ -1189,9 +1193,11 @@ function updateHUD() {
   }
   $('drive').hidden = !!s.opening || s.drive <= 0;
   // Overdrive's fill is a ::after driven by `--v`, so the bar and every other
-  // continuous meter share one transform. Clamped: 175 is the bank it is
-  // filled from, and a stale 190 would draw past the end of its own track.
-  $('drive').style.setProperty('--v', Math.min(1, Math.max(0, s.drive / 175)).toFixed(3));
+  // continuous meter share one transform. Clamped: OVERDRIVE.ticks is the
+  // bank it is filled from, and a stale larger value would draw past the end
+  // of its own track. (CHUNK 3: this divisor used to be the literal 175 in two
+  // files; the constant is now the only one.)
+  $('drive').style.setProperty('--v', Math.min(1, Math.max(0, s.drive / OVERDRIVE.ticks)).toFixed(3));
   // The chain bar is a share of the window THIS chain was given, not of a
   // constant: the window shrinks as the chain grows (run.js: chainWindow), so
   // a fixed divisor drew a full bar when only a third of the window remained.
