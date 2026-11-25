@@ -2975,3 +2975,18 @@ body:has(#panel[open]) #hud {
 .round-receipt{padding:8px 0;border-top:1px solid #51425f;margin:6px 0}
 .round-receipt>.round-payout{display:block;color:#dfff00;font-size:18px}
 @media(max-height:500px){.part-benefit{font-size:10px;margin:4px 0}.round-receipt{padding:4px 0;margin:3px 0}.round-receipt>.round-payout{font-size:14px}}
+
+/* The quest-free debrief keeps both exit actions on screen, including 640x360. */
+#result-page .bank{display:flex;flex-direction:column;min-width:0;gap:6px}
+#result-page .bank>.choice{flex:none;margin:0}
+.round-receipt>.round-payout{background:#14101e;padding:6px 8px;color:#dfff00}
+@media(max-height:500px){
+ #result-page .bank{gap:4px}
+ #result-page .result-stats{margin:0;padding:4px 0}
+ #result-page .fracture-result{margin:0;padding:5px 7px}
+ #result-page .fracture-result-head{margin-bottom:3px}
+ #result-page .fracture-result-foot{margin-top:3px}
+ #result-page .round-receipt{margin:0;padding:3px 0}
+ #result-page .round-receipt>.round-payout{padding:3px 6px}
+ #panel #result-page .bank>.choice{min-height:32px;padding:6px;font-size:13px}
+}

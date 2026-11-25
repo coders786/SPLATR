@@ -7233,6 +7233,7 @@ function createRenderer(c, viewport) {
   const trail = [], shards = [], pops = [], beams = [], imprints = [], sparks = [];
   const dashDust = [];
   const wardBreaks=[],contactBursts=[];let cutExitSource=null;
+  const dimensionImpact = createDimensionImpact();
   // CHUNK 1: view-time payloads owned by the shell (main.js): the screen-space
   // aim ring and the "what hit me" reaction. Never read from the simulation.
   let hitFeedbackView = null;
@@ -7267,6 +7268,7 @@ function createRenderer(c, viewport) {
     c.lineJoin = "miter";
   }
   function reset(seed, room = false) {
+    dimensionImpact.reset();
     scene = null;
     sceneTicks = 0;
     facing = openingFacing(seed);
@@ -7282,6 +7284,7 @@ function createRenderer(c, viewport) {
     dashBurstAt = -1; dashBurstSwing = null;
   }
   function event(type, d, motion) {
+    dimensionImpact.event(type,d,motion && shakeLevel !== 'off');
     if(['cut','armor'].includes(type)&&!d.secondary&&d.entityId!=null)cutExitSource={id:d.entityId,x:d.x,y:d.y};
     if(["cut","armor","hurt","break","waveBlock"].includes(type)){contactBursts.push({x:d.x,y:d.y,type,kind:d.kind,r:d.r,cut:d.cut,hpBefore:d.hpBefore,hp:d.hp,fromShear:d.fromShear,entityId:d.entityId,sword:d.sword,equipment:d.equipment,upgrade:d.upgrade,armorRemoved:d.armorRemoved,secondary:d.secondary,contact:d.contact||null,attack:d.attack||null,life:type==="break"?27:18});if(contactBursts.length>12)contactBursts.shift();}
     if(type==="waveBlock"){wardBreaks.push({x:d.x,y:d.y,life:24,contact:d.contact,equipment:d.equipment,sword:d.sword});if(wardBreaks.length>4)wardBreaks.shift();return;}
@@ -7375,6 +7378,7 @@ function createRenderer(c, viewport) {
   const hudGutter = () => viewport.gutter ?? 20;
   function tick(run, motion) {
     const { state: s, world } = run;
+    dimensionImpact.tick(motion && shakeLevel !== 'off');
     syncScene(run, s.story ? run.nearest() : null);
     if (scene) sceneTicks++;
     frameRun(camera, run, motion);
@@ -9545,6 +9549,13 @@ function createRenderer(c, viewport) {
     c.save();
     c.setTransform(viewport.width / w, 0, 0, viewport.height / h, 0, 0);
     drawSpine(c, w, h, s, motion, time);
+    const fractureImpact = dimensionImpact.snapshot();
+    if(fractureImpact&&!s.opening&&!s.visualTutorial)drawDimensionImpact(c,w,h,{
+      ...fractureImpact,
+      x:fractureImpact.x===null?w*.5:(fractureImpact.x-v.x)*v.scale,
+      y:fractureImpact.y===null?h*.5:(fractureImpact.y-v.y)*v.scale,
+      motion:motion&&shakeLevel!=='off',low:shakeLevel==='low',
+    });
     drawCutsceneOverlay(c, w, h, s, v, p, time, motion);
     c.restore();
     // CHUNK 1: the two pieces of aim/damage feedback that belong in SCREEN
@@ -9579,7 +9590,7 @@ function createRenderer(c, viewport) {
     setAimFeedback,
     // Read-only hooks for the headless camera checks.
     effectState() {
-      return { ghosts: ghosts.size, trail: trail.length, beams: beams.length };
+      return { ghosts: ghosts.size, trail: trail.length, beams: beams.length, dimensionImpact:dimensionImpact.snapshot() };
     },
     mapFade() {
       return mapOpacity;
@@ -9594,6 +9605,7 @@ function createRenderer(c, viewport) {
       };
     },
     field(origin, side) {
+      dimensionImpact.reset();
       camera.reset(origin, side);
       lastView = camera.view(1);
       trail.length = 0;
@@ -10815,5 +10827,68 @@ export function drawPartPerkDemo(c,w,h,{stat='',value=0,chip='',time=0,motion=tr
  const max=Math.max(100,next);
  c.save();try{c.fillStyle='#14101ef2';c.fillRect(14,h-94,w-28,80);c.font='bold 12px monospace';c.fillStyle='#00f0ff';c.fillText(labels[stat]||'QUALIFYING KILL SCORE',26,h-72);
  for(const [i,name,n,color] of [[0,'BASE',base,'#9f93ad'],[1,'PART',next,'#dfff00']]){const y=h-54+i*23;c.fillStyle=color;c.fillText(`${name} ${n}${percent?'%':''}`,26,y+10);c.fillStyle='#3c3149';c.fillRect(142,y,w-210,10);c.fillStyle=color;c.fillRect(142,y,(w-210)*n/max*t,10);}
+ }finally{c.restore();}
+}
+
+/** A single major-impact envelope. Simulation ticks only, one event at a time;
+ * long cooldown prevents a multi-hit chain becoming a strobe. Render-only state. */
+export function createDimensionImpact() {
+ let shot=null,cooldown=0;
+ return {
+  event(type,d={},enabled=true) {
+   if(!enabled||cooldown>0)return false;
+   const rupture=['dimensionBreak','monolithDown'].includes(type);
+   const cut=type==='cut'&&!d.small&&!d.paper&&!d.secondary&&!d.fromShear&&(d.throughcut||d.strokeKills>=3||d.kind==='crown');
+   if(!rupture&&!cut)return false;
+   shot={x:Number.isFinite(d.x)?d.x:null,y:Number.isFinite(d.y)?d.y:null,angle:Number.isFinite(d.cut)?d.cut:Math.PI*-.18,age:0,major:rupture};
+   cooldown=90;return true;
+  },
+  tick(enabled=true) {if(cooldown>0)cooldown--;if(!enabled){shot=null;return;}if(shot&&++shot.age>=24)shot=null;},
+  reset(){shot=null;cooldown=0;},
+  snapshot:()=>shot?{...shot}:null,
+ };
+}
+
+/** Anime impact: ink snap -> fractured glass fans -> clean release.
+ * No canvas readback, full-screen white flashes, filters, randomness, gameplay
+ * writes, or repeating inversion. Drawn below DOM HUD, at most 12 glass panes. */
+export function drawDimensionImpact(c,w,h,{x=w*.5,y=h*.5,angle=-.5,age=0,major=false,motion=true,low=false}={}) {
+ if(!c||!motion||age<0||age>=24||w<=0||h<=0)return;
+ x=Math.max(w*.16,Math.min(w*.84,Number.isFinite(x)?x:w*.5));
+ y=Math.max(h*.2,Math.min(h*.8,Number.isFinite(y)?y:h*.5));
+ const release=Math.max(0,(age-3)/21),fade=(1-release)**2,extent=Math.hypot(w,h),strength=low?.4:1;
+ c.save();try{
+ c.globalAlpha=strength*fade;
+ // One dark exposure, not alternating light/dark frames.
+ c.fillStyle=age<3?'#100c18':'#14101e';c.globalAlpha*=age<3?.34:.12;c.fillRect(0,0,w,h);
+ c.globalAlpha=strength*fade;c.translate(x,y);c.rotate(angle);c.lineJoin='miter';
+ // A long ink tear, with a single ivory core that releases into two lips.
+ const slit=Math.min(w,h)*(major?.16:.11),opening=release*slit*.45;
+ for(const side of [-1,1]){
+  c.beginPath();c.moveTo(-extent*.58,side*opening);c.lineTo(-slit*.4,side*(4+opening));c.lineTo(slit*.28,side*(2+opening));c.lineTo(extent*.58,side*(opening+8));
+  c.lineTo(slit*.7,side*(opening+17));c.lineTo(-slit,side*(opening+11));c.closePath();c.fillStyle='#0a0710';c.fill();
+  c.strokeStyle=side<0?'#f5f0e8':'#00f0ff';c.lineWidth=age<3?2.4:1.1;c.stroke();
+ }
+ const count=major?12:8;
+ for(let i=0;i<count;i++){
+  const a=i/count*Math.PI*2+.16*(i%3),cs=Math.cos(a),sn=Math.sin(a),length=Math.min(w,h)*(.25+(i%4)*.055),drift=release*(low?14:54),start=18+drift;
+  c.save();c.translate(cs*start,sn*start);c.rotate(a+release*(i%2?-.07:.07));
+  c.beginPath();c.moveTo(0,0);c.lineTo(length*.5,-8-(i%3)*3);c.lineTo(length,6+(i%2)*9);c.lineTo(length*.37,9);c.closePath();
+  c.fillStyle=i%2?'#20162ecc':'#06050bcc';c.fill();c.strokeStyle=i%3?'#b8b1cb':'#00f0ff';c.lineWidth=.9;c.stroke();
+  // Branch cracks are fixed angular geometry, never noisy particle clouds.
+  c.beginPath();c.moveTo(length*.25,0);c.lineTo(length*.48,-15);c.lineTo(length*.62,-13);c.stroke();c.restore();
+ }
+ // The contact stamp stays local: no white full-canvas inversion.
+ if(age<3){
+  if(!low){
+   // A single local negative-space stamp: the anime contact frame, not a
+   // full-screen white flash. It never alternates polarity or repeats.
+   const radius=Math.min(w,h)*(major?.12:.085);
+   c.beginPath();for(let i=0;i<16;i++){const a=i*Math.PI/8,r=i%2?radius*.2:radius*(i%4?.7:1.25);const px=Math.cos(a)*r,py=Math.sin(a)*r;i?c.lineTo(px,py):c.moveTo(px,py);}c.closePath();
+   c.fillStyle='#f5f0e8';c.fill();c.strokeStyle='#08060d';c.lineWidth=3;c.stroke();
+   c.fillStyle='#08060d';c.beginPath();c.moveTo(-radius*.4,-radius*.25);c.lineTo(radius*.3,-radius*.38);c.lineTo(radius*.45,radius*.2);c.lineTo(-radius*.25,radius*.35);c.closePath();c.fill();
+  }
+  c.strokeStyle='#f5f0e8';c.lineWidth=low?2:4;c.beginPath();c.moveTo(-slit,0);c.lineTo(slit,0);c.stroke();
+ }
  }finally{c.restore();}
 }

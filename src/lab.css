@@ -181,3 +181,10 @@ dialog.shape-lab{--active:#d8ff1e;--core:#d8ff1e;box-sizing:border-box;width:min
 .shape-lab .custom-shop>nav{grid-template-columns:repeat(11,minmax(0,1fr))}
 .equipped-pills{grid-template-columns:repeat(11,minmax(0,1fr))}
 @media(max-width:700px){.shape-lab .custom-shop>nav{grid-template-columns:repeat(6,minmax(0,1fr))}.shape-lab .custom-shop>nav>button{min-height:34px}}
+
+/* Functional parts need room for the trigger and next-run receipt, not a
+   one-line style caption. The catalogue below remains independently scrollable. */
+.shape-lab .custom-detail{flex-basis:122px}
+.shape-lab .custom-detail .detail-copy .part-benefit{font-size:11px;line-height:1.35;margin:5px 0;color:#eee6f4;-webkit-line-clamp:2}
+.shape-lab .custom-detail .detail-copy>small.equip-timing{display:block;font-size:8px;color:#00f0ff;margin-top:4px}
+@media(max-height:540px){.shape-lab .custom-detail{flex-basis:102px}.shape-lab .custom-detail .detail-copy .part-benefit{font-size:10px;margin:3px 0}}
