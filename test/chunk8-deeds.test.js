@@ -400,10 +400,18 @@ test('the three cards are three different lanes, colour-coded, with a legend', a
 });
 
 test('a claim pays the deed, records it, and spends the free reroll first', async () => {
-  /* End to end, the way a player gets there: hold a board, run the events that
-     prove one of the deeds, open the board, claim. The claim is only reachable
-     because the LEDGER moved — which is the whole loop in one test. */
+  /* End to end, the way a player gets there: hold a board, RUN THE GAME, open
+     the board, claim.
+     ------------------------------------------------------------------------
+     This test used to hand `quest-ui` a hand-written run object and a stream of
+     invented events, then assert that one of the three dealt deeds had been
+     proven. It could not: the dealer picks the three deeds, so the test was
+     writing the answers to a different exam every time the book changed. The
+     test now plays an actual run — `createRun`, the shell's own loop, 1500
+     ticks of it — and claims whatever that run proved. If nothing is proven,
+     that is a real finding, not a flaky one. */
   const { Window } = await import('happy-dom');
+  const { createRun } = await import('../src/run.js');
   const window = new Window();
   globalThis.document = window.document;
   globalThis.requestAnimationFrame = () => 1;
@@ -411,38 +419,54 @@ test('a claim pays the deed, records it, and spends the free reroll first', asyn
   window.Element.prototype.animate = () => ({});
   const values = new Map();
   const storage = { get: (k, d) => values.get(k) ?? d, set: (k, v) => values.set(k, v) };
-  // A run shaped like the shell's own object: the fields quest-ui.js reads.
-  const run = {
-    state: {
-      phase: 'playing', opening: null, tutorialActive: false, practice: false,
-      kills: 0, score: 0, band: 1, hp: 3, edge: 3, edgeMax: 3, shatters: 0,
-      bestPace: 0, bestCleanBankChain: 0, wave: { phase: 'combat', cleanBanks: { best: 0 }, pace: { target: 18, speed: 20, best: 0, held: true } },
-    },
-    world: { grounded: false, player: { position: { x: 0, y: 0 } }, arena: { x: -1200, y: -6000, w: 2400, h: 6000 } },
-    combat: { enemies: new Map(), hazards: [], add() {} },
-  };
-  const { createQuestUI } = await import('../src/quest-ui.js');
   const doc = window.document;
+  const { createQuestUI } = await import('../src/quest-ui.js');
   try {
+    let run = null;
     const ui = createQuestUI({
       getRun: () => run, storage, audio: { lock() {}, zone() {} },
       resetInput() {}, home() {}, resume() {}, motion: () => false,
       view: () => ({ x: -400, y: -500, w: 800, h: 600 }),
     });
     ui.start();
-    // Prove the WARM-UP deeds the easy way: lots of real events of every kind,
-    // through the same door the shell uses.
-    for (let i = 0; i < 40; i++) {
-      ui.event('dash', { power: 1 });
-      ui.event('cut', { kind: i % 3 ? 'fang' : 'prism', strokeKills: 1 + (i % 3), cut: 0.1, release: true, speed: 300, y: -1000, armorRemoved: 0 });
-      ui.tick();
+    /* ── PLAY. A real run, driven through the same `emit` door the shell uses.
+       Events are not invented: a shape is placed in the arena and the blade is
+       launched at it, alternating horizontal and vertical aim so both cut
+       angles are exercised. That is the difference between this test and the
+       one it replaced — the old one emitted `{kind:'fang', strokeKills:2}` and
+       called it play. */
+    run = createRun(7, (type, data) => ui.event(type, { ...(data || {}) }), {
+      waveMode: true, continuous: true, catalogRewards: false, postRewards: true,
+    });
+    run.state.phase = 'playing';
+    run.state.invul = 99999;
+    const kinds = ['fang', 'prism', 'fork', 'bastion', 'crown'];
+    for (let round = 0; round < 40; round++) {
+      for (const e of [...run.combat.enemies.values()]) run.combat.remove(e);
+      const p = run.world.player.position;
+      const up = round % 2 === 1;
+      const target = up ? { x: p.x, y: p.y - 700 } : { x: p.x + 700, y: p.y };
+      run.combat.add({
+        id: `t${round}`, kind: kinds[round % kinds.length],
+        x: target.x, y: target.y, pinned: true, delay: 999999,
+      });
+      run.dash({ x: target.x - p.x, y: target.y - p.y, power: 1 });
+      for (let i = 0; i < 25; i++) {
+        run.state.stop = 0;
+        run.tick();
+        ui.tick({
+          grounded: !!run.world.grounded,
+          speed: Number.isFinite(run.state.moved) ? run.state.moved : 0,
+          pace: run.state.wave?.pace,
+          band: run.state.band,
+          hyping: !!run.state.hyper,
+        });
+      }
     }
-    ui.event('sector', { band: 4 });
-    for (let i = 0; i < 40; i++) ui.tick();
     // Open the board.
     doc.querySelector('#quests-btn').click();
     const claim = doc.querySelector('.deed-claim');
-    assert.ok(claim, 'a deed the run has proven offers CLAIM');
+    assert.ok(claim, `a deed the run has proven offers CLAIM (board: ${JSON.parse(values.get('quests')).board.grid.join(', ')})`);
     assert.match(claim.textContent, /CLAIM ♦ \+\d+/);
     const before = JSON.parse(values.get('quests'));
     claim.click();
@@ -450,6 +474,18 @@ test('a claim pays the deed, records it, and spends the free reroll first', asyn
     assert.ok(after.coins > before.coins, `claiming paid (${before.coins} -> ${after.coins})`);
     assert.equal(after.board.claimed.length, 1, 'the deed is marked claimed');
     assert.ok(after.doneIds.length >= 1, 'and recorded in the book for the unlock ladder');
+
+    /* §3.1 of the chunk-7 plan: the pause screen reads the same three deeds the
+       board holds, in the same shape — lane, accent, numeric progress. */
+    const read = ui.pauseRead();
+    assert.equal(read.length, 3, 'the pause screen reads three deeds');
+    assert.deepEqual(read.map((d) => d.id), JSON.parse(values.get('quests')).board.grid);
+    for (const d of read) {
+      assert.ok(['CUT', 'MOTION', 'RHYTHM', 'HUNT', 'DEPTH'].includes(d.lane));
+      assert.match(d.accent, /^#[0-9a-f]{6}$/i, 'each read carries its lane colour');
+      assert.match(d.label, /^\d+ \/ \d+$/, 'and a numeric reading, not a percentage');
+      assert.equal(typeof d.done, 'boolean');
+    }
 
     // The reroll is per card, states its price on its face, and the first is free.
     const reroll = [...doc.querySelectorAll('.riot-reroll')].find((b) => !b.disabled);

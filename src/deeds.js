@@ -85,15 +85,38 @@ export const LANE_BY_ID = Object.freeze(Object.fromEntries(LANES.map((l) => [l.i
  * Deriving it means a board can promise "three different questions" and mean
  * it: the dealer never puts three `peak` deeds side by side.
  */
+/* THE FOUR AXES — what KIND of question a deed asks, derived from the metric.
+   Never authored, or the card's promise and the deed's arithmetic drift apart.
+
+     volume   the long game: a lifetime tally. Play more, and it is nearer.
+     streak   an unbroken run. One mistake and the count resets.
+     moment   one deliberate stroke or window: an angle you chose, a window you
+              hit, a formation you read. Nothing accumulates; you either did
+              the thing or you did not.
+     peak     a best-in-run tally: how much of it you can fit into one run.
+
+   The dealer promises a board of three DIFFERENT axes, which is only a promise
+   the book can keep if each lane offers a spread at every tier — so positional
+   and single-stroke deeds are `moment`, not another `peak`. */
 const AXIS_OF = Object.freeze({
-  cutsTotal: 'volume', dashesTotal: 'volume', paceTotal: 'volume',
-  sealsTotal: 'volume', bigKillTotal: 'volume', deepRuns3: 'volume', deepRuns4: 'volume',
+  /* volume — lifetime */
+  cutsTotal: 'volume', dashesTotal: 'volume', paceTotal: 'volume', sealsTotal: 'volume',
+  bigKillTotal: 'volume', deepRuns3: 'volume', deepRuns4: 'volume', sectorsEntered: 'volume',
+  monoliths: 'volume', flawless: 'volume',
+  /* streak — unbroken */
   bankChain: 'streak', airTicks: 'streak', hyperTicks: 'streak', quietTicks: 'streak',
-  powerStreak: 'streak', chain: 'streak', airKills: 'streak',
-  hyper: 'moment', overdrives: 'moment', monolithSector: 'moment', rescue: 'moment',
-  apex: 'moment', runClean: 'moment',
-  sectorsEntered: 'volume', monoliths: 'volume', flawless: 'volume',
-  hyperApexKills: 'moment',
+  powerStreak: 'streak', chain: 'streak', airKills: 'streak', paceTicks: 'streak',
+  /* moment — one stroke, one window, one choice of angle */
+  hyper: 'moment', overdrives: 'moment', monolithSector: 'moment', apex: 'moment',
+  runClean: 'moment', hyperApexKills: 'moment', hyperPeak: 'moment',
+  doubles: 'moment', triples: 'moment', quads: 'moment', throughcuts: 'moment',
+  wideCut: 'moment', upCut: 'moment', heights: 'moment', speciesPair: 'moment',
+  /* peak — best-in-run tallies of the ordinary business */
+  kills: 'peak', armor: 'peak', marks: 'peak', fang: 'peak', prism: 'peak',
+  fork: 'peak', bastion: 'peak', crown: 'peak', bigKill: 'peak', heirKill: 'peak',
+  seals: 'peak', sector: 'peak', fastKills: 'peak', powerCuts: 'peak', dashes: 'peak',
+  banks: 'peak', cleanBanks: 'peak', bankCuts: 'peak', floorKicks: 'peak',
+  lowCut: 'peak', highCut: 'peak', hits: 'peak',
 });
 
 /** Pay by lane and tier. HUNT and DEPTH pay most: they cost the most to learn. */

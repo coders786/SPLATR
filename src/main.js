@@ -1,6 +1,7 @@
 import {installIconSprite,prependIcon} from './ui-icons.js';
 import {isDevMode,modeURL,createProfileStorage,refillForTesting} from './dev-mode.js';
 import {createCombatTrace} from './combat-trace.js';
+import {frameReport,createConsoleRing,captureConsole,CONSOLE_LINES} from './frame-report.js';
 import {createVisualTutorial,tutorialObjective,tutorialAnnouncement,tutorialWhy,TUTORIAL_LINES} from './visual-tutorial.js';
 import {createControlPracticeUI} from './control-practice-ui.js';
 import {createTeachingUI} from './teaching-ui.js';
@@ -1455,59 +1456,33 @@ $('retry-btn').onclick = () => start({learningGround:false});
 $('home-btn').onclick = home;
 $('resume-btn').onclick = restoreField;
 $('dev-refill').hidden = $('dev-trace').hidden = !devMode;
-/* §3.4: the crash report. The diagnostics that made the bug visible should also
-   make it fixable — the seed, the run state, the frame-error table and the held
-   deeds, one press to copy. Shown whenever a frame error has happened, not only
-   in dev mode: the player who hit the bug is the person who can report it. */
-$('dev-fault').hidden = true;
+/* §3.4 of the chunk-7 plan: THE FAULT LINE BECOMES A REPORT.
+   Chunk 7 made a repeating frame error visible; visible is not fixable. This
+   copies the seed, the run state, the error table and the last few `[SPLATR]`
+   console lines in one press — and it is shown whenever a frame error has
+   happened, not only in dev mode, because the player who hit the bug is the
+   person who can report it. */
+const consoleRing = captureConsole(createConsoleRing(CONSOLE_LINES));
+function copyFrameReport() {
+  return frameReport({
+    seed,
+    page,
+    run,
+    failures: frameFailures,
+    errors: [...frameErrors.entries()],
+    deeds: questUI?.pauseRead?.() || [],
+    consoleLines: consoleRing.lines(),
+    url: location.href,
+  });
+}
 $('dev-fault').onclick = async () => {
-  const report = [
-    'SPLATR frame-error report',
-    `when: ${new Date().toISOString()}`,
-    `seed: ${seed}`,
-    `page: ${page || 'title'}  run: ${run ? run.state.phase : 'none'}`,
-    run
-      ? `sector: ${run.state.band}  kills: ${run.state.kills}  hp: ${run.state.hp}/${run.state.hpMax}  score: ${run.state.score}  wave: ${run.state.wave ? run.state.wave.phase : '—'}`
-      : 'no active run',
-    `frame failures: ${frameFailures}`,
-    'errors:',
-    ...[...frameErrors.entries()].map(([key, count]) => `  ${count}x ${key}`),
-    `deeds: ${JSON.stringify(questUI?.pauseRead?.() || [])}`,
-  ].join('\n');
+  const report = copyFrameReport();
   try {
     await navigator.clipboard.writeText(report);
     say('Frame-error report copied.');
   } catch {
-    // A refused clipboard is a browser permission, not a failure of the report:
-    // put it on the console so it can still be copied by hand.
-    console.info(report);
-    say('Report printed to the console.');
-  }
-};
-/* §3.4: the crash report. The diagnostics that made the bug visible should also
-   make it fixable — a seed, the run state, the frame-error table and the last
-   console lines, on the clipboard in one press. Shown whenever a frame error has
-   happened, not only in dev mode: a player who hits a bug is exactly the person
-   who can report it. */
-$('dev-fault').hidden = true;
-$('dev-fault').onclick = async () => {
-  const report = [
-    'SPLATR frame-error report',
-    `when: ${new Date().toISOString()}`,
-    `seed: ${seed}`,
-    `page: ${page || 'title'}  run: ${run ? run.state.phase : 'none'}`,
-    run ? `sector: ${run.state.band}  kills: ${run.state.kills}  hp: ${run.state.hp}/${run.state.hpMax}  score: ${run.state.score}  wave: ${run.state.wave ? run.state.wave.phase : '—'}` : 'no active run',
-    `frame failures: ${frameFailures}`,
-    'errors:',
-    ...[...frameErrors.entries()].map(([key, count]) => `  ${count}× ${key}`),
-    `deeds: ${JSON.stringify(questUI?.pauseRead?.() || [])}`,
-  ].join('\n');
-  try {
-    await navigator.clipboard.writeText(report);
-    say('Frame-error report copied.');
-  } catch {
-    // A clipboard that refuses is a browser permission, not a failure of the
-    // report: put it on the console so it can still be copied by hand.
+    // A refused clipboard is a permission, not a failure: print it so it can
+    // still be selected by hand.
     console.info(report);
     say('Report printed to the console.');
   }

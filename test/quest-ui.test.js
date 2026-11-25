@@ -70,20 +70,50 @@ test('test_portal_to_vault_bestowal', () => {
     2,
     'end card must have exactly two columns',
   );
-  /* CHUNK 8: the door opens on a SWEPT BOARD. The board is read from the board
-     itself (one deed per lane, three lanes), so proving the three held warm-ups
-     opens the vault in the run — which is the path this exercises. */
-  // Prove whatever this board actually holds: vertical cuts (the run reports
-  // the angle), airborne cuts (a tick off the floor between them), and a clean
-  // climb (a sector reached with no hits).
-  for (let i = 0; i < 12; i++) {
-    ui.tick();
-    ui.event('dash', { power: 1 });
-    ui.event('cut', { kind: 'fang', strokeKills: 1, cut: Math.PI / 2, release: true, speed: 300, y: -4000, armorRemoved: 0 });
-  }
-  run.state.band = 3;
-  ui.event('sector', { band: 3 });
-  for (let i = 0; i < 5; i++) ui.tick();
+  /* CHUNK 8: the door opens on a SWEPT BOARD — three deeds, three lanes, all
+     three finished. Which three deeds are posted is the DEALER's decision, so
+     this cannot hard-code one event stream and hope it matches; it plays a
+     session that exercises the whole vocabulary a run can emit, through the
+     same public door the shell uses.
+
+     (The question "does a real run actually prove a dealt board?" is tested
+     separately, against `createRun`, in chunk8-deeds.test.js. This test is
+     about the PORTAL: sweep in, vault out, once.) */
+  const session = () => {
+    const kinds = ['fang', 'prism', 'fork', 'bastion', 'crown', 'monolith'];
+    const heights = ['bottom', 'middle', 'top'];
+    for (let i = 0; i < 30; i++) {
+      // Moving, not cutting: what a restraint deed is looking for.
+      ui.tick({ grounded: i % 3 === 0, speed: 30, band: 1, pace: { best: 90, speed: 20, target: 18 } });
+      ui.event('dash', { power: 1 });
+      ui.event('bank', { speed: 44 });
+      ui.event('cleanBank', { chain: i });
+      if (i % 4 === 0) ui.event('floorKick', {});
+      if (i === 12) ui.event('hyper', { speed: 500 });
+      if (i === 18) ui.event('drive', {});
+      ui.event('cut', {
+        kind: kinds[i % kinds.length],
+        strokeKills: 1 + (i % 4),
+        cut: i % 2 ? Math.PI / 2 : 0.05,
+        height: heights[i % heights.length],
+        release: true,
+        speed: i === 12 ? 500 : 300,
+        y: -1000,
+        armorRemoved: i % 6 === 0 ? 1 : 0,
+        heir: i % 9 === 0,
+      });
+    }
+    for (const band of [2, 3]) {
+      run.state.band = band;
+      ui.event('sector', { band });
+      for (let i = 0; i < 3; i++) ui.tick({ grounded: false, speed: 30, band });
+    }
+  };
+  session();
+  // If a future warm-up deed needs something a run cannot emit yet, the failure
+  // should say WHICH deed is unproven rather than "portal false".
+  const held = JSON.parse(values.get('quests')).board.grid;
+  assert.equal(held.length, 3, `the board holds three deeds (${held.join(', ')})`);
   assert.ok(run.state.questPortal, 'a swept board opens the vault in the run');
   assert.equal(run.state.edge, 3);
   const portal = run.state.questPortal;
