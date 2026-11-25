@@ -103,20 +103,42 @@ export function loadProfile(raw) {
     recent: Array.isArray(p?.recent)?p.recent.filter(id=>QUESTS.some(q=>q.id===id)).slice(-9):[],
     coins: n(p?.coins),
     unlock: n(p?.unlock),
-    // CHUNK 6: durable per-species kill tally and lifetime peaks. CARNAGE
-    // contracts are cumulative and must survive death, so they cannot be scored
-    // off a single run.
+    // CHUNK 6: durable per-species kill tally. Still read, so a profile from the
+    // contract era does not lose its kills when it becomes a deed ledger.
     tally: Object.fromEntries(
       ['kills', 'fang', 'prism', 'fork', 'bastion', 'crown', 'monoliths'].map((k) => [k, n(p?.tally?.[k])]),
     ),
-    // CHUNK 6: the riot board — which contracts are posted, how many sweeps, and
-    // whether this board's free reroll is spent.
+    // CHUNK 8: THE DEED LEDGER — the only lifetime numbers the book reads.
+    // `cutsTotal` and `dashesTotal` are seeded from the old tally the first time
+    // this profile is loaded, so an existing player does not start from zero on
+    // a board that is meant to respect what they have already done.
+    total: {
+      cutsTotal: n(p?.total?.cutsTotal ?? p?.tally?.kills),
+      dashesTotal: n(p?.total?.dashesTotal),
+      paceTotal: n(p?.total?.paceTotal),
+      seals: n(p?.total?.seals),
+      bigKillTotal: n(p?.total?.bigKillTotal ?? (n(p?.tally?.bastion) + n(p?.tally?.crown))),
+      deepRuns3: n(p?.total?.deepRuns3),
+      deepRuns4: n(p?.total?.deepRuns4),
+      monolithsTotal: n(p?.total?.monolithsTotal ?? p?.tally?.monoliths),
+    },
+    // CHUNK 8: what has been finished, ever. This gates the unlock ladder (a
+    // tier 2 deed is not asked of someone who has finished nothing), and it is
+    // the book's own record — the reason 120 deeds read as a book and not as a
+    // rotating pile of numbers.
+    doneIds: Array.isArray(p?.doneIds) ? p.doneIds.filter((id) => typeof id === 'string').slice(0, 240) : [],
+    // CHUNK 8: THE BOARD — which three deeds are posted, which have been
+    // claimed, how many times the board has been swept, and how the player has
+    // done per lane (which is what `focusLanes` leans the next deal toward).
     board: {
       grid: Array.isArray(p?.board?.grid) ? p.board.grid.filter((id) => typeof id === 'string').slice(0, 3) : [],
       board: n(p?.board?.board),
       sweeps: n(p?.board?.sweeps),
       rerolls: n(p?.board?.rerolls),
       claimed: Array.isArray(p?.board?.claimed) ? p.board.claimed.filter((id) => typeof id === 'string').slice(0, 3) : [],
+      lanes: Object.fromEntries(
+        ['CUT', 'MOTION', 'RHYTHM', 'HUNT', 'DEPTH'].map((l) => [l, { dealt: n(p?.board?.lanes?.[l]?.dealt), done: n(p?.board?.lanes?.[l]?.done) }]),
+      ),
     },
     // CHUNK 6: carried-over progress is per-contract (the board's own `claimed`
     // list and the durable tally), not a streak. `streak` is deliberately not

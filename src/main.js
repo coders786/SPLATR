@@ -1369,6 +1369,19 @@ function open(next) {
       else if (pauseCause === 'window lost focus') why.textContent = 'PAUSED — THE WINDOW LOST FOCUS';
       else why.textContent = `PAUSED — ${cause}`;
       why.dataset.auto = String(automatic);
+      /* §3.2 of the chunk-7 plan: A DELIBERATE PAUSE IS A BEAT, AN INTERRUPTION
+         IS A DISMISSAL. When the game took the run away from the player, the
+         screen offers the two things that answer "what happened": get back in,
+         or end it. Everything else — the field manual, options, contracts, the
+         shop — is a decision for a pause the player CHOSE. It is also a real
+         exploit fix: alt-tabbing into the pause screen used to be a free
+         shopping trip in the middle of a wave. */
+      const panel = $('pause-page');
+      if (panel) panel.dataset.intrusion = String(automatic);
+      for (const id of ['pause-manual', 'pause-options', 'pause-practice', 'pause-shop']) {
+        const node = $(id);
+        if (node) node.hidden = automatic;
+      }
       // The screen is not "auto-pausing at random": it says what took you out
       // and what puts you back in.
       const back = $('pause-back');
@@ -1376,6 +1389,30 @@ function open(next) {
       // The fault line only exists when there is a fault to report.
       const fault = $('pause-fault');
       if (fault) fault.hidden = game.dataset.frameFault !== 'true';
+      // §3.4: the fault line is a receipt, not a shrug. The report button only
+      // exists when there is a report worth copying.
+      const copy = $('dev-fault');
+      if (copy) copy.hidden = !(frameFailures > 0);
+      /* §3.1: the three deeds you hold, in the board's own language. */
+      const deeds = $('pause-deeds');
+      if (deeds) {
+        const held = questUI?.pauseRead?.() || [];
+        deeds.replaceChildren(...held.map((d) => {
+          const line = document.createElement('div');
+          line.className = 'pause-deed';
+          line.dataset.lane = String(d.lane).toLowerCase();
+          line.dataset.done = String(d.done);
+          line.style.setProperty('--accent', d.accent || '#8f83a6');
+          const tag = document.createElement('b');
+          tag.textContent = String(d.lane).slice(0, 1);
+          const label = document.createElement('span');
+          label.textContent = d.title;
+          const count = document.createElement('i');
+          count.textContent = d.label;
+          line.append(tag, label, count);
+          return line;
+        }));
+      }
     }
     $('skip-room').hidden = !run.state.opening || !!run.state.opening.finishing;
     setText(
@@ -1418,6 +1455,63 @@ $('retry-btn').onclick = () => start({learningGround:false});
 $('home-btn').onclick = home;
 $('resume-btn').onclick = restoreField;
 $('dev-refill').hidden = $('dev-trace').hidden = !devMode;
+/* §3.4: the crash report. The diagnostics that made the bug visible should also
+   make it fixable — the seed, the run state, the frame-error table and the held
+   deeds, one press to copy. Shown whenever a frame error has happened, not only
+   in dev mode: the player who hit the bug is the person who can report it. */
+$('dev-fault').hidden = true;
+$('dev-fault').onclick = async () => {
+  const report = [
+    'SPLATR frame-error report',
+    `when: ${new Date().toISOString()}`,
+    `seed: ${seed}`,
+    `page: ${page || 'title'}  run: ${run ? run.state.phase : 'none'}`,
+    run
+      ? `sector: ${run.state.band}  kills: ${run.state.kills}  hp: ${run.state.hp}/${run.state.hpMax}  score: ${run.state.score}  wave: ${run.state.wave ? run.state.wave.phase : '—'}`
+      : 'no active run',
+    `frame failures: ${frameFailures}`,
+    'errors:',
+    ...[...frameErrors.entries()].map(([key, count]) => `  ${count}x ${key}`),
+    `deeds: ${JSON.stringify(questUI?.pauseRead?.() || [])}`,
+  ].join('\n');
+  try {
+    await navigator.clipboard.writeText(report);
+    say('Frame-error report copied.');
+  } catch {
+    // A refused clipboard is a browser permission, not a failure of the report:
+    // put it on the console so it can still be copied by hand.
+    console.info(report);
+    say('Report printed to the console.');
+  }
+};
+/* §3.4: the crash report. The diagnostics that made the bug visible should also
+   make it fixable — a seed, the run state, the frame-error table and the last
+   console lines, on the clipboard in one press. Shown whenever a frame error has
+   happened, not only in dev mode: a player who hits a bug is exactly the person
+   who can report it. */
+$('dev-fault').hidden = true;
+$('dev-fault').onclick = async () => {
+  const report = [
+    'SPLATR frame-error report',
+    `when: ${new Date().toISOString()}`,
+    `seed: ${seed}`,
+    `page: ${page || 'title'}  run: ${run ? run.state.phase : 'none'}`,
+    run ? `sector: ${run.state.band}  kills: ${run.state.kills}  hp: ${run.state.hp}/${run.state.hpMax}  score: ${run.state.score}  wave: ${run.state.wave ? run.state.wave.phase : '—'}` : 'no active run',
+    `frame failures: ${frameFailures}`,
+    'errors:',
+    ...[...frameErrors.entries()].map(([key, count]) => `  ${count}× ${key}`),
+    `deeds: ${JSON.stringify(questUI?.pauseRead?.() || [])}`,
+  ].join('\n');
+  try {
+    await navigator.clipboard.writeText(report);
+    say('Frame-error report copied.');
+  } catch {
+    // A clipboard that refuses is a browser permission, not a failure of the
+    // report: put it on the console so it can still be copied by hand.
+    console.info(report);
+    say('Report printed to the console.');
+  }
+};
 $('dev-refill').onclick = () => { if (devMode && refillForTesting(run)) { updateHUD(); say('Health, Edge and focus refilled.'); $('dev-refill').textContent='Refilled health / Edge / focus'; } };
 $('dev-trace').onclick = () => {
   if (!devMode || !combatTrace) return;
@@ -1506,15 +1600,50 @@ function suspend(why = 'focus') {
   clock.reset();
   portal();
 }
-window.addEventListener('blur', () => suspend('window lost focus'));
+/**
+ * CHUNK 8 (§3.5 of the chunk-7 plan): A GLANCE IS NOT AN INTERRUPTION.
+ *
+ * `blur` fires for a click on a second monitor, a notification, a devtools
+ * focus grab, a native fullscreen prompt — most of which the player comes
+ * straight back from. Pausing instantly made every one of those cost a run's
+ * rhythm, which is the "auto-pausing" complaint at its most annoying.
+ *
+ * So: wait a beat. If focus returns inside it, the player never sees a pause.
+ * If it does not, the pause is real and still says why. The tab-hidden handler
+ * is not debounced — a hidden tab is not ambiguous.
+ */
+const BLUR_GRACE_MS = 400;
+let blurTimer = 0;
+window.addEventListener('blur', () => {
+  clearTimeout(blurTimer);
+  blurTimer = setTimeout(() => suspend('window lost focus'), BLUR_GRACE_MS);
+});
+window.addEventListener('focus', () => {
+  // Came back inside the grace window: no pause ever happened, so restore the
+  // clock and repaint. If a pause DID happen, the menu is up and this is inert.
+  if (blurTimer) {
+    clearTimeout(blurTimer);
+    blurTimer = 0;
+    clock.reset();
+    dirty = true;
+    if (!raf && !document.hidden) raf = requestAnimationFrame(frame);
+  }
+});
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
+    clearTimeout(blurTimer);
+    blurTimer = 0;
     suspend('tab hidden');
     cancelAnimationFrame(raf);
     raf = 0;
   } else {
+    // §3.3: the first frame after a hidden tab carries a huge `now` delta. The
+    // clock caps its debt, but the RENDER path also reads `now` for animation
+    // phases, so the clamp happens once here as well — otherwise the first
+    // frame back can jump a whole animation cycle (the "cube teleported" bug).
     clock.reset();
     dirty = true;
+    lastFrameAt = 0;
     if (!raf) raf = requestAnimationFrame(frame);
   }
 });
@@ -1559,7 +1688,19 @@ function safe(fn, where) {
   try { return fn(); } catch (error) { reportFrameError(where, error); return undefined; }
 }
 
-function frame(now) {
+/* §3.3 of the chunk-7 plan: CLAMP THE FIRST DELTA AFTER A RESUME.
+   A backgrounded tab stops the loop (`document.hidden`), so the first frame
+   back carries one enormous gap. The clock already caps its own debt, but every
+   animation phase in this shell reads `now` directly, so a 40-second gap can
+   jump a whole cycle in one frame — the "the cube teleported while I was in
+   another window" artefact. One clamp here covers all of them. */
+let lastFrameAt = 0;
+const MAX_FRAME_GAP_MS = 64;
+function frame(realNow) {
+  const now = lastFrameAt && realNow - lastFrameAt > MAX_FRAME_GAP_MS
+    ? lastFrameAt + MAX_FRAME_GAP_MS
+    : realNow;
+  lastFrameAt = now;
   raf = 0;
   try {
     if (document.hidden) return;

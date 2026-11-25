@@ -1791,6 +1791,47 @@ body:has(#panel[open]) #hud {
 .riot-pips>i[data-on=true]{background:#dfff00;border-color:#dfff00;box-shadow:0 0 9px #dfff0066}
 .riot-sweep-pay{font:700 13px 'Space Mono',monospace;color:#dfff00;flex:none;letter-spacing:.02em}
 .riot-note{margin:9px 0 0;font:400 9px 'Space Mono',monospace;letter-spacing:.06em;color:#6f6486}
+/* ══ CHUNK 8: THE DEED BOOK ════════════════════════════════════════════════
+   The same surface language as the title screen — deep violet-black, skewed
+   geometry, 1px borders, `///` slashes — plus one thing the old board never
+   had: every card carries its ARGUMENT. The lane colour is the card's only
+   colour, so a board reads as three lanes at a glance. Hot pink CUT, cyan
+   MOTION, acid lime RHYTHM, amber HUNT, violet DEPTH. No gold anywhere: that
+   palette was the reason the previous header read like a worksheet. */
+.riot-title>b{color:#f4ecff;text-shadow:0 0 14px #00f0ff55}
+.deed-card{gap:8px;padding-bottom:0}
+.deed-card[data-done=true]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 0 18px #dfff0022}
+.deed-tier{font:700 8px 'Space Mono',monospace;letter-spacing:.14em;color:#8f83a6;
+  border:1px solid #3a3050;padding:2px 5px;white-space:nowrap}
+.deed-card[data-tier="2"] .deed-tier{color:#f4ecff;border-color:var(--accent)}
+.deed-lead{margin:0;font:400 10.5px/1.45 'Space Mono',monospace;color:#e6dcf5}
+.deed-reason,.deed-pays{margin:0;font:400 9.5px/1.5 'Space Mono',monospace;color:#a99cbe}
+.deed-reason>b,.deed-pays>b{display:block;font:700 8px 'Space Mono',monospace;letter-spacing:.16em;
+  margin-bottom:3px;color:var(--accent)}
+.deed-argument{display:flex;flex-direction:column;gap:8px;padding:8px 0 2px;
+  border-top:1px dashed #3a3050}
+.deed-argument[hidden]{display:none}
+.deed-keeps{margin:0;font:italic 400 9.5px/1.45 'Space Mono',monospace;color:#7f92a6}
+.deed-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin:2px -11px 0;padding:7px 11px;background:#0f0b18;border-top:1px solid #33294a}
+.deed-read{font:700 8.5px 'Space Mono',monospace;letter-spacing:.13em;cursor:pointer;
+  background:transparent;border:1px solid #3a3050;color:#8f83a6;padding:4px 7px;
+  transition:color .13s,border-color .13s}
+.deed-read:hover,.deed-read:focus-visible{color:#f4ecff;border-color:var(--accent)}
+.deed-read[aria-expanded=true]{color:#120e1a;background:var(--accent);border-color:var(--accent)}
+.deed-worth{font:700 11px 'Space Mono',monospace;color:#dfff00}
+.deed-paid{font:700 9px 'Space Mono',monospace;letter-spacing:.13em;color:var(--accent)}
+.deed-claim{margin-top:0;animation:none;background:var(--accent);border-top:1px solid var(--accent)}
+.deed-lanes{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.deed-lane{display:flex;flex-direction:column;gap:1px;flex:1 1 150px;min-width:0;
+  padding:6px 8px;background:#14101e;border:1px solid #2f2740;border-left:3px solid var(--accent)}
+.deed-lane>b{font:700 8.5px 'Space Mono',monospace;letter-spacing:.14em;color:var(--accent)}
+.deed-lane>small{font:400 8.5px/1.35 'Space Mono',monospace;color:#8f83a6}
+.deed-drawer-note{margin:6px 0 0;font:400 8.5px 'Space Mono',monospace;letter-spacing:.06em;color:#6f6486}
+.deed-lead-small{display:block;margin-top:2px;font:400 8.5px/1.35 'Space Mono',monospace;color:#8f83a6}
+.deed-row-item[data-lane]{border-left:2px solid var(--accent);padding-left:6px}
+.quest-pip[data-lane]{transform:skewX(-8deg)}
+.quest-pip[data-on=true]{background:var(--accent);border-color:var(--accent)}
 /* CHUNK 7: the pause header says who paused it. An automatic pause gets the
    warning colour so a player can tell "I pressed P" from "the tab lost focus
    and the game took me out of a run". */
@@ -1799,6 +1840,21 @@ body:has(#panel[open]) #hud {
 .pause-fault{margin:0 0 10px;padding:6px 9px;border-left:3px solid #ff3366;background:#1a1528;font:700 10px 'Space Mono',monospace;letter-spacing:.1em;color:#ff8fae}
 .pause-back{margin:0 0 10px;font:400 10px 'Space Mono',monospace;letter-spacing:.06em;color:#8f83a6}
 .pause-back kbd{border:1px solid #33294a;border-radius:3px;padding:0 4px;color:#f4ecff}
+/* CHUNK 8 (§3.2): an interruption is a dismissal, not a menu. The panel keeps
+   its shape but loses the amber warning colour, because nothing is wrong. */
+#pause-page[data-intrusion=true] .panel-inner{border-left:3px solid #ffb75e}
+#pause-page[data-intrusion=true] #pause-info{opacity:.75}
+/* CHUNK 8 (§3.1): the three deeds you hold, read on the pause screen. */
+.pause-deeds{display:flex;flex-direction:column;gap:4px;margin:10px 0}
+.pause-deeds:empty{display:none}
+.pause-deed{display:flex;align-items:center;gap:7px;padding:4px 7px;
+  background:#14101e;border-left:2px solid var(--accent,#8f83a6);
+  font:400 9.5px 'Space Mono',monospace;letter-spacing:.05em;color:#cfc6dd}
+.pause-deed>b{font:700 9px 'Space Mono',monospace;color:var(--accent,#8f83a6);width:9px}
+.pause-deed>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase}
+.pause-deed>i{font-style:normal;font-weight:700;color:#f4ecff}
+.pause-deed[data-done=true]{background:#1b2110;color:#dfff00}
+.pause-deed[data-done=true]>b,.pause-deed[data-done=true]>i{color:#dfff00}
 
 /* the practice modes now on the PRACTICE & HELP page */
 .manual-modes{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}

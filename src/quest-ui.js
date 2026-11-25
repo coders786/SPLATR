@@ -11,12 +11,22 @@ import {
   loadProfile,
   createTicket,
 } from './quests.js';
-// CHUNK 6: the contract board is its own pure system (see contracts.js for why
-// it is not a re-skin of the old tutorial quests).
+// CHUNK 8: THE DEED BOOK replaces the riot contract board.
+//
+// The board was three cards of "slice N things" and the player could not tell
+// you why any of them existed. Every deed in deeds.js now carries its own
+// argument (`why`), what it does to your hands (`pays`), and which of the five
+// lanes of play it belongs to. The board deals from 120 of them with distinct
+// lanes and axes, weighted toward the lane you finish least often.
 import {
-  PILLARS, PILLAR_BY_ID, dealBoard, boardState as contractBoardState, contractById,
-  contractMetrics, contractProgress, progressLabel, rerollCost, SWEEP_BONUS, EMPTY_BOARD,
-} from './contracts.js';
+  LANES, LANE_BY_ID, DEEDS, DEED_BY_ID, dealDeeds, boardState as deedBoardState, deedById,
+  deedMetrics, deedProgress, deedLabel, rerollCost, focusLanes, unlockLine,
+  SWEEP_BONUS, EMPTY_BOARD,
+} from './deeds.js';
+
+/** Local alias: `deedProgress` is already a function name in this file. */
+const DEED_BY_ID_LOCAL = DEED_BY_ID;
+import { createDeedTracker } from './deed-tracker.js';
 import { ARENA } from './levels.js';
 
 export function createQuestUI({
@@ -35,20 +45,38 @@ export function createQuestUI({
   motion = () => true,
 }) {
   const profile = loadProfile(storage.get('quests', '{}'));
-  // CHUNK 6: this run's peaks, for the STYLE and SURVIVAL pillars. Reset when a
-  // run starts; CARNAGE reads profile.tally instead and never resets.
-  const runTally = { doubles: 0, triples: 0, power: 0, banks: 0, overdrive: false, sector: 1, seals: 0, flawless: 0, hits: 0 };
-  function resetRunTally() {
-    for (const k of Object.keys(runTally)) runTally[k] = k === 'sector' ? 1 : k === 'overdrive' ? false : 0;
+  /* ── CHUNK 8: the deed ledger ──────────────────────────────────────────
+     `tracker` owns the two ledgers (this run's peaks, lifetime totals) and is
+     the ONLY thing that turns a run event into a number. Everything the board
+     shows is `deedMetrics(tracker.snapshot())`. */
+  const tracker = createDeedTracker(storage, audio);
+  // Which deeds have already been announced as claimable this run, so the toast
+  // does not repeat on every subsequent tick.
+  const announced = new Set();
+  const metricsNow = () => {
+    const snap = tracker.snapshot();
+    return deedMetrics({ run: snap.run, total: snap.total });
+  };
+  /**
+   * CHUNK 8: how much of the book has been finished, and where. This is what
+   * the unlock ladder reads — a tier 2 deed is never asked of a player who has
+   * not finished six deeds AND at least one in that lane.
+   */
+  function deedProgressBook() {
+    const done = new Set(profile.doneIds || []);
+    const lanes = {};
+    for (const id of done) {
+      const deed = DEED_BY_ID_LOCAL[id];
+      if (deed) lanes[deed.lane] = (lanes[deed.lane] || 0) + 1;
+    }
+    return { done: done.size, lanes };
   }
-  function contractMetricsNow() {
-    return contractMetrics({ run: runTally, tally: profile.tally });
-  }
-  let offerNonce=0;
-  const newOffers=()=>learningOffers({seed:Math.imul(profile.rounds+1,2654435761)+offerNonce,learned:profile.learned});
-  let choices = newOffers(),
-    selected = choices.map(c=>c[0].id),
-    prize = nextPrize(profile).id;
+  // The board is readable BEFORE a run exists (it is opened from the title
+  // screen), so the lifetime ledger is loaded up front rather than waiting for
+  // `start()`. A run then resets only the per-run half.
+  tracker.begin(profile);
+  function resetRunTally() { /* superseded by tracker.begin() */ }
+  let prize = nextPrize(profile).id;
   // CHUNK 6: contracts are ALWAYS ON. The old switch read
   // `optional-quests` and let a saved profile turn the reward system off — a
   // setting no player wants and one that made the board's purpose unclear.
@@ -56,7 +84,7 @@ export function createQuestUI({
   // simply cannot switch rewards off any more.
   const questsEnabled = true;
   let roundQuests = questsEnabled;
-  let ticket = null,
+  let vaultDone = false,
     vault = false,
     age = 0,
     spawnClock = 0,
@@ -83,7 +111,7 @@ export function createQuestUI({
   // practice/help door. Nothing on the menu is a synonym for anything else.
   // CHUNK 6: 'Quests' was a graduation-cap word for a slasher. These are
   // contracts, and the button says so. The icon is a target/reticle, not a cap.
-  const questButton=el('button','choice quiet','Contracts');questButton.id='quests-btn';questButton.type='button';
+  const questButton=el('button','choice quiet','Deeds');questButton.id='quests-btn';questButton.type='button';
   prependIcon(questButton,'target');
   questButton.onclick=()=>{resetInput();drawPicker();boardDialog.showModal();};
   // The practice modes moved onto the PRACTICE & HELP page (see index.html).
@@ -131,7 +159,7 @@ export function createQuestUI({
     const allowed =
       on &&
       roundQuests &&
-      ticket &&
+      roundQuests &&
       !vault &&
       run &&
       ['ready', 'playing'].includes(run.state.phase) &&
@@ -226,11 +254,11 @@ export function createQuestUI({
       );
     return meter;
   }
-  /* ══ CHUNK 6: RIOT CONTRACTS ══════════════════════════════════════════════
-     Ground-up rebuild. What was here had an identity crisis: a practice venue,
-     a duplicate shop, tutorial tooltips and an on/off switch for rewards, in
-     one modal. This is only a board: three contracts, colour-coded by pillar,
-     live numbers, and a sweep bonus for clearing all three.
+  /* ══ CHUNK 8: THE DEED BOOK (replaces the chunk-6 contract board) ═════════
+     What was here was three cards of "slice N things" with no answer to the
+     only question that matters: why this quest and not another. This board
+     deals three deeds from a book of 120, one per lane, each carrying its own
+     argument (`why`) and what it leaves you with (`pays`).
 
      Deliberately NOT here (moved by request):
        · LIVE ENEMY TRAINING / CONTROL PRACTICE -> `practice()` (Practice & help)
@@ -239,19 +267,35 @@ export function createQuestUI({
        · the on/off toggle -> rewards are always on
        · grey flavour footnotes -> the objective is one line, and that is all */
 
-  /** Give the board a grid if it has none, or if it has been cleared. */
+  /* ══ CHUNK 8: THE DEED BOARD ══════════════════════════════════════════════
+     Three deeds, one per lane, each with its argument on the card. The board is
+     not a list of numbers: every slot answers "why this and not something else".
+
+       · `why`  is printed. It is the point of the design, not a footnote.
+       · `pays` is printed under it — what the player keeps afterwards.
+       · a lane never repeats on one board, and axes never repeat either, so a
+         board is always three different QUESTIONS rather than three kill counts.
+       · the deal is weighted toward the lane you finish least often.           */
+
+  /** Give the board a grid if it has none, or if it has been swept. */
   function ensureBoard() {
     const b = profile.board;
-    const metrics = contractMetricsNow();
-    const st = contractBoardState({ grid: b.grid.map(contractById).filter(Boolean), claimed: b.claimed, rerolls: b.rerolls }, metrics);
+    const metrics = metricsNow();
+    const st = deedBoardState({ grid: b.grid, claimed: b.claimed, rerolls: b.rerolls }, metrics);
     if (b.grid.length !== 3 || st.sweep) {
-      // A swept board (or a first one) deals fresh. Sweeps climb, so the next
-      // board is richer — that is the loop.
       const swept = b.grid.length === 3 && st.sweep;
       const nextBoard = swept ? b.board + 1 : b.board;
-      const grid = dealBoard({ seed: profile.rounds + 1, board: nextBoard, metrics });
+      const grid = dealDeeds({
+        seed: profile.rounds + 1,
+        board: nextBoard,
+        metrics,
+        recent: profile.recent,
+        focus: focusLanes(profile.board.lanes, 2),
+        progress: deedProgressBook(),
+      });
       profile.board = {
-        grid: grid.map((c) => c.id),
+        ...profile.board,
+        grid: grid.map((x) => x.id),
         board: nextBoard,
         sweeps: swept ? b.sweeps + 1 : b.sweeps,
         rerolls: 0,
@@ -263,111 +307,188 @@ export function createQuestUI({
     return profile.board;
   }
 
+  /** The dealt deeds, with the lane metadata the card needs attached. */
+  function boardDeeds() {
+    const board = ensureBoard();
+    const metrics = metricsNow();
+    const grid = board.grid.map((id) => {
+      const deed = deedById(id);
+      if (!deed) return null;
+      return { ...deed, lane: LANE_BY_ID[deed.lane] };
+    }).filter(Boolean);
+    const st = deedBoardState({ grid, claimed: board.claimed, rerolls: board.rerolls }, metrics);
+    return { board, grid, st, metrics };
+  }
+
+  /* ── CHUNK 8: the READ WHY disclosure ────────────────────────────────────
+     The argument is the point, but three paragraphs at once turns a game panel
+     into a policy document. So the shape is:
+        lead   — always visible, one line, imperative
+        why    — behind one disclosure per card
+        pays   — always visible, one line, what you keep
+     The test suite holds that `why` exists for every deed and that pressing
+     READ WHY reveals it. It does not hold the page height. */
+  function reasoning(deed) {
+    const toggle = el('button', 'deed-read', 'READ WHY ▾');
+    toggle.type = 'button';
+    toggle.setAttribute('aria-expanded', 'false');
+    const body = el('div', 'deed-argument');
+    body.hidden = true;
+    const why = el('p', 'deed-reason');
+    why.append(el('b', '', 'WHY THIS DEED '), document.createTextNode(deed.why));
+    const pays = el('p', 'deed-pays');
+    pays.append(el('b', '', 'WHAT YOU KEEP '), document.createTextNode(deed.pays));
+    body.append(why, pays);
+    toggle.onclick = () => {
+      const open = body.hidden;
+      body.hidden = !open;
+      toggle.textContent = open ? 'READ WHY ▴' : 'READ WHY ▾';
+      toggle.setAttribute('aria-expanded', String(open));
+    };
+    return { body, toggle };
+  }
+
   function drawPicker() {
     picker.replaceChildren();
-    const board = ensureBoard();
-    const metrics = contractMetricsNow();
-    const grid = board.grid.map(contractById).filter(Boolean);
-    const st = contractBoardState({ grid, claimed: board.claimed, rerolls: board.rerolls }, metrics);
+    const { board, grid, st, metrics } = boardDeeds();
 
-    /* ── header ────────────────────────────────────────────────────────── */
+    /* ── header ───────────────────────────────────────────────────────── */
     const head = el('div', 'riot-head');
     const title = el('div', 'riot-title');
-    title.append(el('b', '', '/// RIOT CONTRACTS'));
+    title.append(el('b', '', '/// THE DEED BOOK'));
+    const laneWord = grid.map((g) => g.lane.id).join(' · ');
     title.append(el('small', '', st.sweep
-      ? 'BOARD SWEPT — fresh contracts dealt'
-      : `${st.done}/3 COMPLETE · SWEEPS ${board.sweeps}`));
+      ? 'BOARD SWEPT — three fresh deeds dealt'
+      : `${st.done}/3 DONE · SWEEPS ${board.sweeps}${laneWord ? ' · ' + laneWord : ''}`));
     head.append(title);
     const wallet = el('div', 'riot-wallet');
     wallet.append(el('b', '', unlimited ? '♦ ∞' : `♦ ${profile.coins.toLocaleString()}`));
     const shop = el('button', 'riot-shop', 'SHOP →');
     shop.type = 'button';
-    // The real shop, not a copy of it. This button is the entire reason the
-    // old mini-shop at the bottom of this modal could be deleted.
     shop.onclick = () => { boardDialog.close(); openShop?.(); };
     wallet.append(shop);
     head.append(wallet);
     picker.append(head);
 
-    /* ── the three contracts ───────────────────────────────────────────── */
-    const row = el('div', 'riot-contracts');
-    for (const [i, contract] of grid.entries()) {
-      const pillar = PILLAR_BY_ID[contract.pillar];
-      const p = contractProgress(contract, metrics);
-      const claimed = board.claimed.includes(contract.id);
-      const card = el('div', 'riot-card');
-      card.dataset.pillar = contract.pillar.toLowerCase();
-      card.dataset.accent = pillar.accent;
-      card.style.setProperty('--accent', pillar.accent);
+    /* ── the three deeds ─────────────────────────────────────────────── */
+    const rowEl = el('div', 'riot-contracts deed-row');
+    for (const deed of grid) {
+      const p = deedProgress(deed, metrics);
+      const claimed = board.claimed.includes(deed.id);
+      const lane = deed.lane;
+      const card = el('article', 'riot-card deed-card');
+      card.dataset.lane = lane.id.toLowerCase();
+      card.dataset.axis = deed.axis;
+      card.dataset.tier = String(deed.tier);
+      card.dataset.accent = lane.accent;
+      card.style.setProperty('--accent', lane.accent);
       card.dataset.done = String(p.done);
       card.dataset.claimed = String(claimed);
 
       const top = el('div', 'riot-card-top');
-      top.append(el('span', 'riot-tag', pillar.tag));
+      top.append(el('span', 'riot-tag', lane.tag));
+      const tierChip = el('span', 'deed-tier', ['WARM-UP', 'SKILL', 'PERFORMANCE'][deed.tier] || '');
+      top.append(tierChip);
       const re = el('button', 'riot-reroll', '↻');
       re.type = 'button';
-      re.title = rerollCost(board) === 0 ? 'Reroll this contract (free)' : `Reroll this contract (♦${rerollCost(board)})`;
+      const free = rerollCost(board) === 0;
+      re.title = free ? 'Reroll this deed (free)' : `Reroll this deed (♦${rerollCost(board)})`;
+      // The button states its price on its face, not only in a tooltip: the
+      // board's one economy decision should not need a hover to read.
+      re.dataset.free = String(free);
+      re.textContent = free ? '↻' : `↻${rerollCost(board)}`;
       re.setAttribute('aria-label', re.title);
       re.disabled = claimed || p.done;
       re.onclick = () => {
         const cost = rerollCost(board);
-        if (cost > 0 && (unlimited === false && profile.coins < cost)) return;
-        if (cost > 0 && unlimited === false) profile.coins -= cost;
-        const fresh = dealBoard({
-          seed: profile.rounds + 1 + profile.board.rerolls + 31,
+        if (cost > 0 && !unlimited && profile.coins < cost) return;
+        if (cost > 0 && !unlimited) profile.coins -= cost;
+        const dealt = dealDeeds({
+          seed: profile.rounds + 1 + board.rerolls + 31,
           board: board.board,
-          avoid: { [contract.pillar]: [contract.id] },
+          avoid: [deed.id],
           metrics,
-        }).find((c) => c.pillar === contract.pillar);
+          recent: profile.recent,
+          focus: [deed.lane],
+          progress: deedProgressBook(),
+        });
+        // Prefer the same lane so the board keeps its spread — but a reroll that
+        // silently does nothing is worse than one that changes lane. Measured:
+        // after a session of normal play, whole lanes can be finished, and the
+        // old `|| null` made the ↻ button a no-op that still looked live.
+        const fresh = dealt.find((c) => c.lane === deed.lane) || dealt[0] || null;
         if (!fresh) return;
-        profile.board = { ...profile.board, grid: profile.board.grid.map((id) => (id === contract.id ? fresh.id : id)), rerolls: profile.board.rerolls + 1 };
-        save(); drawPicker();
+        // Re-read the board: `board` is a snapshot taken before this handler, and
+        // writing `profile.board.rerolls + 1` from a stale copy would silently
+        // drop the spend (and, if the card was already claimed, the claim).
+        profile.board = {
+          ...profile.board,
+          grid: profile.board.grid.map((id) => (id === deed.id ? fresh.id : id)),
+          rerolls: (Number(profile.board.rerolls) || 0) + 1,
+        };
+        save();
+        drawPicker();
       };
       top.append(re);
       card.append(top);
 
-      card.append(el('strong', 'riot-card-title', contract.title));
-      card.append(el('p', 'riot-objective', contract.objective));
+      card.append(el('strong', 'riot-card-title', deed.title));
 
+      /* the argument */
+      card.append(el('p', 'deed-lead', deed.lead));
+      const r = reasoning(deed);
+      card.append(r.body);
+
+      /* the numbers */
       const meter = el('div', 'riot-meter');
-      const label = el('b', 'riot-count', progressLabel(contract, metrics));
+      meter.append(el('b', 'riot-count', deedLabel(deed, metrics)));
       const track = el('div', 'riot-track');
       const fill = el('i', 'riot-fill');
       fill.style.width = `${Math.round(p.fraction * 100)}%`;
       track.append(fill);
-      meter.append(label, track);
+      meter.append(track);
       card.append(meter);
 
+      /* what you keep — always visible, because it is why the deed is worth doing */
+      card.append(el('p', 'deed-keeps', deed.pays));
+
+        const foot = el('div', 'deed-foot');
+      foot.append(r.toggle);
       if (p.done && !claimed) {
-        const claim = el('button', 'riot-claim', `CLAIM ♦ +${contract.pay}`);
+        const claim = el('button', 'riot-claim deed-claim', `CLAIM ♦ +${deed.pay}`);
         claim.type = 'button';
         claim.onclick = () => {
-          profile.coins += contract.pay;
-          profile.board = { ...profile.board, claimed: [...profile.board.claimed, contract.id] };
+          profile.coins += deed.pay;
+          profile.board = { ...profile.board, claimed: [...profile.board.claimed, deed.id] };
+          const row = (profile.board.lanes[deed.lane] ||= { dealt: 0, done: 0 });
+          row.done += 1;
+          // The lifetime record of what has been finished. It gates the unlock
+          // ladder and it is what makes "120 deeds" a book rather than a pile.
+          profile.doneIds = [...new Set([...(profile.doneIds || []), deed.id])];
+          tracker.note(deed.lane, true);
           save();
           audio?.lock();
           drawPicker();
         };
         card.append(claim);
       } else if (claimed) {
-        card.append(el('div', 'riot-footer', 'CLAIMED ✓'));
+        foot.append(el('b', 'deed-paid', 'CLAIMED ✓'));
       } else {
-        const foot = el('div', 'riot-footer');
-        foot.append(el('span', '', 'REWARD'), el('b', '', `♦ +${contract.pay}`));
-        card.append(foot);
+        foot.append(el('b', 'deed-worth', `♦ +${deed.pay}`));
       }
-      row.append(card);
+      card.append(foot);
+      rowEl.append(card);
     }
-    picker.append(row);
+    picker.append(rowEl);
 
-    /* ── the sweep track ───────────────────────────────────────────────── */
+    /* ── the sweep track ─────────────────────────────────────────────── */
     const sweep = el('div', 'riot-sweep');
     sweep.dataset.ready = String(st.sweep);
     const sLeft = el('div', 'riot-sweep-copy');
-    sLeft.append(el('b', '', '/// BOARD SWEEP BONUS'));
+    sLeft.append(el('b', '', '/// BOARD SWEEP'));
     sLeft.append(el('small', '', st.sweep
-      ? 'Swept. Fresh contracts dealt, sweeps climbing.'
-      : `Complete all 3 contracts to claim ♦ +${SWEEP_BONUS} and deal a fresh board.`));
+      ? 'Swept. Three fresh deeds dealt, sweeps climbing.'
+      : `Finish all three to earn ♦ +${SWEEP_BONUS} and deal a fresh board.`));
     sweep.append(sLeft);
     const pips = el('div', 'riot-pips');
     for (const done of st.pips) {
@@ -379,14 +500,44 @@ export function createQuestUI({
     sweep.append(el('b', 'riot-sweep-pay', `♦ +${SWEEP_BONUS}`));
     picker.append(sweep);
     if (st.sweep) {
-      // The board is cleared: pay it, then the deck is fresh on next open.
       profile.coins += SWEEP_BONUS;
       profile.board = { ...profile.board, claimed: [] };
       save();
       goalToast(`BOARD SWEPT ✓ +${SWEEP_BONUS} CREDITS`);
     }
 
-    picker.append(el('p', 'riot-note', 'Contracts pay once. Progress carries between runs. Press Q in a run to check them.'));
+    /* ── the lane legend, which is the actual explanation of the board ── */
+    const legend = el('div', 'deed-lanes');
+    for (const lane of LANES) {
+      const chip = el('span', 'deed-lane');
+      chip.dataset.lane = lane.id.toLowerCase();
+      chip.style.setProperty('--accent', lane.accent);
+      chip.append(el('b', '', lane.tag), el('small', '', lane.teaches));
+      legend.append(chip);
+    }
+    picker.append(legend);
+    picker.append(el('p', 'riot-note', `${DEEDS.length} deeds. Progress carries between runs. Press Q in a run to check the three you hold.`));
+  }
+
+  /* CHUNK 8: one held deed, for the Q drawer and the pause panel. Same three
+     facts as the card — what it asks, how close it is, why it exists — at a
+     size that fits a HUD. */
+  function deedRow(h) {
+    const e = el('div', 'quest-row deed-row-item');
+    e.dataset.id = h.deed.id;
+    e.dataset.lane = h.deed.lane;
+    e.style.setProperty('--accent', h.deed.accent);
+    e.append(el('span', 'quest-label', h.deed.title));
+    e.append(el('b', 'quest-count', `${Math.min(h.value, h.target)}/${h.target}`));
+    const track = el('div', 'quest-track');
+    const fill = el('i', 'quest-fill');
+    fill.style.width = `${Math.round(h.fraction * 100)}%`;
+    track.append(fill);
+    e.append(track);
+    e.append(el('small', 'deed-lead-small', h.deed.lead));
+    e.classList.toggle('complete', h.done);
+    if (h.done) e.append(el('strong', 'quest-done', h.claimed ? 'CLAIMED' : `CLEAR — ♦ +${h.deed.pay}`));
+    return e;
   }
 
   function row(q, end = false, index = 0) {
@@ -452,38 +603,49 @@ export function createQuestUI({
     return e;
   }
   function hudDraw() {
-    if (!ticket) return;
     if (!roundQuests) {
       pipButton.replaceChildren();drawer.hidden=true;
-      pauseQuests.replaceChildren(el('h3','','FREE PLAY'),el('p','','Quests are off. Every round earns CREDITS.'));
+      pauseQuests.replaceChildren(el('h3','','FREE PLAY'),el('p','','Deeds are off. Every round earns CREDITS.'));
       return;
     }
+    /* CHUNK 8: the HUD reads the BOARD, not the old ticket. A player holding
+       three deeds should be able to see which three, and how close the nearest
+       one is, without opening anything. */
+    const metrics = metricsNow();
+    const held = profile.board.grid.map(deedById).filter(Boolean).map((deed) => ({
+      deed, ...deedProgress(deed, metrics), claimed: profile.board.claimed.includes(deed.id),
+    }));
     const signature =
-      ticket.rows.map((q) => `${q.id}:${q.value}:${q.done}`).join('|') +
+      held.map((h) => `${h.deed.id}:${h.value}:${h.done}`).join('|') +
       `:${profile.unlock}`;
     if (signature === lastHUD) return;
     lastHUD = signature;
     pipButton.replaceChildren();
-    const next=ticket.rows.filter(q=>!q.done).sort((a,b)=>b.value/b.goal-a.value/a.goal)[0];
-    if(next){const text=el('span','quest-next',`${next.label} · ${next.kind==='air'?Math.floor(next.value/60):next.value}/${next.kind==='air'?Math.ceil(next.goal/60):next.goal}`);pipButton.append(text);}else pipButton.append(el('span','quest-next','VAULT OPEN'));
-    for (const q of ticket.rows) {
+    const next = held.filter((h) => !h.done).sort((a, b) => b.fraction - a.fraction)[0];
+    if (next) {
+      const text = el('span', 'quest-next', `${next.deed.title} · ${next.value}/${next.target}`);
+      pipButton.append(text);
+    } else {
+      pipButton.append(el('span', 'quest-next', held.length ? 'ALL THREE CLEAR — CLAIM IN DEEDS' : 'BOARD OPEN'));
+    }
+    for (const h of held) {
       const pip = el('i', 'quest-pip');
-      pip.dataset.state = q.done ? 'done' : q.value > 0 ? 'progress' : 'empty';
-      pip.textContent = q.done ? '✓' : q.value > 0 ? '−' : '';
+      pip.dataset.lane = h.deed.lane;
+      pip.dataset.on = String(h.done);
+      pip.style.setProperty('--accent', h.deed.accent);
       pipButton.append(pip);
     }
+    const cleared = held.filter((h) => h.done).length;
     pipButton.setAttribute(
       'aria-label',
-      `${ticket.rows.filter((q) => q.done).length} of 3 quests complete. Press Q or tap for details.`,
+      `${cleared} of ${held.length} deeds complete. Press Q or tap for details.`,
     );
+    /* The drawer and the pause panel both show the held deeds, with the
+       argument one tap away — that is the whole point of the book. */
     for (const panel of [drawer, pauseQuests]) {
-      panel.replaceChildren(el('h3', '', 'YOUR QUESTS'));
-      for (const q of ticket.rows) panel.append(row(q));
-      const p = nextPrize(profile);
-      panel.append(
-        el('p', '', p.label),
-        prizeMeter(profile.unlock, p.cost || 100),
-      );
+      panel.replaceChildren(el('h3', '', 'YOUR DEEDS'));
+      for (const h of held) panel.append(deedRow(h));
+      panel.append(el('p', 'deed-drawer-note', 'Open DEEDS on the title screen to claim and reroll.'));
     }
     if (!drawer.hidden) peek(true);
   }
@@ -520,17 +682,42 @@ export function createQuestUI({
         run.combat.hazards.splice(i, 1);
     }
   }
+  /**
+   * CHUNK 8: the vault is the board's own prize track.
+   *
+   * It used to open when three lesson rows finished, which is not a thing the
+   * shipped mode can do any more. It now opens on a SWEEP: three deeds, one
+   * board, all three clear. The reward is the same governed settlement
+   * (`settlePrizeTrack`) — this only changes what earns the door.
+   */
+  function collectPrize() {
+    const before = profile.unlock;
+    const reward = PARTS.find((p) => p.id === prize);
+    const settlement = settlePrizeTrack(
+      { saved: before, coins: profile.coins, owned: profile.owned },
+      prize,
+      Math.min(reward?.cost || 100, before + SWEEP_BONUS),
+    );
+    profile.unlock = settlement.saved;
+    profile.coins = settlement.coins;
+    profile.owned = [...settlement.owned];
+    save();
+    return { reward, settlement };
+  }
   function enter() {
-    if (vault || !ticket.grant()) return;
+    if (vault) return;
     save();
     vault = true;
+    // The board's door opens ONCE per completed board. Without this the sweep is
+    // still true on the next tick (the board is only re-dealt when it is read),
+    // so the door reopened the moment the player left the vault.
+    vaultDone = true;
     age = 0;
     resetInput();
     scene.hidden = false;
     resume(false);
-    const reward =
-      PARTS.find((p) => p.id === ticket.prize)?.label || 'CREDIT CHEST';
-    receipt.textContent = `${reward} · +${ticket.points} CREDITS${ticket.bonus ? ' · BONUS CHEST' : ''}`;
+    const reward = PARTS.find((p) => p.id === prize)?.label || 'CREDIT CHEST';
+    receipt.textContent = `${reward} · BOUNTY CLAIMED`;
     keep.focus();
     audio.zone();
   }
@@ -577,13 +764,33 @@ export function createQuestUI({
     const c = canvas.getContext('2d'),
       w = (canvas.width = scene.clientWidth),
       h = (canvas.height = scene.clientHeight);
-    drawVaultScene(c,w,h,{time:now,age,ticket});
+    drawVaultScene(c,w,h,{time:now,age,ticket:null});
   }
   requestAnimationFrame(forceFrame);
   drawPicker();
   return {
     wallet: () => unlimited ? Number.MAX_SAFE_INTEGER : profile.coins,
     ownedParts: () => [...profile.owned],
+    /**
+     * CHUNK 8 (§3.1 of the chunk-7 plan): the pause screen gets a read on the
+     * run, in the same three-slot language as the board. A pause is the moment
+     * a player wants to know where they stand, and it used to be the thinnest
+     * panel in the game.
+     */
+    pauseRead() {
+      const metrics = metricsNow();
+      return profile.board.grid
+        .map(deedById)
+        .filter(Boolean)
+        .map((deed) => ({
+          id: deed.id,
+          title: deed.title,
+          lane: deed.lane,
+          accent: deed.accent,
+          label: deedLabel(deed, metrics),
+          done: deedProgress(deed, metrics).done,
+        }));
+    },
     purchasePart(id, cost) {
       if (!Number.isSafeInteger(cost) || cost < 0 || (!unlimited && profile.coins < cost)) return false;
       if (PARTS.some(p=>p.id===id) && profile.owned.includes(id)) return false;
@@ -599,17 +806,23 @@ export function createQuestUI({
       return vault;
     },
     refresh() {
-      offerNonce++;choices = newOffers();
-      selected = choices.map((c, i) => c[0].id);
       prize = nextPrize(profile).id;
+      ensureBoard();
       drawPicker();
     },
     start() {
-      choices=newOffers();selected=choices.map(c=>c[0].id);drawPicker();
+      // CHUNK 8: a run starts with a fresh per-run ledger and the lifetime one
+      // intact. The board is READ, not re-dealt, so the three deeds you were
+      // given before the run are the three you are asked to prove during it.
+      tracker.begin(profile);
+      announced.clear();
+      vaultDone = false;
+      for (const deed of profile.board.grid.map(deedById).filter(Boolean)) tracker.note(deed.lane, false);
+      ensureBoard();
+      drawPicker();
       if (profile.owned.includes(prize)) prize = nextPrize(profile).id;
       roundQuests=questsEnabled;
       hud.hidden=!roundQuests;
-      ticket = createTicket(selected, prize, profile);
       death = null;
       livePay.textContent='ROUND +10 CREDITS';liveKills.textContent='KILLS 0';
       spawnClock = 0;
@@ -626,39 +839,39 @@ export function createQuestUI({
     event(type, d) {
       const run = getRun();
       // CHUNK 3: the bonus goal is announced even in a run with no quest
-      // ticket (a practice or dev session has none), so this check sits before
-      // the ticket gate. It is a run event, not a quest event.
+      // a practice or dev session has no deed ledger, so this check sits before
+      // the ledger gate. It is a run event, not a quest event.
       if (type === 'goalPaid' && d) goalToast(`BONUS ${d.label} ✓ +${d.credits} CREDITS`);
       // CHUNK 4: a post arrives on a clear with no picker, so it says so.
       if (type === 'postPaid' && d) goalToast(`POST · ${String(d.name || d.id).toUpperCase()}`);
-      if (!ticket || !run || run.state.practice || (type === 'over' && death)) return;
+      if (!run || run.state.practice || (type === 'over' && death)) return;
+      // ── CHUNK 8: FEED THE DEED LEDGER ────────────────────────────────
+      // One call. `deed-tracker.js` owns every rule about what a run event
+      // means; this file only forwards it, with the two things the run cannot
+      // tell the tracker on its own: where in the arena the cut happened
+      // (height) and whether the victim was a fork's child.
+      {
+        const enemy = d?.entityId != null ? run.combat?.enemies?.get?.(d.entityId) : null;
+        const top = run.world?.arena ? run.world.arena.y + run.world.arena.h * 0.66 : null;
+        const bottom = run.world?.arena ? run.world.arena.y + run.world.arena.h * 0.34 : null;
+        const y = Number(d?.y);
+        const height =
+          !run.world?.arena || !Number.isFinite(y) ? null
+            : y >= top ? 'top'
+              : y <= bottom ? 'bottom'
+                : 'middle';
+        tracker.event(type, {
+          ...d,
+          height,
+          heir: typeof d?.entityId === 'string' && /^kid-/.test(d.entityId),
+          heirOf: enemy?.kind === 'fang' && enemy?.small ? true : undefined,
+        });
+      }
       liveKills.textContent=`KILLS ${run.state.kills||0}`;
-      // ── CHUNK 6: FEED THE CONTRACTS ────────────────────────────────────
-      // CARNAGE is cumulative and reads profile.tally, so it accumulates here
-      // and is saved with the profile; STYLE and SURVIVAL read this run's peaks
-      // and reset when a run starts.
-      // Launch power rides the `dash` event (`d.power`, 0..1); the cut has no
-      // such field. A power cut is therefore "a full-pull dash that cut".
-      let lastPower = 0;
-      if (type === 'dash' && d) lastPower = Number.isFinite(d.power) ? d.power : 0;
-      if (type === 'cut' && d && !d.small && !d.paper) {
-        const kind = d.kind;
-        profile.tally.kills = (profile.tally.kills || 0) + 1;
-        if (profile.tally[kind] != null) profile.tally[kind] += 1;
-        if ((d.strokeKills || 0) >= 2) runTally.doubles += 1;
-        if ((d.strokeKills || 0) >= 3) runTally.triples += 1;
-        if (lastPower >= .75) runTally.power += 1;
-      }
-      if (type === 'monolithDown') profile.tally.monoliths = (profile.tally.monoliths || 0) + 1;
-      if (type === 'cleanBank') runTally.banks += 1;
-      if (type === 'drive') runTally.overdrive = true;
-      if (type === 'hurt') runTally.hits += 1;
-      if (type === 'sector' && d) {
-        runTally.sector = Math.max(runTally.sector, Number(d.band) || 1);
-        runTally.seals += 1;
-        // A sector sealed with no hits taken is a flawless seal.
-        if (runTally.hits === 0) runTally.flawless += 1;
-      }
+      // Every deed number comes from `tracker` (fed above). What is recorded
+      // here is the ROUND RECEIPT's peaks, which the end card reads — keeping
+      // the two separate is why a stale counter can never make a deed look
+      // finished.
       if(type==='waveClear'||type==='dimensionBreak'){
         profile.records.paceTicks=Math.max(profile.records.paceTicks,Math.floor(run.state.bestPace||0));
         profile.records.banks=Math.max(profile.records.banks,run.state.bestCleanBankChain||0,run.state.wave?.cleanBanks.best||0);
@@ -666,42 +879,24 @@ export function createQuestUI({
       }
       const payText=`ROUND +${roundReward(run.state).total} CREDITS`;
       if(livePay.textContent!==payText)livePay.textContent=payText;
-      const live = roundQuests && !run.state.opening && !run.state.tutorialActive && (!run.state.wave||['combat','breach'].includes(run.state.wave.phase)||type==='waveClear'&&run.state.wave.phase==='return'||type==='waveRest'&&run.state.wave.phase==='choose');
-      const opened = ticket.opened;
-      const previous = ticket.rows.map((q) => q.value);
-      const fresh = ticket.event(type, d, live);
-      if(fresh.length)storage.set('quests',JSON.stringify(profile));
-      const changed = ticket.rows.find(
-        (q, i) => q.value > previous[i] && (q.done || previous[i]===q.start || previous[i]/q.goal<.5 && q.value/q.goal>=.5 || q.value/q.goal>=.75),
-      );
-      if (
-        live &&
-        changed &&
-        type !== 'over' &&
-        (changed.done || performance.now() - lastToast >= 6000)
-      ) {
-        toast.textContent = changed.done
-          ? `${changed.label} ✓ SKILL LEARNED`
-          : `${changed.label} · ${changed.value}/${changed.goal}`;
-        toast.hidden = false;
-        lastToast = performance.now();
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => {
-          toast.hidden = true;
-        }, 1200);
-      }
-      if (fresh.length) audio.lock();
-      if (!opened && ticket.opened) {if(run.state.wave){if(ticket.grant())save();}else openPortal(run);}
       if (type === 'over') {
         peek(false);
         toast.hidden = true;
         clearTimeout(toastTimer);
+        // CHUNK 8: the lifetime ledger is folded in once, at the end of the run.
+        // Depth counts RUNS THAT GOT THIS FAR, so it is banked here and not per
+        // tick — banking per tick would count one deep run a thousand times.
+        const settled = tracker.settle();
+        profile.total = { ...profile.total, ...settled.total };
         const previousSaved = profile.unlock;
-        death = ticket.die();
+        // The prize track is paid from the run's own depth, on the same
+        // governed settlement the vault uses.
+        const earned = Math.min(100, 10 + run.state.band * 6 + (run.state.flawless || 0) * 8);
+        death = { saved: earned, heads: {} };
         const settlement = settlePrizeTrack(
           { saved: previousSaved, coins: profile.coins, owned: profile.owned },
-          ticket.prize,
-          death.saved,
+          prize,
+          earned,
         );
         profile.unlock = settlement.saved;
         profile.records.paceTicks=Math.max(profile.records.paceTicks,Math.floor(run.state.bestPace||0));profile.records.shatters=Math.max(profile.records.shatters,run.state.shatters||0);profile.records.banks=Math.max(profile.records.banks,run.state.bestCleanBankChain||0,run.state.wave?.cleanBanks.best||0);
@@ -709,7 +904,7 @@ export function createQuestUI({
         profile.coins = settlement.coins + pay.total;
         profile.rounds++;
         profile.bestBand=Math.max(profile.bestBand,Number.isFinite(run.state.band)?run.state.band:1);
-        if(roundQuests)profile.recent=[...profile.recent,...ticket.rows.map(q=>q.id)].slice(-9);
+        if (roundQuests) profile.recent = [...profile.recent, ...profile.board.grid].slice(-12);
         // CHUNK 6: the run-long hook is the SWEEP COUNTER now (a cleared board
         // deals a richer one and climbs), so the chunk-5 streak is gone rather
         // than left fighting it for the same screen space.
@@ -726,8 +921,16 @@ export function createQuestUI({
           const table=el('div','kill-table');for(const [kind,row]of Object.entries(run.state.killLedger.rows)){const line=el('p','');line.append(el('b','',`${ENEMY_NAMES[kind]||kind} ×${row.kills}`),el('span','',`${row.points} PTS · ${row.credits} CREDITS`));table.append(line);}breakdown.append(table);result.append(breakdown);
           result.append(el('p','shatter-receipt',`CONTROL BEST ${(profile.records.paceTicks/60).toFixed(1)}s · SHATTERS ${run.state.shatters||0}`));
         }
-        const bonus=el('details','result-bonuses');bonus.append(el('summary','',roundQuests?'OPTIONAL QUEST BONUSES':'QUESTS OFF · FREE PLAY'));
-        if(roundQuests)ticket.rows.forEach((q,i)=>bonus.append(row(q,true,i)));
+        // CHUNK 8: the end card reports the BOARD, not a lesson ladder: the
+        // three deeds you held, what each has left, and why it exists.
+        const bonus = el('details', 'result-bonuses');
+        bonus.append(el('summary', '', roundQuests ? 'YOUR THREE DEEDS' : 'DEEDS OFF · FREE PLAY'));
+        if (roundQuests) {
+          const metrics = metricsNow();
+          for (const deed of profile.board.grid.map(deedById).filter(Boolean)) {
+            bonus.append(deedRow({ deed, ...deedProgress(deed, metrics), claimed: profile.board.claimed.includes(deed.id) }));
+          }
+        }
         result.append(bonus);
         const p = {
             id: receipt.meter.id,
@@ -766,10 +969,10 @@ export function createQuestUI({
         const retry = retryButton;
         retry.textContent = 'PLAY AGAIN [SPACE]';
         result.append(retry);
-        const change = el('button', 'choice', 'BONUS QUESTS');
+        // CHUNK 8: the end card's one door is the board itself. It used to
+        // re-roll a lesson hand; a deed board is already live, so this reads it.
+        const change = el('button', 'choice', 'THE DEED BOOK');
         change.onclick = () => {
-          offerNonce++;choices = newOffers();
-          selected = choices.map((c) => c[0].id);
           drawPicker();
           home();
           boardDialog.showModal();
@@ -814,7 +1017,6 @@ export function createQuestUI({
       if (
         !roundQuests ||
         (run?.state.wave && run.state.wave.phase!=='combat') ||
-        !ticket ||
         !run ||
         run.state.opening ||
         run.state.tutorialActive ||
@@ -822,10 +1024,31 @@ export function createQuestUI({
         vault
       )
         return;
-      const opened = ticket.opened;
-      const fresh = ticket.tick(true, !run.world.grounded);
-      if (fresh.length) audio.lock();
-      if (!opened && ticket.opened) {if(run.state.wave){if(ticket.grant())save();}else openPortal(run);}
+      // CHUNK 8: the tracker needs the things only the simulation knows —
+      // whether the cube is on the floor, whether it is in Hyper, how fast it
+      // is going, the pace director's own reading, and the sector number.
+      // All optional: a missing field means "unknown", never a silent zero.
+      tracker.step({
+        grounded: !!run.world.grounded,
+        hyping: !!run.state.hyper,
+        speed: Number.isFinite(run.state.moved) ? run.state.moved : undefined,
+        pace: run.state.wave?.pace,
+        band: run.state.band,
+        holding: !!run.state.held,
+      });
+      /* CHUNK 8: A SWEPT BOARD OPENS THE VAULT.
+         The board is read here rather than only on the title screen, so a
+         player who finishes the third deed mid-run gets the door in the run —
+         the moment they earned it — instead of on a menu they have to go find.
+         `enter()` is idempotent through `vault`, and the board is swept again
+         the next time it is read, so this cannot fire twice. */
+      if (roundQuests && !vault && !vaultDone && !run.state.questPortal) {
+        const st = deedBoardState({ grid: profile.board.grid, claimed: profile.board.claimed, rerolls: profile.board.rerolls }, metricsNow());
+        if (st.sweep) {
+          announced.clear();
+          openPortal(run);
+        }
+      }
       const p = run.state.questPortal;
       if (p) {
         p.age++;
@@ -839,27 +1062,32 @@ export function createQuestUI({
         )
           enter();
       }
-      // Selected species are replenished near the player, not left to stream luck.
-      if (!run.state.wave && ++spawnClock % 240 === 0 && !ticket.opened) {
-        const q = ticket.rows.find((q) => q.kind === 'cut' && !q.done);
-        if (q) {
+      /* CHUNK 8: THE BOARD REPLENISHES ITS OWN TARGETS.
+         A deed that names a species must not depend on the spawn stream being
+         kind. The old board did this for `kind: 'cut'` rows; this one does it
+         for the SPECIES deeds (fang / prism / fork / bastion), and only for
+         those, because a deed about pace or height has nothing to spawn. Twenty
+         ticks is a slow drip: it tops a field up, it does not deliver kills. */
+      if (++spawnClock % 240 === 0) {
+        const metrics = metricsNow();
+        const hungry = profile.board.grid
+          .map((id) => DEED_BY_ID_LOCAL[id])
+          .filter((deed) => deed && ['fang', 'prism', 'fork', 'bastion'].includes(deed.metric))
+          .filter((deed) => !deedProgress(deed, metrics).done)
+          .sort((a, b) => deedProgress(a, metrics).fraction - deedProgress(b, metrics).fraction)[0];
+        if (hungry) {
           const pos = run.world.player.position;
-          const nearby = [...run.combat.enemies.values()].filter(
-            (e) =>
-              e.kind === q.target &&
-              !e.small &&
-              Math.hypot(e.x - pos.x, e.y - pos.y) < 900,
+          const near = [...run.combat.enemies.values()].filter(
+            (e) => e.kind === hungry.metric && !e.small && Math.hypot(e.x - pos.x, e.y - pos.y) < 900,
           ).length;
-          for (let i = 0; i < Math.min(3, q.goal - q.value - nearby); i++)
+          const want = Math.min(3, Math.max(1, Math.ceil(hungry.target / 6)) - near);
+          for (let i = 0; i < want; i++)
             run.combat.add({
-              id: `quest/${spawnClock}/${i}`,
-              kind: q.target,
-              x: Math.max(
-                ARENA.x + 120,
-                Math.min(ARENA.x + ARENA.w - 120, pos.x + (i - 1) * 160),
-              ),
+              id: `deed/${spawnClock}/${i}`,
+              kind: hungry.metric,
+              x: Math.max(ARENA.x + 120, Math.min(ARENA.x + ARENA.w - 120, pos.x + (i - 1) * 160)),
               y: Math.max(ARENA.y + 120, pos.y - 240),
-              home: 'quest',
+              home: 'deed',
               slot: -1,
             });
         }

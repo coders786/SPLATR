@@ -21,7 +21,9 @@ const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 
 /** The `frame` function's body, by brace matching from its declaration. */
 function frameBody() {
-  const start = main.indexOf('function frame(now) {');
+  // CHUNK 8 added a delta clamp, so the signature is `frame(realNow)`.
+  let start = main.indexOf('function frame(realNow) {');
+  if (start < 0) start = main.indexOf('function frame(now) {');
   assert.ok(start > 0, 'frame() exists');
   let depth = 0, i = main.indexOf('{', start);
   const from = i;
@@ -77,7 +79,9 @@ test('every automatic pause records its cause', () => {
   assert.match(main, /function suspend\(why = 'focus'\)/, 'suspend takes a reason');
   assert.match(main, /pauseCause = why/, 'and records it');
   // The three distinct causes must be distinguishable at the call sites.
-  assert.match(main, /addEventListener\('blur', \(\) => suspend\('window lost focus'\)\)/);
+  // CHUNK 8 debounced the blur handler (a glance at another window is not an
+  // interruption), so the cause is passed at the timer, not at the event.
+  assert.match(main, /setTimeout\(\(\) => suspend\('window lost focus'\), BLUR_GRACE_MS\)/);
   assert.match(main, /suspend\('tab hidden'\)/);
   // A deliberate pause says so, rather than inheriting the last cause.
   const deliberate = (main.match(/pauseCause = 'paused'/g) || []).length;

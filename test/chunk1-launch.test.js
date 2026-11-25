@@ -113,13 +113,14 @@ test('CHUNK 1: the title has one practice door and no stray score sticker', () =
   assert.ok(!/Field manual/.test(nav), 'the duplicate manual door is renamed, not repeated');
   assert.ok(!html.includes('fillText("+300"'), 'the stray +300 sticker is removed from the title key art');
   assert.ok(engine.includes('CHUNK 1: the stray "+300"'), 'and the removal is documented where it happened');
-  // CHUNK 6: the reward board appends CONTRACTS beside the practice door
+  // CHUNK 8: the deed book appends DEEDS beside the practice door
   // instead of a second Learn. (It said 'Quests', with a graduation cap, which
   // was the identity problem this chunk fixed.)
   const quest = readFileSync(new URL('../src/quest-ui.js', import.meta.url), 'utf8');
-  assert.ok(/'choice quiet','Contracts'/.test(quest), 'the contract board has its own door');
+  assert.ok(/'choice quiet','Deeds'/.test(quest), 'the deed book has its own door');
   assert.ok(!/el\('button','choice quiet','Learn'\)/.test(quest), 'LEARN is not a synonym for the manual any more');
   assert.ok(!/'choice quiet','Quests'/.test(quest), 'the word Quests is gone from the menu');
+  assert.ok(!/'choice quiet','Contracts'/.test(quest), 'and the contract-era label is gone too');
 });
 
 // ── 5. DAMAGE ────────────────────────────────────────────────────────────
