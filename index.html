@@ -291,7 +291,13 @@
         <span class="small panel-brand"><i class="slashes"></i> SPLATR / Shape Riot <b id="dev-panel-badge" hidden> / DEV SANDBOX</b></span>
         <h2 id="panel-heading">Paused</h2>
         <section id="pause-page" hidden>
+          <!-- CHUNK 7: an automatic pause states its cause here. -->
+          <p id="pause-why" class="pause-why" data-auto="false">PAUSED</p>
+          <!-- CHUNK 7: shown only when frame errors are repeating. A bug the
+               player can see is a bug they can report. -->
+          <p id="pause-fault" class="pause-fault" hidden>RECURRING FRAME ERROR — CHECK THE CONSOLE</p>
           <p id="pause-info"></p>
+          <p id="pause-back" class="pause-back" hidden>Press <kbd>↵</kbd> or <b>Resume</b> to get back in.</p>
           <button id="resume-btn" class="choice primary">Resume run <kbd>↵</kbd></button
           ><button class="choice quiet" id="skip-room" hidden>Skip warmup</button
           ><button class="choice quiet" id="dev-refill" hidden>Refill health / Edge / focus</button

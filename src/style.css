@@ -1791,6 +1791,14 @@ body:has(#panel[open]) #hud {
 .riot-pips>i[data-on=true]{background:#dfff00;border-color:#dfff00;box-shadow:0 0 9px #dfff0066}
 .riot-sweep-pay{font:700 13px 'Space Mono',monospace;color:#dfff00;flex:none;letter-spacing:.02em}
 .riot-note{margin:9px 0 0;font:400 9px 'Space Mono',monospace;letter-spacing:.06em;color:#6f6486}
+/* CHUNK 7: the pause header says who paused it. An automatic pause gets the
+   warning colour so a player can tell "I pressed P" from "the tab lost focus
+   and the game took me out of a run". */
+.pause-why{margin:0 0 10px;font:700 11px 'Space Mono',monospace;letter-spacing:.18em;color:#8f83a6}
+.pause-why[data-auto=true]{color:#ffb75e}
+.pause-fault{margin:0 0 10px;padding:6px 9px;border-left:3px solid #ff3366;background:#1a1528;font:700 10px 'Space Mono',monospace;letter-spacing:.1em;color:#ff8fae}
+.pause-back{margin:0 0 10px;font:400 10px 'Space Mono',monospace;letter-spacing:.06em;color:#8f83a6}
+.pause-back kbd{border:1px solid #33294a;border-radius:3px;padding:0 4px;color:#f4ecff}
 
 /* the practice modes now on the PRACTICE & HELP page */
 .manual-modes{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}

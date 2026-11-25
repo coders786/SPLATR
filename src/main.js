@@ -39,6 +39,9 @@ import { FRACTURE_TIERS, FRACTURE_KEY, clampPct, persistFracture, fractureTier }
 import { createCutscene, coldOpenOnce } from './cutscene.js';
 import { COLD_OPEN_BEATS, midWaveBeats, sectorBeats, SHATTER_BEATS, lockTicks } from './cinematics.js';
 import { LANDLORD_STORY, storyChipForWave } from './story-arc.js';
+// CHUNK 7: why the pause screen is open — printed on it, so an automatic
+// pause never looks like the game freezing.
+let pauseCause = 'paused';
 let questUI, customize, waveUI, controlPractice, teaching;let learningGround=false,tutorial=null,lastTutorialHint=null,lastRiftObjective='',lastTutorialWhy='';
 const tutorialHintSpeech=Object.freeze({
  slice:'Slice the highlighted target. Tap it, or pull away and release toward it.',
@@ -1225,6 +1228,13 @@ function restoreField() {
 }
 function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   if(customize?.isOpen||controlPractice?.isOpen||teaching?.isOpen) return;
+  delete game.dataset.frameFault;
+  // CHUNK 7: a new run starts with a clean diagnostic slate, and says so.
+  // Old failures belong to the old run; getting back to a quiet frame loop is
+  // how a player confirms a crash is behind them.
+  if (frameFailures) console.info('[SPLATR] frame errors from the previous run: ' + frameFailures);
+  frameFailures = 0;
+  frameErrors.clear();
   input.reset();
   poki.setPlaying(false);
   if(tutorial)tutorial.dispose();else run?.dispose();tutorial=null;
@@ -1347,6 +1357,26 @@ function open(next) {
   if (next === 'manual') manual();
   if (next === 'options') syncSettings();
   if (next === 'pause') {
+    // CHUNK 7: the pause is honest about who asked for it.
+    const why = $('pause-why');
+    if (why) {
+      const automatic = pauseCause !== 'paused';
+      const cause = String(pauseCause).toUpperCase();
+      // A dropped tab is nobody's mistake: say what happened, in the words a
+      // player needs to get back in.
+      if (!automatic) why.textContent = 'PAUSED';
+      else if (pauseCause === 'tab hidden') why.textContent = 'PAUSED — THE TAB LOST FOCUS';
+      else if (pauseCause === 'window lost focus') why.textContent = 'PAUSED — THE WINDOW LOST FOCUS';
+      else why.textContent = `PAUSED — ${cause}`;
+      why.dataset.auto = String(automatic);
+      // The screen is not "auto-pausing at random": it says what took you out
+      // and what puts you back in.
+      const back = $('pause-back');
+      if (back) back.hidden = !automatic;
+      // The fault line only exists when there is a fault to report.
+      const fault = $('pause-fault');
+      if (fault) fault.hidden = game.dataset.frameFault !== 'true';
+    }
     $('skip-room').hidden = !run.state.opening || !!run.state.opening.finishing;
     setText(
       'pause-info',
@@ -1402,7 +1432,7 @@ $('skip-room').onclick = () => {
   }
 };
 $('pause-btn').onclick = () => {
-  if (active()) open('pause');
+  if (active()) { pauseCause = 'paused'; open('pause'); }
 };
 $('manual-btn').onclick = $('pause-manual').onclick = () => open('manual');
 $('options-btn').onclick = $('pause-options').onclick = () => open('options');
@@ -1452,19 +1482,34 @@ window.addEventListener('keydown', (e) => {
   }
   if ((k === 'escape' || k === 'p') && active() && !e.repeat && !learningGround) {
     e.preventDefault();
+    pauseCause = 'paused';
     open('pause');
   }
 });
-function suspend() {
-  if (run && !learningGround && !questUI.vault && ['playing', 'ready'].includes(run.state.phase) && !dialog.open) open('pause');
+/**
+ * CHUNK 7: A PAUSE MUST SAY WHY IT HAPPENED.
+ *
+ * `blur` and `visibilitychange` can fire from things the player did not do — a
+ * notification stealing focus, an OS dialog, a devtools focus grab, the pointer
+ * heading for a second monitor. Each one yanked the player out of a run with no
+ * explanation, which reads as the game pausing itself.
+ *
+ * The pause now carries its cause, and the pause screen prints it.
+ */
+function suspend(why = 'focus') {
+  const eligible = run && !learningGround && !questUI.vault && ['playing', 'ready'].includes(run.state.phase) && !dialog.open;
+  if (eligible) {
+    pauseCause = why;
+    open('pause');
+  }
   input.cancel();
   clock.reset();
   portal();
 }
-window.addEventListener('blur', suspend);
+window.addEventListener('blur', () => suspend('window lost focus'));
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    suspend();
+    suspend('tab hidden');
     cancelAnimationFrame(raf);
     raf = 0;
   } else {
@@ -1473,10 +1518,59 @@ document.addEventListener('visibilitychange', () => {
     if (!raf) raf = requestAnimationFrame(frame);
   }
 });
+/**
+ * CHUNK 7: THE FRAME LOOP COULD DIE, AND A DEAD LOOP LOOKS LIKE A FREEZE.
+ *
+ * The reschedule is the LAST line of this function and nothing in it was
+ * guarded, so any exception anywhere inside — a HUD update, a render, an art
+ * helper — killed the loop permanently: no more rAF, no more ticks, the canvas
+ * frozen on its last painted frame. The game was still "running", the pause key
+ * still worked, and Resuming repainted once (the `else if (redraw)` branch)
+ * before dying again on the next frame. From the outside that is exactly
+ * "the scene hangs, and it auto-pauses".
+ *
+ * A crash is not a legitimate way to lose a run, so:
+ *   · the UI update moved INSIDE the guard (it used to run before `raf = 0`,
+ *     so a throw there left `raf` non-zero and made the visibility handler's
+ *     `if (!raf)` recovery skip forever);
+ *   · the body is wrapped and the reschedule lives in `finally`, so one bad
+ *     frame costs one frame instead of the run;
+ *   · failures are REPORTED once each — a silent catch would turn the original
+ *     bug into a mystery.
+ */
+let frameFailures = 0;
+const frameErrors = new Map();
+// Every guard sits on ONE lane: 2 failures of the same kind is noise, 45 a
+// second is a broken build. Two reports per kind, then a banner, then silence.
+function reportFrameError(where, error) {
+  frameFailures++;
+  const key = where + ' :: ' + (error?.message || error);
+  const seen = frameErrors.get(key) || 0;
+  frameErrors.set(key, seen + 1);
+  if (seen === 0) console.error('[SPLATR] frame error in ' + where, error);
+  else if (seen === 20) console.error('[SPLATR] frame error in ' + where + ' recurs (21 so far)');
+  if (frameFailures === 45) {
+    try { say('Frame errors are repeating — see console'); } catch {}
+    game.dataset.frameFault = 'true';
+  }
+  if (typeof window !== 'undefined') window.__splatrFrameErrors = [...frameErrors.entries()];
+}
+function safe(fn, where) {
+  try { return fn(); } catch (error) { reportFrameError(where, error); return undefined; }
+}
+
 function frame(now) {
-  waveUI?.update();
   raf = 0;
-  if (document.hidden) return;
+  try {
+    if (document.hidden) return;
+    safe(() => waveUI?.update(), 'waveUI.update');
+    safeStep(now);
+  } finally {
+    // ALWAYS reschedule: a frame that throws must not end the animation.
+    if (!document.hidden) raf = requestAnimationFrame(frame);
+  }
+}
+function safeStep(now) {
   const redraw = dirty || renderer.revision !== lastRevision;
   if (!run) {
     if (redraw || (!page && opts.motion)) renderer.title(opts.motion ? now * 0.023 : 0);
@@ -1569,7 +1663,6 @@ function frame(now) {
   } else if (redraw) renderer.draw(run, 1, null, opts.motion,lastDevice);
   dirty = false;
   lastRevision = renderer.revision;
-  raf = requestAnimationFrame(frame);
 }
 function finishTutorial(){const first=storage.get('tutorialCompleted','0')!=='1';storage.set('tutorialCompleted',1);start({learningGround:false,lockdown:first});}
 $('rack-skip').onclick=()=>{if(learningGround)finishTutorial();};

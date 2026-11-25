@@ -9969,6 +9969,11 @@ function drawUpgradeBladeInlay(c,{root,tip,width,radius,upgrade,equipment,sword,
 // Sword artwork is a pure projection of the authoritative profile supplied by the caller.
 // No catalogue resolution, simulation or persistence lives in the renderer.
 function drawSwordWeapon(c, spec = {}) {
+  // CHUNK 7: a canvas that failed to get a 2D context hands us null, and the
+  // first thing this function does is `c.save()` -- which threw an exception
+  // straight up through the wave HUD's update and killed the frame loop. An
+  // undrawable prop is a cosmetic problem; it must never be a fatal one.
+  if (!c || typeof c.save !== 'function') return;
   const {x=0,y=0,radius=24,angle=0,active=false,aiming=false,charge=0,motion=true,time=0}=spec;
   const original=spec.sword||{family:'standard',color:'#deff73',reach:1,width:1};
   const buff=spec.buff,upgrade=buff?.id||buff,finish=spec.finish??1;
