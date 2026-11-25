@@ -103,12 +103,24 @@ export function loadProfile(raw) {
     recent: Array.isArray(p?.recent)?p.recent.filter(id=>QUESTS.some(q=>q.id===id)).slice(-9):[],
     coins: n(p?.coins),
     unlock: n(p?.unlock),
-    // CHUNK 5: consecutive runs where EVERY contract completed. This is the one
-    // number that survives between runs, and the reason to protect a board
-    // instead of abandoning it. Additive to the save format — an old profile
-    // simply loads a streak of zero.
-    streak: n(p?.streak),
-    bestStreak: Math.max(n(p?.streak), n(p?.bestStreak)),
+    // CHUNK 6: durable per-species kill tally and lifetime peaks. CARNAGE
+    // contracts are cumulative and must survive death, so they cannot be scored
+    // off a single run.
+    tally: Object.fromEntries(
+      ['kills', 'fang', 'prism', 'fork', 'bastion', 'crown', 'monoliths'].map((k) => [k, n(p?.tally?.[k])]),
+    ),
+    // CHUNK 6: the riot board — which contracts are posted, how many sweeps, and
+    // whether this board's free reroll is spent.
+    board: {
+      grid: Array.isArray(p?.board?.grid) ? p.board.grid.filter((id) => typeof id === 'string').slice(0, 3) : [],
+      board: n(p?.board?.board),
+      sweeps: n(p?.board?.sweeps),
+      rerolls: n(p?.board?.rerolls),
+      claimed: Array.isArray(p?.board?.claimed) ? p.board.claimed.filter((id) => typeof id === 'string').slice(0, 3) : [],
+    },
+    // CHUNK 6: carried-over progress is per-contract (the board's own `claimed`
+    // list and the durable tally), not a streak. `streak` is deliberately not
+    // loaded any more: sweeps replaced it as the long-term hook.
     owned: PARTS.filter((x) => p?.owned?.includes(x.id)).map((x) => x.id),
     heads: Object.fromEntries(
       QUESTS.map((x) => [
@@ -128,49 +140,6 @@ export function offers(random = Math.random) {
     }),
   );
 }
-/**
- * CHUNK 5: THE THREE LANES.
- *
- * The board used to be filed as AIM & TARGETS / CUT TECHNIQUE / WAVE RHYTHM — a
- * taxonomy, and one that assumes the player already knows what a "wave rhythm"
- * is. A lane is now a PROMISE: the verb, one line of what that run is like.
- * The category ids are unchanged (`SMASH`/`STYLE`/`CLIMB`) because the ticket,
- * the profile and every save file key on them.
- */
-export const LANES = Object.freeze([
-  Object.freeze({ id: 'SMASH', name: 'SMASH', promise: 'Break things', detail: 'Kill counts and species. The direct route.' }),
-  Object.freeze({ id: 'STYLE', name: 'STYLE', promise: 'Cut like a pro', detail: 'Precision: power cuts, doubles, banks, pace.' }),
-  Object.freeze({ id: 'CLIMB', name: 'CLIMB', promise: 'Get further', detail: 'Distance: sectors reached, sevens and clean runs.' }),
-]);
-
-/**
- * One line that answers "why am I doing this?" for a whole board.
- *
- * A contract's value is its points; a board's value is its points plus the
- * all-complete bonus plus the streak it is defending. These three numbers were
- * scattered across the screen (and the biggest one was inside a fold), so the
- * player had to add them up themselves. Returns the parts and one sentence.
- *
- * @param {{rows?:object[], bonus?:boolean, prize?:string, streak?:number}} ticket
- */
-export function boardSummary(ticket = {}) {
-  const rows = Array.isArray(ticket.rows) ? ticket.rows : [];
-  const points = rows.reduce((n, r) => n + (Number(r?.points) || 0), 0) * (ticket.bonus ? 2 : 1);
-  const done = rows.filter((r) => r?.done).length;
-  const streak = Math.max(0, Math.floor(Number(ticket.streak) || 0));
-  const complete = rows.length > 0 && done === rows.length;
-  const line = complete
-    ? `BOARD CLEARED · +${points} CREDITS${streak > 1 ? ` · ${streak} IN A ROW` : ''}`
-    : `${done}/${rows.length} CONTRACTS · WORTH ${points} CREDITS`;
-  return Object.freeze({ points, done, total: rows.length, complete, streak, line });
-}
-
-/** Does a finished board keep the streak alive? Every contract, not two of three. */
-export function streakHolds(ticket = {}) {
-  const rows = Array.isArray(ticket.rows) ? ticket.rows : [];
-  return rows.length > 0 && rows.every((r) => r?.done);
-}
-
 /** Seeded template grammar: stable IDs preserve per-contract Head Starts.
  * Offers vary goal, target and technique, not just decorative wording. Recent
  * contracts are deprioritized; unavailable late species are gated by mastery.

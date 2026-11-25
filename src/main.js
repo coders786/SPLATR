@@ -1576,7 +1576,7 @@ $('rack-skip').onclick=()=>{if(learningGround)finishTutorial();};
 // CHUNK 5: the "Learn" door in the quest board now opens THE LEARNING
 // GROUND instead of force-starting the course; the two safe-practice dialogs
 // it used to reference are real, wired and rendered below.
-questUI = createQuestUI({unlimited:devMode,startTutorial:()=>{home();open('manual');},practice:()=>controlPractice?.open(),teaching:()=>teaching?.open(),getRun:()=>run, storage, audio, motion:()=>opts.motion && opts.shake !== 'off', resetInput:()=>input.reset(), home,
+questUI = createQuestUI({unlimited:devMode,startTutorial:()=>{home();open('manual');},practice:()=>controlPractice?.open(),teaching:()=>teaching?.open(),openShop:()=>customize?.open(),getRun:()=>run, storage, audio, motion:()=>opts.motion && opts.shake !== 'off', resetInput:()=>input.reset(), home,
   resume:(playing)=>{clock.reset();dirty=true;if(playing)canvas.focus({preventScroll:true});portal();}, view:()=>renderer.questView()});
 customize = createCustomize({storage,unlimited:devMode,wallet:()=>questUI.wallet(),ownedParts:()=>questUI.ownedParts(),purchase:(id,cost)=>questUI.purchasePart(id,cost),resetInput:()=>input.reset(),motion:()=>opts.motion,snap:()=>audio.menu()});
 controlPractice = createControlPracticeUI({resetInput:()=>input.reset(),motion:()=>opts.motion&&opts.shake!=='off',onOpen:()=>{input.reset();poki.setPlaying(false);},onClose:()=>{input.reset();}});

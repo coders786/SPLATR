@@ -10,10 +10,13 @@ import {
   PARTS,
   loadProfile,
   createTicket,
-  LANES,
-  boardSummary,
-  streakHolds,
 } from './quests.js';
+// CHUNK 6: the contract board is its own pure system (see contracts.js for why
+// it is not a re-skin of the old tutorial quests).
+import {
+  PILLARS, PILLAR_BY_ID, dealBoard, boardState as contractBoardState, contractById,
+  contractMetrics, contractProgress, progressLabel, rerollCost, SWEEP_BONUS, EMPTY_BOARD,
+} from './contracts.js';
 import { ARENA } from './levels.js';
 
 export function createQuestUI({
@@ -22,6 +25,7 @@ export function createQuestUI({
   practice=null,
   startTutorial=null,
   teaching=null,
+  openShop=null,
   storage,
   audio,
   resetInput,
@@ -31,12 +35,26 @@ export function createQuestUI({
   motion = () => true,
 }) {
   const profile = loadProfile(storage.get('quests', '{}'));
+  // CHUNK 6: this run's peaks, for the STYLE and SURVIVAL pillars. Reset when a
+  // run starts; CARNAGE reads profile.tally instead and never resets.
+  const runTally = { doubles: 0, triples: 0, power: 0, banks: 0, overdrive: false, sector: 1, seals: 0, flawless: 0, hits: 0 };
+  function resetRunTally() {
+    for (const k of Object.keys(runTally)) runTally[k] = k === 'sector' ? 1 : k === 'overdrive' ? false : 0;
+  }
+  function contractMetricsNow() {
+    return contractMetrics({ run: runTally, tally: profile.tally });
+  }
   let offerNonce=0;
   const newOffers=()=>learningOffers({seed:Math.imul(profile.rounds+1,2654435761)+offerNonce,learned:profile.learned});
   let choices = newOffers(),
     selected = choices.map(c=>c[0].id),
     prize = nextPrize(profile).id;
-  let questsEnabled = storage.get('optional-quests', 'on') !== 'off';
+  // CHUNK 6: contracts are ALWAYS ON. The old switch read
+  // `optional-quests` and let a saved profile turn the reward system off — a
+  // setting no player wants and one that made the board's purpose unclear.
+  // The stored key is no longer read; a profile that still has `off` in it
+  // simply cannot switch rewards off any more.
+  const questsEnabled = true;
   let roundQuests = questsEnabled;
   let ticket = null,
     vault = false,
@@ -54,15 +72,24 @@ export function createQuestUI({
   const boardDialog=el('dialog','quest-board-dialog');boardDialog.setAttribute('aria-label','Optional quests');
   const closeBoard=el('button','quest-board-close','BACK');closeBoard.type='button';prependIcon(closeBoard,'back');closeBoard.onclick=()=>boardDialog.close();
   boardDialog.append(closeBoard);
-  if(teaching){const trainingButton=el('button','control-practice-entry','LIVE ENEMY TRAINING');trainingButton.type='button';trainingButton.onclick=()=>{boardDialog.close();teaching();};boardDialog.append(trainingButton);}
-  if(practice){const controlButton=el('button','control-practice-entry control-drill-entry','CONTROL PRACTICE');controlButton.type='button';prependIcon(controlButton,'practice');controlButton.onclick=()=>{boardDialog.close();practice();};boardDialog.append(controlButton,el('p','control-entry-note','Safe arena. Actual controls. No damage or rewards.'));}
+  // CHUNK 6: LIVE ENEMY TRAINING and CONTROL PRACTICE were in here, next to a
+  // list of rewards, while PRACTICE & HELP was already a separate door on the
+  // main menu. They live there now (`practice` is passed to that page); this
+  // modal is contracts and nothing else.
   boardDialog.append(picker);document.querySelector('#game').append(boardDialog);
   // CHUNK 1: the title used to show BOTH 'Learn' and 'Field manual', and both
   // opened the same panel (startTutorial resolves to open('manual')). One door
   // now: QUESTS, which is a different thing, sitting beside the single
   // practice/help door. Nothing on the menu is a synonym for anything else.
-  const questButton=el('button','choice quiet','Quests');questButton.id='quests-btn';questButton.type='button';
-  questButton.onclick=()=>{resetInput();boardDialog.showModal();};
+  // CHUNK 6: 'Quests' was a graduation-cap word for a slasher. These are
+  // contracts, and the button says so. The icon is a target/reticle, not a cap.
+  const questButton=el('button','choice quiet','Contracts');questButton.id='quests-btn';questButton.type='button';
+  prependIcon(questButton,'target');
+  questButton.onclick=()=>{resetInput();drawPicker();boardDialog.showModal();};
+  // The practice modes moved onto the PRACTICE & HELP page (see index.html).
+  const teachBtn=document.querySelector('#manual-teaching'),drillBtn=document.querySelector('#manual-drill');
+  if(teachBtn){if(teaching)teachBtn.onclick=()=>{home();teaching();};else teachBtn.remove();}
+  if(drillBtn){if(practice)drillBtn.onclick=()=>{home();practice();};else drillBtn.remove();}
   // The manual button is the practice door now; its label is set in index.html.
   void startTutorial;
   document.querySelector('#manual-btn').after(questButton);
@@ -199,118 +226,167 @@ export function createQuestUI({
       );
     return meter;
   }
-  /**
-   * CHUNK 5: THE BOUNTY BOARD.
-   *
-   * What was here was three columns x three tiers = nine near-identical
-   * `GOAL · 2` buttons, with the only part that answers "why?" — the prize —
-   * folded inside <details>Optional rewards</details>, under a switch already
-   * labelled GUIDED QUESTS ON. The board asked for work and hid the pay.
-   *
-   * It is now three lanes, one contract each, every contract carrying its own
-   * credit value on its face, and the prize ladder visible above it. One
-   * contract per lane is deliberate: a choice between nine is not a choice, it
-   * is a menu, and this screen is the last thing a player reads before a run.
-   */
+  /* ══ CHUNK 6: RIOT CONTRACTS ══════════════════════════════════════════════
+     Ground-up rebuild. What was here had an identity crisis: a practice venue,
+     a duplicate shop, tutorial tooltips and an on/off switch for rewards, in
+     one modal. This is only a board: three contracts, colour-coded by pillar,
+     live numbers, and a sweep bonus for clearing all three.
+
+     Deliberately NOT here (moved by request):
+       · LIVE ENEMY TRAINING / CONTROL PRACTICE -> `practice()` (Practice & help)
+       · the mini-shop -> one `SHOP ->` button in the header, which opens the
+         real shop
+       · the on/off toggle -> rewards are always on
+       · grey flavour footnotes -> the objective is one line, and that is all */
+
+  /** Give the board a grid if it has none, or if it has been cleared. */
+  function ensureBoard() {
+    const b = profile.board;
+    const metrics = contractMetricsNow();
+    const st = contractBoardState({ grid: b.grid.map(contractById).filter(Boolean), claimed: b.claimed, rerolls: b.rerolls }, metrics);
+    if (b.grid.length !== 3 || st.sweep) {
+      // A swept board (or a first one) deals fresh. Sweeps climb, so the next
+      // board is richer — that is the loop.
+      const swept = b.grid.length === 3 && st.sweep;
+      const nextBoard = swept ? b.board + 1 : b.board;
+      const grid = dealBoard({ seed: profile.rounds + 1, board: nextBoard, metrics });
+      profile.board = {
+        grid: grid.map((c) => c.id),
+        board: nextBoard,
+        sweeps: swept ? b.sweeps + 1 : b.sweeps,
+        rerolls: 0,
+        claimed: [],
+      };
+      save();
+      if (swept) goalToast(`BOARD SWEPT ✓ +${SWEEP_BONUS} CREDITS`);
+    }
+    return profile.board;
+  }
+
   function drawPicker() {
     picker.replaceChildren();
-    const sum = boardSummary({ rows: choices.map((c) => c[0]), streak: profile.streak || 0 });
+    const board = ensureBoard();
+    const metrics = contractMetricsNow();
+    const grid = board.grid.map(contractById).filter(Boolean);
+    const st = contractBoardState({ grid, claimed: board.claimed, rerolls: board.rerolls }, metrics);
 
-    /* ── the header: what this screen is, and what it pays ── */
-    const head = el('div', 'bounty-head');
-    const title = el('div', 'bounty-title');
-    title.append(el('b', '', 'BOUNTY BOARD'));
-    title.append(el('small', '', sum.line));
+    /* ── header ────────────────────────────────────────────────────────── */
+    const head = el('div', 'riot-head');
+    const title = el('div', 'riot-title');
+    title.append(el('b', '', '/// RIOT CONTRACTS'));
+    title.append(el('small', '', st.sweep
+      ? 'BOARD SWEPT — fresh contracts dealt'
+      : `${st.done}/3 COMPLETE · SWEEPS ${board.sweeps}`));
     head.append(title);
-    const toggle = el('button', 'quest-toggle', questsEnabled ? 'BOUNTIES · ON' : 'BOUNTIES · OFF');
-    toggle.type = 'button';
-    toggle.setAttribute('aria-pressed', String(questsEnabled));
-    toggle.onclick = () => { questsEnabled = !questsEnabled; storage.set('optional-quests', questsEnabled ? 'on' : 'off'); drawPicker(); };
-    head.append(toggle);
+    const wallet = el('div', 'riot-wallet');
+    wallet.append(el('b', '', unlimited ? '♦ ∞' : `♦ ${profile.coins.toLocaleString()}`));
+    const shop = el('button', 'riot-shop', 'SHOP →');
+    shop.type = 'button';
+    // The real shop, not a copy of it. This button is the entire reason the
+    // old mini-shop at the bottom of this modal could be deleted.
+    shop.onclick = () => { boardDialog.close(); openShop?.(); };
+    wallet.append(shop);
+    head.append(wallet);
     picker.append(head);
 
-    /* ── the streak: the one number that outlives a run ── */
-    if ((profile.streak || 0) > 0 || (profile.bestStreak || 0) > 0) {
-      const streak = el('div', 'bounty-streak');
-      streak.append(el('b', '', `STREAK ${profile.streak || 0}`));
-      streak.append(el('small', '', profile.streak > 0
-        ? 'Complete every contract in a run to keep it. One short and it resets.'
-        : `Your best was ${profile.bestStreak || 0}. Clear a full board to start again.`));
-      picker.append(streak);
-    }
+    /* ── the three contracts ───────────────────────────────────────────── */
+    const row = el('div', 'riot-contracts');
+    for (const [i, contract] of grid.entries()) {
+      const pillar = PILLAR_BY_ID[contract.pillar];
+      const p = contractProgress(contract, metrics);
+      const claimed = board.claimed.includes(contract.id);
+      const card = el('div', 'riot-card');
+      card.dataset.pillar = contract.pillar.toLowerCase();
+      card.dataset.accent = pillar.accent;
+      card.style.setProperty('--accent', pillar.accent);
+      card.dataset.done = String(p.done);
+      card.dataset.claimed = String(claimed);
 
-    if (!questsEnabled) {
-      picker.append(el('p', 'quest-total', 'Free play. No contracts, no credit bounties — the run pays its round reward only.'));
-      return;
-    }
+      const top = el('div', 'riot-card-top');
+      top.append(el('span', 'riot-tag', pillar.tag));
+      const re = el('button', 'riot-reroll', '↻');
+      re.type = 'button';
+      re.title = rerollCost(board) === 0 ? 'Reroll this contract (free)' : `Reroll this contract (♦${rerollCost(board)})`;
+      re.setAttribute('aria-label', re.title);
+      re.disabled = claimed || p.done;
+      re.onclick = () => {
+        const cost = rerollCost(board);
+        if (cost > 0 && (unlimited === false && profile.coins < cost)) return;
+        if (cost > 0 && unlimited === false) profile.coins -= cost;
+        const fresh = dealBoard({
+          seed: profile.rounds + 1 + profile.board.rerolls + 31,
+          board: board.board,
+          avoid: { [contract.pillar]: [contract.id] },
+          metrics,
+        }).find((c) => c.pillar === contract.pillar);
+        if (!fresh) return;
+        profile.board = { ...profile.board, grid: profile.board.grid.map((id) => (id === contract.id ? fresh.id : id)), rerolls: profile.board.rerolls + 1 };
+        save(); drawPicker();
+      };
+      top.append(re);
+      card.append(top);
 
-    /* ── the three contracts ── */
-    const lanes = el('div', 'bounty-lanes');
-    choices.forEach((col, i) => {
-      const lane = LANES[i];
-      const q = col[0];
-      const box = el('div', 'bounty-lane');
-      box.dataset.lane = lane.id;
-      const promise = el('div', 'bounty-promise');
-      promise.append(el('b', '', lane.name), el('span', '', lane.promise));
-      box.append(promise);
+      card.append(el('strong', 'riot-card-title', contract.title));
+      card.append(el('p', 'riot-objective', contract.objective));
 
-      const b = el('button', 'bounty-card');
-      b.type = 'button';
-      b.dataset.tier = q.lesson ? 'practice' : ['quick', 'skill', 'mastery'][q.tier];
-      b.setAttribute('aria-pressed', 'true');
-      b.setAttribute('aria-label', `${q.label}. ${questInstruction(q)} Pays ${q.points} credits.`);
+      const meter = el('div', 'riot-meter');
+      const label = el('b', 'riot-count', progressLabel(contract, metrics));
+      const track = el('div', 'riot-track');
+      const fill = el('i', 'riot-fill');
+      fill.style.width = `${Math.round(p.fraction * 100)}%`;
+      track.append(fill);
+      meter.append(label, track);
+      card.append(meter);
 
-      const top = el('div', 'bounty-top');
-      top.append(el('small', 'bounty-tier', q.lesson ? 'PRACTICE' : ['QUICK', 'SKILL', 'MASTERY'][q.tier]));
-      top.append(el('b', 'bounty-pay', `+${q.points}`));
-      b.append(top);
-      b.append(el('strong', '', q.label));
-      b.append(el('span', 'bounty-how', questInstruction(q)));
-
-      // The contract's own progress, if this one has been worked before.
-      const kept = profile.heads[q.id] || 0;
-      if (kept > 0) {
-        const pips = el('div', 'bounty-progress');
-        const track = el('div', 'bounty-track');
-        const fill = el('i', 'bounty-fill');
-        fill.style.width = `${(100 * kept) / q.goal}%`;
-        track.append(fill);
-        pips.append(track, el('small', '', `${kept}/${q.goal} CARRIED OVER`));
-        b.append(pips);
+      if (p.done && !claimed) {
+        const claim = el('button', 'riot-claim', `CLAIM ♦ +${contract.pay}`);
+        claim.type = 'button';
+        claim.onclick = () => {
+          profile.coins += contract.pay;
+          profile.board = { ...profile.board, claimed: [...profile.board.claimed, contract.id] };
+          save();
+          audio?.lock();
+          drawPicker();
+        };
+        card.append(claim);
+      } else if (claimed) {
+        card.append(el('div', 'riot-footer', 'CLAIMED ✓'));
+      } else {
+        const foot = el('div', 'riot-footer');
+        foot.append(el('span', '', 'REWARD'), el('b', '', `♦ +${contract.pay}`));
+        card.append(foot);
       }
-      b.append(el('em', 'bounty-detail', lane.detail));
-      b.onpointerenter = () => { for (const c of picker.querySelectorAll('.bounty-card')) c.classList.remove('pointer-hover'); b.classList.add('pointer-hover'); };
-      b.onpointerleave = () => b.classList.remove('pointer-hover');
-      box.append(b);
-      lanes.append(box);
-    });
-    picker.append(lanes);
-
-    /* ── the reward ladder, ON the board, not behind a fold ── */
-    const prizes = el('div', 'bounty-prizes');
-    const phead = el('div', 'bounty-prizes-head');
-    phead.append(el('b', '', 'WHAT IT PAYS OUT'));
-    const wallet = el('span', 'menu-credit-wallet', unlimited ? '◈ ∞ SANDBOX' : `◈ ${profile.coins.toLocaleString()}`);
-    phead.append(wallet);
-    prizes.append(phead);
-    const row = el('div', 'bounty-prize-row');
-    for (const p of PARTS) {
-      const owned = profile.owned.includes(p.id);
-      const b = el('button', 'prize-option');
-      b.type = 'button';
-      b.disabled = owned;
-      b.dataset.owned = String(owned);
-      b.setAttribute('aria-label', owned ? `${p.label}, owned` : `${p.label}, ${p.cost} credits`);
-      const preview = el('canvas', 'prize-preview');
-      preview.width = 100; preview.height = 85; preview.dataset.part = p.id;
-      b.append(preview, el('small', '', p.label), el('b', '', owned ? 'OWNED' : `◈ ${p.cost}`));
-      row.append(b);
+      row.append(card);
     }
-    prizes.append(row);
-    picker.append(prizes);
+    picker.append(row);
 
-    picker.append(el('p', 'quest-total', 'Press Q during a run to check these off. Contracts pay once each.'));
+    /* ── the sweep track ───────────────────────────────────────────────── */
+    const sweep = el('div', 'riot-sweep');
+    sweep.dataset.ready = String(st.sweep);
+    const sLeft = el('div', 'riot-sweep-copy');
+    sLeft.append(el('b', '', '/// BOARD SWEEP BONUS'));
+    sLeft.append(el('small', '', st.sweep
+      ? 'Swept. Fresh contracts dealt, sweeps climbing.'
+      : `Complete all 3 contracts to claim ♦ +${SWEEP_BONUS} and deal a fresh board.`));
+    sweep.append(sLeft);
+    const pips = el('div', 'riot-pips');
+    for (const done of st.pips) {
+      const pip = el('i');
+      pip.dataset.on = String(done);
+      pips.append(pip);
+    }
+    sweep.append(pips);
+    sweep.append(el('b', 'riot-sweep-pay', `♦ +${SWEEP_BONUS}`));
+    picker.append(sweep);
+    if (st.sweep) {
+      // The board is cleared: pay it, then the deck is fresh on next open.
+      profile.coins += SWEEP_BONUS;
+      profile.board = { ...profile.board, claimed: [] };
+      save();
+      goalToast(`BOARD SWEPT ✓ +${SWEEP_BONUS} CREDITS`);
+    }
+
+    picker.append(el('p', 'riot-note', 'Contracts pay once. Progress carries between runs. Press Q in a run to check them.'));
   }
 
   function row(q, end = false, index = 0) {
@@ -557,6 +633,32 @@ export function createQuestUI({
       if (type === 'postPaid' && d) goalToast(`POST · ${String(d.name || d.id).toUpperCase()}`);
       if (!ticket || !run || run.state.practice || (type === 'over' && death)) return;
       liveKills.textContent=`KILLS ${run.state.kills||0}`;
+      // ── CHUNK 6: FEED THE CONTRACTS ────────────────────────────────────
+      // CARNAGE is cumulative and reads profile.tally, so it accumulates here
+      // and is saved with the profile; STYLE and SURVIVAL read this run's peaks
+      // and reset when a run starts.
+      // Launch power rides the `dash` event (`d.power`, 0..1); the cut has no
+      // such field. A power cut is therefore "a full-pull dash that cut".
+      let lastPower = 0;
+      if (type === 'dash' && d) lastPower = Number.isFinite(d.power) ? d.power : 0;
+      if (type === 'cut' && d && !d.small && !d.paper) {
+        const kind = d.kind;
+        profile.tally.kills = (profile.tally.kills || 0) + 1;
+        if (profile.tally[kind] != null) profile.tally[kind] += 1;
+        if ((d.strokeKills || 0) >= 2) runTally.doubles += 1;
+        if ((d.strokeKills || 0) >= 3) runTally.triples += 1;
+        if (lastPower >= .75) runTally.power += 1;
+      }
+      if (type === 'monolithDown') profile.tally.monoliths = (profile.tally.monoliths || 0) + 1;
+      if (type === 'cleanBank') runTally.banks += 1;
+      if (type === 'drive') runTally.overdrive = true;
+      if (type === 'hurt') runTally.hits += 1;
+      if (type === 'sector' && d) {
+        runTally.sector = Math.max(runTally.sector, Number(d.band) || 1);
+        runTally.seals += 1;
+        // A sector sealed with no hits taken is a flawless seal.
+        if (runTally.hits === 0) runTally.flawless += 1;
+      }
       if(type==='waveClear'||type==='dimensionBreak'){
         profile.records.paceTicks=Math.max(profile.records.paceTicks,Math.floor(run.state.bestPace||0));
         profile.records.banks=Math.max(profile.records.banks,run.state.bestCleanBankChain||0,run.state.wave?.cleanBanks.best||0);
@@ -608,14 +710,9 @@ export function createQuestUI({
         profile.rounds++;
         profile.bestBand=Math.max(profile.bestBand,Number.isFinite(run.state.band)?run.state.band:1);
         if(roundQuests)profile.recent=[...profile.recent,...ticket.rows.map(q=>q.id)].slice(-9);
-        // CHUNK 5: THE STREAK. A full board extends it, one short contract
-        // resets it — the only state in this system that outlives a run, and
-        // the reason to protect a board instead of abandoning it.
-        if (roundQuests) {
-          const held = streakHolds(ticket);
-          profile.streak = held ? (profile.streak || 0) + 1 : 0;
-          profile.bestStreak = Math.max(profile.bestStreak || 0, profile.streak);
-        }
+        // CHUNK 6: the run-long hook is the SWEEP COUNTER now (a cleared board
+        // deals a richer one and climbs), so the chunk-5 streak is gone rather
+        // than left fighting it for the same screen space.
         profile.owned = [...settlement.owned];
         const receipt = settlement.receipt;
         save();

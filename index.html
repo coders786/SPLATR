@@ -320,6 +320,13 @@
           <button class="back">← Back</button>
         </section>
         <section id="manual-page" hidden>
+          <!-- CHUNK 6: the two live practice modes belong here, on the page the
+               PRACTICE & HELP button already opens, not inside the contracts
+               modal where they were sitting next to a list of rewards. -->
+          <div id="manual-modes" class="manual-modes">
+            <button id="manual-teaching" class="choice quiet" type="button">LIVE ENEMY TRAINING</button>
+            <button id="manual-drill" class="choice quiet" type="button">CONTROL PRACTICE</button>
+          </div>
           <div class="visual-manual" aria-label="The Learning Ground — every way to practice the game"></div>
           <button class="back" id="manual-back">BACK</button>
         </section>

@@ -1720,6 +1720,94 @@ body:has(#panel[open]) #hud {
 .picker-kept {color:#ffd773;}
 .quest-option:focus:not(:focus-visible) {outline:none;background:#262032;filter:none;}
 .quest-columns:has(.pointer-hover) .quest-option:not(.pointer-hover) {background:#262032;filter:none;}
+/* ══ CHUNK 6: RIOT CONTRACTS ═══════════════════════════════════════════════
+   The language is the title screen's: deep violet-black surfaces, skewed
+   geometry, 1px crisp borders, `///` slashes, acid lime / hot pink / cyan.
+   What it replaces was a pastel gold header bar — a colour that appeared
+   nowhere else in this game and made a slasher look like a worksheet. Each card
+   carries its own pillar colour as a 3px top border and nothing else, so the
+   board reads as three lanes at a glance. */
+.riot-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:12px;
+  padding-bottom:9px;border-bottom:1px solid #2f2740}
+.riot-title{display:flex;flex-direction:column;gap:3px;min-width:0}
+.riot-title>b{font:700 16px 'Space Mono',monospace;letter-spacing:.14em;color:#dfff00;
+  text-shadow:0 0 14px #dfff0044}
+.riot-title>small{font-size:9px;letter-spacing:.12em;color:#8f83a6;text-transform:uppercase}
+.riot-wallet{display:flex;align-items:center;gap:9px;flex:none}
+.riot-wallet>b{font:700 13px 'Space Mono',monospace;color:#dfff00;letter-spacing:.04em}
+.riot-shop{font:700 9px 'Space Mono',monospace;letter-spacing:.1em;
+  background:transparent;color:#00f0ff;border:1px solid #00f0ff66;
+  padding:6px 9px;cursor:pointer;transform:skewX(-8deg);
+  transition:background .13s ease-out,color .13s ease-out}
+.riot-shop:hover,.riot-shop:focus-visible{background:#00f0ff;color:#120e1a}
+.riot-shop>span{display:inline-block;transform:skewX(8deg)}
+
+/* ── the three cards ── */
+.riot-contracts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.riot-card{position:relative;display:flex;flex-direction:column;gap:7px;
+  padding:11px 11px 0;background:linear-gradient(170deg,#1a1528,#14101e 70%);
+  border:1px solid #33294a;border-top:3px solid var(--accent,#dfff00);
+  box-shadow:0 2px 0 #0b0812}
+.riot-card[data-done=true]{border-color:#dfff00;border-top-color:#dfff00;
+  box-shadow:0 0 0 1px #dfff0066,0 0 18px #dfff0022}
+.riot-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.riot-tag{font:700 9px 'Space Mono',monospace;letter-spacing:.16em;color:var(--accent,#dfff00)}
+.riot-reroll{font:700 11px 'Space Mono',monospace;line-height:1;
+  background:transparent;color:#8f83a6;border:1px solid #3a3050;
+  width:20px;height:20px;cursor:pointer;transition:all .13s ease-out}
+.riot-reroll:hover:not(:disabled),.riot-reroll:focus-visible:not(:disabled){color:#120e1a;background:var(--accent,#dfff00);border-color:var(--accent,#dfff00)}
+.riot-reroll:disabled{opacity:.25;cursor:default}
+.riot-card-title{font:700 19px/1.05 'Space Mono',monospace;letter-spacing:.01em;
+  text-transform:uppercase;color:#f4ecff;transform:skewX(-6deg);transform-origin:left center}
+.riot-objective{margin:0;font:400 10px/1.4 'Space Mono',monospace;color:#cfc6dd}
+.riot-meter{display:flex;flex-direction:column;gap:4px;margin-top:auto}
+.riot-count{font:700 12px 'Space Mono',monospace;color:#f4ecff;letter-spacing:.03em}
+.riot-track{height:9px;background:#241c33;border:1px solid #33294a;overflow:hidden}
+.riot-fill{display:block;height:100%;background:var(--accent,#dfff00);
+  box-shadow:0 0 10px var(--accent,#dfff00);transition:width .18s ease-out}
+
+/* the footer: REWARD left, money right — or the claim button that replaces it */
+.riot-footer{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+  margin:2px -11px 0;padding:7px 11px;background:#0f0b18;border-top:1px solid #33294a;
+  font:700 9px 'Space Mono',monospace;letter-spacing:.12em;color:#8f83a6}
+.riot-footer>b{font-size:12px;color:#dfff00;letter-spacing:.02em}
+.riot-card[data-claimed=true] .riot-footer{color:#dfff00}
+.riot-claim{display:block;width:calc(100% + 22px);margin:2px -11px 0;padding:10px 11px;
+  font:700 12px 'Space Mono',monospace;letter-spacing:.14em;cursor:pointer;
+  background:#dfff00;color:#120e1a;border:0;border-top:1px solid #dfff00;
+  animation:riot-claim-pulse 1.1s ease-in-out infinite alternate}
+.riot-claim:hover,.riot-claim:focus-visible{background:#f2ff6b}
+@keyframes riot-claim-pulse{from{box-shadow:inset 0 0 0 #120e1a}to{box-shadow:inset 0 0 22px #120e1a55}}
+
+/* ── the sweep track ── */
+.riot-sweep{display:flex;align-items:center;gap:14px;margin-top:12px;padding:10px 12px;
+  background:#14101e;border:1px solid #33294a;border-left:3px solid #dfff00}
+.riot-sweep[data-ready=true]{background:#1b2110;border-color:#dfff0077}
+.riot-sweep-copy{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.riot-sweep-copy>b{font:700 10px 'Space Mono',monospace;letter-spacing:.14em;color:#dfff00}
+.riot-sweep-copy>small{font-size:9px;line-height:1.35;color:#8f83a6}
+.riot-pips{display:flex;gap:5px;flex:none}
+.riot-pips>i{width:17px;height:17px;border:1px solid #3a3050;background:#1a1528;transform:skewX(-8deg)}
+.riot-pips>i[data-on=true]{background:#dfff00;border-color:#dfff00;box-shadow:0 0 9px #dfff0066}
+.riot-sweep-pay{font:700 13px 'Space Mono',monospace;color:#dfff00;flex:none;letter-spacing:.02em}
+.riot-note{margin:9px 0 0;font:400 9px 'Space Mono',monospace;letter-spacing:.06em;color:#6f6486}
+
+/* the practice modes now on the PRACTICE & HELP page */
+.manual-modes{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.manual-modes>button{flex:1 1 auto;min-height:36px}
+
+@media(max-width:680px){
+  .riot-contracts{grid-template-columns:1fr}
+  .riot-head{flex-direction:column;gap:8px}
+  .riot-card-title{font-size:17px}
+  .riot-sweep{flex-wrap:wrap;gap:8px}
+  .riot-sweep-pay{margin-left:auto}
+}
+@media(max-height:600px) and (min-width:681px){
+  .riot-card-title{font-size:15px}
+  .riot-objective{font-size:9px}
+  .riot-note{display:none}
+}
 /* ══ CHUNK 5: THE BOUNTY BOARD ══════════════════════════════════════════════
    The old board was nine identical boxes at one visual weight: title, tier,
    goal and reward all 9-12px in the same grey. Nothing said "this pays" and
