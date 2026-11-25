@@ -18,7 +18,12 @@ const LESSONS = [
  ['CLIMB','waveClear','CLEAR A WAVE','Cut every enemy. The glowing rest platform appears after the last one.',[1,1,1]],
  ['SMASH','cut','BREAK THE LINK','Cut either purple Prism to switch off its connecting beam.',[1,1,2],'prism'],
  ['STYLE','cleanBank','CLEAN BANK','Launch into a wall at pace. Aim inward before contact to steer your rebound.',[1,2,2]],
- ['CLIMB','waveRest','USE THE REST','Land on the glowing platform after a clear. Choose one temporary upgrade.',[1,1,1]],
+ // CHUNK 4: this lesson used to be 'USE THE REST' (kind `waveRest`), which the
+ // shipped mode can never emit — the rest chooser was removed from continuous
+ // play, so the row was uncompletable and one of nine tutorials was a dead end.
+ // It is now the thing a clear actually means here: breaking the sector seal.
+ // `waveClear` fires on every seal break and on the Monolith's fall.
+ ['CLIMB','waveClear','BREAK THE SEAL','Cut all three anchors, then launch up through the open seam.',[1,1,1]],
  ['SMASH','any','PLAN YOUR LANE','Choose a clear path through enemies instead of releasing into a crowd.',[6,8,10]],
  ['STYLE','paceHeld','HOLD YOUR PACE','Stay above the speed target to charge Hyper. Brief dips allow recovery.',[1,1,1]],
  ['CLIMB','dimensionBreak','BREAK THROUGH','In a break wave, bank during Hyper, then launch through the ready breach.',[1,1,1]],

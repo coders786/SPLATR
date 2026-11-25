@@ -12,14 +12,24 @@ test('only demonstrated live skills unlock the next lesson; purchases and deaths
  const p=loadProfile('{}'),a=learningOffers({seed:2,learned:p.learned}),t=createTicket(a.flat().map(q=>q.id),'halo',p);
  for(let i=0;i<20;i++){t.event('dash',{power:1});t.event('cut',{kind:'fang',small:true});t.event('waveClear',{},false);}assert.deepEqual(p.learned,{SMASH:0,STYLE:0,CLIMB:0});
  for(let i=0;i<6;i++)t.event('cut',{kind:'fang'});t.event('waveClear');assert.deepEqual(p.learned,{SMASH:1,STYLE:1,CLIMB:1});
- assert.deepEqual(learningOffers({learned:p.learned}).flat().map(q=>q.kind),['cut','cleanBank','waveRest']);
+ // CHUNK 4: the STYLE lesson at this step is still CLEAN BANK; the CLIMB lane
+ // moved from the uncompletable `waveRest` lesson to the seal, so the ladder
+ // still advances without a dead end.
+ assert.deepEqual(learningOffers({learned:p.learned}).flat().map(q=>q.kind),['cut','cleanBank','waveClear']);
  const reloaded=loadProfile(JSON.stringify(p));assert.deepEqual(reloaded.learned,p.learned);
  const next=createTicket(learningOffers({learned:reloaded.learned}).flat().map(q=>q.id),'halo',reloaded);assert.ok(next.rows.every(q=>q.value===0));
 });
-test('rest lesson requires real rest event and persisted mastery is bounded',()=>{
+test('the seal lesson requires a real clear event and persisted mastery is bounded',()=>{
+ // CHUNK 4: was 'rest lesson requires real rest event'. The rest chooser no
+ // longer exists in the shipped mode, so the CLIMB lesson at this step is the
+ // seal break — and it keeps the property this test was written for: the row
+ // only advances on a LIVE event, never on a purchased or replayed one.
  const p=loadProfile('{"learned":{"SMASH":999,"STYLE":-2,"CLIMB":1}}');assert.deepEqual(p.learned,{SMASH:3,STYLE:0,CLIMB:1});
- const t=createTicket(learningOffers({learned:p.learned}).flat().map(q=>q.id),'halo',p),rest=t.rows.find(q=>q.kind==='waveRest');
- t.event('waveClear');assert.equal(rest.value,0);t.event('waveRest',{},false);assert.equal(rest.value,0);t.event('waveRest');assert.equal(rest.done,true);
+ const t=createTicket(learningOffers({learned:p.learned}).flat().map(q=>q.id),'halo',p),seal=t.rows.find(q=>q.kind==='waveClear');
+ assert.ok(seal,'the CLIMB lane is teaching the seal');
+ t.event('sector');assert.equal(seal.value,0,'other events cannot stand in for a clear');
+ t.event('waveClear',{},false);assert.equal(seal.value,0,'a non-live event cannot bank mastery');
+ t.event('waveClear');assert.equal(seal.done,true);
 });
 test('clean-bank lesson ignores generic contacts, tutorials and floor recovery',()=>{
  const p=loadProfile('{"learned":{"STYLE":1}}'),t=createTicket(learningOffers({learned:p.learned}).flat().map(q=>q.id),'halo',p),row=t.rows.find(q=>q.kind==='cleanBank');

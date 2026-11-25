@@ -379,7 +379,7 @@ export function upgradeHas(state, id) {
 export function createRun(
   seed,
   emit = () => {},
-  { warmup = false, staged = warmup, viewport = null, combatTrace = null, equipment = null, waveMode = false, controlPractice = false, continuous = false, lockdownIntro = false, arena = null, fracturePct = 0, catalogRewards = false } = {},
+  { warmup = false, staged = warmup, viewport = null, combatTrace = null, equipment = null, waveMode = false, controlPractice = false, continuous = false, lockdownIntro = false, arena = null, fracturePct = 0, catalogRewards = false, postRewards = false } = {},
 ) {
   // Stream the normal neighbourhood, but keep its other bodies off the
   // Hold the rest of the stream until the first live Fang is cut (or the
@@ -721,7 +721,9 @@ export function createRun(
     }
   };
   const applyCatalogUpgrade = buff => {
-    if (!catalogRewards || !buff?.fields || s.upgrades.some(x => x?.id === buff.id)) return false;
+    // CHUNK 4: a post owns cards too, so the ownership gate must accept either
+    // reward path — otherwise the auto-grant would be silently refused.
+    if (!(catalogRewards || postRewards) || !buff?.fields || s.upgrades.some(x => x?.id === buff.id)) return false;
     s.upgrades = [...s.upgrades, buff];
     refreshUpgradeState();
     const fields = buff.fields || {};
@@ -732,12 +734,16 @@ export function createRun(
       gainFracture(s, fields.startFracture, emit);
     }
     emit('upgradeApplied', { id: buff.id, owned: s.upgrades.map(x => x.id), hpMax: s.hpMax });
+    // CHUNK 4: a card can change what the HUD must show (hull size, shields,
+    // dash pips), so the UI is told at the moment it lands rather than on the
+    // next unrelated event.
+    emit('upgradesChanged', { id: buff.id, owned: s.upgrades.map(x => x.id), hpMax: s.hpMax });
     return true;
   };
   if(viewport)world.viewport={...viewport};
   // 6C stays opt-in: focused harnesses and future modes can request the
   // catalog, while ordinary gameplay keeps the 6B reward path unchanged.
-  const waveDirector=waveMode?(continuous?createContinuousDirector({seed,world,combat,state:s,emit,intro:lockdownIntro,catalogRewards,onUpgrade:applyCatalogUpgrade}):createWaveDirector({seed,world,combat,state:s,emit,baseDashSpeed:rules.dashSpeed,controlPractice,catalogRewards,onUpgrade:applyCatalogUpgrade})):null;
+  const waveDirector=waveMode?(continuous?createContinuousDirector({seed,world,combat,state:s,emit,intro:lockdownIntro,catalogRewards,postRewards,onUpgrade:applyCatalogUpgrade}):createWaveDirector({seed,world,combat,state:s,emit,baseDashSpeed:rules.dashSpeed,controlPractice,catalogRewards,onUpgrade:applyCatalogUpgrade})):null;
   if (!lesson && !waveMode) stream.sync(SPAWN, s.line);
   function nearest() {
     const p = world.player.position;

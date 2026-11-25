@@ -521,6 +521,8 @@ export function createQuestUI({
       // ticket (a practice or dev session has none), so this check sits before
       // the ticket gate. It is a run event, not a quest event.
       if (type === 'goalPaid' && d) goalToast(`BONUS ${d.label} ✓ +${d.credits} CREDITS`);
+      // CHUNK 4: a post arrives on a clear with no picker, so it says so.
+      if (type === 'postPaid' && d) goalToast(`POST · ${String(d.name || d.id).toUpperCase()}`);
       if (!ticket || !run || run.state.practice || (type === 'over' && death)) return;
       liveKills.textContent=`KILLS ${run.state.kills||0}`;
       if(type==='waveClear'||type==='dimensionBreak'){

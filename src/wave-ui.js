@@ -3,6 +3,7 @@ import {iconNode,prependIcon,BUFF_ICONS,STAGE_ICONS} from './ui-icons.js';
 import {controlCue} from './control-cues.js';
 import {breakthroughLabel,breachCue} from './breakthrough.js';
 import {rushReadout} from './hud-copy.js';
+import {postVisible} from './post.js';
 import {SPEED_PACE} from './speed-pace.js';
 import {drawSwordWeapon,drawEncounterRoster,drawWaveUpgradePreview} from './art/splatr-art-engine.js';
 function luckyStamp(copy){const stamp=document.createElement('small');stamp.className='buff-lucky';stamp.textContent='LUCKY';stamp.setAttribute('aria-hidden','true');stamp.title='Boosted roll · Normally '+copy.usualStat;return stamp;}
@@ -24,6 +25,11 @@ export function createWaveUI({getRun,resetInput,motion=()=>!matchMedia('(prefers
  // frame (the HUD is a replaceChildren target, so a child it owned would be
  // wiped), and hidden whenever there is no goal to show.
  const goalChip=document.createElement('div');goalChip.className='wave-goal';goalChip.hidden=true;goalChip.setAttribute('role','status');
+ // CHUNK 4: THE POST RECEIPT. A run-length card arrives on every clear with no
+ // picker, so the HUD has to say WHICH card and WHY — an unexplained buff is
+ // indistinguishable from a bug. Shown for a short window after it lands.
+ const postLine=document.createElement('div');postLine.className='wave-post';postLine.hidden=true;postLine.setAttribute('role','status');
+ let postShownFor=-1;
  // CHUNK 6B: THE LANDLORD'S BAR — Minecraft parity, bottom center. Five
  // cells, one per plate; a pure projection of the boss's plates, read once a
  // frame. Appended to #game (not inside the rebuilt .wave-hud) so the wipe can
@@ -147,6 +153,29 @@ const paceAction=pace.querySelector('.pace-action'),paceSpeed=pace.querySelector
     }
     if(goalChip.parentNode!==hud)hud.append(goalChip);
    }else if(goalChip.parentNode)goalChip.remove();
+  }
+
+  // ── CHUNK 4: THE POST ───────────────────────────────────────────────────
+  // One receipt per clear: the card and the ranker's one-line reason. It lives
+  // in the HUD beside the goal chip and clears itself when the next sector's
+  // fight begins, because a receipt that outlives its sector becomes clutter.
+  {
+   const post=run.state.post;
+   // The receipt is a beat, not a status: it expires on its own, so the HUD
+   // goes back to just the fight. See POST.showTicks.
+   const show=!!post&&wave.phase==='combat'&&postVisible(post,run.state.elapsed);
+   if(show&&post.sector!==postShownFor){
+    postShownFor=post.sector;
+    postLine.replaceChildren();
+    const tag=document.createElement('span');tag.textContent='POST';
+    const card=document.createElement('b');card.textContent=String(post.name||post.id||'').toUpperCase();
+    const why=document.createElement('em');why.textContent=post.reason||'';
+    postLine.append(tag,card,why);
+    postLine.dataset.card=String(post.id||'');
+   }
+   postLine.hidden=!show;
+   if(show&&postLine.parentNode!==hud)hud.append(postLine);
+   else if(!show&&postLine.parentNode)postLine.remove();
   }
 
   const local=(wave.number-1)%5;

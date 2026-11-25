@@ -395,6 +395,9 @@ function event(type, d) {
     // CHUNK 3: the bonus goal's payout is a real beat, not a ledger row — it is
     // the one payment in a sector that arrives without a kill to punctuate it.
     case 'goalPaid': audio.lock();break;
+    // CHUNK 4: the post is a card, not a kill — give it the upgrade beat so it
+    // is audible over the sector-clear music sting it lands under.
+    case 'postPaid': audio.strike('drive');break;
     case 'sonicBank': audio.strike('parry');break;
     case 'breachContact': audio.seamHit();break;
     case 'dimensionBreak': if(!run?.state.narrative)input?.reset();audio.shatter();break;
@@ -1231,7 +1234,14 @@ function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   $('dev-refill').textContent='Refill health / Edge / focus';
   combatTrace = devMode ? createCombatTrace(4096) : null;
   if(learn){tutorial=createVisualTutorial(seed,(type,data)=>renderer.event(type,type==='cut'?{...data,points:0}:data,opts.motion));run=tutorial.run;}
-  else run = createRun(seed, event, {waveMode:true,continuous:true,catalogRewards:false,lockdownIntro:lockdown,viewport:renderer.questView(),equipment:customize?.snapshot(),combatTrace,fracturePct:fractureMirror});
+  // CHUNK 4: the 40-card catalogue used to be unreachable here, because
+  // `catalogRewards` gates the REST CHOOSER and the chooser is removed from
+  // continuous play (by the earlier decision recorded in waves.js — flipping it
+  // parks the run in `phase:'choose'` with no picker). `postRewards` is the
+  // separate path: one auto-picked card per clear, no UI, no stop. Both flags
+  // exist because one means "ask the player" and the other means "give it to
+  // them". See src/post.js.
+  else run = createRun(seed, event, {waveMode:true,continuous:true,catalogRewards:false,postRewards:true,lockdownIntro:lockdown,viewport:renderer.questView(),equipment:customize?.snapshot(),combatTrace,fracturePct:fractureMirror});
   // QA/debug handle: ?debug in the URL or riot.debug=1 in localStorage exposes
   // the live run to automated playtests. Never set for an ordinary player.
   if (new URLSearchParams(location.search).has('debug') || storage.get('debug', '0') === '1') window.__riot = run;
