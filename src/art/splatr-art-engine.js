@@ -2776,7 +2776,7 @@ function polygon(c, points, color) {
  * move independent depth planes; deterministic tile coordinates avoid respawns.
  * All masses are scenery: muted edges, no gameplay lime/red or collision writes.
  */
-function drawIndustrialDistrict(c,w,h,camera={},seed=41,band=1,time=0) {
+function drawIndustrialDistrict(c,w,h,camera={},seed=41,band=1,time=0,bake=null) {
   const x=Number.isFinite(camera.x)?camera.x:0,y=Number.isFinite(camera.y)?camera.y:0;
   const scale=Math.max(.65,Math.min(1.3,camera.scale||1));
   const palettes=[
@@ -2800,6 +2800,7 @@ function drawIndustrialDistrict(c,w,h,camera={},seed=41,band=1,time=0) {
       const bounds=tier===0?[50,35,370,640]:tier===1?[30,-30,670,820]:[924,-70,1360,1140];
       if(px+(bounds[2]+16)*scale<0||px+(bounds[0]-16)*scale>w||py+(bounds[3]+16)*scale<0||py+(bounds[1]-16)*scale>h)continue;
       c.save();c.translate(px,py);c.scale(scale,scale);
+      const drawTile=c=>{
       if(tier===0){
         // Distant compression towers: visible through the larger machinery.
         const top=100+(n%90),bw=120+(n>>>9)%60;
@@ -2870,6 +2871,16 @@ function drawIndustrialDistrict(c,w,h,camera={},seed=41,band=1,time=0) {
         line2(c,p.near,3,930,0,930,250+(n%90));
         c.fillStyle=p.edge;c.fillRect(924,240+(n%90),12,17);
       }
+      };
+      if(bake&&tier!==1){
+        const bx=tier===0?34:908,by=tier===0?19:-86,bw=tier===0?352:468,bh=tier===0?637:1242;
+        // Muted scenery needs only half-resolution art. Keep a whole visible
+        // working set in the cache rather than thrashing full-size tiles.
+        c.translate(bx,by);c.scale(2,2);
+        bake.paint(c,`district:${seed}:${band%4}:${tier}:${n}`,Math.ceil(bw/2),Math.ceil(bh/2),context=>{
+          context.save();context.scale(.5,.5);context.translate(-bx,-by);drawTile(context);context.restore();
+        });
+      }else drawTile(c);
       c.restore();
     }
   }
@@ -3343,7 +3354,7 @@ function drawEquipmentImpact(c, x, y, id, progress2, floorY = Infinity) {
   }
   c.restore();
 }
-function drawEquipmentEffects(c, fx, t = 0, floorY = Infinity) {
+function drawEquipmentEffects(c, fx, t = 0, floorY = Infinity,glowBake=null) {
   if (!fx) return;
   for (const b of fx.bursts) {
     const progress2 = 1 - b.ticks / 30;
@@ -3364,10 +3375,12 @@ function drawEquipmentEffects(c, fx, t = 0, floorY = Infinity) {
     } else drawEquipmentImpact(c, b.x, b.y, b.style, progress2, floorY);
   }
   for (const p of fx.projectiles) {
+    drawBakedGlow(c,glowBake,p.x,p.y,22,'#00f0ff');
     line2(c, "#b88fff", 3, p.x, p.y, p.x - p.vx * 2, p.y - p.vy * 2);
     disk2(c, "#f5d9ff", p.x, p.y, 2);
   }
   for (const e of fx.echoes) {
+    drawBakedGlow(c,glowBake,e.x,e.y,37,'#dfff00');
     c.save();
     c.globalAlpha = Math.max(0, e.ticks / 30) * 0.6;
     c.translate(e.x, e.y);
@@ -5479,7 +5492,8 @@ function ticks(c, r, ink2, from, count) {
     );
   }
 }
-function createBackdrop(c) {
+function createBackdrop(c,surface=null) {
+  const bake=createArtBake({surface,maxEntries:24,maxPixels:2000000});
   const glints = Array.from({ length: 190 }, (_, i) => {
     const rand = randomSource(hash(41, i, 9));
     return [rand(), rand(), rand(), rand(), rand()];
@@ -5750,7 +5764,7 @@ function createBackdrop(c) {
     c.restore();
   }
   function world(v, seed, band, time=0) {
-    drawIndustrialDistrict(c,v.width,v.height,{x:v.panX*v.scale,y:v.panY*v.scale,scale:v.scale},seed,band,time);
+    drawIndustrialDistrict(c,v.width,v.height,{x:v.panX*v.scale,y:v.panY*v.scale,scale:v.scale},seed,band,time,bake);
   }
   function title(w, h, time) {
     const tall = w < h * 0.85;
@@ -5993,7 +6007,7 @@ function createBackdrop(c) {
     c.restore();
     c.restore();
   }
-  return { world, title, bench };
+  return { world, title, bench,dispose:()=>bake.clear(),bakeStats:()=>bake.stats() };
 }
 
 // consolidated/renderer.js
@@ -7228,10 +7242,14 @@ function recordPopup(pops, d) {
   return pop;
 }
 function createRenderer(c, viewport) {
-  const camera = createCamera(), back = createBackdrop(c);
+  const camera = createCamera(), back = createBackdrop(c,viewport.surface);
   let scene = null, sceneTicks = 0, w, h, lastView, revision = 0, anim = "rest", shake = createShake(), shakeLevel = "full", mapOpacity = 0.92, frameDt = 1, ghosts = createSmear(10), lastSwing = -1, justLaunched = 0, ghostClock = 0, holdDir = 0, stain = 0, facing = 1, rand = randomSource(1);
   const trail = [], shards = [], pops = [], beams = [], imprints = [], sparks = [];
   const dashDust = [];
+  const dustPool=createVisualPool(90,{create:()=>({brake:false,x:0,y:0,vx:0,vy:0,life:0,age:0,len:0,hot:false}),clear:()=>{}});
+  const sparkPool=createVisualPool(MOTION.maxSparks,{create:()=>({x:0,y:0,px:0,py:0,pa:0,angle:0,vx:0,vy:0,l:0,life:0,col:''}),clear:()=>{}});
+  const renderCuller=createRenderCuller();
+  const glowBake=viewport.surface?createArtBake({surface:viewport.surface,maxEntries:3,maxPixels:49152}):null;
   const wardBreaks=[],contactBursts=[];let cutExitSource=null;
   const dimensionImpact = createDimensionImpact();
   // CHUNK 1: view-time payloads owned by the shell (main.js): the screen-space
@@ -7268,7 +7286,7 @@ function createRenderer(c, viewport) {
     c.lineJoin = "miter";
   }
   function reset(seed, room = false) {
-    dimensionImpact.reset();
+    dimensionImpact.reset();dustPool.reset();sparkPool.reset();renderCuller.reset();
     scene = null;
     sceneTicks = 0;
     facing = openingFacing(seed);
@@ -7349,18 +7367,11 @@ function createRenderer(c, viewport) {
     if (motion)
       for (let i = 0; i < Math.min(force>.65?6:3,Math.ceil(mat.flecks*(.5+force*.65))); i++) {
         const theta = a + (rand() - 0.5) * 1.4, speed = (3 + rand() * 5)*(.6+force*.7), x = d.x + Math.cos(theta) * r * 0.65, y = d.y + Math.sin(theta) * r * 0.65;
-        sparks.push({
-          x,
-          y,
-          px: x,
-          py: y,
-          angle: theta,
-          vx: Math.cos(theta) * speed,
-          vy: Math.sin(theta) * speed,
-          l: 3 + rand() * 7,
-          life: 10 + rand() * 6,
-          col: i % 2 ? col : INK.paper
-        });
+        if(sparks.length>=MOTION.maxSparks)sparkPool.release(sparks.shift());
+        const spark=sparkPool.getFirstDead();if(spark){
+          spark.x=x;spark.y=y;spark.px=x;spark.py=y;spark.angle=theta;spark.vx=Math.cos(theta)*speed;spark.vy=Math.sin(theta)*speed;
+          spark.l=3+rand()*7;spark.life=10+rand()*6;spark.col=i%2?col:INK.paper;sparks.push(spark);
+        }
       }
     if (shards.length > MOTION.maxShards) shards.splice(0, shards.length - MOTION.maxShards);
     if (sparks.length > MOTION.maxSparks) sparks.splice(0, sparks.length - MOTION.maxSparks);
@@ -7389,12 +7400,12 @@ function createRenderer(c, viewport) {
     frameDt = dt;
     // Particle age belongs to simulation ticks, not the number of draws. A
     // 144 Hz display must not make the same burst expire 2.4 times faster.
-    if (!motion) dashDust.length = 0;
+    if (!motion){dashDust.length=0;dustPool.reset();}
     else {
       for (let i = dashDust.length - 1; i >= 0; i--) {
         const d = dashDust[i];d.age++;d.x += d.vx;d.y += d.vy;
         const drag = d.brake ? 0.84 : 0.92;d.vx *= drag;d.vy *= drag;
-        if (d.age >= d.life) dashDust.splice(i, 1);
+        if (d.age >= d.life){dustPool.release(d);dashDust.splice(i,1);}
       }
       if (s.swingStart !== dashBurstSwing || s.slashAge < 0) { dashBurstSwing = s.swingStart; dashBurstAt = -1; }
       const launchAngle = Number.isFinite(s.launchAngle)
@@ -7408,8 +7419,10 @@ function createRenderer(c, viewport) {
           const src = brake ? dash.lead : dash.trail, p = world.player.position;
           for (const b of dashBurst(dash, brake ? "brake" : "launch")) {
             const n = Math.hypot(b.dx, b.dy) || 1;
-            dashDust.push({brake,x:p.x+src.x*R*.92,y:p.y+src.y*R*.92,vx:b.dx/n*b.speed,vy:b.dy/n*b.speed,
-              life:brake?9+rand()*5:15+rand()*8,age:0,len:brake?.22+rand()*.3:.07+rand()*.1,hot:b.hot});
+            if(dashDust.length>=90)dustPool.release(dashDust.shift());
+            const particle=dustPool.getFirstDead();if(!particle)continue;
+            particle.brake=brake;particle.x=p.x+src.x*R*.92;particle.y=p.y+src.y*R*.92;particle.vx=b.dx/n*b.speed;particle.vy=b.dy/n*b.speed;
+            particle.life=brake?9+rand()*5:15+rand()*8;particle.age=0;particle.len=brake?.22+rand()*.3:.07+rand()*.1;particle.hot=b.hot;dashDust.push(particle);
           }
           if (dashDust.length > 90) dashDust.splice(0, dashDust.length - 90);
         }
@@ -7447,6 +7460,7 @@ function createRenderer(c, viewport) {
         const e = list[i];
         e.life -= dt;
         if (e.life <= 0) {
+          if(list===sparks)sparkPool.release(e);
           list.splice(i, 1);
           continue;
         }
@@ -8775,8 +8789,9 @@ function createRenderer(c, viewport) {
           arc(c, INK.acid, 2 / v.scale, q.x, q.y, e.r + 6, -0.44 + i * Math.PI, 0.44 + i * Math.PI);
       }
     }
+    renderCuller.update(world.clock*1000/60,v,combat.enemies.values());
     for (const e of combat.enemies.values()) {
-      if (!inView(v, e, 100)) continue;
+      if (!renderCuller.visible(e,v)) continue;
       const q = pose(e, alpha);
       c.globalAlpha = 1;
       c.filter = "none";
@@ -9314,7 +9329,7 @@ function createRenderer(c, viewport) {
         for(const attack of s.swordFx||[])drawSwordAttack(c,attack,s.sword,!motion);
       }
       if (s.equipment?.head === "oni" && s.hp === 1 && s.blade > 0) drawEquipmentSlash(c, p.x, p.y, p.x + Math.cos(s.slashAngle) * 80, p.y + Math.sin(s.slashAngle) * 80, "blood", 1,{progress:1-Math.min(1,s.blade/12),equipment:s.equipment,reducedMotion:!motion});
-      drawEquipmentEffects(c, motion ? s.equipmentFx : { ...s.equipmentFx, bursts: [] }, motion ? time : 0, ARENA.y + ARENA.h);
+      drawEquipmentEffects(c, motion ? s.equipmentFx : { ...s.equipmentFx, bursts: [] }, motion ? time : 0, ARENA.y + ARENA.h,motion?glowBake:null);
       if (s.equipment?.head === "beacon") {
         for (const enemy of combat.enemies.values()) if (enemy.kind === "fang" && enemy.mode === "tell") {
           const ex = clamp(enemy.x, v.x + 35, v.x + v.w - 35), ey = clamp(enemy.y, v.y + 50, v.y + v.h - 45);
@@ -9605,7 +9620,7 @@ function createRenderer(c, viewport) {
       };
     },
     field(origin, side) {
-      dimensionImpact.reset();
+      dimensionImpact.reset();dustPool.reset();sparkPool.reset();renderCuller.reset();dashDust.length=0;
       camera.reset(origin, side);
       lastView = camera.view(1);
       trail.length = 0;
@@ -9630,7 +9645,9 @@ function createRenderer(c, viewport) {
     get animationState() {
       return anim;
     },
+    performanceState(){return {background:back.bakeStats(),dust:dustPool.stats(),sparks:sparkPool.stats(),culling:renderCuller.stats(),glow:glowBake?.stats()||null};},
     dispose() {
+      back.dispose();glowBake?.clear();dustPool.reset();sparkPool.reset();renderCuller.reset();
     }
   };
 }
@@ -10955,5 +10972,40 @@ export function drawShopItemStudy(c,w,h,{study={},equipment={},sword=null}={}){
   c.font='11px monospace';c.fillStyle='#eee8f3';c.fillText(label,280,102);
   for(let i=0;i<2;i++){const delta=perk.stat==='focus'?-perk.value:perk.value;c.fillStyle=i?'#00f0ff':'#81728f';c.fillRect(280,116+i*25,(i?100+delta:100)*(.3+act*.7),10);c.fillText(i?`PART ${delta>0?'+':''}${delta}${['focus','recovery'].includes(perk.stat)?'%':' TICKS'}`:'BASE',280,113+i*25);}
  }
+ }finally{c.restore();}
+}
+
+/** Render metadata only. Never writes visibility/AI state onto game entities.
+ * 100ms broadphase with immediate entry checks for fast movers/new spawns. */
+export function createRenderCuller({intervalMs=100,padding=100}={}){
+ let last=-Infinity,flags=new WeakMap(),scans=0;
+ const visible=(e,v)=>{
+  let q=flags.get(e);const r=Math.max(padding,e.r||0);
+  if(q&&q.x===e.x&&q.y===e.y&&q.r===r&&q.vx===v.x&&q.vy===v.y&&q.w===v.w&&q.h===v.h)return q.visible;
+  if(!q){q={};flags.set(e,q);}
+  q.x=e.x;q.y=e.y;q.r=r;q.vx=v.x;q.vy=v.y;q.w=v.w;q.h=v.h;
+  q.visible=e.x+r>=v.x&&e.x-r<=v.x+v.w&&e.y+r>=v.y&&e.y-r<=v.y+v.h;return q.visible;
+ };
+ return {
+  update(now,view,entities){if(now-last<intervalMs)return false;last=now;for(const e of entities)visible(e,view);scans++;return true;},
+  visible,
+  reset(){last=-Infinity;flags=new WeakMap();},
+  stats:()=>({scans}),
+ };
+}
+/** Fixed cosmetic storage, allocated once. Never pool Matter bodies or retain a
+ * killed enemy reference: gameplay ownership/lifetime must remain unchanged. */
+export function createVisualPool(maxSize=90,{create=()=>({}),clear=e=>{for(const k of Object.keys(e))delete e[k];}}={}){
+ const free=Array.from({length:maxSize},create),active=new Set();
+ return {
+  getFirstDead(){const e=free.pop();if(!e)return null;active.add(e);return e;},
+  release(e){if(!active.delete(e))return false;clear(e);free.push(e);return true;},
+  reset(){for(const e of active){clear(e);free.push(e);}active.clear();},
+  stats:()=>({maxSize,active:active.size,free:free.length}),
+ };
+}
+export function drawBakedGlow(c,bake,x,y,r=24,color='#00f0ff'){
+ if(!bake)return;c.save();try{c.globalCompositeOperation='lighter';c.globalAlpha*=.24;c.translate(x-r,y-r);c.scale(r*2/128,r*2/128);
+ bake.paint(c,'glow:'+color,128,128,context=>{const g=context.createRadialGradient(64,64,0,64,64,64);g.addColorStop(0,color+'a0');g.addColorStop(.3,color+'38');g.addColorStop(1,color+'00');context.fillStyle=g;context.fillRect(0,0,128,128);});
  }finally{c.restore();}
 }

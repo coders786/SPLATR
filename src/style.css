@@ -2990,3 +2990,5 @@ body:has(#panel[open]) #hud {
  #result-page .round-receipt>.round-payout{padding:3px 6px}
  #panel #result-page .bank>.choice{min-height:32px;padding:6px;font-size:13px}
 }
+/* Single optional WebGL resolve; HUD and native input remain on their own layers. */
+.uber-postfx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none}
