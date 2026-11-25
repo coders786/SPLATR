@@ -121,5 +121,5 @@ export function createTeachingUI({resetInput=()=>{},motion=()=>true,onOpen=()=>{
  select.onchange=()=>{rebuild();};
  for(const type of ['keydown','keyup'])dialog.addEventListener(type,e=>{if(e.code==='Escape'||e.target!==canvas)e.stopPropagation();});
  dialog.addEventListener('close',()=>{teardown();pickerMode=false;pickerScreen.hidden=true;resetInput();onClose();});
- return {open(id='slash'){if(dialog.open)return;onOpen();menu.open=false;select.value=teachingScenario(id).id;dialog.showModal();showPicker(select.value);},get isOpen(){return dialog.open;}};
+ return {dispose(){teardown();if(dialog.open)dialog.close();dialog.remove();},open(id='slash'){if(dialog.open)return;onOpen();menu.open=false;select.value=teachingScenario(id).id;dialog.showModal();showPicker(select.value);},get isOpen(){return dialog.open;}};
 }

@@ -58,6 +58,6 @@ export function createControlPracticeUI({resetInput,motion=()=>true,onClose=()=>
  // Arena keyboard input is handled at window by createInput; main is explicitly
  // inactive while this modal is open. Native controls retain native key behavior.
  dialog.addEventListener('close',()=>{teardown();resetInput();onClose();});
- document.addEventListener('visibilitychange',()=>{if(dialog.open){input?.reset();clock.reset();}});
- return {open(){if(dialog.open)return;drill='route';select.value=drill;resetInput();onOpen();dialog.showModal();rebuild();},get isOpen(){return dialog.open;}};
+ const visibility=()=>{if(dialog.open){input?.reset();clock.reset();}};document.addEventListener('visibilitychange',visibility);
+ return {dispose(){teardown();document.removeEventListener('visibilitychange',visibility);if(dialog.open)dialog.close();dialog.remove();},open(){if(dialog.open)return;drill='route';select.value=drill;resetInput();onOpen();dialog.showModal();rebuild();},get isOpen(){return dialog.open;}};
 }

@@ -64,7 +64,7 @@ const $ = (id) => document.getElementById(id),
   dialog = $('panel'),
   hud = $('hud'),
   clock = createClock(),
-  renderer = createRenderer(canvas),
+  renderer = createRenderer(canvas,{postfx:storage.get('postfx','auto')}),
   audio = createAudio({ muteKey: devMode ? 'splatr.dev.muted' : 'splatr.muted' }),
   poki = createPokiBridge({ getSDK: devMode ? () => null : undefined, fetchSDK: !devMode && __LOAD_POKI_SDK__ });
 void poki.init();
@@ -93,6 +93,7 @@ const pref = matchMedia('(prefers-reduced-motion: reduce)'),
     // under them, which is a different complaint and deserves its own control.
     // Anyone who has asked for reduced motion starts at LOW rather than FULL.
     shake: storage.get('shake', pref.matches ? 'low' : 'full'),
+    postfx: storage.get('postfx','auto'),
     music: storage.get('music', '1') === '1',
     assist: storage.get('assist', '1') === '1',
   };
@@ -107,6 +108,7 @@ let best = Math.max(0, Math.floor(Number(storage.get('best', 0)) || 0));
 // what the menu and debrief bars paint from when no run is live.
 let fractureMirror = clampPct(Number(storage.get(FRACTURE_KEY, 0)) || 0);
 if (!Number.isSafeInteger(best)) best = 0;
+let disposedGame=false;
 let run = null,
   page = null,
   returnTo = 'title',
@@ -675,6 +677,8 @@ function syncSettings() {
   }
   $('shake-opt').querySelector('b').textContent =
     opts.shake === 'off' ? 'Off' : opts.shake === 'low' ? 'Low' : 'Full';
+  $('postfx-opt').querySelector('b').textContent=({auto:'Auto',on:'On',off:'Off'})[opts.postfx]||'Auto';
+  renderer.setPostFXMode(opts.postfx);
   $('pace-opt').querySelector('b').textContent=speed().label;
   setText('pace-note','Changes automatic reaction windows, not launch direction or power.');
   $('dev-opt').querySelector('b').textContent=devMode?'On':'Off';
@@ -708,6 +712,7 @@ function syncSettings() {
   if (fullOk)
     $('full-opt').querySelector('b').textContent = document.fullscreenElement ? 'Exit' : 'Enter';
 }
+$('postfx-opt').onclick=()=>{const modes=['auto','on','off'];opts.postfx=modes[(modes.indexOf(opts.postfx)+1)%modes.length];storage.set('postfx',opts.postfx);syncSettings();dirty=true;};
 $('dev-opt').onclick = () => {
   if (run && !confirm('Switching mode ends this run. Continue?')) return;
   location.assign(modeURL(location.href, !devMode));
@@ -1584,9 +1589,11 @@ window.addEventListener('focus', () => {
   }
 });
 document.addEventListener('visibilitychange', () => {
+  if(disposedGame)return;
   if (document.hidden) {
     clearTimeout(blurTimer);
     blurTimer = 0;
+    audio.setSuspended('hidden',true);
     suspend('tab hidden');
     cancelAnimationFrame(raf);
     raf = 0;
@@ -1595,6 +1602,7 @@ document.addEventListener('visibilitychange', () => {
     // clock caps its debt, but the RENDER path also reads `now` for animation
     // phases, so the clamp happens once here as well — otherwise the first
     // frame back can jump a whole animation cycle (the "cube teleported" bug).
+    audio.setSuspended('hidden',false);
     clock.reset();
     dirty = true;
     lastFrameAt = 0;
@@ -1651,6 +1659,7 @@ function safe(fn, where) {
 let lastFrameAt = 0;
 const MAX_FRAME_GAP_MS = 64;
 function frame(realNow) {
+  if(disposedGame)return;
   const now = lastFrameAt && realNow - lastFrameAt > MAX_FRAME_GAP_MS
     ? lastFrameAt + MAX_FRAME_GAP_MS
     : realNow;
@@ -1662,7 +1671,7 @@ function frame(realNow) {
     safeStep(now);
   } finally {
     // ALWAYS reschedule: a frame that throws must not end the animation.
-    if (!document.hidden) raf = requestAnimationFrame(frame);
+    if (!document.hidden && !disposedGame) raf = requestAnimationFrame(frame);
   }
 }
 function safeStep(now) {
@@ -1771,6 +1780,19 @@ const customButton=document.createElement('button');customButton.id='customize-b
 waveUI=createWaveUI({getRun:()=>run,resetInput:()=>input.reset(),motion:()=>opts.motion});
 installIconSprite();
 for(const [id,name]of Object.entries({'start-btn':'play','manual-btn':'guide','options-btn':'settings','customize-btn':'shop','resume-btn':'play','pause-practice':'practice','pause-manual':'guide','pause-options':'settings','retry-btn':'retry','home-btn':'back','end-btn':'back'}))prependIcon($(id),name);
+renderer.onGraphicsContext(state=>{
+  const lost=state==='lost';audio.setSuspended('graphics',lost);
+  if(lost)suspend('graphics context lost');
+  clock.reset();lastFrameAt=0;dirty=true;
+});
+function disposeGame(){
+  if(disposedGame)return;disposedGame=true;cancelAnimationFrame(raf);raf=0;clearTimeout(blurTimer);
+  for(const timer of [hitTimer,kickTimer,flareTimer,fractureGainTimer,fractureSurgeTimer])clearTimeout(timer);
+  input.dispose();if(tutorial)tutorial.dispose();else run?.dispose();
+  customize?.dispose();controlPractice?.dispose();teaching?.dispose();waveUI?.dispose();rewardUI?.dispose();renderer.dispose();audio.dispose();
+}
+window.addEventListener('pagehide',e=>{audio.setSuspended('page',true);if(!e.persisted)disposeGame();});
+window.addEventListener('pageshow',e=>{if(e.persisted){audio.setSuspended('page',false);clock.reset();lastFrameAt=0;dirty=true;}});
 game.dataset.dev = String(devMode);
 $('dev-badge').hidden = $('dev-panel-badge').hidden = !devMode;
 syncSettings();
@@ -1784,4 +1806,4 @@ renderer.title(0);
 game.removeAttribute('inert');
 $('boot').remove();
 poki.loadingFinished();
-if (!document.hidden) raf = requestAnimationFrame(frame);
+if (!document.hidden && !disposedGame) raf = requestAnimationFrame(frame);

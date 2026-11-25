@@ -8,6 +8,7 @@ export function chainNote(chain = 1) {
 // Tiny procedural SFX bank. No audio files, decoding costs, autoplaying music,
 // or sound requests before the visitor supplies a real user gesture.
 export function createAudio({ muteKey = 'splatr.muted' } = {}) {
+  const suspended=new Set();let disposed=false;
   let context,
     enabled = true;
   try {
@@ -16,7 +17,7 @@ export function createAudio({ muteKey = 'splatr.muted' } = {}) {
     /* private storage */
   }
   function unlock() {
-    if (!enabled) return;
+    if (!enabled || suspended.size || disposed) return;
     const Audio = window.AudioContext || window.webkitAudioContext;
     if (!Audio) return;
     try {
@@ -27,7 +28,7 @@ export function createAudio({ muteKey = 'splatr.muted' } = {}) {
     }
   }
   function tone(from, to, duration, type, volume, delay = 0) {
-    if (!enabled || context?.state !== 'running') return;
+    if (!enabled || suspended.size || disposed || context?.state !== 'running') return;
     const start = context.currentTime + delay,
       end = start + duration;
     const oscillator = context.createOscillator(),
@@ -51,7 +52,7 @@ export function createAudio({ muteKey = 'splatr.muted' } = {}) {
   // distinguish a successful slash from propulsion even with the screen unseen.
   let noiseBuffer;
   function rush(duration, frequency, gain) {
-    if (!enabled || context?.state !== 'running') return;
+    if (!enabled || suspended.size || disposed || context?.state !== 'running') return;
     if (!noiseBuffer) {
       noiseBuffer = context.createBuffer(
         1,
@@ -104,6 +105,7 @@ export function createAudio({ muteKey = 'splatr.muted' } = {}) {
   let pending = null,
     heldTicks = 0;
   function strike(material, chain = 1, style = 'razor') {
+    if(disposed||suspended.size)return;
     if (!pending || rank.indexOf(material) >= rank.indexOf(pending.material))
       pending = { material, chain, style };
   }
@@ -174,6 +176,13 @@ export function createAudio({ muteKey = 'splatr.muted' } = {}) {
       return enabled;
     },
     unlock,
+    setSuspended(reason,on){
+      if(on){suspended.add(reason);pending=null;}else suspended.delete(reason);
+      if(!context||disposed)return;
+      if(suspended.size)context.suspend().catch(()=>{});
+      else if(enabled)context.resume().catch(()=>{});
+    },
+    dispose(){if(disposed)return;disposed=true;pending=null;Promise.resolve(context?.close?.()).catch(()=>{});},
     toggle() {
       enabled = !enabled;
       try {

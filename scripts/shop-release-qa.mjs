@@ -43,6 +43,7 @@ try{
   const bounds=await page.evaluate(()=>Object.fromEntries(['.custom-detail .equip-part','.lab-exit','.custom-detail'].map(s=>{const n=document.querySelector(s),r=n.getBoundingClientRect();return [s,{x:r.x,y:r.y,w:r.width,h:r.height,visible:r.width>0&&r.height>0&&r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1}];})));
   assert.ok(bounds['.lab-exit'].visible,JSON.stringify(bounds));
   assert.ok(bounds['.custom-detail .equip-part'].visible,JSON.stringify(bounds));
+  await page.evaluate(()=>window.__qaFrames(4));
   await page.screenshot({path:`${output}/shop-${width}x${height}.png`});
   await page.click('.lab-exit');await page.click('#start-btn');
   await page.waitForSelector('#hud:not([hidden])');

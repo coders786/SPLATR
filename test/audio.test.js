@@ -81,3 +81,10 @@ test('chain cut pitches follow C-major pentatonic and saturate safely', async ()
   assert.equal(chainNote(99),880);
   assert.equal(chainNote(-1),523.25);
 });
+
+test('audio suspension reasons compose, clear stale cues, and disposal is idempotent',t=>{
+ const events=[];class StubAudio{state='running';suspend(){events.push('suspend');this.state='suspended';return Promise.resolve();}resume(){events.push('resume');this.state='running';return Promise.resolve();}close(){events.push('close');this.state='closed';return Promise.resolve();}createOscillator(){throw Error('stale cue played');}}
+ const before=globalThis.window;globalThis.window={AudioContext:StubAudio};t.after(()=>{if(before===undefined)delete globalThis.window;else globalThis.window=before;});
+ const a=createAudio();a.unlock();a.strike('tear');a.setSuspended('hidden',true);a.setSuspended('graphics',true);a.setSuspended('hidden',false);assert.ok(!events.includes('resume'));a.setSuspended('graphics',false);assert.equal(events.at(-1),'resume');a.flush();
+ a.setSuspended('hidden',true);a.strike('tear');a.setSuspended('hidden',false);a.flush();a.dispose();a.dispose();assert.equal(events.filter(e=>e==='close').length,1);a.unlock();a.strike('tear');a.flush();a.setSuspended('hidden',false);assert.equal(events.at(-1),'close');
+});

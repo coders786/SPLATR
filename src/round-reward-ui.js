@@ -10,6 +10,7 @@ export function createRoundRewardUI({ wallet, host = document }) {
   receipt.setAttribute('aria-label', 'Round credits');
   bank.insertBefore(receipt, host.querySelector('#retry-btn'));
   return {
+    dispose(){pay.remove();kills.remove();receipt.remove();},
     tick(run) {
       const s = run?.state;
       pay.hidden = kills.hidden = !s || !!s.practice;

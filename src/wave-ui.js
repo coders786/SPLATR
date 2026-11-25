@@ -77,14 +77,14 @@ const paceAction=pace.querySelector('.pace-action'),paceSpeed=pace.querySelector
  skip.onclick=()=>{resetInput();if(getRun()?.skipBreach())document.querySelector('#arena')?.focus({preventScroll:true});};
  const dialog=document.createElement('dialog');dialog.className='wave-upgrades';dialog.setAttribute('aria-labelledby','wave-upgrade-title');document.querySelector('#game').append(dialog);
  const announcement=document.createElement('section');announcement.className='wave-announcement';announcement.hidden=true;announcement.setAttribute('aria-label','Encounter briefing');document.querySelector('#game').append(announcement);
- const pressed=new Set();let needsFreshPress=false;
- document.addEventListener('keydown',e=>pressed.add(e.code),true);document.addEventListener('keyup',e=>pressed.delete(e.code),true);
+ const pressed=new Set();let needsFreshPress=false,disposed=false;
+ const press=e=>pressed.add(e.code),release=e=>pressed.delete(e.code);document.addEventListener('keydown',press,true);document.addEventListener('keyup',release,true);
  let shown=null,choiceRun=null,choiceLockedUntil=0;
  dialog.setAttribute('closedby','none');
- const choiceRequired=()=>choiceRun&&getRun()===choiceRun&&choiceRun.state.wave?.phase==='choose'&&['ready','playing'].includes(choiceRun.state.phase);
+ const choiceRequired=()=>!disposed&&choiceRun&&getRun()===choiceRun&&choiceRun.state.wave?.phase==='choose'&&['ready','playing'].includes(choiceRun.state.phase);
  const restoreChoice=()=>{if(choiceRequired()&&!dialog.open&&!document.hidden){dialog.showModal();dialog.querySelector('button')?.focus({preventScroll:true});}};
  dialog.addEventListener('close',()=>queueMicrotask(restoreChoice));
- document.addEventListener('keydown',e=>{if(dialog.open&&e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();}},true);
+ const escape=e=>{if(dialog.open&&e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();}};document.addEventListener('keydown',escape,true);
  dialog.addEventListener('cancel',e=>{e.preventDefault();e.stopImmediatePropagation();});
  dialog.addEventListener('keydown',e=>e.stopPropagation());dialog.addEventListener('keyup',e=>e.stopPropagation());
  function update(){
@@ -278,5 +278,5 @@ const paceAction=pace.querySelector('.pace-action'),paceSpeed=pace.querySelector
    dialog.append(cards);if(wave.recommendation){const reason=document.createElement('p');reason.className='wave-fit-reason';reason.textContent=wave.recommendation.reason;dialog.append(reason);}dialog.storyOpened=performance.now();dialog.showModal();const firstCard=cards.querySelector('button');if(firstCard)firstCard.focus();
   }
  }
- return {update,get open(){return dialog.open;}};
+ return {dispose(){disposed=true;choiceRun=null;pressed.clear();document.removeEventListener('keydown',press,true);document.removeEventListener('keyup',release,true);document.removeEventListener('keydown',escape,true);if(dialog.open)dialog.close();for(const n of [hud,dialog,announcement,goalChip,postLine,pace,momentumRow,cycle,pips,skip])n.remove();},update,get open(){return dialog.open;}};
 }
