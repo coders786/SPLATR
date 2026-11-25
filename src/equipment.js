@@ -1,3 +1,4 @@
+import { resolvePartPerks } from './part-perks.js';
 import { MUTATIONS } from './hybrids.js';
 import {ITEMS,SLOTS} from './art/splatr-art-engine.js';
 export {ITEMS,SLOTS};
@@ -22,14 +23,16 @@ export function buyEquipment(state,id,wallet) {
 /** Resolved once per run. Rendering never owns or modifies these rules. */
 export function equipmentRules(equipment) {
   const eq=normalizeEquipment(equipment);
+  const perks = resolvePartPerks(eq);
   return Object.freeze({
+    ...perks,
     healthMax:eq.core==='glass'?1:3,
     scoreMultiplier:eq.core==='glass'?2:1,
     lastHullBonus:eq.head==='oni'?1.5:1,
     edgeMax:eq.core==='riot'?2:3,
     dashSpeed:eq.head==='viper'?1.2:eq.head==='crown'?.92:1,
     cutWidth:eq.head==='viper'?.85:1,
-    bladeExtra:eq.tail==='ghost'?6:0,
+    bladeExtra:(eq.tail==='ghost'?6:0)+perks.perkBlade,
     overdriveKills:eq.core==='riot'?4:6,
     aimFallGravity:eq.head==='halo'?.85:1,
     focusRecoveryTicks:eq.core==='time'?120:0,

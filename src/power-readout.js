@@ -1,3 +1,4 @@
+import {PART_PERKS,BASE_PARTS} from './part-perks.js';
 import {equipmentRules,normalizeEquipment,ITEMS} from './equipment.js';
 /** Literal individual-part receipts. Full-build sword styles are resolved in
  * swords.js; a cosmetic part is never advertised as a standalone combat power. */
@@ -35,9 +36,10 @@ const quick={halo:'FALL GRAV −15%',oni:'LAST HEALTH +50%',coil:'ZAP +1 ENEMY',
 export function powerReadout(item){
  const value=typeof item==='string'?ITEMS.find(x=>x.id===item):item;
  if(!value)throw new RangeError('Unknown equipment');
- // Prism is both a body and a matching color name; catalogue IDs are unique.
- const p=powers[value.id]||['✦','STYLE ONLY','APPEARANCE',['NO COMBAT CHANGE'],value.slot==='world'?'dash':'slice'];
- return Object.freeze({icon:p[0],title:p[1],trigger:p[2],chips:Object.freeze([...p[3]]),mode:p[4],cosmetic:!powers[value.id],short:quick[value.id]||(powers[value.id]?p[3][0]:'STYLE ONLY')});
+ const perk=PART_PERKS[value.id],base=BASE_PARTS[value.id];
+ const p=powers[value.id] || (perk ? ['✦',perk.title,perk.trigger,[perk.chip],'slice'] : base ? ['◇',base[0],'BASELINE',[base[1]],'slice'] : null);
+ if(!p)throw new RangeError(`Missing gameplay receipt: ${value.id}`);
+ return Object.freeze({icon:p[0],title:p[1],trigger:p[2],chips:Object.freeze([...p[3]]),mode:p[4],cosmetic:false,short:quick[value.id]||p[3][0],detail:perk ? perk.detail + ({grace:' Combined chain grace caps at +36 ticks.',focus:' Combined aim-cost reduction caps at 30%.',recovery:' Combined passive recovery bonus caps at 40%.',blade:' Combined extra perk blade time caps at +8 ticks, in addition to Ghost.'}[perk.stat]||'') : value.detail});
 }
 export function buildReadout(equipment){
  const rules=equipmentRules(normalizeEquipment(equipment));

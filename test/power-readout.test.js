@@ -6,9 +6,9 @@ import {powerReadout,buildReadout} from '../src/power-readout.js';
 import {drawCubeHero,resolveVisualHarmony} from '../src/art/splatr-art-engine.js';
 import {createCanvas} from '@napi-rs/canvas';
 
-test('all 53 powers have short frozen receipts and cosmetic parts never claim combat stats',()=>{
- for(const item of ITEMS){const p=powerReadout(item);assert.ok(Object.isFrozen(p));assert.ok(Object.isFrozen(p.chips));assert.ok(p.title.split(' ').length<=3);assert.ok(p.chips.length<=2);assert.ok(p.short.length<=20);if(p.cosmetic){assert.equal(p.title,'STYLE ONLY');assert.deepEqual(p.chips,['NO COMBAT CHANGE']);}}
- for(const id of ['visor','hologram','chamfer','laser','pixel','manga'])assert.ok(powerReadout(id).cosmetic,id);
+test('all catalogue parts have short frozen gameplay receipts',()=>{
+ for(const item of ITEMS){const p=powerReadout(item);assert.ok(Object.isFrozen(p));assert.ok(Object.isFrozen(p.chips));assert.ok(p.title.split(' ').length<=3);assert.ok(p.chips.length<=2);assert.ok(p.short.length<=20);assert.equal(p.cosmetic,false);assert.ok(p.detail);}
+ for(const id of ['visor','hologram','chamfer','laser','pixel','manga'])assert.equal(powerReadout(id).cosmetic,false,id);
  assert.throws(()=>powerReadout('not-an-item'),RangeError);
 });
 test('quick stats exactly match authoritative equipment rules and show costs as well as benefits',()=>{

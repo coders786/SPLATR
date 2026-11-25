@@ -12,11 +12,12 @@ test('harmony is deterministic, CORE-owned and world-lit without changing equipm
  assert.notEqual(a.trim,resolveVisualHarmony({...eq,core:'grav'},24).trim);
  assert.ok(a.energy>resolveVisualHarmony(eq,24).energy);assert.ok(a.pulse>=.7&&a.pulse<=1);
 });
-test('three immutable cosmetic shape profiles stay inside the original body bounds',()=>{
+test('three immutable functional shape profiles stay inside the original body bounds',()=>{
  assert.equal(SHAPE_MODIFIERS.length,3);
  for(const p of SHAPE_MODIFIERS){assert.ok(Object.isFrozen(p.outline));for(const point of p.outline){assert.ok(Object.isFrozen(point));assert.ok(point.every(n=>n>=-1&&n<=1));}
-  const item=ITEMS.find(x=>x.id===p.id);assert.equal(item.slot,'body');assert.match(item.detail,/Cosmetic/i);
-  assert.deepEqual(equipmentRules({body:p.id}),equipmentRules({body:'paper'}));
+  const item=ITEMS.find(x=>x.id===p.id);assert.equal(item.slot,'body');assert.match(item.detail,/ticks|FOCUS/i);
+  assert.notDeepEqual(equipmentRules({body:p.id}),equipmentRules({body:'paper'}));
+  assert.equal(equipmentRules({body:p.id}).healthMax,3);
  }
 });
 test('shape modifier purchases and migration preserve ownership without free unlocks',()=>{

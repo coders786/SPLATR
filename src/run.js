@@ -1,3 +1,4 @@
+import { perkScoreMultiplier } from './part-perks.js';
 import {contactVisual} from './contact-visual.js';
 import {launchSurge,bankBreakthrough,BREAKTHROUGH} from './breakthrough.js';
 import {createKillLedger,recordEnemyReward} from './kill-rewards.js';
@@ -821,6 +822,7 @@ export function createRun(
     if(s.dimension&&['combat','breach','monolith'].includes(s.wave?.phase)&&s.phase==='playing'&&!s.opening&&!s.tutorialActive)s.dimension=disturbDimension(s.dimension,kind,data);
   }
   function focus(on) {
+    const wasHeld = s.held;
     // CHUNK 6A: no inputs while the world is being told.
     if (s.inputLock) on = false;
     if (on && s.panicTicks > 0) {
@@ -838,6 +840,7 @@ export function createRun(
       // CHUNK 6B: a slam staggers flight — no mid-air control while it lasts.
       s.stun <= 0;
     s.isAiming = s.held;
+    if (!s.opening && ((!wasHeld && s.held && rules.focusDrain < 1) || (wasHeld && !s.held && rules.focusRegen > 1))) equipmentBurst(world.player.position,'perk-focus');
     if (!on) s.depleted = false;
     setBulletTime(world, s.held && !s.depleted && s.focus > 0.01, !on);
   }
@@ -1015,6 +1018,8 @@ export function createRun(
     s.freshSwing = true;
     s.stroke = beginStroke(world.player.position, s.slashAngle, s.shots);
     s.stroke.equipment = loadout;
+    s.stroke.power = Math.min(1, Math.hypot(v.x,v.y) / MAX_SPEED);
+    if (!s.opening && rules.perkBlade > 0) equipmentBurst(world.player.position,'perk-blade');
     if(loadout.slash==='laser') {
       const p=world.player.position,a=s.slashAngle;
       s.equipmentScar={x:p.x,y:p.y,tx:p.x+Math.cos(a)*150,ty:p.y+Math.sin(a)*150,ticks:30};
@@ -1418,7 +1423,7 @@ export function createRun(
     if (!(s.chainTime > 0)) s.chainFrom = s.shots;
     s.chain = s.chainTime > 0 ? s.chain + 1 : 1;
     s.maxChain = Math.max(s.maxChain, s.chain);
-    s.chainTime = chainWindow(s.chain);
+    s.chainTime = chainWindow(s.chain) + (s.opening ? 0 : rules.chainGrace);
     // Remember the window actually granted. The HUD draws a fill bar and used
     // to divide by the CHAIN_TIME constant; with a varying window that reads
     // wrong (a fresh 96-tick window against a 96 divisor is fine, but link 10's
@@ -1435,9 +1440,13 @@ export function createRun(
     }
     // CHUNK 1: +1 per cleared wave, additive with the chain ladder and capped
     // at its ceiling (+8). Entering Overdrive still doubles the whole thing.
+    const perkMult = s.opening || secondary || fromShear ? 1 : perkScoreMultiplier(rules.scorePerks, {
+      air:!world.grounded,speed:cutSpeed,power:s.stroke?.power||0,drive:s.drive>0,kind:e.kind,kills:s.stroke?.kills||0,
+    });
+    if (!s.opening && !secondary && !fromShear && (perkMult > 1 || rules.chainGrace > 0)) equipmentBurst(e,perkMult>1?'perk-score':'perk-chain');
     const waveBonus = Math.min(8, s.waveMult || 0),
       mult = Math.min(8, s.chain) * (s.drive > 0 ? 2 : 1) + waveBonus,
-      base = Math.floor((e.small ? 45 : TYPES[e.kind].points) * mult * rules.scoreMultiplier * upgradeMods().score * (s.hp===1 ? rules.lastHullBonus : 1)),
+      base = Math.floor((e.small ? 45 : TYPES[e.kind].points) * mult * rules.scoreMultiplier * upgradeMods().score * (s.hp===1 ? rules.lastHullBonus : 1) * perkMult),
       stroke = s.stroke || (s.bladeLedger ??= Object.assign(beginStroke(world.player.position,s.slashAngle,s.shots),{equipment:loadout})),
       // ── PRE-EXISTING CRASH, FLAGGED ────────────────────────────────────
       //
@@ -1455,7 +1464,7 @@ export function createRun(
         // `released`/`points`/`kills` on the same object, so passing null was
         // never an option -- it just crashed further down the line.
         stroke || (s.bladeLedger ??= beginStroke(world.player.position, s.slashAngle, s.shots)),
-        e, base, fromShear, s.slashAngle, hpBefore, rules.scoreMultiplier * upgradeMods().score * (s.hp===1 ? rules.lastHullBonus : 1),
+        e, base, fromShear, s.slashAngle, hpBefore, rules.scoreMultiplier * upgradeMods().score * (s.hp===1 ? rules.lastHullBonus : 1) * perkMult,
       ),
       { points, release } = ledger;
     // A small kill is still an impact: a short beat, never a free full
@@ -1898,12 +1907,12 @@ export function createRun(
       return;
     }
     if (s.held && !s.depleted) {
-      s.focus = Math.max(0, s.focus - 1 / 165);
+      s.focus = Math.max(0, s.focus - (s.opening ? 1 : rules.focusDrain) / 165);
       if (s.focus < 0.0001) {
         s.depleted = true;
         setBulletTime(world, false);
       }
-    } else if (!s.held) s.focus = Math.min(1, s.focus + (focusRecovery > 0 ? 2 : 1) / 250);
+    } else if (!s.held) s.focus = Math.min(1, s.focus + (focusRecovery > 0 ? 2 : 1) * (s.opening ? 1 : rules.focusRegen) / 250);
     // One beat to choose the next line. A new launch is always immediate.
     if (world.clock >= glideAt) {
       glideAt = Infinity;

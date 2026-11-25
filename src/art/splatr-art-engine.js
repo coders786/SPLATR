@@ -3347,7 +3347,9 @@ function drawEquipmentEffects(c, fx, t = 0, floorY = Infinity) {
   if (!fx) return;
   for (const b of fx.bursts) {
     const progress2 = 1 - b.ticks / 30;
-    if (b.style === "spark" && b.from) {
+    if (b.style?.startsWith('perk-')) {
+      drawPartPerkPulse(c,{x:b.x,y:b.y,kind:b.style.slice(5),age:30-b.ticks});
+    } else if (b.style === "spark" && b.from) {
       line2(c, "#8feeff", 2, b.from.x, b.from.y, b.x, b.y);
       disk2(c, "#e3ffff", b.x, b.y, 4 * (1 - progress2));
     } else if (b.style === "floor" || b.style === "guard") {
@@ -9632,15 +9634,15 @@ var item = (id, slot, name, price, tag, detail) => Object.freeze({ id, slot, nam
 var ITEMS = Object.freeze([
   item("none", "head", "Bare Head", 0, "Original Cut", "No headgear. Clean silhouette."),
   item("halo", "head", "Gold Halo", 250, "Focus Float", "While holding aim and falling, gravity is 15% lighter."),
-  item("neko", "head", "Cyber Ears", 200, "Neon Paws", "Pink ears perk on launch. Cosmetic wall sparks."),
+  item("neko", "head", "Cyber Ears", 200, "Chain Grace", "Pink ears perk on launch. Cosmetic wall sparks. Adds 12 simulation ticks to the chain expiry window after a kill."),
   item("viper", "head", "Viper Horns", 300, "Fast Narrow", "20% faster launch, 15% thinner cut. Blade lifetime scales down to preserve straight-line active reach; ballistic landing distance can change."),
   item("oni", "head", "Broken Oni", null, "Last Health", "Defeat a Crown at 1 HEALTH to unlock. Kills at 1 HEALTH earn 50% more score."),
   item("ninja", "eyes", "Ninja Slits", 0, "Sharp Focus", "Classic expressive eyes."),
-  item("visor", "eyes", "Cyber Visor", 200, "Scan Line", "Sweeping cyan visor. Appearance only."),
-  item("blaze", "eyes", "SSJ Blaze", 150, "Golden Gaze", "Gold-white eyes with small light streaks while aiming. Appearance only."),
+  item("visor", "eyes", "Cyber Visor", 200, "Focus Efficiency", "Sweeping cyan visor. Aiming consumes 10% less FOCUS. Does not slow physics further."),
+  item("blaze", "eyes", "SSJ Blaze", 150, "Precision Bounty", "Gold-white eyes with small light streaks while aiming. Earn 8% more kill score in overdrive. All equipment score perks together cap at +25%."),
   item("paper", "body", "Paper Ninja", 0, "Comic Paper", "White paper shell with a bold black edge."),
-  item("obsidian", "body", "Obsidian Stealth", 200, "Lime Edge", "Matte black shell, inset neon-lime seams."),
-  item("hologram", "body", "Hologram Wire", 500, "Visible Core", "Transparent cyan wire shell with a visible spinning core. Appearance only."),
+  item("obsidian", "body", "Obsidian Stealth", 200, "Precision Bounty", "Matte black shell, inset neon-lime seams. Earn 8% more kill score while airborne. All equipment score perks together cap at +25%."),
+  item("hologram", "body", "Hologram Wire", 500, "Focus Efficiency", "Transparent cyan wire shell with a visible spinning core. Aiming consumes 12% less FOCUS. Does not slow physics further."),
   item("standard", "core", "Standard Heart", 0, "Balanced Build", "Balanced movement. Three EDGE bars."),
   item("time", "core", "Time Crystal", 400, "Focus Recovery", "Kills start a 120-tick window of twice-normal passive FOCUS recovery."),
   item("riot", "core", "Riot Reactor", 500, "Quick Overdrive", "Overdrive activates every four consecutive kills instead of six (1.5x faster). Maximum two EDGE bars."),
@@ -9649,51 +9651,51 @@ var ITEMS = Object.freeze([
   item("wings", "tail", "Prism Wings", 400, "Wall Recharge", "First side-wall contact per airborne streak restores one EDGE. Floor contact resets it."),
   item("ghost", "tail", "Ghost Scarf", 350, "Lingering Blade", "Twin spectral ribbons. Adds six simulation ticks to each launch blade; never repeats a hit on the same enemy in one shot."),
   item("razor", "slash", "White Razor", 0, "Clean Cut", "White cut flash and shard impact."),
-  item("katana", "slash", "Katana Ink", 150, "Brush Stroke", "Layered black-and-white brush cut with ink droplets."),
-  item("laser", "slash", "Neon Laser", 250, "Electric Scar", "Cyan-pink cut scar lingers for half a second with a quiet electric accent. Cosmetic only."),
+  item("katana", "slash", "Katana Ink", 150, "Blade Extension", "Layered black-and-white brush cut with ink droplets. Adds 2 simulation ticks to the active launch blade."),
+  item("laser", "slash", "Neon Laser", 250, "Blade Extension", "Cyan-pink cut scar lingers for half a second with a quiet electric accent. Adds 3 simulation ticks to the active launch blade."),
   item("twilight", "world", "Twilight Undercut", 0, "Plum Skyline", "Original twilight arena."),
-  item("tokyo", "world", "Cyber Tokyo", 450, "Neon Rain", "Electric-blue skyline and diagonal neon rain. Danger colors stay unchanged."),
-  item("foundry", "world", "Blood Foundry", 300, "Crimson Industry", "Crimson sky, orange furnace pipes and a deeper procedural bass voice. Danger colors stay unchanged."),
+  item("tokyo", "world", "Cyber Tokyo", 450, "Precision Bounty", "Electric-blue skyline and diagonal neon rain. Danger colors stay unchanged. Earn 8% more kill score at speed 18+. All equipment score perks together cap at +25%."),
+  item("foundry", "world", "Blood Foundry", 300, "Precision Bounty", "Crimson sky, orange furnace pipes and a deeper procedural bass voice. Danger colors stay unchanged. Earn 12% more kill score vs armored foes. All equipment score perks together cap at +25%."),
   item("crown", "head", "Cube Crown", 600, "Armor Break", "Removes two Crown/Bastion plates per hit. Launch speed is 8% lower; no effect on Hyper steering."),
   item("samurai", "head", "Samurai Crest", 350, "Wide Horizontal", "Within 25 degrees of horizontal, cuts are 20% wider."),
   item("coil", "head", "Lightning Coil", 400, "Chain Spark", "A direct slice zaps one enemy within 160 pixels for one plate. Sparks cannot trigger more sparks."),
   item("beacon", "head", "Danger Beacon", 250, "Early Warning", "Shows an amber threat bracket when a Fang begins winding up, before its charge."),
-  item("glitch", "eyes", "Glitch X-Eyes", 250, "Signal Error", "Mismatched X and ring eyes with stepped cyan/pink color changes. No full-screen flashes."),
-  item("smug", "eyes", "Smug Half-Lid", 150, "Cool Stare", "Half-lidded eyes open gold in Overdrive."),
-  item("hypno", "eyes", "Hypno Spiral", 300, "Rift Gaze", "Twin animated purple spirals."),
-  item("sniper", "eyes", "Sniper Dot", 250, "Single Sight", "One crimson sight inside a black band."),
+  item("glitch", "eyes", "Glitch X-Eyes", 250, "Focus Return", "Mismatched X and ring eyes with stepped cyan/pink color changes. No full-screen flashes. Passive FOCUS recovery is 12% faster when not aiming."),
+  item("smug", "eyes", "Smug Half-Lid", 150, "Chain Grace", "Half-lidded eyes open gold in Overdrive. Adds 12 simulation ticks to the chain expiry window after a kill."),
+  item("hypno", "eyes", "Hypno Spiral", 300, "Focus Efficiency", "Twin animated purple spirals. Aiming consumes 15% less FOCUS. Does not slow physics further."),
+  item("sniper", "eyes", "Sniper Dot", 250, "Precision Bounty", "One crimson sight inside a black band. Earn 10% more kill score at full power. All equipment score perks together cap at +25%."),
   item("prism", "body", "Prism Shell", 550, "Wall Needles", "Faceted crystal. Side-wall contact launches two upward needles; each removes one Fang plate. 45-tick cooldown."),
   item("iron", "body", "Bastion Iron", 450, "Rush Guard", "Blocks one Fang rush per run and pushes you clear. Arena walls already do no health damage."),
-  item("lava", "body", "Lava Cracked", 350, "Combo Heat", "Charcoal shell with magma seams that brighten as the chain grows."),
-  item("gold", "body", "Gold Foil", 800, "Mirror Finish", "Polished gold facets and a white star glint while nearly still."),
+  item("lava", "body", "Lava Cracked", 350, "Chain Grace", "Charcoal shell with magma seams that brighten as the chain grows. Adds 18 simulation ticks to the chain expiry window after a kill."),
+  item("gold", "body", "Gold Foil", 800, "Precision Bounty", "Polished gold facets and a white star glint while nearly still. Earn 10% more kill score on every kill. All equipment score perks together cap at +25%."),
   item("grav", "core", "Grav Core", 450, "Aim Pull", "While aiming, pulls small Fangs within 220 pixels gently toward the aim line. Maximum 0.35 pixels per simulation tick."),
   item("magnet", "core", "Magnet Dynamo", 350, "Close Throughcut", "Close passes within 100 pixels have a 20% wider blade, helping real two-contact Throughcuts. Quest rules unchanged."),
   item("echo", "core", "Echo Heart", 550, "Ghost Blade", "Every third direct chain kill leaves a stationary ghost blade for 30 simulation ticks, slicing nearby Fangs once each."),
-  item("viper-tails", "tail", "Viper Tails", 250, "Forked Ribbons", "Twin crimson streamers with ember stitches."),
+  item("viper-tails", "tail", "Viper Tails", 250, "Precision Bounty", "Twin crimson streamers with ember stitches. Earn 10% more kill score at speed 18+. All equipment score perks together cap at +25%."),
   item("anchor", "tail", "Anchor Chain", 400, "Floor Breaker", "Floor rebound is 15% stronger and clears Fangs within 170 pixels. Floor recovery cooldown still applies."),
   item("thrusters", "tail", "Mini Thrusters", 450, "Jet Rebound", "Twin jet nozzles. Earned rail rebounds are 8% stronger; cannot compound above the existing speed ceiling."),
-  item("spectrum", "tail", "Neon Spectrum", 600, "Speed Colors", "Rainbow ribbon shifts faster at higher movement speed."),
-  item("glitch-fx", "slash", "Glitch Tear", 400, "RGB Fracture", "Offset stepped red/cyan scar with a crunchy hit accent."),
-  item("confetti", "slash", "Gold Confetti", 650, "Victory Shards", "Gold foil fragments fan out on impacts, with a soft bright chime."),
-  item("comic", "slash", "Comic Impact", 300, "Manga Burst", "Black/yellow starburst at each impact."),
-  item("pixel", "slash", "Pixel Shatter", 350, "Arcade Debris", "Square debris falls with gravity for 30 simulation ticks; never collides or deals damage."),
-  item("manga", "world", "Manga Paper", 700, "Printed World", "Warm paper, crosshatched skyline and black comic marks. Danger lasers keep their color."),
-  item("synth", "world", "Synthwave Grid", 550, "Neon Horizon", "Striped sunset, perspective grid, violet mountain silhouettes and a higher synth voice."),
-  item("chamfer","body","Chamfer Frame",280,"Cut Corners","Eight beveled corners and CORE-linked edge caps. Cosmetic profile only; hitbox and movement unchanged."),
-  item("notched","body","Notched Frame",320,"Vented Shape","Inward-cut side vents repeat your CORE chevron. Cosmetic only; no collision or combat changes."),
-  item("segmented","body","Segmented Frame",380,"Linked Plates","Layered side plates share CORE conduits and world rim light. Cosmetic only; no extra armor."),
+  item("spectrum", "tail", "Neon Spectrum", 600, "Chain Grace", "Rainbow ribbon shifts faster at higher movement speed. Adds 12 simulation ticks to the chain expiry window after a kill."),
+  item("glitch-fx", "slash", "Glitch Tear", 400, "Blade Extension", "Offset stepped red/cyan scar with a crunchy hit accent. Adds 2 simulation ticks to the active launch blade."),
+  item("confetti", "slash", "Gold Confetti", 650, "Precision Bounty", "Gold foil fragments fan out on impacts, with a soft bright chime. Earn 12% more kill score on multi-cuts. All equipment score perks together cap at +25%."),
+  item("comic", "slash", "Comic Impact", 300, "Chain Grace", "Black/yellow starburst at each impact. Adds 18 simulation ticks to the chain expiry window after a kill."),
+  item("pixel", "slash", "Pixel Shatter", 350, "Blade Extension", "Square debris falls with gravity for 30 simulation ticks; never collides or deals damage. Adds 2 simulation ticks to the active launch blade."),
+  item("manga", "world", "Manga Paper", 700, "Precision Bounty", "Warm paper, crosshatched skyline and black comic marks. Danger lasers keep their color. Earn 10% more kill score on multi-cuts. All equipment score perks together cap at +25%."),
+  item("synth", "world", "Synthwave Grid", 550, "Focus Return", "Striped sunset, perspective grid, violet mountain silhouettes and a higher synth voice. Passive FOCUS recovery is 15% faster when not aiming."),
+  item("chamfer","body","Chamfer Frame",280,"Blade Extension", "Eight beveled corners and CORE-linked edge caps. Adds 1 simulation ticks to the active launch blade."),
+  item("notched","body","Notched Frame",320,"Focus Efficiency", "Inward-cut side vents repeat your CORE chevron. Aiming consumes 8% less FOCUS. Does not slow physics further."),
+  item("segmented","body","Segmented Frame",380,"Chain Grace", "Layered side plates share CORE conduits and world rim light. Adds 12 simulation ticks to the chain expiry window after a kill."),
   item("dash-auto", "dash", "Adaptive Dash", 0, "Build Resonance", "Dash trails follow your equipment and sword. Cosmetic only."),
-  item("dash-ink", "dash", "Ink Dash", 150, "Brush Wake", "A sharp ink-brush wake. Cosmetic only; movement is unchanged."),
-  item("dash-fire", "dash", "Ember Dash", 250, "Flame Wake", "Layered flame ribbons trail your launch. Cosmetic only."),
-  item("dash-lightning", "dash", "Volt Dash", 300, "Electric Wake", "Angular electric streaks follow your launch. Cosmetic only."),
-  item("dash-ice", "dash", "Frost Dash", 300, "Crystal Wake", "Crystalline shards mark your launch. Cosmetic only."),
-  item("dash-water", "dash", "Tide Dash", 250, "Flowing Wake", "Sweeping water ribbons follow your launch. Cosmetic only."),
-  item("dash-void", "dash", "Void Dash", 350, "Orbital Wake", "Broken orbital rings trail your launch. Cosmetic only."),
-  item("dash-echo", "dash", "Echo Dash", 350, "Afterimage Wake", "Geometric afterimages trace your launch. Cosmetic only."),
+  item("dash-ink", "dash", "Ink Dash", 150, "Blade Extension", "A sharp ink-brush wake. Adds 1 simulation ticks to the active launch blade."),
+  item("dash-fire", "dash", "Ember Dash", 250, "Blade Extension", "Layered flame ribbons trail your launch. Adds 2 simulation ticks to the active launch blade."),
+  item("dash-lightning", "dash", "Volt Dash", 300, "Precision Bounty", "Angular electric streaks follow your launch. Earn 10% more kill score at speed 18+. All equipment score perks together cap at +25%."),
+  item("dash-ice", "dash", "Frost Dash", 300, "Focus Efficiency", "Crystalline shards mark your launch. Aiming consumes 8% less FOCUS. Does not slow physics further."),
+  item("dash-water", "dash", "Tide Dash", 250, "Focus Return", "Sweeping water ribbons follow your launch. Passive FOCUS recovery is 10% faster when not aiming."),
+  item("dash-void", "dash", "Void Dash", 350, "Precision Bounty", "Broken orbital rings trail your launch. Earn 12% more kill score vs armored foes. All equipment score perks together cap at +25%."),
+  item("dash-echo", "dash", "Echo Dash", 350, "Chain Grace", "Geometric afterimages trace your launch. Adds 12 simulation ticks to the chain expiry window after a kill."),
   item("pointer-reticle", "pointer", "Field Reticle", 0, "Clean Aim", "A segmented reticle marks the point where you press. Cosmetic only."),
-  item("pointer-diamond", "pointer", "Prism Pointer", 200, "Cut Crystal", "A faceted diamond marks your drag origin. Cosmetic only."),
-  item("pointer-orbit", "pointer", "Orbit Pointer", 250, "Twin Orbits", "Broken orbital arcs frame your drag origin. Cosmetic only."),
-  item("pointer-cross", "pointer", "Crosshair Pointer", 200, "Precision Mark", "Four precision brackets mark your drag origin. Cosmetic only."),
+  item("pointer-diamond", "pointer", "Prism Pointer", 200, "Blade Extension", "A faceted diamond marks your drag origin. Adds 1 simulation ticks to the active launch blade."),
+  item("pointer-orbit", "pointer", "Orbit Pointer", 250, "Focus Return", "Broken orbital arcs frame your drag origin. Passive FOCUS recovery is 10% faster when not aiming."),
+  item("pointer-cross", "pointer", "Crosshair Pointer", 200, "Focus Efficiency", "Four precision brackets mark your drag origin. Aiming consumes 8% less FOCUS. Does not slow physics further."),
   item("radar-base", "radar", "Field Radar", 0, "Local Scan", "The standard local radar tracks nearby enemies and objectives."),
   item("radar-1", "radar", "Long-Range Array", 1200, "Range +35%", "See 35% farther on the radar. Existing enemy and objective markers remain visible."),
   item("radar-2", "radar", "Threat Array", 3000, "Range +70%", "See 70% farther and mark nearby active projectiles and danger zones."),
@@ -9702,7 +9704,7 @@ var ITEMS = Object.freeze([
   item("trajectory-1", "trajectory", "Vector Lens", 1200, "Extended Path", "Shows more of the calculated launch path while aiming."),
   item("trajectory-2", "trajectory", "Impact Lens", 3000, "Impact Markers", "A longer path adds time ticks and a first-impact marker for the current field snapshot."),
   item("trajectory-3", "trajectory", "Oracle Lens", 6500, "Flight Analysis", "Shows the longest visible path, impact marker and live speed, angle and estimated time. Enemies can move; it does not predict bounces."),
-  item("void", "world", "Pro Void", 1e3, "Clean Space", "Pitch-black background, restrained white boundary detail and sparse audio. Danger colors remain visible.")
+  item("void", "world", "Pro Void", 1e3, "Precision Bounty", "Pitch-black background, restrained white boundary detail and sparse audio. Danger colors remain visible. Earn 15% more kill score vs landlords. All equipment score perks together cap at +25%.")
 ]);
 
 // consolidated/vault-art.js
@@ -10784,5 +10786,34 @@ export function drawEnemyAttackImpact(c,{x=0,y=0,type='hurt',attack=null,age=0,m
   }else{
    const d=27-u*8;for(let i=0;i<4;i++){const a=i*Math.PI/2; c.save();c.rotate(a);const p=[[d,-7],[d-9,0],[d,7]];stroke('#241522',6,p);stroke('#e4ceff',2.5,p);c.restore();}ring('#fff0ff',2,9);
   }
+ }finally{c.restore();}
+}
+
+/** Local perk receipts: focus dial, blade chevrons, chain links or score diamonds.
+ * Render-only, bounded to 30 simulation ticks. Caller gates reduced motion. */
+export function drawPartPerkPulse(c,{x=0,y=0,kind='score',age=0,motion=true}={}) {
+ if(!c||!motion||age<0||age>=30)return;
+ const u=age/30,r=20+u*20,color={focus:'#00F0FF',blade:'#DFFF00',chain:'#c4a2ff',score:'#DFFF00'}[kind]||'#00F0FF';
+ c.save();try{c.translate(x,y);c.globalAlpha=(1-u)*.8;c.strokeStyle=color;c.lineWidth=1.8;
+ for(let i=0;i<4;i++){c.save();c.rotate(i*Math.PI/2+u*.3);c.beginPath();
+ if(kind==='focus')c.arc(0,0,r,.1,.9);
+ else if(kind==='blade'){c.moveTo(r-5,-5);c.lineTo(r+5,0);c.lineTo(r-5,5);}
+ else if(kind==='chain'){c.ellipse(r,0,6,3,.4,0,Math.PI*2);}
+ else{c.moveTo(r-4,0);c.lineTo(r,-5);c.lineTo(r+4,0);c.lineTo(r,5);c.closePath();}
+ c.stroke();c.restore();}
+ }finally{c.restore();}
+}
+
+/** Literal perk comparison overlay for the shop. Numeric deltas, not a second
+ * combat simulator. A static readout when motion is disabled. */
+export function drawPartPerkDemo(c,w,h,{stat='',value=0,chip='',time=0,motion=true}={}) {
+ if(!c)return;
+ const t=motion?Math.min(1,Math.max(0,(time%1500-250)/700)):1;
+ const labels={blade:'EXTRA BLADE TICKS',grace:'EXTRA CHAIN TICKS',focus:'FOCUS COST',recovery:'FOCUS RECOVERY'};
+ const percent=stat==='focus'||stat==='recovery'||stat.startsWith('score:');
+ const base=percent?100:0,next=percent?(stat==='focus'?100-value:100+value):value;
+ const max=Math.max(100,next);
+ c.save();try{c.fillStyle='#14101ef2';c.fillRect(14,h-94,w-28,80);c.font='bold 12px monospace';c.fillStyle='#00f0ff';c.fillText(labels[stat]||'QUALIFYING KILL SCORE',26,h-72);
+ for(const [i,name,n,color] of [[0,'BASE',base,'#9f93ad'],[1,'PART',next,'#dfff00']]){const y=h-54+i*23;c.fillStyle=color;c.fillText(`${name} ${n}${percent?'%':''}`,26,y+10);c.fillStyle='#3c3149';c.fillRect(142,y,w-210,10);c.fillStyle=color;c.fillRect(142,y,(w-210)*n/max*t,10);}
  }finally{c.restore();}
 }

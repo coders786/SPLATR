@@ -1,3 +1,7 @@
+> **2026-11-24 functional shop update:** formerly style-only purchases now have
+> perks in `src/part-perks.js`. The Works receipts below are updated; appearance
+> descriptions remain visual evidence, not gameplay promises. See `functional-shop.md`.
+
 # Shop inventory: visuals, effects and harmony
 
 Source audit of the current 73-item catalogue and render/gameplay code. This describes implementation, not a promise that every combination has been manually viewed or playtested. The player can equip one item per slot; different-slot rules coexist, subject to each effect's conditions and caps. Slot alternatives cannot be equipped together. Prices and unlock requirements are shown in the Shop; buying and equipping are separate.
@@ -20,7 +24,7 @@ Source audit of the current 73-item catalogue and render/gameplay code. This des
 
 ### Cyber Ears (`neko`)
 - **Appearance and motion:** Dark triangular ears with pink interiors and core-colored fittings. Ear geometry is static relative to the Cube; cosmetic sparks occur on EDGE return when motion is enabled. The catalogue says ears perk on launch, but no independent ear-perk was found in the current head renderer.
-- **Works:** Cosmetic only. EDGE-return sparks are rendered with motion enabled. No separate launch-perk animation was found.
+- **Works:** Adds 12 simulation ticks to the chain expiry window after a kill. Local perk feedback animates only with motion enabled.
 - **Harmony:** Spark CHRONO CAT; Apex CHRONO WRAITH. Full required combinations are listed below.
 
 ### Viper Horns (`viper`)
@@ -62,32 +66,32 @@ Source audit of the current 73-item catalogue and render/gameplay code. This des
 
 ### Cyber Visor (`visor`)
 - **Appearance and motion:** Broad dark-to-cyan glass band with a moving diagonal scan and focus accents; shared gaze/blink compression.
-- **Works:** Sweeping cyan visor. Appearance only.
+- **Works:** Aiming consumes 10% less FOCUS. Does not slow physics further. Local perk feedback animates only with motion enabled.
 - **Harmony:** Apex CYBER PHANTOM; Apex ARCADE SOVEREIGN. Full required combinations are listed below.
 
 ### SSJ Blaze (`blaze`)
 - **Appearance and motion:** Warm bright slits with time-varying small flame highlights; focus strengthens flicker, shared gaze/blink applies.
-- **Works:** Gold-white eyes with small light streaks while aiming. Appearance only.
+- **Works:** Earn 8% more kill score in overdrive. All equipment score perks together cap at +25%. Local perk feedback animates only with motion enabled.
 - **Harmony:** No named Spark/Apex recipe includes this item; shared palette/material and ordinary slot interactions still apply.
 
 ### Glitch X-Eyes (`glitch`)
 - **Appearance and motion:** Pale eye shapes with offset cyan and pink outlines that change in stepped time increments; shared gaze/blink applies.
-- **Works:** Mismatched X and ring eyes with stepped cyan/pink color changes. No full-screen flashes.
+- **Works:** Passive FOCUS recovery is 12% faster when not aiming. Local perk feedback animates only with motion enabled.
 - **Harmony:** No named Spark/Apex recipe includes this item; shared palette/material and ordinary slot interactions still apply.
 
 ### Smug Half-Lid (`smug`)
 - **Appearance and motion:** Half-lidded palette-colored slits with moving glints and shared gaze/blink. Catalogue promises gold opening in Overdrive, but the current eyes branch has no dedicated Overdrive-gold/open animation; do not count it as implemented.
-- **Works:** Cosmetic only. Shared gaze, blink and animated glints; no dedicated Overdrive-gold opening found.
+- **Works:** Adds 12 simulation ticks to the chain expiry window after a kill. Local perk feedback animates only with motion enabled.
 - **Harmony:** No named Spark/Apex recipe includes this item; shared palette/material and ordinary slot interactions still apply.
 
 ### Hypno Spiral (`hypno`)
 - **Appearance and motion:** Purple concentric circles with rotating spiral strokes and tracking highlights; focus influences the spin.
-- **Works:** Twin animated purple spirals.
+- **Works:** Aiming consumes 15% less FOCUS. Does not slow physics further. Local perk feedback animates only with motion enabled.
 - **Harmony:** Apex STAR EATER; Apex SPECTRAL BRIAR. Full required combinations are listed below.
 
 ### Sniper Dot (`sniper`)
 - **Appearance and motion:** Dark band and red central sight with rotating tick marks and a gaze-shifted highlight.
-- **Works:** One crimson sight inside a black band.
+- **Works:** Earn 10% more kill score at full power. All equipment score perks together cap at +25%. Local perk feedback animates only with motion enabled.
 - **Harmony:** No named Spark/Apex recipe includes this item; shared palette/material and ordinary slot interactions still apply.
 
 ## Body
@@ -99,12 +103,12 @@ Source audit of the current 73-item catalogue and render/gameplay code. This des
 
 ### Obsidian Stealth (`obsidian`)
 - **Appearance and motion:** Dark matte shell with inset, core-tinted seams. No independent shell animation established; reacts visually to palette and Void rim treatment.
-- **Works:** Matte black shell, inset neon-lime seams.
+- **Works:** Earn 8% more kill score while airborne. All equipment score perks together cap at +25%. Local perk feedback animates only with motion enabled.
 - **Harmony:** Spark NIGHT SIGNAL. Full required combinations are listed below.
 
 ### Hologram Wire (`hologram`)
 - **Appearance and motion:** Translucent cyan wire-like shell and visible animated core chamber; shared pose animation. It does not grant invisibility.
-- **Works:** Transparent cyan wire shell with a visible spinning core. Appearance only.
+- **Works:** Aiming consumes 12% less FOCUS. Does not slow physics further. Local perk feedback animates only with motion enabled.
 - **Harmony:** Spark CORRUPT.EXE; Apex CYBER PHANTOM; Apex CHRONO WRAITH. Full required combinations are listed below.
 
 ### Prism Shell (`prism`)
@@ -119,27 +123,27 @@ Source audit of the current 73-item catalogue and render/gameplay code. This des
 
 ### Lava Cracked (`lava`)
 - **Appearance and motion:** Charcoal shell with colored cracks; their brightness responds to combo count rather than a continuous flame simulation.
-- **Works:** Charcoal shell with magma seams that brighten as the chain grows.
+- **Works:** Adds 18 simulation ticks to the chain expiry window after a kill. Local perk feedback animates only with motion enabled.
 - **Harmony:** Spark MAGMA FLAIL; Spark FURNACE HEART; Apex FURNACE REGENT. Full required combinations are listed below.
 
 ### Gold Foil (`gold`)
 - **Appearance and motion:** Gold facets with a pulsing white star glint when almost still; otherwise the shell is fixed to the Cube.
-- **Works:** Polished gold facets and a white star glint while nearly still.
+- **Works:** Earn 10% more kill score on every kill. All equipment score perks together cap at +25%. Local perk feedback animates only with motion enabled.
 - **Harmony:** Apex APEX SUN. Full required combinations are listed below.
 
 ### Chamfer Frame (`chamfer`)
 - **Appearance and motion:** Beveled eight-corner frame with core-linked caps and shaded panels; static profile, shared character motion.
-- **Works:** Eight beveled corners and CORE-linked edge caps. Cosmetic profile only; hitbox and movement unchanged.
+- **Works:** Adds 1 simulation ticks to the active launch blade. Local perk feedback animates only with motion enabled.
 - **Harmony:** Spark CRYO LENS; Apex GLACIER CROWN; Apex STORM CONDUCTOR. Full required combinations are listed below.
 
 ### Notched Frame (`notched`)
 - **Appearance and motion:** Inward side notches and core-linked vents; static profile, shared character motion.
-- **Works:** Inward-cut side vents repeat your CORE chevron. Cosmetic only; no collision or combat changes.
+- **Works:** Aiming consumes 8% less FOCUS. Does not slow physics further. Local perk feedback animates only with motion enabled.
 - **Harmony:** Spark RAZOR LEAF; Spark GLASS EDGE; Apex SPECTRAL BRIAR; Apex GLASS SHOGUN. Full required combinations are listed below.
 
 ### Segmented Frame (`segmented`)
 - **Appearance and motion:** Layered side plates, core-colored conduits and world-influenced rim; static profile, shared character motion.
-- **Works:** Layered side plates share CORE conduits and world rim light. Cosmetic only; no extra armor.
+- **Works:** Adds 12 simulation ticks to the chain expiry window after a kill. Local perk feedback animates only with motion enabled.
 - **Harmony:** Spark ARC RELAY; Apex ARC SENTINEL. Full required combinations are listed below.
 
 ## Core
@@ -198,7 +202,7 @@ Source audit of the current 73-item catalogue and render/gameplay code. This des
 
 ### Viper Tails (`viper-tails`)
 - **Appearance and motion:** Two red/pink streamers with bright ends, time-based wave and movement lag; cosmetic.
-- **Works:** Twin crimson streamers with ember stitches.
+- **Works:** Earn 10% more kill score at speed 18+. All equipment score perks together cap at +25%. Local perk feedback animates only with motion enabled.
 - **Harmony:** Apex MECHA REAPER. Full required combinations are listed below.
 
 ### Anchor Chain (`anchor`)
@@ -213,7 +217,7 @@ Source audit of the current 73-item catalogue and render/gameplay code. This des
 
 ### Neon Spectrum (`spectrum`)
 - **Appearance and motion:** Single rainbow streamer waves; hue cycles faster with player speed. Cosmetic.
-- **Works:** Rainbow ribbon shifts faster at higher movement speed.
+- **Works:** Adds 12 simulation ticks to the chain expiry window after a kill. Local perk feedback animates only with motion enabled.
 - **Harmony:** Spark RAZOR LEAF; Apex SPECTRAL BRIAR; Apex PRISM ORACLE. Full required combinations are listed below.
 
 ## Slash
@@ -225,32 +229,32 @@ Source audit of the current 73-item catalogue and render/gameplay code. This des
 
 ### Katana Ink (`katana`)
 - **Appearance and motion:** Dark and white brush-cut arc with ink-like droplets; animates on slash/impact.
-- **Works:** Layered black-and-white brush cut with ink droplets.
+- **Works:** Adds 2 simulation ticks to the active launch blade. Local perk feedback animates only with motion enabled.
 - **Harmony:** Apex INK RONIN; Apex GLASS SHOGUN. Full required combinations are listed below.
 
 ### Neon Laser (`laser`)
 - **Appearance and motion:** Cyan/pink luminous cut; a temporary 30-tick scar is created at launch. Cosmetic, not sustained beam damage.
-- **Works:** Cyan-pink cut scar lingers for half a second with a quiet electric accent. Cosmetic only.
+- **Works:** Adds 3 simulation ticks to the active launch blade. Local perk feedback animates only with motion enabled.
 - **Harmony:** Apex LASER WYRM; Apex GLACIER CROWN; Apex STORM CONDUCTOR. Full required combinations are listed below.
 
 ### Glitch Tear (`glitch-fx`)
 - **Appearance and motion:** Offset pink/cyan stepped cut and blocky fragments, animated during slash/impact; sound accent when audio is enabled.
-- **Works:** Offset stepped red/cyan scar with a crunchy hit accent.
+- **Works:** Adds 2 simulation ticks to the active launch blade. Local perk feedback animates only with motion enabled.
 - **Harmony:** Spark CORRUPT.EXE; Spark NIGHT SIGNAL. Full required combinations are listed below.
 
 ### Gold Confetti (`confetti`)
 - **Appearance and motion:** Gold foil-like fragments on impact, with a bright chime if audio is enabled; event-driven.
-- **Works:** Gold foil fragments fan out on impacts, with a soft bright chime.
+- **Works:** Earn 12% more kill score on multi-cuts. All equipment score perks together cap at +25%. Local perk feedback animates only with motion enabled.
 - **Harmony:** Apex APEX SUN. Full required combinations are listed below.
 
 ### Comic Impact (`comic`)
 - **Appearance and motion:** Bold black/yellow comic-style impact burst; event-driven rather than always visible.
-- **Works:** Black/yellow starburst at each impact.
+- **Works:** Adds 18 simulation ticks to the chain expiry window after a kill. Local perk feedback animates only with motion enabled.
 - **Harmony:** No named Spark/Apex recipe includes this item; shared palette/material and ordinary slot interactions still apply.
 
 ### Pixel Shatter (`pixel`)
 - **Appearance and motion:** Small square fragments animate and fall after impact; they are non-colliding decoration.
-- **Works:** Square debris falls with gravity for 30 simulation ticks; never collides or deals damage.
+- **Works:** Adds 2 simulation ticks to the active launch blade. Local perk feedback animates only with motion enabled.
 - **Harmony:** Spark PIXEL ECHO; Apex ARCADE SOVEREIGN. Full required combinations are listed below.
 
 ## World
@@ -262,27 +266,27 @@ Source audit of the current 73-item catalogue and render/gameplay code. This des
 
 ### Cyber Tokyo (`tokyo`)
 - **Appearance and motion:** Cool blue skyline with diagonal rain and moving light streaks. Time-based ambience; danger colors stay distinct.
-- **Works:** Electric-blue skyline and diagonal neon rain. Danger colors stay unchanged.
+- **Works:** Earn 8% more kill score at speed 18+. All equipment score perks together cap at +25%. Local perk feedback animates only with motion enabled.
 - **Harmony:** No named Spark/Apex recipe includes this item; shared palette/material and ordinary slot interactions still apply.
 
 ### Blood Foundry (`foundry`)
 - **Appearance and motion:** Crimson furnace skyline, orange pipes and rising sparks; time-based embers. Has its own deeper audio character.
-- **Works:** Crimson sky, orange furnace pipes and a deeper procedural bass voice. Danger colors stay unchanged.
+- **Works:** Earn 12% more kill score vs armored foes. All equipment score perks together cap at +25%. Local perk feedback animates only with motion enabled.
 - **Harmony:** No named Spark/Apex recipe includes this item; shared palette/material and ordinary slot interactions still apply.
 
 ### Manga Paper (`manga`)
 - **Appearance and motion:** Warm paper, printed skyline, hatching and comic marks. The backdrop itself is essentially static, not a moving manga animation.
-- **Works:** Warm paper, crosshatched skyline and black comic marks. Danger lasers keep their color.
+- **Works:** Earn 10% more kill score on multi-cuts. All equipment score perks together cap at +25%. Local perk feedback animates only with motion enabled.
 - **Harmony:** Apex INK RONIN. Full required combinations are listed below.
 
 ### Synthwave Grid (`synth`)
 - **Appearance and motion:** Striped sunset, violet mountains and perspective grid; horizontal grid lines move with time; higher synth voice.
-- **Works:** Striped sunset, perspective grid, violet mountain silhouettes and a higher synth voice.
+- **Works:** Passive FOCUS recovery is 15% faster when not aiming. Local perk feedback animates only with motion enabled.
 - **Harmony:** Apex ARCADE SOVEREIGN. Full required combinations are listed below.
 
 ### Pro Void (`void`)
 - **Appearance and motion:** Black field, sparse stars, dark ringed orb and slowly drifting floating fragments; restrained audio. Stars/orb are not claimed as independent animations.
-- **Works:** Pitch-black background, restrained white boundary detail and sparse audio. Danger colors remain visible.
+- **Works:** Earn 15% more kill score vs landlords. All equipment score perks together cap at +25%. Local perk feedback animates only with motion enabled.
 - **Harmony:** No named Spark/Apex recipe includes this item; shared palette/material and ordinary slot interactions still apply.
 
 ## Dash
@@ -294,37 +298,37 @@ Source audit of the current 73-item catalogue and render/gameplay code. This des
 
 ### Ink Dash (`dash-ink`)
 - **Appearance and motion:** Dark brushlike streak/wake, animated on dash; style only.
-- **Works:** A sharp ink-brush wake. Cosmetic only; movement is unchanged.
+- **Works:** Adds 1 simulation ticks to the active launch blade. Local perk feedback animates only with motion enabled.
 - **Harmony:** No named Spark/Apex recipe includes this item; shared palette/material and ordinary slot interactions still apply.
 
 ### Ember Dash (`dash-fire`)
 - **Appearance and motion:** Layered warm flame-like ribbons, animated on dash; no burning damage.
-- **Works:** Layered flame ribbons trail your launch. Cosmetic only.
+- **Works:** Adds 2 simulation ticks to the active launch blade. Local perk feedback animates only with motion enabled.
 - **Harmony:** No named Spark/Apex recipe includes this item; shared palette/material and ordinary slot interactions still apply.
 
 ### Volt Dash (`dash-lightning`)
 - **Appearance and motion:** Angular electric streaks, animated on dash; no added zap.
-- **Works:** Angular electric streaks follow your launch. Cosmetic only.
+- **Works:** Earn 10% more kill score at speed 18+. All equipment score perks together cap at +25%. Local perk feedback animates only with motion enabled.
 - **Harmony:** No named Spark/Apex recipe includes this item; shared palette/material and ordinary slot interactions still apply.
 
 ### Frost Dash (`dash-ice`)
 - **Appearance and motion:** Crystalline fragments/wake, animated on dash; no freeze.
-- **Works:** Crystalline shards mark your launch. Cosmetic only.
+- **Works:** Aiming consumes 8% less FOCUS. Does not slow physics further. Local perk feedback animates only with motion enabled.
 - **Harmony:** No named Spark/Apex recipe includes this item; shared palette/material and ordinary slot interactions still apply.
 
 ### Tide Dash (`dash-water`)
 - **Appearance and motion:** Flowing curved water-like ribbons, animated on dash; no water physics.
-- **Works:** Sweeping water ribbons follow your launch. Cosmetic only.
+- **Works:** Passive FOCUS recovery is 10% faster when not aiming. Local perk feedback animates only with motion enabled.
 - **Harmony:** No named Spark/Apex recipe includes this item; shared palette/material and ordinary slot interactions still apply.
 
 ### Void Dash (`dash-void`)
 - **Appearance and motion:** Broken orbital ring wake, animated on dash; no gravity effect.
-- **Works:** Broken orbital rings trail your launch. Cosmetic only.
+- **Works:** Earn 12% more kill score vs armored foes. All equipment score perks together cap at +25%. Local perk feedback animates only with motion enabled.
 - **Harmony:** No named Spark/Apex recipe includes this item; shared palette/material and ordinary slot interactions still apply.
 
 ### Echo Dash (`dash-echo`)
 - **Appearance and motion:** Geometric afterimage wake, animated on dash; no extra attack.
-- **Works:** Geometric afterimages trace your launch. Cosmetic only.
+- **Works:** Adds 12 simulation ticks to the chain expiry window after a kill. Local perk feedback animates only with motion enabled.
 - **Harmony:** No named Spark/Apex recipe includes this item; shared palette/material and ordinary slot interactions still apply.
 
 ## Pointer
@@ -336,17 +340,17 @@ Source audit of the current 73-item catalogue and render/gameplay code. This des
 
 ### Prism Pointer (`pointer-diamond`)
 - **Appearance and motion:** Faceted diamond marking the drag origin; input-driven, cosmetic.
-- **Works:** A faceted diamond marks your drag origin. Cosmetic only.
+- **Works:** Adds 1 simulation ticks to the active launch blade. Local perk feedback animates only with motion enabled.
 - **Harmony:** No named Spark/Apex recipe includes this item; shared palette/material and ordinary slot interactions still apply.
 
 ### Orbit Pointer (`pointer-orbit`)
 - **Appearance and motion:** Broken circular arcs around the drag origin; input-driven, cosmetic.
-- **Works:** Broken orbital arcs frame your drag origin. Cosmetic only.
+- **Works:** Passive FOCUS recovery is 10% faster when not aiming. Local perk feedback animates only with motion enabled.
 - **Harmony:** No named Spark/Apex recipe includes this item; shared palette/material and ordinary slot interactions still apply.
 
 ### Crosshair Pointer (`pointer-cross`)
 - **Appearance and motion:** Four precision brackets around the drag origin; input-driven, cosmetic.
-- **Works:** Four precision brackets mark your drag origin. Cosmetic only.
+- **Works:** Aiming consumes 8% less FOCUS. Does not slow physics further. Local perk feedback animates only with motion enabled.
 - **Harmony:** No named Spark/Apex recipe includes this item; shared palette/material and ordinary slot interactions still apply.
 
 ## Radar
