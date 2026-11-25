@@ -21,7 +21,8 @@ import './lab.css';
 import { activeHybrid, activeSparks } from './hybrids.js';
 import { createCustomize } from './customize.js';
 import { overlapsHUD } from './radar.js';
-import { createQuestUI } from './quest-ui.js';
+import { createShopWallet } from './shop-wallet.js';
+import { createRoundRewardUI } from './round-reward-ui.js';
 import { createRun, CHAIN_TIME, HYPER } from './run.js';
 import { readForm, formLabel, GRADE_AT, GRADE_MARK, nextRank } from './form.js';
 import { createClock } from './clock.js';
@@ -43,7 +44,7 @@ import { LANDLORD_STORY, storyChipForWave } from './story-arc.js';
 // CHUNK 7: why the pause screen is open — printed on it, so an automatic
 // pause never looks like the game freezing.
 let pauseCause = 'paused';
-let questUI, customize, waveUI, controlPractice, teaching;let learningGround=false,tutorial=null,lastTutorialHint=null,lastRiftObjective='',lastTutorialWhy='';
+let shopWallet, rewardUI, customize, waveUI, controlPractice, teaching;let learningGround=false,tutorial=null,lastTutorialHint=null,lastRiftObjective='',lastTutorialWhy='';
 const tutorialHintSpeech=Object.freeze({
  slice:'Slice the highlighted target. Tap it, or pull away and release toward it.',
  bank:'Launch into the glowing wall. Pull away from the wall and release.',
@@ -119,7 +120,7 @@ let run = null,
   receiptTicks = 0,
   noticeTicks = 0;
 const active = () =>
-  run && !teaching?.isOpen && !controlPractice?.isOpen && !waveUI?.open && !customize?.isOpen && !questUI?.vault && !dialog.open && !document.hidden && ['ready', 'playing'].includes(run.state.phase) && !run.state.inputLock;
+  run && !teaching?.isOpen && !controlPractice?.isOpen && !waveUI?.open && !customize?.isOpen && !dialog.open && !document.hidden && ['ready', 'playing'].includes(run.state.phase) && !run.state.inputLock;
 // ── CHUNK 6A: THE CUTSCENE DRIVER ─────────────────────────────────────────
 // Pure time; the art lives in the engine keyed off s.cutscene. The shell
 // owns input lock, the freeze, and the chip.
@@ -390,7 +391,7 @@ function record() {
 }
 function event(type, d) {
   if(type==='challenge' && customize?.unlock(d.id)) say(d.id==='oni'?'Broken Oni unlocked.':'Glass Cannon unlocked.');
-  questUI?.event(type, d);
+  if (type === 'over') rewardUI?.over(run);
   renderer.event(type, d, opts.motion);
   switch (type) {
     case 'breachOpen': input?.reset();audio.zone();break;
@@ -1259,7 +1260,8 @@ function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   renderer.setFieldScale?.(0.9);
   renderer.field(run.world.player.position);run.setView(renderer.questView());
   game.dataset.world=run.state.equipment.world;
-  if(!learn)questUI.start();
+  shopWallet.begin(run);
+  rewardUI.tick(run);
   const hybrid=activeHybrid(run.state.equipment)||activeSparks(run.state.equipment)[0];
   $('hybrid-title').textContent=hybrid?.title || '';
   $('hybrid-title').hidden=!hybrid;
@@ -1305,13 +1307,12 @@ function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   if (!activeCutscene) say(learn?'Practice: slice the targets, bank the wall, dodge and cut, then break the Crown.':'New run.');
 }
 function home() {
-  questUI?.closePeek();
   renderer.setFieldScale?.(1);
   input.reset();
   if(tutorial)tutorial.dispose();else run?.dispose();
   run = null;tutorial=null;
   combatTrace = null;
-  learningGround=false;game.dataset.learning='false';questUI?.refresh();
+  learningGround=false;game.dataset.learning='false';
   restoreField();
   hud.hidden = true;
   $('rack-skip').hidden=true;$('tutorial-objective').hidden=true;
@@ -1343,7 +1344,6 @@ function manual(){
  });
 }
 function open(next) {
-  questUI?.closePeek();
   input.cancel();
   clock.reset();
   poki.setPlaying(false);
@@ -1394,26 +1394,7 @@ function open(next) {
       // exists when there is a report worth copying.
       const copy = $('dev-fault');
       if (copy) copy.hidden = !(frameFailures > 0);
-      /* §3.1: the three deeds you hold, in the board's own language. */
-      const deeds = $('pause-deeds');
-      if (deeds) {
-        const held = questUI?.pauseRead?.() || [];
-        deeds.replaceChildren(...held.map((d) => {
-          const line = document.createElement('div');
-          line.className = 'pause-deed';
-          line.dataset.lane = String(d.lane).toLowerCase();
-          line.dataset.done = String(d.done);
-          line.style.setProperty('--accent', d.accent || '#8f83a6');
-          const tag = document.createElement('b');
-          tag.textContent = String(d.lane).slice(0, 1);
-          const label = document.createElement('span');
-          label.textContent = d.title;
-          const count = document.createElement('i');
-          count.textContent = d.label;
-          line.append(tag, label, count);
-          return line;
-        }));
-      }
+
     }
     $('skip-room').hidden = !run.state.opening || !!run.state.opening.finishing;
     setText(
@@ -1470,7 +1451,6 @@ function copyFrameReport() {
     run,
     failures: frameFailures,
     errors: [...frameErrors.entries()],
-    deeds: questUI?.pauseRead?.() || [],
     consoleLines: consoleRing.lines(),
     url: location.href,
   });
@@ -1519,7 +1499,6 @@ window.addEventListener('keydown', (e) => {
     void fullscreen();
     return;
   }
-  if (questUI.vault) return;
   if (!e.repeat && k === ' ' && ((!run && !page) || page === 'result')) { e.preventDefault(); start(); return; }
   if (page || !run) {
     if (page === 'manual' && ['arrowleft', 'arrowright'].includes(k)) {
@@ -1566,7 +1545,7 @@ window.addEventListener('keydown', (e) => {
  * The pause now carries its cause, and the pause screen prints it.
  */
 function suspend(why = 'focus') {
-  const eligible = run && !learningGround && !questUI.vault && ['playing', 'ready'].includes(run.state.phase) && !dialog.open;
+  const eligible = run && !learningGround && ['playing', 'ready'].includes(run.state.phase) && !dialog.open;
   if (eligible) {
     pauseCause = why;
     open('pause');
@@ -1690,20 +1669,19 @@ function safeStep(now) {
   const redraw = dirty || renderer.revision !== lastRevision;
   if (!run) {
     if (redraw || (!page && opts.motion)) renderer.title(opts.motion ? now * 0.023 : 0);
-  } else if (!dialog.open && !questUI.vault && !controlPractice?.isOpen && !teaching?.isOpen) {
+  } else if (!dialog.open && !controlPractice?.isOpen && !teaching?.isOpen) {
     const a = clock.frame(now, () => {
-      if (dialog.open || questUI.vault || waveUI?.open || run.state.wave?.phase==='choose') return;
+      if (dialog.open || waveUI?.open || run.state.wave?.phase==='choose') return;
       // A refused shot gets one more chance before the tick consumes the frame.
       // Retried here rather than on the input event because the reason the shot
       // was refused is almost always a GAME state (recovery, hitstop) that only
       // changes on a tick.
-      if (run.state.questReveal > 0) { run.state.questReveal--; if (run.state.questReveal % 2) return; }
       input.retry();
       run.setAim(input.aim);
       run.tick(); // owns the panic ray, grace and every other tick rule
       tickCutscene(); // CHUNK 6A: advances the cold open / mid-wave / sector / SHATTER cuts
       if(learningGround&&tutorial){tutorial.tick(input.engaged);const objective=tutorialObjective(tutorial.visual,run.combat.enemies,lastDevice),label=$('tutorial-objective');label.hidden=!objective;const speech=objective?tutorialAnnouncement(tutorial.visual,objective,lastDevice):'',objectiveKey=objective+'|'+speech;if(objectiveKey!==lastRiftObjective){if(!objective)lastTutorialHint=null;lastRiftObjective=objectiveKey;setText('tutorial-objective-text',objective);const room=TUTORIAL_LINES[Math.min(Math.max(tutorial.visual.stage|0,0),3)];if(room&&label.dataset.room!==room.title){label.dataset.room=room.title;}if(speech)say(speech);}const whyNow=objective?tutorialWhy(tutorial.visual,run.combat.enemies):'';if(whyNow!==lastTutorialWhy){lastTutorialWhy=whyNow;const why=$('tutorial-objective-why');if(why)why.textContent=whyNow;}const hint=tutorial.visual.guide?.kind;if(!objective&&hint&&hint!==lastTutorialHint){lastTutorialHint=hint;say(tutorialHintSpeech[hint]);}if(tutorial.finished){queueMicrotask(()=>{if(learningGround&&tutorial?.finished)finishTutorial();});}}
-      else questUI.tick();
+      rewardUI.tick(run);
       audio.focus(run.state.phase === 'playing' && run.state.held && run.world.slow);
       audio.flush();
       // CHUNK 2: the ground keeps score. Tier 1 knocks every 8s of run time,
@@ -1782,18 +1760,17 @@ function safeStep(now) {
 }
 function finishTutorial(){const first=storage.get('tutorialCompleted','0')!=='1';storage.set('tutorialCompleted',1);start({learningGround:false,lockdown:first});}
 $('rack-skip').onclick=()=>{if(learningGround)finishTutorial();};
-// CHUNK 5: the "Learn" door in the quest board now opens THE LEARNING
-// GROUND instead of force-starting the course; the two safe-practice dialogs
-// it used to reference are real, wired and rendered below.
-questUI = createQuestUI({unlimited:devMode,startTutorial:()=>{home();open('manual');},practice:()=>controlPractice?.open(),teaching:()=>teaching?.open(),openShop:()=>customize?.open(),getRun:()=>run, storage, audio, motion:()=>opts.motion && opts.shake !== 'off', resetInput:()=>input.reset(), home,
-  resume:(playing)=>{clock.reset();dirty=true;if(playing)canvas.focus({preventScroll:true});portal();}, view:()=>renderer.questView()});
-customize = createCustomize({storage,unlimited:devMode,wallet:()=>questUI.wallet(),ownedParts:()=>questUI.ownedParts(),purchase:(id,cost)=>questUI.purchasePart(id,cost),resetInput:()=>input.reset(),motion:()=>opts.motion,snap:()=>audio.menu()});
+shopWallet = createShopWallet(storage, {unlimited:devMode});
+rewardUI = createRoundRewardUI({wallet:shopWallet});
+customize = createCustomize({storage,unlimited:devMode,wallet:()=>shopWallet.wallet(),ownedParts:()=>shopWallet.ownedParts(),purchase:(id,cost)=>shopWallet.purchase(id,cost),resetInput:()=>input.reset(),motion:()=>opts.motion,snap:()=>audio.menu()});
 controlPractice = createControlPracticeUI({resetInput:()=>input.reset(),motion:()=>opts.motion&&opts.shake!=='off',onOpen:()=>{input.reset();poki.setPlaying(false);},onClose:()=>{input.reset();}});
 teaching = createTeachingUI({resetInput:()=>input.reset(),motion:()=>opts.motion&&opts.shake!=='off',onOpen:()=>{input.reset();poki.setPlaying(false);},onClose:()=>{input.reset();},openControl:()=>controlPractice?.open()});
+$('manual-teaching').onclick=()=>{home();teaching.open();};
+$('manual-drill').onclick=()=>{home();controlPractice.open();};
 const customButton=document.createElement('button');customButton.id='customize-btn';customButton.className='choice quiet';customButton.textContent='Shop';customButton.onclick=()=>customize.open();$('main-nav').append(customButton);
 waveUI=createWaveUI({getRun:()=>run,resetInput:()=>input.reset(),motion:()=>opts.motion});
 installIconSprite();
-for(const [id,name]of Object.entries({'start-btn':'play','manual-btn':'guide','options-btn':'settings','quests-btn':'learn','customize-btn':'shop','resume-btn':'play','pause-practice':'practice','pause-manual':'guide','pause-options':'settings','retry-btn':'retry','home-btn':'back','end-btn':'back'}))prependIcon($(id),name);
+for(const [id,name]of Object.entries({'start-btn':'play','manual-btn':'guide','options-btn':'settings','customize-btn':'shop','resume-btn':'play','pause-practice':'practice','pause-manual':'guide','pause-options':'settings','retry-btn':'retry','home-btn':'back','end-btn':'back'}))prependIcon($(id),name);
 game.dataset.dev = String(devMode);
 $('dev-badge').hidden = $('dev-panel-badge').hidden = !devMode;
 syncSettings();

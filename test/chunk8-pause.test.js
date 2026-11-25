@@ -108,13 +108,10 @@ test('a deliberate pause still offers everything', () => {
 
 /* ══ §3.1 — THE PAUSE READS THE RUN ═════════════════════════════════════ */
 
-test('the pause screen shows the three deeds you hold, in the board language', () => {
-  assert.match(html, /id="pause-deeds"/, 'there is a container for them');
-  assert.match(main, /questUI\?\.pauseRead\?\.\(\)/, 'filled from the live board');
-  assert.match(main, /line\.dataset\.lane/, 'each row is a lane');
-  assert.match(css, /\.pause-deed\[data-done=true\]/, 'a proven deed reads differently');
-  const at = main.indexOf('const held = questUI?.pauseRead?.()');
-  assert.ok(at > 0, 'the rows are built from the live board');
+test('retired deeds do not appear on pause or gate gameplay', () => {
+  assert.doesNotMatch(html, /id="pause-deeds"/);
+  assert.doesNotMatch(main, /questUI|createQuestUI|questReveal/);
+  assert.match(main, /rewardUI.tick\(run\)/);
 });
 
 /* ══ §3.4 — THE REPORT ══════════════════════════════════════════════════ */

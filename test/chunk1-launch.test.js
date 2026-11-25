@@ -116,11 +116,7 @@ test('CHUNK 1: the title has one practice door and no stray score sticker', () =
   // CHUNK 8: the deed book appends DEEDS beside the practice door
   // instead of a second Learn. (It said 'Quests', with a graduation cap, which
   // was the identity problem this chunk fixed.)
-  const quest = readFileSync(new URL('../src/quest-ui.js', import.meta.url), 'utf8');
-  assert.ok(/'choice quiet','Deeds'/.test(quest), 'the deed book has its own door');
-  assert.ok(!/el\('button','choice quiet','Learn'\)/.test(quest), 'LEARN is not a synonym for the manual any more');
-  assert.ok(!/'choice quiet','Quests'/.test(quest), 'the word Quests is gone from the menu');
-  assert.ok(!/'choice quiet','Contracts'/.test(quest), 'and the contract-era label is gone too');
+  assert.doesNotMatch(main, /createQuestUI|quests-btn/, 'quests are removed from the shipped game');
 });
 
 // ── 5. DAMAGE ────────────────────────────────────────────────────────────
