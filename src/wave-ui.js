@@ -2,6 +2,8 @@ import {BUFF_PRESENTATION,buffPresentation} from './buff-presentation.js';
 import {iconNode,prependIcon,BUFF_ICONS,STAGE_ICONS} from './ui-icons.js';
 import {controlCue} from './control-cues.js';
 import {breakthroughLabel,breachCue} from './breakthrough.js';
+import {rushReadout} from './hud-copy.js';
+import {postVisible} from './post.js';
 import {SPEED_PACE} from './speed-pace.js';
 import {drawSwordWeapon,drawEncounterRoster,drawWaveUpgradePreview} from './art/splatr-art-engine.js';
 function luckyStamp(copy){const stamp=document.createElement('small');stamp.className='buff-lucky';stamp.textContent='LUCKY';stamp.setAttribute('aria-hidden','true');stamp.title='Boosted roll · Normally '+copy.usualStat;return stamp;}
@@ -19,6 +21,15 @@ function comparisonBars(copy){
 }
 export function createWaveUI({getRun,resetInput,motion=()=>!matchMedia('(prefers-reduced-motion: reduce)').matches}){
  const hud=document.createElement('section');hud.className='wave-hud';hud.hidden=true;hud.setAttribute('aria-label','Wave progress');document.querySelector('#game').append(hud);
+ // CHUNK 3: the sector's bonus goal. Built once, moved back into the HUD each
+ // frame (the HUD is a replaceChildren target, so a child it owned would be
+ // wiped), and hidden whenever there is no goal to show.
+ const goalChip=document.createElement('div');goalChip.className='wave-goal';goalChip.hidden=true;goalChip.setAttribute('role','status');
+ // CHUNK 4: THE POST RECEIPT. A run-length card arrives on every clear with no
+ // picker, so the HUD has to say WHICH card and WHY — an unexplained buff is
+ // indistinguishable from a bug. Shown for a short window after it lands.
+ const postLine=document.createElement('div');postLine.className='wave-post';postLine.hidden=true;postLine.setAttribute('role','status');
+ let postShownFor=-1;
  // CHUNK 6B: THE LANDLORD'S BAR — Minecraft parity, bottom center. Five
  // cells, one per plate; a pure projection of the boss's plates, read once a
  // frame. Appended to #game (not inside the rebuilt .wave-hud) so the wipe can
@@ -66,14 +77,14 @@ const paceAction=pace.querySelector('.pace-action'),paceSpeed=pace.querySelector
  skip.onclick=()=>{resetInput();if(getRun()?.skipBreach())document.querySelector('#arena')?.focus({preventScroll:true});};
  const dialog=document.createElement('dialog');dialog.className='wave-upgrades';dialog.setAttribute('aria-labelledby','wave-upgrade-title');document.querySelector('#game').append(dialog);
  const announcement=document.createElement('section');announcement.className='wave-announcement';announcement.hidden=true;announcement.setAttribute('aria-label','Encounter briefing');document.querySelector('#game').append(announcement);
- const pressed=new Set();let needsFreshPress=false;
- document.addEventListener('keydown',e=>pressed.add(e.code),true);document.addEventListener('keyup',e=>pressed.delete(e.code),true);
+ const pressed=new Set();let needsFreshPress=false,disposed=false;
+ const press=e=>pressed.add(e.code),release=e=>pressed.delete(e.code);document.addEventListener('keydown',press,true);document.addEventListener('keyup',release,true);
  let shown=null,choiceRun=null,choiceLockedUntil=0;
  dialog.setAttribute('closedby','none');
- const choiceRequired=()=>choiceRun&&getRun()===choiceRun&&choiceRun.state.wave?.phase==='choose'&&['ready','playing'].includes(choiceRun.state.phase);
+ const choiceRequired=()=>!disposed&&choiceRun&&getRun()===choiceRun&&choiceRun.state.wave?.phase==='choose'&&['ready','playing'].includes(choiceRun.state.phase);
  const restoreChoice=()=>{if(choiceRequired()&&!dialog.open&&!document.hidden){dialog.showModal();dialog.querySelector('button')?.focus({preventScroll:true});}};
  dialog.addEventListener('close',()=>queueMicrotask(restoreChoice));
- document.addEventListener('keydown',e=>{if(dialog.open&&e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();}},true);
+ const escape=e=>{if(dialog.open&&e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();}};document.addEventListener('keydown',escape,true);
  dialog.addEventListener('cancel',e=>{e.preventDefault();e.stopImmediatePropagation();});
  dialog.addEventListener('keydown',e=>e.stopPropagation());dialog.addEventListener('keyup',e=>e.stopPropagation());
  function update(){
@@ -102,7 +113,70 @@ const paceAction=pace.querySelector('.pace-action'),paceSpeed=pace.querySelector
   // CHUNK 1: +N WAVE BONUS is folded into the sub line so the multiplier
   // feels banked, not hidden.
   const waveBonus=Math.min(8,run.state.waveMult||0);if(waveBonus>0)sub=`${sub?sub+' / ':''}+${waveBonus} WAVE`;
+  // CHUNK 3: the goal chip is a live readout, so its own contents are NOT part
+  // of the receipt key — but the chip must survive the replaceChildren below,
+  // which wipes every child of the HUD. It is re-appended at the end of this
+  // block and again after the rebuild, so it is always the last child.
   const receiptKey=text+sub+(activeBuff?.id||'')+run.state.waveShield;if(hud.dataset.receipt!==receiptKey){hud.dataset.receipt=receiptKey;hud.replaceChildren();const main=document.createElement('strong'),style=document.createElement('span');main.textContent=text;style.textContent=sub;style.hidden=!sub;hud.append(main,style);if(activeBuff){const badge=document.createElement('div');badge.className='active-wave-upgrade';badge.dataset.buff=activeBuff.id;badge.dataset.spent=String(activeBuff.shield&&!run.state.waveShield);badge.setAttribute('aria-label',`${activeCopy.accessibleName}: ${activeCopy.stat}.${activeCopy.cost?' Cost: '+activeCopy.cost+'.':''} This wave only.${activeBuff.shield&&!run.state.waveShield?' Shield spent.':''}`);badge.title=badge.getAttribute('aria-label');badge.append(iconNode(BUFF_ICONS[activeBuff.id]||'blade'));const stat=document.createElement('b');const label=document.createElement('span');label.className='active-buff-name';label.textContent=activeCopy.name;if(activeCopy.lucky)label.append(luckyStamp(activeCopy));badge.dataset.lucky=String(activeCopy.lucky);badge.append(label);stat.textContent=activeBuff.shield?(run.state.waveShield?'BLOCK ×'+run.state.waveShield+(activeBuff.speed?' / DASH −10%':''):'SPENT'):activeCopy.stat;badge.append(stat);hud.append(badge);}}
+
+  // ── CHUNK 3: THE LIVE BONUS GOAL ────────────────────────────────────────
+  // One chip, one line, in the HUD the player is already reading. It is a
+  // DIRECTIVE ("BREAK A CROWN"), not a scoreboard, and it carries its own
+  // progress so the sector's objective is never a thing you discover on the
+  // receipt. Nothing about the goal is stored here: every frame reads the
+  // director, which owns the counters.
+  //
+  // ORDER MATTERS: this block sits AFTER the receipt's replaceChildren above.
+  // The receipt wipes every child of the HUD when the wave text changes (any
+  // body leaving the field), so a chip appended before it would be erased on
+  // exactly the frames the player is winning. Appending after the rebuild is
+  // what makes the chip survive — there is no second re-append hiding a bug
+  // here, and test/chunk3-flow.test.js pins it by killing a body.
+  {
+   const readout=run.waveGoal?run.waveGoal():null;
+   const show=!!readout&&!!readout.goal&&wave.phase==='combat';
+   goalChip.hidden=!show;
+   if(show){
+    const key=`${readout.goal.id}/${readout.met}/${readout.value}`;
+    if(goalChip.dataset.key!==key){
+     goalChip.dataset.key=key;
+     goalChip.dataset.met=String(!!readout.met);
+     goalChip.replaceChildren();
+     const label=document.createElement('span');label.textContent='BONUS';
+     const body=document.createElement('b');body.textContent=readout.met?`${readout.goal.label} ✓`:readout.goal.line;
+     goalChip.append(label,body);
+     if(!readout.met&&!readout.goal.bool&&!readout.goal.lower){
+      const fill=document.createElement('i');
+      fill.style.setProperty('--fill',`${Math.round((readout.fraction||0)*100)}%`);
+      goalChip.append(fill);
+     }
+    }
+    if(goalChip.parentNode!==hud)hud.append(goalChip);
+   }else if(goalChip.parentNode)goalChip.remove();
+  }
+
+  // ── CHUNK 4: THE POST ───────────────────────────────────────────────────
+  // One receipt per clear: the card and the ranker's one-line reason. It lives
+  // in the HUD beside the goal chip and clears itself when the next sector's
+  // fight begins, because a receipt that outlives its sector becomes clutter.
+  {
+   const post=run.state.post;
+   // The receipt is a beat, not a status: it expires on its own, so the HUD
+   // goes back to just the fight. See POST.showTicks.
+   const show=!!post&&wave.phase==='combat'&&postVisible(post,run.state.elapsed);
+   if(show&&post.sector!==postShownFor){
+    postShownFor=post.sector;
+    postLine.replaceChildren();
+    const tag=document.createElement('span');tag.textContent='POST';
+    const card=document.createElement('b');card.textContent=String(post.name||post.id||'').toUpperCase();
+    const why=document.createElement('em');why.textContent=post.reason||'';
+    postLine.append(tag,card,why);
+    postLine.dataset.card=String(post.id||'');
+   }
+   postLine.hidden=!show;
+   if(show&&postLine.parentNode!==hud)hud.append(postLine);
+   else if(!show&&postLine.parentNode)postLine.remove();
+  }
 
   const local=(wave.number-1)%5;
   cycle.setAttribute('aria-label',`Dimension ${Math.floor((wave.number-1)/5)+1}. Wave ${local+1} of 5. Fifth wave is the break wave.`);
@@ -128,11 +202,19 @@ const paceAction=pace.querySelector('.pace-action'),paceSpeed=pace.querySelector
    const banks=wave.cleanBanks;
    bankFeedback.dataset.active=String(!!banks?.flash);
    bankFeedback.textContent=banks?.flash?`${banks.steered?'STEERED BANK':'CLEAN BANK'}${banks.chain>1?' ×'+banks.chain:''} · ${Math.round(banks.retention*100)}%`:run.state.breakthrough?breakthroughLabel(run.state.breakthrough):banks?.total?`${banks.total} BANKS · ×${banks.best}`:'';
-   paceAction.textContent=wave.phase==='breach'?breachCue(run.state).title:run.state.phase==='ready'?'LAUNCH':entering?'GET READY':p.held?'PACE READY':p.status==='holding'?'HOLD PACE':p.status==='recover'?'RECOVER':'BUILD SPEED';
+   // ── CHUNK 1: ONE BAR, ONE WORD ───────────────────────────────────────
+   // HOLD PACE, PACE READY, the overcharge pill and two raw speed numbers
+   // were three names for this one meter, in three corners of the screen. The
+   // bar is RUSH now. The speed figures stay in the DOM (the meter's aria
+   // values and the headless checks read them) but are never painted: see
+   // `.pace-speed` in style.css.
    const display=Math.round(p.displaySpeed*60),target=Math.round(p.target*60),percent=Math.round(p.progress/SPEED_PACE.goalTicks*100);
+   const rush=rushReadout(p,run.state.breakthrough,run.state.drive);
+   paceAction.textContent=wave.phase==='breach'?breachCue(run.state).title:run.state.phase==='ready'?'LAUNCH':entering?'GET READY':rush.label;
+   pace.dataset.ready=String(rush.ready);
    paceSpeed.textContent=`${display} px/s`;
    paceLabel.textContent=`TARGET ${target}+`;
-   paceProgress.textContent=run.state.breakthrough?.sonic?'SONIC HELD':cue.stage==='surge'?`HYPER ${(run.state.breakthrough.surgeTicks/60).toFixed(1)}s`:cue.stage==='recharge'?`RECHARGE ${Math.round(cue.progress*100)}%`:run.state.breakthrough?.paceReady?'HYPER READY':`HYPER CHARGE ${percent}%`;
+   paceProgress.textContent=`${Math.round(rush.fill*100)}%`;
    pace.dataset.relevant=String(wave.phase==='breach'||cue.stage!=='pace'||p.progress>0);
    const ceiling=SPEED_PACE.displayCeiling;
    paceTrack.style.background=`linear-gradient(to right,#71677e 0%,#71677e ${p.target/ceiling*100}%,#758c48 ${p.target/ceiling*100}%,#758c48 100%)`;
@@ -171,7 +253,10 @@ const paceAction=pace.querySelector('.pace-action'),paceSpeed=pace.querySelector
    if(wave.report){const receipt=document.createElement('div');receipt.className='wave-clear-report';const seconds=Math.floor(wave.report.ticks/60);receipt.textContent=`${wave.report.cuts} CUTS / ${wave.report.shots} LAUNCHES / ${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')} / ${wave.report.hits===0?'NO HEALTH LOST':wave.report.hits+' HEALTH LOST'}`;if(wave.report.paceBest!==undefined)receipt.textContent+=` / PACE BEST ${(wave.report.paceBest/60).toFixed(1)}s`;if(wave.report.cleanBanks!==undefined)receipt.textContent+=` / ${wave.report.cleanBanks} CLEAN BANKS`;if(wave.report.credits!==undefined)receipt.textContent+=` / +${wave.report.credits} CREDITS`;if(wave.report.shattered)receipt.textContent+=' / DIMENSION SHATTERED';receipt.setAttribute('aria-label',receipt.textContent);receipt.replaceChildren();for(const [symbol,value]of [['target',wave.report.cuts],['coin','+'+(wave.report.credits||0)]]){const item=document.createElement('span');item.append(iconNode(symbol),document.createTextNode(String(value)));receipt.append(item);}dialog.append(receipt);}
    if(wave.next){const brief=document.createElement('section');brief.className='wave-next-brief';const text=document.createElement('div'),name=document.createElement('b'),lesson=document.createElement('small');name.textContent=`NEXT / ${wave.next.name}`;lesson.textContent=`${wave.next.total} initial targets / ${wave.next.lesson}`;text.append(name,lesson);const roster=document.createElement('canvas');roster.width=360;roster.height=60;roster.setAttribute('aria-label',`${wave.next.total} targets: ${wave.next.threat}`);drawEncounterRoster(roster.getContext('2d'),360,60,wave.next);brief.append(text,roster);dialog.append(brief);}
 
-   if(sword){const strip=document.createElement('div');strip.className='wave-sword-strip';const art=document.createElement('canvas');art.width=180;art.height=64;drawSwordWeapon(art.getContext('2d'),{x:18,y:33,radius:28,sword,active:true,reach:1.2,motion:false});const label=document.createElement('span');label.textContent=`${sword.name} / ${sword.tier.toUpperCase()}`;strip.append(art,label);dialog.append(strip);}
+   // CHUNK 7: only draw the sword prop when the canvas can actually paint. The
+   // strip is decoration inside the wave-clear panel; the panel is not, so a
+   // canvas with no 2D context must cost us the strip and nothing else.
+   if(sword){const strip=document.createElement('div');strip.className='wave-sword-strip';const art=document.createElement('canvas');art.width=180;art.height=64;const ctx=art.getContext&&art.getContext('2d');const label=document.createElement('span');label.textContent=`${sword.name} / ${sword.tier.toUpperCase()}`;if(ctx){drawSwordWeapon(ctx,{x:18,y:33,radius:28,sword,active:true,reach:1.2,motion:false});strip.append(art,label);dialog.append(strip);}}
    const last=document.createElement('p');last.className='wave-expiry';last.textContent=catalogDeal?'OWNED UNTIL RUN END · ONE PICK PER WAVE':wave.expiredBuff?`${wave.expiredBuff.title} ENDED AT CLEAR / CHOOSE ITS REPLACEMENT`:'PRIMARY SWORD MODIFIER / NO PERMANENT PURCHASE';dialog.append(last);
 
    const cards=document.createElement('div');cards.className='wave-upgrade-cards';
@@ -190,8 +275,8 @@ const paceAction=pace.querySelector('.pace-action'),paceSpeed=pace.querySelector
     b.addEventListener('pointerdown',e=>{if(e.button===0)needsFreshPress=false;});b.addEventListener('keydown',e=>{if(['Space','Enter'].includes(e.code)){if(e.repeat)e.preventDefault();else needsFreshPress=false;}});
     b.onclick=()=>{if(needsFreshPress||performance.now()<choiceLockedUntil||run!==getRun())return;if(run.chooseWaveBuff(buff.id)){resetInput();dialog.close();document.querySelector('#arena').focus({preventScroll:true});}};cards.append(b);
    }
-   dialog.append(cards);if(wave.recommendation){const reason=document.createElement('p');reason.className='wave-fit-reason';reason.textContent=wave.recommendation.reason;dialog.append(reason);}dialog.storyOpened=performance.now();dialog.showModal();cards.querySelector('button').focus();
+   dialog.append(cards);if(wave.recommendation){const reason=document.createElement('p');reason.className='wave-fit-reason';reason.textContent=wave.recommendation.reason;dialog.append(reason);}dialog.storyOpened=performance.now();dialog.showModal();const firstCard=cards.querySelector('button');if(firstCard)firstCard.focus();
   }
  }
- return {update,get open(){return dialog.open;}};
+ return {dispose(){disposed=true;choiceRun=null;pressed.clear();document.removeEventListener('keydown',press,true);document.removeEventListener('keyup',release,true);document.removeEventListener('keydown',escape,true);if(dialog.open)dialog.close();for(const n of [hud,dialog,announcement,goalChip,postLine,pace,momentumRow,cycle,pips,skip])n.remove();},update,get open(){return dialog.open;}};
 }

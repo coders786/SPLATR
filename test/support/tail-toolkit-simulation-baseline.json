@@ -1,0 +1,92 @@
+{
+  "reason": "Chunk13: Viper replaces speed score with ordinary steering-loss retention; Spectrum replaces12 chain ticks with third-primary-kill extra EDGE. Original run replay proven against unchanged originals first.",
+  "ticks": 360,
+  "cases": [
+    {
+      "id": "reaper",
+      "seed": 19,
+      "equipment": {
+        "head": "oni",
+        "body": "iron",
+        "tail": "viper-tails"
+      },
+      "originalGameplayHash": "00468e110d1f51cfb5dd159b83fbff7e9c06fa773605967e03f0d462b40be986",
+      "originalSourceHash": "6f6070c2915cc5b3bfe7c146e50fab1a5a555d2e16a200838c343a1e775bff9b",
+      "gameplayHash": "ffaba859311b5038aa78440861c7d01085c143997be128ac02688f0d274c38ad",
+      "sourceHash": "6f6070c2915cc5b3bfe7c146e50fab1a5a555d2e16a200838c343a1e775bff9b",
+      "sourceReason": "Original source history remains exact."
+    },
+    {
+      "id": "reaper",
+      "seed": 77,
+      "equipment": {
+        "head": "oni",
+        "body": "iron",
+        "tail": "viper-tails"
+      },
+      "originalGameplayHash": "d9230c94b599b4434eec9b74081a0c382b306713c8c13fd48cd0ef8e58c810ef",
+      "originalSourceHash": "a72f799e927a63194986ef43a4abd280764fbcc0a151f909f80d4cd71e105fc6",
+      "gameplayHash": "44c032ea732f8482c93f811b762bf4e476206d7c9bd2216453ac9b1354c4880e",
+      "sourceHash": "a72f799e927a63194986ef43a4abd280764fbcc0a151f909f80d4cd71e105fc6",
+      "sourceReason": "Original source history remains exact."
+    },
+    {
+      "id": "briar",
+      "seed": 19,
+      "equipment": {
+        "body": "notched",
+        "eyes": "hypno",
+        "tail": "spectrum"
+      },
+      "originalGameplayHash": "c3186bfa879a86a21e97d1cbb5f90fd7eac315f0f138dcb9b8e20785b057e7a5",
+      "originalSourceHash": "07919cb701ebb349e7b4af0fca662417a2eba6392f84bb61730572d5cd050e75",
+      "gameplayHash": "c3186bfa879a86a21e97d1cbb5f90fd7eac315f0f138dcb9b8e20785b057e7a5",
+      "sourceHash": "07919cb701ebb349e7b4af0fca662417a2eba6392f84bb61730572d5cd050e75",
+      "sourceReason": "Original source history remains exact."
+    },
+    {
+      "id": "briar",
+      "seed": 77,
+      "equipment": {
+        "body": "notched",
+        "eyes": "hypno",
+        "tail": "spectrum"
+      },
+      "originalGameplayHash": "fb244fb6221d490c04bb48c8823b9d7585541ef850706483a21fca965cc31965",
+      "originalSourceHash": "15cf9a37a8c4e518645e32db215c00c4d0011ccc8fb04ce13f8d835bfab9687e",
+      "gameplayHash": "2350a0425fc61d5e77e3757a4438235d2de44b2daa6477ad2e0ed728b8d497a6",
+      "sourceHash": "fb8bb9b3bab8f9952ed259f91c3fb39977abcb4378653dd1e023d0673a524a03",
+      "sourceReason": "Briar/77 loses the old12 chain ticks. Chain expires between shots, changing pace/worldClock from contact15 onward; first changed source is still the same primary source/target/shot/outcome, not an admission change."
+    },
+    {
+      "id": "orbit",
+      "seed": 19,
+      "equipment": {
+        "head": "halo",
+        "body": "prism",
+        "core": "grav",
+        "tail": "spectrum"
+      },
+      "originalGameplayHash": "426f97d35461396fe31402fb26240db6b64f4abd2ba35eabe83a2dcb73079fb7",
+      "originalSourceHash": "4222d079955595ff1c40bbf584c7826ef19a0cb0cdf7ddb42fa1cd9636469d28",
+      "gameplayHash": "daa8ffdc88edcf865e6943f0e1f53be2c7a79f2394a1eaa027aa586fa0e513f7",
+      "sourceHash": "4222d079955595ff1c40bbf584c7826ef19a0cb0cdf7ddb42fa1cd9636469d28",
+      "sourceReason": "Original source history remains exact."
+    },
+    {
+      "id": "orbit",
+      "seed": 77,
+      "equipment": {
+        "head": "halo",
+        "body": "prism",
+        "core": "grav",
+        "tail": "spectrum"
+      },
+      "originalGameplayHash": "8b61709d41f428db017881f89bd7f79b4d8020293275e8167609f52f9dbb5e07",
+      "originalSourceHash": "7e62e18d588003c27abe3a255d53f23573fba3a413f4252cc08d64e7995bac12",
+      "gameplayHash": "514d94509fab40ff843d27045d15ec9982a0fe763d320c0dde3b17fbec117ff0",
+      "sourceHash": "7e62e18d588003c27abe3a255d53f23573fba3a413f4252cc08d64e7995bac12",
+      "sourceReason": "Original source history remains exact."
+    }
+  ]
+}

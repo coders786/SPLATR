@@ -1529,9 +1529,22 @@ body:has(#panel[open]) #hud {
 /* The hull row shakes when it loses a plate. `data-hit` is set for one frame,
    then cleared; the animation runs on the attribute flip, so it needs no
    timers and cannot stack up if the player is hit twice quickly. */
-.hull[data-hit] #hull {
+.hull[data-hit] #health-bar {
   animation: hull-break 380ms cubic-bezier(0.3, 1.5, 0.5, 1);
   transform-origin: 50% 50%;
+}
+/* CHUNK 1: the hull's own box. 24px tall, one hard-edged block per point with
+   black separations -- a bar you can count from across a room at 960x540,
+   with the game moving. Declared here (next to its own overrides) and before
+   the responsive rules that narrow it. */
+#health-bar {
+  display: flex;
+  gap: 3px;
+  height: 24px;
+  padding: 3px;
+  background: #150e19;
+  border: 1px solid #4d2b3c;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
 }
 /* A plate that just went dark reads as a break rather than a fade. */
 .hull i {
@@ -1554,12 +1567,12 @@ body:has(#panel[open]) #hud {
 
 /* Reduced motion: acknowledge without moving. Colour and opacity only. */
 @media (prefers-reduced-motion: reduce) {
-  .hull[data-hit] #hull,
+  .hull[data-hit] #health-bar,
   #score[data-kick],
   #chain[data-flare] {
     animation: none;
   }
-  .hull[data-hit] #hull {
+  .hull[data-hit] #health-bar {
     outline: 2px solid var(--hot);
   }
   #score[data-kick] {
@@ -1707,6 +1720,233 @@ body:has(#panel[open]) #hud {
 .picker-kept {color:#ffd773;}
 .quest-option:focus:not(:focus-visible) {outline:none;background:#262032;filter:none;}
 .quest-columns:has(.pointer-hover) .quest-option:not(.pointer-hover) {background:#262032;filter:none;}
+/* ══ CHUNK 6: RIOT CONTRACTS ═══════════════════════════════════════════════
+   The language is the title screen's: deep violet-black surfaces, skewed
+   geometry, 1px crisp borders, `///` slashes, acid lime / hot pink / cyan.
+   What it replaces was a pastel gold header bar — a colour that appeared
+   nowhere else in this game and made a slasher look like a worksheet. Each card
+   carries its own pillar colour as a 3px top border and nothing else, so the
+   board reads as three lanes at a glance. */
+.riot-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:12px;
+  padding-bottom:9px;border-bottom:1px solid #2f2740}
+.riot-title{display:flex;flex-direction:column;gap:3px;min-width:0}
+.riot-title>b{font:700 16px 'Space Mono',monospace;letter-spacing:.14em;color:#dfff00;
+  text-shadow:0 0 14px #dfff0044}
+.riot-title>small{font-size:9px;letter-spacing:.12em;color:#8f83a6;text-transform:uppercase}
+.riot-wallet{display:flex;align-items:center;gap:9px;flex:none}
+.riot-wallet>b{font:700 13px 'Space Mono',monospace;color:#dfff00;letter-spacing:.04em}
+.riot-shop{font:700 9px 'Space Mono',monospace;letter-spacing:.1em;
+  background:transparent;color:#00f0ff;border:1px solid #00f0ff66;
+  padding:6px 9px;cursor:pointer;transform:skewX(-8deg);
+  transition:background .13s ease-out,color .13s ease-out}
+.riot-shop:hover,.riot-shop:focus-visible{background:#00f0ff;color:#120e1a}
+.riot-shop>span{display:inline-block;transform:skewX(8deg)}
+
+/* ── the three cards ── */
+.riot-contracts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.riot-card{position:relative;display:flex;flex-direction:column;gap:7px;
+  padding:11px 11px 0;background:linear-gradient(170deg,#1a1528,#14101e 70%);
+  border:1px solid #33294a;border-top:3px solid var(--accent,#dfff00);
+  box-shadow:0 2px 0 #0b0812}
+.riot-card[data-done=true]{border-color:#dfff00;border-top-color:#dfff00;
+  box-shadow:0 0 0 1px #dfff0066,0 0 18px #dfff0022}
+.riot-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.riot-tag{font:700 9px 'Space Mono',monospace;letter-spacing:.16em;color:var(--accent,#dfff00)}
+.riot-reroll{font:700 11px 'Space Mono',monospace;line-height:1;
+  background:transparent;color:#8f83a6;border:1px solid #3a3050;
+  width:20px;height:20px;cursor:pointer;transition:all .13s ease-out}
+.riot-reroll:hover:not(:disabled),.riot-reroll:focus-visible:not(:disabled){color:#120e1a;background:var(--accent,#dfff00);border-color:var(--accent,#dfff00)}
+.riot-reroll:disabled{opacity:.25;cursor:default}
+.riot-card-title{font:700 19px/1.05 'Space Mono',monospace;letter-spacing:.01em;
+  text-transform:uppercase;color:#f4ecff;transform:skewX(-6deg);transform-origin:left center}
+.riot-objective{margin:0;font:400 10px/1.4 'Space Mono',monospace;color:#cfc6dd}
+.riot-meter{display:flex;flex-direction:column;gap:4px;margin-top:auto}
+.riot-count{font:700 12px 'Space Mono',monospace;color:#f4ecff;letter-spacing:.03em}
+.riot-track{height:9px;background:#241c33;border:1px solid #33294a;overflow:hidden}
+.riot-fill{display:block;height:100%;background:var(--accent,#dfff00);
+  box-shadow:0 0 10px var(--accent,#dfff00);transition:width .18s ease-out}
+
+/* the footer: REWARD left, money right — or the claim button that replaces it */
+.riot-footer{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+  margin:2px -11px 0;padding:7px 11px;background:#0f0b18;border-top:1px solid #33294a;
+  font:700 9px 'Space Mono',monospace;letter-spacing:.12em;color:#8f83a6}
+.riot-footer>b{font-size:12px;color:#dfff00;letter-spacing:.02em}
+.riot-card[data-claimed=true] .riot-footer{color:#dfff00}
+.riot-claim{display:block;width:calc(100% + 22px);margin:2px -11px 0;padding:10px 11px;
+  font:700 12px 'Space Mono',monospace;letter-spacing:.14em;cursor:pointer;
+  background:#dfff00;color:#120e1a;border:0;border-top:1px solid #dfff00;
+  animation:riot-claim-pulse 1.1s ease-in-out infinite alternate}
+.riot-claim:hover,.riot-claim:focus-visible{background:#f2ff6b}
+@keyframes riot-claim-pulse{from{box-shadow:inset 0 0 0 #120e1a}to{box-shadow:inset 0 0 22px #120e1a55}}
+
+/* ── the sweep track ── */
+.riot-sweep{display:flex;align-items:center;gap:14px;margin-top:12px;padding:10px 12px;
+  background:#14101e;border:1px solid #33294a;border-left:3px solid #dfff00}
+.riot-sweep[data-ready=true]{background:#1b2110;border-color:#dfff0077}
+.riot-sweep-copy{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.riot-sweep-copy>b{font:700 10px 'Space Mono',monospace;letter-spacing:.14em;color:#dfff00}
+.riot-sweep-copy>small{font-size:9px;line-height:1.35;color:#8f83a6}
+.riot-pips{display:flex;gap:5px;flex:none}
+.riot-pips>i{width:17px;height:17px;border:1px solid #3a3050;background:#1a1528;transform:skewX(-8deg)}
+.riot-pips>i[data-on=true]{background:#dfff00;border-color:#dfff00;box-shadow:0 0 9px #dfff0066}
+.riot-sweep-pay{font:700 13px 'Space Mono',monospace;color:#dfff00;flex:none;letter-spacing:.02em}
+.riot-note{margin:9px 0 0;font:400 9px 'Space Mono',monospace;letter-spacing:.06em;color:#6f6486}
+/* ══ CHUNK 8: THE DEED BOOK ════════════════════════════════════════════════
+   The same surface language as the title screen — deep violet-black, skewed
+   geometry, 1px borders, `///` slashes — plus one thing the old board never
+   had: every card carries its ARGUMENT. The lane colour is the card's only
+   colour, so a board reads as three lanes at a glance. Hot pink CUT, cyan
+   MOTION, acid lime RHYTHM, amber HUNT, violet DEPTH. No gold anywhere: that
+   palette was the reason the previous header read like a worksheet. */
+.riot-title>b{color:#f4ecff;text-shadow:0 0 14px #00f0ff55}
+.deed-card{gap:8px;padding-bottom:0}
+.deed-card[data-done=true]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 0 18px #dfff0022}
+.deed-tier{font:700 8px 'Space Mono',monospace;letter-spacing:.14em;color:#8f83a6;
+  border:1px solid #3a3050;padding:2px 5px;white-space:nowrap}
+.deed-card[data-tier="2"] .deed-tier{color:#f4ecff;border-color:var(--accent)}
+.deed-lead{margin:0;font:400 10.5px/1.45 'Space Mono',monospace;color:#e6dcf5}
+.deed-reason,.deed-pays{margin:0;font:400 9.5px/1.5 'Space Mono',monospace;color:#a99cbe}
+.deed-reason>b,.deed-pays>b{display:block;font:700 8px 'Space Mono',monospace;letter-spacing:.16em;
+  margin-bottom:3px;color:var(--accent)}
+.deed-argument{display:flex;flex-direction:column;gap:8px;padding:8px 0 2px;
+  border-top:1px dashed #3a3050}
+.deed-argument[hidden]{display:none}
+.deed-keeps{margin:0;font:italic 400 9.5px/1.45 'Space Mono',monospace;color:#7f92a6}
+.deed-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin:2px -11px 0;padding:7px 11px;background:#0f0b18;border-top:1px solid #33294a}
+.deed-read{font:700 8.5px 'Space Mono',monospace;letter-spacing:.13em;cursor:pointer;
+  background:transparent;border:1px solid #3a3050;color:#8f83a6;padding:4px 7px;
+  transition:color .13s,border-color .13s}
+.deed-read:hover,.deed-read:focus-visible{color:#f4ecff;border-color:var(--accent)}
+.deed-read[aria-expanded=true]{color:#120e1a;background:var(--accent);border-color:var(--accent)}
+.deed-worth{font:700 11px 'Space Mono',monospace;color:#dfff00}
+.deed-paid{font:700 9px 'Space Mono',monospace;letter-spacing:.13em;color:var(--accent)}
+.deed-claim{margin-top:0;animation:none;background:var(--accent);border-top:1px solid var(--accent)}
+.deed-lanes{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.deed-lane{display:flex;flex-direction:column;gap:1px;flex:1 1 150px;min-width:0;
+  padding:6px 8px;background:#14101e;border:1px solid #2f2740;border-left:3px solid var(--accent)}
+.deed-lane>b{font:700 8.5px 'Space Mono',monospace;letter-spacing:.14em;color:var(--accent)}
+.deed-lane>small{font:400 8.5px/1.35 'Space Mono',monospace;color:#8f83a6}
+.deed-drawer-note{margin:6px 0 0;font:400 8.5px 'Space Mono',monospace;letter-spacing:.06em;color:#6f6486}
+.deed-lead-small{display:block;margin-top:2px;font:400 8.5px/1.35 'Space Mono',monospace;color:#8f83a6}
+.deed-row-item[data-lane]{border-left:2px solid var(--accent);padding-left:6px}
+.quest-pip[data-lane]{transform:skewX(-8deg)}
+.quest-pip[data-on=true]{background:var(--accent);border-color:var(--accent)}
+/* CHUNK 7: the pause header says who paused it. An automatic pause gets the
+   warning colour so a player can tell "I pressed P" from "the tab lost focus
+   and the game took me out of a run". */
+.pause-why{margin:0 0 10px;font:700 11px 'Space Mono',monospace;letter-spacing:.18em;color:#8f83a6}
+.pause-why[data-auto=true]{color:#ffb75e}
+.pause-fault{margin:0 0 10px;padding:6px 9px;border-left:3px solid #ff3366;background:#1a1528;font:700 10px 'Space Mono',monospace;letter-spacing:.1em;color:#ff8fae}
+.pause-back{margin:0 0 10px;font:400 10px 'Space Mono',monospace;letter-spacing:.06em;color:#8f83a6}
+.pause-back kbd{border:1px solid #33294a;border-radius:3px;padding:0 4px;color:#f4ecff}
+/* CHUNK 8 (§3.2): an interruption is a dismissal, not a menu. The panel keeps
+   its shape but loses the amber warning colour, because nothing is wrong. */
+#pause-page[data-intrusion=true] .panel-inner{border-left:3px solid #ffb75e}
+#pause-page[data-intrusion=true] #pause-info{opacity:.75}
+/* CHUNK 8 (§3.1): the three deeds you hold, read on the pause screen. */
+.pause-deeds{display:flex;flex-direction:column;gap:4px;margin:10px 0}
+.pause-deeds:empty{display:none}
+.pause-deed{display:flex;align-items:center;gap:7px;padding:4px 7px;
+  background:#14101e;border-left:2px solid var(--accent,#8f83a6);
+  font:400 9.5px 'Space Mono',monospace;letter-spacing:.05em;color:#cfc6dd}
+.pause-deed>b{font:700 9px 'Space Mono',monospace;color:var(--accent,#8f83a6);width:9px}
+.pause-deed>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase}
+.pause-deed>i{font-style:normal;font-weight:700;color:#f4ecff}
+.pause-deed[data-done=true]{background:#1b2110;color:#dfff00}
+.pause-deed[data-done=true]>b,.pause-deed[data-done=true]>i{color:#dfff00}
+
+/* the practice modes now on the PRACTICE & HELP page */
+.manual-modes{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.manual-modes>button{flex:1 1 auto;min-height:36px}
+
+@media(max-width:680px){
+  .riot-contracts{grid-template-columns:1fr}
+  .riot-head{flex-direction:column;gap:8px}
+  .riot-card-title{font-size:17px}
+  .riot-sweep{flex-wrap:wrap;gap:8px}
+  .riot-sweep-pay{margin-left:auto}
+}
+@media(max-height:600px) and (min-width:681px){
+  .riot-card-title{font-size:15px}
+  .riot-objective{font-size:9px}
+  .riot-note{display:none}
+}
+/* ══ CHUNK 5: THE BOUNTY BOARD ══════════════════════════════════════════════
+   The old board was nine identical boxes at one visual weight: title, tier,
+   goal and reward all 9-12px in the same grey. Nothing said "this pays" and
+   nothing said "this one". Three lanes, one contract each, with the PAYOUT as
+   the loudest thing on the card (band-inverted, gold) and the instruction as
+   the quietest. The layout is 3 across on desktop, 1 across on a phone. */
+.bounty-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:10px}
+.bounty-title{display:flex;flex-direction:column;gap:2px;min-width:0}
+.bounty-title>b{font-size:15px;letter-spacing:.16em;color:#efffc0}
+.bounty-title>small{font-size:10px;color:#beb0d0;letter-spacing:.06em}
+
+.bounty-streak{display:flex;align-items:baseline;gap:10px;padding:6px 10px;margin-bottom:10px;
+  border-left:3px solid #ffd166;background:#221d15}
+.bounty-streak>b{font:700 13px 'Space Mono',monospace;color:#ffd166;letter-spacing:.1em;white-space:nowrap}
+.bounty-streak>small{font-size:9px;line-height:1.4;color:#b3a486}
+
+.bounty-lanes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.bounty-lane{display:flex;flex-direction:column;gap:6px;min-width:0}
+.bounty-promise{display:flex;align-items:baseline;gap:7px;border-bottom:1px solid #4a3f58;padding-bottom:4px}
+.bounty-promise>b{font-size:11px;letter-spacing:.14em;color:#e1f79b}
+.bounty-promise>span{font-size:9px;color:#9d8fae;letter-spacing:.02em}
+
+/* The card. The payout is a solid gold band across the top of the card — the
+   first thing the eye lands on, and the answer to "why am I doing this". */
+.bounty-card{position:relative;display:flex;flex-direction:column;gap:5px;width:100%;
+  text-align:left;cursor:pointer;padding:0 0 9px;overflow:hidden;
+  background:#241f30;border:1px solid #5d4d6b;color:#e9dfe9;
+  transition:transform .14s ease-out,border-color .14s ease-out,background .14s ease-out}
+.bounty-card:hover,.bounty-card.pointer-hover{transform:translateY(-2px);border-color:#8e7aa0;background:#2c2639}
+.bounty-card:active{transform:translateY(0) scale(.99)}
+.bounty-card:focus-visible{outline:2px solid #e0ff9a;outline-offset:2px}
+.bounty-top{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:5px 9px;background:#ffd166;color:#241f2e}
+.bounty-tier{font-size:8px;letter-spacing:.14em;font-weight:400;color:#5a4720}
+.bounty-pay{font:700 15px 'Space Mono',monospace;letter-spacing:.02em}
+.bounty-pay:before{content:'◈ ';font-size:11px;opacity:.75}
+.bounty-card>strong{padding:0 9px;font-size:15px;line-height:1.15;letter-spacing:.01em;color:#f4ecff}
+.bounty-how{padding:0 9px;font-size:9.5px;line-height:1.45;color:#b5a4bc}
+.bounty-detail{padding:0 9px;font-size:8.5px;line-height:1.4;color:#7d7190;font-style:normal}
+.bounty-progress{padding:0 9px;display:flex;flex-direction:column;gap:3px}
+.bounty-track{height:4px;background:#3d3348;overflow:hidden}
+.bounty-fill{display:block;height:100%;background:#bd8cff}
+.bounty-progress>small{font-size:8px;letter-spacing:.1em;color:#a08cc0}
+
+/* Tier reads as difficulty without adding another word to the card: a hairline
+   down the left edge, cool to hot. */
+.bounty-card[data-tier=quick]{box-shadow:inset 3px 0 #6f8fb0}
+.bounty-card[data-tier=skill]{box-shadow:inset 3px 0 #b08fd0}
+.bounty-card[data-tier=mastery]{box-shadow:inset 3px 0 #d0705a}
+.bounty-card[data-tier=practice]{box-shadow:inset 3px 0 #8fbc6a}
+
+/* The ladder, on the board. Was <details>Optional rewards</details>. */
+.bounty-prizes{margin-top:14px;padding-top:10px;border-top:1px solid #3f3549}
+.bounty-prizes-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:7px}
+.bounty-prizes-head>b{font-size:10px;letter-spacing:.14em;color:#beb0d0}
+.bounty-prize-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.bounty-prize-row .prize-option{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px;margin:0}
+.bounty-prize-row .prize-option>small{font-size:8px;letter-spacing:.1em;color:#b5a4bc}
+.bounty-prize-row .prize-option>b{font:700 12px 'Space Mono',monospace;color:#ffd773}
+.bounty-prize-row .prize-option[data-owned=true]{opacity:.55;cursor:default;border-color:#4a3f58}
+.bounty-prize-row .prize-option[data-owned=true]>b{color:#99ffac;font-size:9px}
+.bounty-prize-row .prize-preview{width:72px;height:61px}
+
+@media(max-width:640px){
+  .bounty-lanes{grid-template-columns:1fr;gap:7px}
+  .bounty-head{flex-direction:column;gap:8px}
+  .bounty-card>strong{font-size:14px}
+  .bounty-prize-row .prize-preview{width:58px;height:50px}
+}
+@media(max-height:620px) and (min-width:641px){
+  .bounty-lanes{gap:6px}
+  .bounty-card>strong{font-size:13px}
+  .bounty-how{display:none}
+  .bounty-detail{display:none}
+}
 .quest-option.pointer-hover {background:#4b365a!important;filter:brightness(1.2)!important;}
 @media(max-height:650px) {
  #panel:has(#result-page:not([hidden])) .panel-body {padding:10px 16px;}
@@ -1911,7 +2151,30 @@ body:has(#panel[open]) #hud {
 .wave-upgrade-cards button[data-buff=comet] strong,.wave-upgrade-cards button[data-buff=cleaver] strong,.wave-upgrade-cards button[data-buff=duelist] strong,.wave-upgrade-cards button[data-buff=bastion] strong{font-size:20px;line-height:1.15}
 @media(max-width:420px){.wave-upgrade-cards button[data-buff=comet] strong,.wave-upgrade-cards button[data-buff=cleaver] strong,.wave-upgrade-cards button[data-buff=duelist] strong,.wave-upgrade-cards button[data-buff=bastion] strong{font-size:18px}.active-wave-upgrade b{font-size:10px}}
 /* Combat gets a compact instrument strip, not a briefing box. */
-.wave-hud{border:0;background:#131522c9;padding:6px 9px;gap:4px;max-width:320px;width:auto;min-width:170px}.wave-hud .active-wave-upgrade{border:0;border-left:2px solid var(--buff-color,#d8f19c);padding:3px 7px;background:#252633}.wave-hud .active-wave-upgrade .ui-icon{width:23px;height:23px}.wave-hud .speed-pace[data-relevant=false]{display:none}.wave-hud .cycle-progress{margin:0}.wave-hud .speed-pace{min-width:190px}.upgrade-creature-preview{display:block;width:100%;height:96px;border-bottom:1px solid #51475d;pointer-events:none}.wave-upgrade-cards button{padding:8px!important;gap:6px;transition:transform .14s ease-out,border-color .14s ease-out,background .14s ease-out}.wave-upgrade-cards .buff-icon{position:static;transform:none;align-self:flex-start;width:27px;height:27px}.wave-upgrade-cards button:hover{transform:translateY(-3px)}.wave-upgrade-cards button:active{transform:translateY(1px) scale(.985)}.wave-upgrade-cards button:focus-visible{outline:2px solid #e0ff9a;outline-offset:2px}.wave-upgrade-cards strong{font-size:22px}
+.wave-hud{border:0;background:#131522c9;padding:6px 9px;gap:4px;max-width:320px;width:auto;min-width:170px}.wave-hud .active-wave-upgrade{border:0;border-left:2px solid var(--buff-color,#d8f19c);padding:3px 7px;background:#252633}.wave-hud .active-wave-upgrade .ui-icon{width:23px;height:23px}.wave-hud .speed-pace[data-relevant=false]{display:none}
+/* CHUNK 3: THE LIVE BONUS GOAL. One chip under the wave line, painted in the
+   reward colour from the colour law (#ffd166) because it IS a reward, turning
+   to the safe green the moment it is met. The fill bar is a ::after driven by
+   --fill so it shares the same transform-only animation budget as every other
+   meter on screen; the chip never reflows the HUD when progress changes. */
+.wave-hud .wave-goal{position:relative;display:flex;align-items:baseline;gap:6px;padding:3px 8px 5px;border-left:2px solid #ffd166;background:#201d17;color:#ffd166;font:700 10px 'Space Mono',monospace;letter-spacing:.5px;overflow:hidden}
+.wave-hud .wave-goal[hidden]{display:none}
+.wave-hud .wave-goal>span{font-size:8px;font-weight:400;color:#a99a7d;letter-spacing:1px}
+.wave-hud .wave-goal>b{font:inherit;white-space:nowrap}
+.wave-hud .wave-goal>i{position:absolute;left:0;bottom:0;height:2px;width:var(--fill,0%);background:#ffd166;content:''}
+.wave-hud .wave-goal[data-met=true]{border-left-color:#ddff89;color:#ddff89;background:#1a2015}
+.wave-hud .wave-goal[data-met=true]>span{color:#8fa06c}
+/* CHUNK 4: THE POST RECEIPT. A run-length card lands on every clear with no
+   picker, so it prints what arrived and the ranker's reason in the same
+   reward gold. The reason is the part that matters — without it the grant is
+   indistinguishable from a random buff. */
+.wave-hud .wave-post{display:flex;flex-direction:column;gap:2px;padding:3px 8px 4px;border-left:2px solid #ffd166;background:#1f1c15;color:#ffe9b5;font:700 10px 'Space Mono',monospace;letter-spacing:.4px;max-width:100%}
+.wave-hud .wave-post[hidden]{display:none}
+.wave-hud .wave-post>span{font-size:8px;font-weight:400;letter-spacing:1px;color:#a99a7d}
+.wave-hud .wave-post>b{font:inherit;color:#ffd166}
+.wave-hud .wave-post>em{font:400 9px/1.35 'Space Mono',monospace;font-style:normal;color:#cbbfa4}
+@media(max-width:600px){.wave-hud .wave-post{font-size:9px}.wave-hud .wave-post>em{font-size:8px}}
+@media(max-width:600px){.wave-hud .wave-goal{font-size:9px;padding:2px 6px 4px}.wave-hud .wave-goal>span{font-size:7px}}.wave-hud .cycle-progress{margin:0}.wave-hud .speed-pace{min-width:190px}.upgrade-creature-preview{display:block;width:100%;height:96px;border-bottom:1px solid #51475d;pointer-events:none}.wave-upgrade-cards button{padding:8px!important;gap:6px;transition:transform .14s ease-out,border-color .14s ease-out,background .14s ease-out}.wave-upgrade-cards .buff-icon{position:static;transform:none;align-self:flex-start;width:27px;height:27px}.wave-upgrade-cards button:hover{transform:translateY(-3px)}.wave-upgrade-cards button:active{transform:translateY(1px) scale(.985)}.wave-upgrade-cards button:focus-visible{outline:2px solid #e0ff9a;outline-offset:2px}.wave-upgrade-cards strong{font-size:22px}
 @media(max-width:600px){.wave-hud{left:auto;right:10px;transform:none;top:144px;width:auto;max-width:265px;min-width:140px}.wave-upgrade-cards button{display:grid;grid-template-columns:37px 105px minmax(0,1fr);grid-template-rows:auto auto;column-gap:7px;min-height:88px;align-items:center;text-align:left}.wave-upgrade-cards .buff-icon{grid-column:1;grid-row:1/3;align-self:center;width:30px;height:30px}.wave-upgrade-cards .upgrade-creature-preview{grid-column:2;grid-row:1/3;height:76px;border:0;object-fit:cover}.wave-upgrade-cards button>b{grid-column:3;grid-row:1}.wave-upgrade-cards button>strong{grid-column:3;grid-row:2;font-size:20px}.wave-upgrade-cards button[data-buff] strong{font-size:17px}.wave-upgrades{padding:12px}.wave-upgrades>p{margin-bottom:8px}}
 @media(max-height:500px) and (min-width:601px){.wave-hud{top:8px;right:12px;left:auto;transform:none}.upgrade-creature-preview{height:67px}.wave-upgrade-cards button{min-height:140px}.wave-upgrade-cards button[data-buff] strong{font-size:18px}}
 @media(prefers-reduced-motion:reduce){.wave-upgrade-cards button{transition:none}.wave-upgrade-cards button:hover{transform:none}}
@@ -1984,7 +2247,7 @@ body:has(#panel[open]) #hud {
 #last-damage b{font:700 9px var(--mono);color:#ffabb2;letter-spacing:.06em}
 #last-damage span{font:700 12px var(--mono)}
 .hull[data-critical] small,.hull[data-critical] #health-value{color:#ffadb1}
-.hull[data-critical] #hull{outline:1px solid #ffadb1;outline-offset:3px}
+.hull[data-critical] #health-bar{outline:1px solid #ffadb1;outline-offset:3px}
 #combat-status:not([hidden]){position:absolute;left:var(--gutter);bottom:86px;max-width:min(245px,55vw);display:flex;flex-direction:column;gap:3px;padding:6px 9px;background:#171321f2;border-left:3px solid #e5ebae;color:#fff6e8;line-height:1.2;text-shadow:0 1px 1px #000;pointer-events:none}
 #combat-status b{font:700 10px var(--mono);color:#e5ebae;letter-spacing:.04em}
 #combat-status span{font:600 11px/1.25 var(--mono)}
@@ -2151,11 +2414,11 @@ body:has(#panel[open]) #hud {
    The ONLY legible text allowed mid-play. One chip, ≤4 words, acid on
    #101310, slight skew. Fade in fast, fade out slow; never blinks, never
    stacks. aria-hidden by contract. */
-.story-chip{position:absolute;left:50%;top:60%;transform:translate(-50%,-50%) skewX(-6deg);z-index:8;pointer-events:none;user-select:none;font:600 17px/1 'Space Grotesk',sans-serif;letter-spacing:.18em;color:#101310;background:#ddff89;padding:.38em .95em;box-shadow:0 2px 18px rgba(221,255,137,.35),0 0 0 1px #101310 inset;opacity:0;transition:opacity .7s ease}
+.story-chip{position:absolute;left:50%;top:auto;bottom:calc(var(--foot,24px) + 34px);transform:translateX(-50%) skewX(-6deg);z-index:8;pointer-events:none;user-select:none;font:800 13px/1 var(--mono);letter-spacing:.16em;color:#101310;background:#ddff89;padding:.38em .95em;box-shadow:0 2px 18px rgba(221,255,137,.35),0 0 0 1px #101310 inset;opacity:0;transition:opacity .7s ease}
 .story-chip.on{opacity:1;transition:opacity .22s ease}
 .story-chip[hidden]{display:none}
 @media(prefers-reduced-motion:reduce){.story-chip{transition:none}}
-@media(max-width:600px){.story-chip{font-size:14px;top:64%}}
+@media(max-width:600px){.story-chip{font-size:14px;top:auto}}
 
 /* CHUNK 6A: SECTOR/WAVE readout — a 1.4s flash on transition, then gone. */
 .sector-chip{position:absolute;bottom:var(--foot);left:var(--gutter);z-index:6;pointer-events:none;user-select:none;font:700 10px 'Space Mono',monospace;letter-spacing:.24em;color:#ddff89;background:#0e0d16cc;border-left:3px solid var(--hot);padding:4px 10px 4px 9px;opacity:0;transition:opacity .45s ease}
@@ -2293,3 +2556,454 @@ body:has(#panel[open]) #hud {
  .teaching-lesson-card-copy strong{font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){.teaching-lesson-card{transition:none}.teaching-lesson-card:hover,.teaching-lesson-card:focus-visible,.teaching-lesson-card[aria-pressed=true]{transform:none}}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CHUNK 1 — CLEAR SIGHTLINES, AN OBVIOUS HULL AND A CLEAN HUD
+   ══════════════════════════════════════════════════════════════════════════
+   Three complaints, one corner.
+
+     1. The hull was four 7px amber blocks in the top-right, next to a tiny
+        "3/3", while the top-left carried the only big number on screen. A
+        player watching their score never saw health at all. The health bar now
+        lives DIRECTLY under the score, chunky, ruby, segmented.
+
+     2. Every meter in that top-right column was a 7px skew that only made
+        sense if you already knew what it was called. The one that mattered
+        during a launch — the cut charges — was the smallest thing on the HUD
+        and lived furthest from the cube. It is now drawn on the cube itself
+        (canvas, in the engine) and the far-right corner warning about it is
+        gone.
+
+     3. The HUD was shouting in six places. RUSH replaces three of them.
+
+   Nothing here is a new layout system: the same anatomy, made legible.
+   ------------------------------------------------------------------------ */
+
+/* ── THE HULL, UNDER THE SCORE ─────────────────────────────────────────── */
+#hull-block {
+  margin-top: 7px;
+  width: max-content;
+  min-width: 168px;
+  filter: drop-shadow(1px 2px 0 #130e1a);
+}
+#hull-block .hull-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 3px;
+}
+#hull-block .hull-head span {
+  font: 700 10px/1 var(--mono);
+  letter-spacing: 0.18em;
+  color: #f3c3cd;
+  text-transform: uppercase;
+}
+#hull-block .hull-head b {
+  font: italic 800 15px/1 var(--type);
+  color: #ffdfe5;
+  font-variant-numeric: tabular-nums;
+}
+/* The blocks themselves. */
+#health-bar i {
+  display: block;
+  flex: 1 1 0;
+  min-width: 22px;
+  background: linear-gradient(180deg, #ff6e86, #e01f4c 62%, #9d0c31);
+  box-shadow: inset 0 1px 0 #ffd3da80;
+  transform-origin: center;
+  transition: background 160ms linear, opacity 160ms linear;
+}
+/* Empty is a dark well, not an absent element: the player must still be able
+   to count how many they HAVE LOST. */
+#health-bar i.empty {
+  background: repeating-linear-gradient(135deg, #33202c 0 4px, #241622 4px 8px);
+  box-shadow: none;
+}
+/* A block that just broke cracks and shakes exactly once. The animation is
+   the acknowledgement; when it is over, the well stays. */
+#health-bar i.broke {
+  animation: hull-crack 420ms cubic-bezier(0.3, 1.7, 0.4, 1) 1;
+}
+@keyframes hull-crack {
+  0% { transform: translateX(0) scaleY(1); filter: brightness(2.4); }
+  22% { transform: translateX(-3px) scaleY(0.72); }
+  46% { transform: translateX(3px) scaleY(1.08); }
+  70% { transform: translateX(-1px) scaleY(1); }
+  100% { transform: translateX(0) scaleY(1); filter: none; }
+}
+/* One health left: the whole bar breathes red and the screen corners glow so
+   the state is legible without looking at the bar at all. */
+#hull-block[data-critical] #health-bar i:not(.empty) {
+  animation: hull-critical 1100ms ease-in-out infinite alternate;
+}
+@keyframes hull-critical {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.6); }
+}
+#game[data-critical='true']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 58%, #ff2b4a2e 100%);
+  animation: hull-rim 1100ms ease-in-out infinite alternate;
+}
+@keyframes hull-rim {
+  from { opacity: 0.45; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #health-bar i.broke,
+  #hull-block[data-critical] #health-bar i:not(.empty),
+  #game[data-critical='true']::after {
+    animation: none;
+  }
+}
+
+/* ── THE DAMAGE RIM (from src/damage-feedback.js) ─────────────────────────
+   One red frame-edge flash on the tick health drops. 25% opacity by design:
+   a flash bright enough to hide the thing that just hit you is the bug. */
+#damage-rim {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(ellipse at 50% 50%, transparent 52%, #c8102e 78%, #7d0018 100%);
+  transition: opacity 90ms linear;
+}
+#damage-rim.on {
+  opacity: 0.25;
+}
+@media (prefers-reduced-motion: reduce) {
+  #damage-rim {
+    transition: none;
+  }
+}
+
+/* ── THE TARGETING RING ───────────────────────────────────────────────────
+   The OS cursor is hidden over the arena while a run is live (see
+   #game[data-screen='run'] #arena below) and this ring replaces it. Drawn from
+   the pointer, not from the cube, so it always answers "where am I aiming?" */
+#reticle {
+  position: absolute;
+  z-index: 6;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  pointer-events: none;
+  will-change: transform, left, top;
+}
+#reticle[hidden] {
+  display: none;
+}
+#reticle svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+#reticle .reticle-ring {
+  fill: none;
+  stroke: #fff8ec;
+  stroke-width: 2;
+}
+#reticle .reticle-tick {
+  stroke: #deff52;
+  stroke-width: 2.4;
+  stroke-linecap: butt;
+}
+#reticle .reticle-dot {
+  fill: #fff8ec;
+}
+#reticle[data-charging='true'] .reticle-ring {
+  stroke: #deff52;
+  stroke-width: 2.6;
+}
+#reticle[data-warn='true'] .reticle-ring {
+  stroke: #ff5f7a;
+}
+#reticle[data-warn='true'] .reticle-dot {
+  fill: #ff5f7a;
+}
+#reticle[data-refused='true'] .reticle-ring {
+  stroke: #ff3554;
+  stroke-width: 3;
+}
+/* A refused click: a hard X snapped across the ring, once. */
+#reticle[data-refused='true'] .reticle-cross {
+  opacity: 1;
+}
+#reticle .reticle-cross {
+  opacity: 0;
+  stroke: #ff3554;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+#game[data-screen='run'] #arena {
+  cursor: none;
+}
+/* Touch has no hover cursor to hide, and the OS pointer there is the finger. */
+@media (pointer: coarse) {
+  #reticle {
+    display: none !important;
+  }
+  #game[data-screen='run'] #arena {
+    cursor: default;
+  }
+}
+
+/* ── ONE RUSH BAR, THREE TOOLS REMOVED ────────────────────────────────────
+   `HOLD PACE`, `PACE READY`, `OVERCHARGED — LETHAL` and two raw `px/s` numbers
+   are now one bar with one word. The far-right `NO CUTS / RECHARGING` pill and
+   the `OVERCHARGED` pill are deleted outright: the cut charges live under the
+   cube, where the player is already looking. */
+.wave-hud .speed-pace {
+  min-width: 170px;
+  border-top: 1px solid #ffffff1a;
+  padding-top: 5px;
+}
+.speed-pace .speed-pace-readout {
+  justify-content: flex-start;
+  gap: 8px;
+}
+.speed-pace .pace-action {
+  font: 800 12px/1 var(--mono);
+  letter-spacing: 0.12em;
+  color: #fff4d8;
+}
+.speed-pace[data-ready='true'] .pace-action {
+  color: #ffe083;
+  text-shadow: 0 0 10px #ffd35c66;
+}
+/* The px/s readout is kept in the DOM for assistive tech and tests, never
+   painted. `visibility` keeps its box so the flex row does not jump. */
+.speed-pace .pace-speed {
+  visibility: hidden;
+  min-width: 0;
+  width: 0;
+  overflow: hidden;
+}
+.speed-pace .pace-caption {
+  justify-content: flex-start;
+  gap: 8px;
+}
+/* TARGET+ is gone; the threshold is still drawn on the track itself, because
+   a mark the player can see needs no number beside it. */
+.speed-pace .pace-target-label {
+  display: none;
+}
+.speed-pace .pace-progress {
+  font: 700 10px/1 var(--mono);
+  letter-spacing: 0.1em;
+  color: #e7f6b5;
+}
+.speed-pace .pace-track {
+  height: 10px;
+  margin: 6px 0 4px;
+  border-radius: 0;
+}
+/* A refused cut no longer earns a sentence, but the bar still has to say
+   "nothing is coming back yet", so the empty notch pulses. */
+.speed-pace[data-empty='true'] .pace-action {
+  color: #ff8497;
+}
+
+/* ── THE BOSS-CHARGE RIBBON ───────────────────────────────────────────────
+   Same mount, plain-English words. `SHATTER EVENT` / `FAULT LINES` /
+   `CRITICAL COLLAPSE` described the world's mood to a player who wanted to
+   know what they were charging. The bar is the goal now, and the words under
+   it are steps a person can picture. */
+.fracture-ribbon {
+  height: 26px;
+}
+.fracture-ribbon .fracture-name {
+  font: 800 9px/1 var(--mono);
+  letter-spacing: 0.2em;
+  color: #e9dcff;
+}
+.fracture-ribbon .fracture-track {
+  height: 6px;
+}
+.fracture-ribbon .fracture-pct {
+  font: italic 800 14px/1 var(--type);
+  letter-spacing: 0.02em;
+}
+.fracture-ribbon .fracture-tier {
+  font: 700 9px/1 var(--mono);
+  letter-spacing: 0.08em;
+  color: #cdb9e8;
+}
+/* The menu mount can afford one more line of explanation. */
+.fracture-menu-foot em {
+  font-style: normal;
+}
+
+/* ── THE STARTER HINT ─────────────────────────────────────────────────────
+   One four-word line at the bottom edge of the field, retired by the first
+   kill. It is a ticker, never a modal: nothing here can cover an enemy. */
+#start-hint {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--foot, 24px) + 6px);
+  transform: translateX(-50%) skewX(-6deg);
+  z-index: 6;
+  pointer-events: none;
+  padding: 6px 16px 7px;
+  background: #101310e6;
+  border: 1px solid #ddff8966;
+  color: #ddff89;
+  font: 800 13px/1 var(--mono);
+  letter-spacing: 0.18em;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+#start-hint.on {
+  opacity: 1;
+}
+#start-hint[hidden] {
+  display: none;
+}
+@media (max-width: 600px) {
+  #start-hint {
+    font-size: 11px;
+    padding: 5px 10px 6px;
+  }
+}
+
+/* ── CHUNK 2: THE THREE-COLOUR LAW, TAUGHT ONCE ───────────────────────────
+   The same bottom-edge ticker as the starter hint, because a second
+   notification lane is how the screen got crowded in the first place. It
+   sits one slot higher so the two can coexist for the first few seconds
+   without either one covering an enemy body. Retirement is by USE (three
+   cuts) rather than by timer, so a player who is still learning keeps it. */
+#law-hint {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--foot, 24px) + 40px);
+  transform: translateX(-50%) skewX(-6deg);
+  z-index: 6;
+  pointer-events: none;
+  padding: 6px 14px 7px;
+  background: #0e1110ee;
+  border: 1px solid #3c4a34;
+  color: #cbd8b6;
+  font: 800 13px/1 var(--mono);
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+#law-hint.on {
+  opacity: 1;
+}
+#law-hint[hidden] {
+  display: none;
+}
+#law-hint b {
+  font: inherit;
+  font-weight: 800;
+}
+/* The three voices, and only these three. */
+.law-safe {
+  color: #ddff89;
+}
+.law-lethal {
+  color: #ff5070;
+}
+.law-reward {
+  color: #ffd166;
+}
+@media (max-width: 600px) {
+  #law-hint {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 5px 9px 6px;
+    bottom: calc(var(--foot, 24px) + 34px);
+  }
+}
+
+/* ── THE STORY CHIP IS A TICKER, NOT A PHOTO BOMB ─────────────────────────
+   It used to sit at 60% height, dead centre of live combat, at 17px, with a
+   lime plate behind it: story lines and wave callouts covered the fight.
+   The base rule (above) now pins it to the bottom edge, where a banner is
+   allowed to be. Everything below is weight and legibility only. */
+.story-chip {
+  padding: 6px 14px 7px;
+  color: #131609;
+  background: #ddff89;
+  box-shadow: 0 2px 14px #0006;
+}
+@media (max-width: 600px) {
+  .story-chip {
+    font-size: 11px;
+    bottom: calc(var(--foot, 24px) + 26px);
+  }
+}
+
+/* ── THE CORNER CALL-OUT IS NOW A DAMAGE LINE ─────────────────────────────
+   Four words maximum (see DAMAGE_LINE_MAX_WORDS). `HEALTH −1 / Pulse wave`
+   became `RING HIT`: what touched you, not the name of the system it belonged
+   to. It is a footnote under a bar that already cracked. */
+#callout {
+  font: 800 13px/1.15 var(--mono);
+  letter-spacing: 0.1em;
+  border-right: 3px solid #ff4d6d;
+  background: #2a0f19e6;
+}
+
+/* CHUNK 1: the cut charges are the arc under the cube (engine painter); the
+   far-corner copy is kept in the DOM but never painted, so assistive tech and
+   the headless checks still read the live count. */
+#hud .meter.edge {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Functional armory: a literal perk receipt, never clipped behind a tooltip. */
+.part-benefit{font:12px/1.45 'Space Grotesk',sans-serif;color:#e9e1f4;margin:8px 0;max-width:48ch}
+.equip-timing{display:block;color:#00f0ff;font:9px/1.4 'Space Mono',monospace;letter-spacing:.04em}
+.round-receipt{padding:8px 0;border-top:1px solid #51425f;margin:6px 0}
+.round-receipt>.round-payout{display:block;color:#dfff00;font-size:18px}
+@media(max-height:500px){.part-benefit{font-size:10px;margin:4px 0}.round-receipt{padding:4px 0;margin:3px 0}.round-receipt>.round-payout{font-size:14px}}
+
+/* The quest-free debrief keeps both exit actions on screen, including 640x360. */
+#result-page .bank{display:flex;flex-direction:column;min-width:0;gap:6px}
+#result-page .bank>.choice{flex:none;margin:0}
+.round-receipt>.round-payout{background:#14101e;padding:6px 8px;color:#dfff00}
+@media(max-height:500px){
+ #result-page .bank{gap:4px}
+ #result-page .result-stats{margin:0;padding:4px 0}
+ #result-page .fracture-result{margin:0;padding:5px 7px}
+ #result-page .fracture-result-head{margin-bottom:3px}
+ #result-page .fracture-result-foot{margin-top:3px}
+ #result-page .round-receipt{margin:0;padding:3px 0}
+ #result-page .round-receipt>.round-payout{padding:3px 6px}
+ #panel #result-page .bank>.choice{min-height:32px;padding:6px;font-size:13px}
+}
+/* Single optional WebGL resolve; HUD and native input remain on their own layers. */
+.uber-postfx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none}
+/* Notched vents mirror actual passive recovery; no looping flash or particles. */
+#focus-meter[data-cooling] > small{color:#c9f6b4}
+#focus-meter[data-cooling] #focus b{background:#b9f09a}
+#focus-meter #shell-reserve{color:#b9ead7;background:#162623e8;padding:5px 6px;border-left:2px solid #b9ead7;font-size:9px;letter-spacing:.04em}
+#focus-meter #shell-reserve[hidden]{display:none}
+
+/* One compact receipt for the equipped reactive shell, not a second meter. */
+#shell-ability{display:block;color:#b7e6da;font:700 8px/1.35 monospace;letter-spacing:.03em;margin-top:5px;white-space:nowrap}
+#shell-ability[hidden]{display:none}
+@media(max-width:420px){#shell-ability{font-size:7px}}
+
+/* One factual tail receipt, only where an actual resource/retention state exists. */
+#tail-ability{display:block;color:#c8c4aa;font:700 8px/1.35 monospace;letter-spacing:.02em;margin-top:3px;white-space:nowrap}
+#tail-ability[hidden]{display:none}
+@media(max-width:420px){#tail-ability{font-size:7px}}

@@ -18,12 +18,28 @@ const LESSONS = [
  ['CLIMB','waveClear','CLEAR A WAVE','Cut every enemy. The glowing rest platform appears after the last one.',[1,1,1]],
  ['SMASH','cut','BREAK THE LINK','Cut either purple Prism to switch off its connecting beam.',[1,1,2],'prism'],
  ['STYLE','cleanBank','CLEAN BANK','Launch into a wall at pace. Aim inward before contact to steer your rebound.',[1,2,2]],
- ['CLIMB','waveRest','USE THE REST','Land on the glowing platform after a clear. Choose one temporary upgrade.',[1,1,1]],
+ // CHUNK 4: this lesson used to be 'USE THE REST' (kind `waveRest`), which the
+ // shipped mode can never emit — the rest chooser was removed from continuous
+ // play, so the row was uncompletable and one of nine tutorials was a dead end.
+ // It is now the thing a clear actually means here: breaking the sector seal.
+ // `waveClear` fires on every seal break and on the Monolith's fall.
+ ['CLIMB','waveClear','BREAK THE SEAL','Cut all three anchors, then launch up through the open seam.',[1,1,1]],
  ['SMASH','any','PLAN YOUR LANE','Choose a clear path through enemies instead of releasing into a crowd.',[6,8,10]],
  ['STYLE','paceHeld','HOLD YOUR PACE','Stay above the speed target to charge Hyper. Brief dips allow recovery.',[1,1,1]],
  ['CLIMB','dimensionBreak','BREAK THROUGH','In a break wave, bank during Hyper, then launch through the ready breach.',[1,1,1]],
 ];
-const learningQuests=LESSONS.flatMap(([category,kind,label,instruction,goals,target],step)=>goals.map((goal,variant)=>Object.freeze({id:`learn-${step}-${variant}`,category,tier:0,label,instruction,goal,kind,target,points:3,lesson:true,step:Math.floor(step/3)})));
+/**
+ * CHUNK 5: what a lesson pays.
+ *
+ * It was 3. Nine lessons — the whole learning ladder — could therefore pay 27
+ * credits against a first cosmetic priced at 100, so a player could finish the
+ * entire tutorial and own nothing. A lesson is the single most expensive thing
+ * to ask of a new player (it is a stranger telling them how to play), and it
+ * was priced at 3% of a hat. One board of three lessons now pays close to a
+ * cosmetic on its own.
+ */
+export const LESSON_POINTS = 30;
+const learningQuests=LESSONS.flatMap(([category,kind,label,instruction,goals,target],step)=>goals.map((goal,variant)=>Object.freeze({id:`learn-${step}-${variant}`,category,tier:0,label,instruction,goal,kind,target,points:LESSON_POINTS,lesson:true,step:Math.floor(step/3)})));
 export const QUESTS = Object.freeze([
   ...learningQuests,
   q('fang5', 'SMASH', 0, '5 FANGS', 5, 'cut', 'fang'),
@@ -56,10 +72,20 @@ export const QUESTS = Object.freeze([
   q('air30', 'CLIMB', 2, '30 SECONDS AIR', 1800, 'air'),
   q('sector2', 'CLIMB', 0, 'SECTOR 02', 2, 'sector'),
 ]);
+/**
+ * CHUNK 5: the ladder pays for the ladder.
+ *
+ * These were 100 / 150 / 200. The first hat cost more than the entire learning
+ * ladder could earn (9 lessons x 3 points = 27), so the reward screen's whole
+ * promise was unpayable without grinding rounds forever. A full board of
+ * lessons now pays ~90, so the first cosmetic lands in about one run and the
+ * set is complete in a short session. The shop is still a place to save for —
+ * it is just no longer a place to stare at.
+ */
 export const PARTS = Object.freeze([
-  { id: 'halo', label: 'GOLD HALO', cost: 100 },
-  { id: 'wings', label: 'PRISM WINGS', cost: 150 },
-  { id: 'crown', label: 'CUBE CROWN', cost: 200 },
+  { id: 'halo', label: 'GOLD HALO', cost: 40 },
+  { id: 'wings', label: 'PRISM WINGS', cost: 75 },
+  { id: 'crown', label: 'CUBE CROWN', cost: 120 },
 ]);
 export function loadProfile(raw) {
   let p;
@@ -77,6 +103,46 @@ export function loadProfile(raw) {
     recent: Array.isArray(p?.recent)?p.recent.filter(id=>QUESTS.some(q=>q.id===id)).slice(-9):[],
     coins: n(p?.coins),
     unlock: n(p?.unlock),
+    // CHUNK 6: durable per-species kill tally. Still read, so a profile from the
+    // contract era does not lose its kills when it becomes a deed ledger.
+    tally: Object.fromEntries(
+      ['kills', 'fang', 'prism', 'fork', 'bastion', 'crown', 'monoliths'].map((k) => [k, n(p?.tally?.[k])]),
+    ),
+    // CHUNK 8: THE DEED LEDGER — the only lifetime numbers the book reads.
+    // `cutsTotal` and `dashesTotal` are seeded from the old tally the first time
+    // this profile is loaded, so an existing player does not start from zero on
+    // a board that is meant to respect what they have already done.
+    total: {
+      cutsTotal: n(p?.total?.cutsTotal ?? p?.tally?.kills),
+      dashesTotal: n(p?.total?.dashesTotal),
+      paceTotal: n(p?.total?.paceTotal),
+      seals: n(p?.total?.seals),
+      bigKillTotal: n(p?.total?.bigKillTotal ?? (n(p?.tally?.bastion) + n(p?.tally?.crown))),
+      deepRuns3: n(p?.total?.deepRuns3),
+      deepRuns4: n(p?.total?.deepRuns4),
+      monolithsTotal: n(p?.total?.monolithsTotal ?? p?.tally?.monoliths),
+    },
+    // CHUNK 8: what has been finished, ever. This gates the unlock ladder (a
+    // tier 2 deed is not asked of someone who has finished nothing), and it is
+    // the book's own record — the reason 120 deeds read as a book and not as a
+    // rotating pile of numbers.
+    doneIds: Array.isArray(p?.doneIds) ? p.doneIds.filter((id) => typeof id === 'string').slice(0, 240) : [],
+    // CHUNK 8: THE BOARD — which three deeds are posted, which have been
+    // claimed, how many times the board has been swept, and how the player has
+    // done per lane (which is what `focusLanes` leans the next deal toward).
+    board: {
+      grid: Array.isArray(p?.board?.grid) ? p.board.grid.filter((id) => typeof id === 'string').slice(0, 3) : [],
+      board: n(p?.board?.board),
+      sweeps: n(p?.board?.sweeps),
+      rerolls: n(p?.board?.rerolls),
+      claimed: Array.isArray(p?.board?.claimed) ? p.board.claimed.filter((id) => typeof id === 'string').slice(0, 3) : [],
+      lanes: Object.fromEntries(
+        ['CUT', 'MOTION', 'RHYTHM', 'HUNT', 'DEPTH'].map((l) => [l, { dealt: n(p?.board?.lanes?.[l]?.dealt), done: n(p?.board?.lanes?.[l]?.done) }]),
+      ),
+    },
+    // CHUNK 6: carried-over progress is per-contract (the board's own `claimed`
+    // list and the durable tally), not a streak. `streak` is deliberately not
+    // loaded any more: sweeps replaced it as the long-term hook.
     owned: PARTS.filter((x) => p?.owned?.includes(x.id)).map((x) => x.id),
     heads: Object.fromEntries(
       QUESTS.map((x) => [

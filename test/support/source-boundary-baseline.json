@@ -1,0 +1,4877 @@
+{
+  "coil-kill-order": {
+    "snapshot": {
+      "checkpoints": [],
+      "final": {
+        "state": {
+          "hp": 3,
+          "edge": 3,
+          "focus": 1,
+          "score": 300,
+          "chain": 2,
+          "kills": 2,
+          "shots": 1,
+          "blade": 37,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "throughcuts": 0,
+          "floorKicks": 0,
+          "floorIgnore": 0
+        },
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 24,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          }
+        ],
+        "stroke": {
+          "contacts": 1,
+          "primaries": 1,
+          "kills": 2,
+          "released": false,
+          "points": 300
+        },
+        "swordFx": [],
+        "equipmentFx": {
+          "echoes": 0,
+          "projectiles": 0,
+          "bursts": 3
+        }
+      },
+      "threw": false,
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "tier",
+          "id": "cruise",
+          "label": "CRUISE",
+          "multiplier": 2,
+          "speed": 24
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "relay",
+          "x": -180,
+          "y": -100,
+          "angle": 0.507098504392337,
+          "r": 33,
+          "kind": "fang",
+          "cut": 0,
+          "hpBefore": 1,
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 100,
+          "points": 100,
+          "chain": 1,
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.8,
+          "gained": 0.8,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "parent",
+          "x": -275,
+          "y": -100,
+          "angle": 0.348771003583907,
+          "r": 33,
+          "kind": "fang",
+          "cut": 0,
+          "hpBefore": 1,
+          "armorRemoved": 0,
+          "secondary": false,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": false,
+          "strokePoints": 200,
+          "points": 200,
+          "chain": 2,
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "contact-batch",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "attacking": true,
+          "entities": "parent",
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "parent",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": false,
+          "sequence": 1
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "relay",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 2
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 0,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "coil-relay",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 1
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "coil-relay",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "eventId": "run-1/contact-2",
+        "parentEventId": "run-1/contact-1",
+        "targetKey": "run-1/target-2",
+        "targetId": "relay",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 2
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "parent",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 3
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 4
+      }
+    ]
+  },
+  "coil-armor": {
+    "snapshot": {
+      "checkpoints": [],
+      "final": {
+        "state": {
+          "hp": 3,
+          "edge": 2,
+          "focus": 1,
+          "score": 0,
+          "chain": 0,
+          "kills": 0,
+          "shots": 1,
+          "blade": 23.57142857142857,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "throughcuts": 0,
+          "floorKicks": 0,
+          "floorIgnore": 0
+        },
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 17,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          },
+          {
+            "id": "parent",
+            "kind": "bastion",
+            "hp": 5,
+            "lastSlash": 1
+          },
+          {
+            "id": "relay",
+            "kind": "bastion",
+            "hp": 5,
+            "lastSlash": 1
+          }
+        ],
+        "stroke": {
+          "contacts": 0,
+          "primaries": 0,
+          "kills": 0,
+          "released": false,
+          "points": 0
+        },
+        "swordFx": [],
+        "equipmentFx": {
+          "echoes": 0,
+          "projectiles": 0,
+          "bursts": 1
+        }
+      },
+      "threw": false,
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "tier",
+          "id": "cruise",
+          "label": "CRUISE",
+          "multiplier": 2,
+          "speed": 24
+        },
+        {
+          "type": "armor",
+          "entityId": "relay",
+          "x": -180,
+          "y": -100,
+          "r": 41,
+          "cut": 0,
+          "hp": 5,
+          "hpBefore": 6,
+          "kind": "bastion",
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "armorRemoved": 1,
+          "secondary": true
+        },
+        {
+          "type": "armor",
+          "entityId": "parent",
+          "x": -275,
+          "y": -100,
+          "r": 41,
+          "cut": 0,
+          "hp": 5,
+          "hpBefore": 6,
+          "kind": "bastion",
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "armorRemoved": 1,
+          "secondary": false
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "contact-batch",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "attacking": true,
+          "entities": "parent",
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "parent",
+          "kind": "bastion",
+          "targetHp": 6,
+          "fromShear": false,
+          "sequence": 1
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "relay",
+          "kind": "bastion",
+          "targetHp": 6,
+          "fromShear": true,
+          "sequence": 2
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 0,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "coil-relay",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 1
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "coil-relay",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "eventId": "run-1/contact-2",
+        "parentEventId": "run-1/contact-1",
+        "targetKey": "run-1/target-2",
+        "targetId": "relay",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 6,
+        "targetHpAfter": 5,
+        "scope": "target-only",
+        "sequence": 2
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "parent",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 6,
+        "targetHpAfter": 5,
+        "scope": "target-only",
+        "sequence": 3
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 4
+      }
+    ]
+  },
+  "coil-rejected": {
+    "snapshot": {
+      "checkpoints": [],
+      "final": {
+        "state": {
+          "hp": 3,
+          "edge": 2,
+          "focus": 1,
+          "score": 0,
+          "chain": 0,
+          "kills": 0,
+          "shots": 1,
+          "blade": 23.57142857142857,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "throughcuts": 0,
+          "floorKicks": 0,
+          "floorIgnore": 0
+        },
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 17,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          },
+          {
+            "id": "parent",
+            "kind": "bastion",
+            "hp": 5,
+            "lastSlash": 1
+          },
+          {
+            "id": "relay",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": 1
+          },
+          {
+            "id": "other",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          }
+        ],
+        "stroke": {
+          "contacts": 0,
+          "primaries": 0,
+          "kills": 0,
+          "released": false,
+          "points": 0
+        },
+        "swordFx": [],
+        "equipmentFx": {
+          "echoes": 0,
+          "projectiles": 0,
+          "bursts": 1
+        }
+      },
+      "threw": false,
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "tier",
+          "id": "cruise",
+          "label": "CRUISE",
+          "multiplier": 2,
+          "speed": 24
+        },
+        {
+          "type": "armor",
+          "entityId": "parent",
+          "x": -275,
+          "y": -100,
+          "r": 41,
+          "cut": 0,
+          "hp": 5,
+          "hpBefore": 6,
+          "kind": "bastion",
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "armorRemoved": 1,
+          "secondary": false
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "contact-batch",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "attacking": true,
+          "entities": "parent",
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "parent",
+          "kind": "bastion",
+          "targetHp": 6,
+          "fromShear": false,
+          "sequence": 1
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 0,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "coil-relay",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 1
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "coil-relay",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "eventId": "run-1/contact-2",
+        "parentEventId": "run-1/contact-1",
+        "targetKey": "run-1/target-2",
+        "targetId": "relay",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": false,
+        "outcome": "shot-duplicate",
+        "targetHpBefore": 1,
+        "targetHpAfter": 1,
+        "scope": "target-only",
+        "sequence": 2
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "parent",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 6,
+        "targetHpAfter": 5,
+        "scope": "target-only",
+        "sequence": 3
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 4
+      }
+    ]
+  },
+  "coil-radius": {
+    "snapshot": {
+      "checkpoints": [],
+      "final": {
+        "state": {
+          "hp": 3,
+          "edge": 3,
+          "focus": 1,
+          "score": 100,
+          "chain": 1,
+          "kills": 1,
+          "shots": 1,
+          "blade": 30.57142857142857,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "throughcuts": 0,
+          "floorKicks": 0,
+          "floorIgnore": 0
+        },
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 17,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          },
+          {
+            "id": "parent",
+            "kind": "bastion",
+            "hp": 5,
+            "lastSlash": 1
+          }
+        ],
+        "stroke": {
+          "contacts": 0,
+          "primaries": 0,
+          "kills": 1,
+          "released": false,
+          "points": 100
+        },
+        "swordFx": [],
+        "equipmentFx": {
+          "echoes": 0,
+          "projectiles": 0,
+          "bursts": 2
+        }
+      },
+      "threw": false,
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "tier",
+          "id": "cruise",
+          "label": "CRUISE",
+          "multiplier": 2,
+          "speed": 24
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "relay",
+          "x": -115,
+          "y": -100,
+          "angle": 0.7157435896688801,
+          "r": 33,
+          "kind": "fang",
+          "cut": 0,
+          "hpBefore": 1,
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 100,
+          "points": 100,
+          "chain": 1,
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "armor",
+          "entityId": "parent",
+          "x": -275,
+          "y": -100,
+          "r": 41,
+          "cut": 0,
+          "hp": 5,
+          "hpBefore": 6,
+          "kind": "bastion",
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "armorRemoved": 1,
+          "secondary": false
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "contact-batch",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "attacking": true,
+          "entities": "parent",
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "parent",
+          "kind": "bastion",
+          "targetHp": 6,
+          "fromShear": false,
+          "sequence": 1
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "relay",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 2
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 0,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "coil-relay",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 1
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "coil-relay",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "eventId": "run-1/contact-2",
+        "parentEventId": "run-1/contact-1",
+        "targetKey": "run-1/target-2",
+        "targetId": "relay",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 2
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "parent",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 6,
+        "targetHpAfter": 5,
+        "scope": "target-only",
+        "sequence": 3
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 4
+      }
+    ]
+  },
+  "coil-outside": {
+    "snapshot": {
+      "checkpoints": [],
+      "final": {
+        "state": {
+          "hp": 3,
+          "edge": 2,
+          "focus": 1,
+          "score": 0,
+          "chain": 0,
+          "kills": 0,
+          "shots": 1,
+          "blade": 23.57142857142857,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "throughcuts": 0,
+          "floorKicks": 0,
+          "floorIgnore": 0
+        },
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 17,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          },
+          {
+            "id": "parent",
+            "kind": "bastion",
+            "hp": 5,
+            "lastSlash": 1
+          },
+          {
+            "id": "relay",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          }
+        ],
+        "stroke": {
+          "contacts": 0,
+          "primaries": 0,
+          "kills": 0,
+          "released": false,
+          "points": 0
+        },
+        "swordFx": [],
+        "equipmentFx": {
+          "echoes": 0,
+          "projectiles": 0,
+          "bursts": 0
+        }
+      },
+      "threw": false,
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "tier",
+          "id": "cruise",
+          "label": "CRUISE",
+          "multiplier": 2,
+          "speed": 24
+        },
+        {
+          "type": "armor",
+          "entityId": "parent",
+          "x": -275,
+          "y": -100,
+          "r": 41,
+          "cut": 0,
+          "hp": 5,
+          "hpBefore": 6,
+          "kind": "bastion",
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "armorRemoved": 1,
+          "secondary": false
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "contact-batch",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "attacking": true,
+          "entities": "parent",
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "parent",
+          "kind": "bastion",
+          "targetHp": 6,
+          "fromShear": false,
+          "sequence": 1
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 0,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "parent",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 6,
+        "targetHpAfter": 5,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 2
+      }
+    ]
+  },
+  "coil-tie": {
+    "snapshot": {
+      "checkpoints": [],
+      "final": {
+        "state": {
+          "hp": 3,
+          "edge": 3,
+          "focus": 1,
+          "score": 100,
+          "chain": 1,
+          "kills": 1,
+          "shots": 1,
+          "blade": 30.57142857142857,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "throughcuts": 0,
+          "floorKicks": 0,
+          "floorIgnore": 0
+        },
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 17,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          },
+          {
+            "id": "parent",
+            "kind": "bastion",
+            "hp": 5,
+            "lastSlash": 1
+          },
+          {
+            "id": "relay",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          }
+        ],
+        "stroke": {
+          "contacts": 0,
+          "primaries": 0,
+          "kills": 1,
+          "released": false,
+          "points": 100
+        },
+        "swordFx": [],
+        "equipmentFx": {
+          "echoes": 0,
+          "projectiles": 0,
+          "bursts": 2
+        }
+      },
+      "threw": false,
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "tier",
+          "id": "cruise",
+          "label": "CRUISE",
+          "multiplier": 2,
+          "speed": 24
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "alpha",
+          "x": -275,
+          "y": 60,
+          "angle": -0.21481540040165858,
+          "r": 33,
+          "kind": "fang",
+          "cut": 0,
+          "hpBefore": 1,
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 100,
+          "points": 100,
+          "chain": 1,
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "armor",
+          "entityId": "parent",
+          "x": -275,
+          "y": -100,
+          "r": 41,
+          "cut": 0,
+          "hp": 5,
+          "hpBefore": 6,
+          "kind": "bastion",
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "armorRemoved": 1,
+          "secondary": false
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "contact-batch",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "attacking": true,
+          "entities": "parent",
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "parent",
+          "kind": "bastion",
+          "targetHp": 6,
+          "fromShear": false,
+          "sequence": 1
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "alpha",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 2
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 0,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "coil-relay",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 1
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "coil-relay",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "eventId": "run-1/contact-2",
+        "parentEventId": "run-1/contact-1",
+        "targetKey": "run-1/target-2",
+        "targetId": "alpha",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 2
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "parent",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 6,
+        "targetHpAfter": 5,
+        "scope": "target-only",
+        "sequence": 3
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 4
+      }
+    ]
+  },
+  "anchor-radius": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "hp": 3,
+            "edge": 3,
+            "focus": 1,
+            "score": 300,
+            "chain": 2,
+            "kills": 2,
+            "shots": 0,
+            "blade": 13,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "throughcuts": 0,
+            "floorKicks": 1,
+            "floorIgnore": 11
+          },
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "kind": "fang",
+              "hp": 1,
+              "lastSlash": -1
+            },
+            {
+              "id": "outside",
+              "kind": "fang",
+              "hp": 1,
+              "lastSlash": -1
+            },
+            {
+              "id": "not-fang",
+              "kind": "bastion",
+              "hp": 2,
+              "lastSlash": -1
+            }
+          ],
+          "stroke": null,
+          "swordFx": [],
+          "equipmentFx": {
+            "echoes": 0,
+            "projectiles": 0,
+            "bursts": 3
+          }
+        }
+      ],
+      "final": {
+        "state": {
+          "hp": 3,
+          "edge": 3,
+          "focus": 1,
+          "score": 300,
+          "chain": 2,
+          "kills": 2,
+          "shots": 0,
+          "blade": 12,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "throughcuts": 0,
+          "floorKicks": 1,
+          "floorIgnore": 10
+        },
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          },
+          {
+            "id": "outside",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          },
+          {
+            "id": "not-fang",
+            "kind": "bastion",
+            "hp": 2,
+            "lastSlash": -1
+          }
+        ],
+        "stroke": null,
+        "swordFx": [],
+        "equipmentFx": {
+          "echoes": 0,
+          "projectiles": 0,
+          "bursts": 3
+        }
+      },
+      "threw": false,
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "left-edge",
+          "x": -520,
+          "y": -100,
+          "angle": 0.18998828791871572,
+          "r": 33,
+          "kind": "fang",
+          "cut": -0.65,
+          "hpBefore": 1,
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 100,
+          "points": 100,
+          "chain": 1,
+          "speed": 0,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.8,
+          "gained": 0.8,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "right-edge",
+          "x": -180,
+          "y": -100,
+          "angle": 0.507098504392337,
+          "r": 33,
+          "kind": "fang",
+          "cut": -0.65,
+          "hpBefore": 1,
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 200,
+          "points": 200,
+          "chain": 2,
+          "speed": 0,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "floorKick",
+          "vy": -22,
+          "edge": 3
+        },
+        {
+          "type": "storyMoment",
+          "id": "hold-the-wave",
+          "chip": "LET IT PASS.",
+          "mechanic": "pulse",
+          "lesson": "Dodge the expanding rim; the space behind it is safe.",
+          "consequence": "The Watcher holds the wave so the Cutter can pass.",
+          "chapter": "seal",
+          "emotion": "friendship",
+          "wave": 1,
+          "targetId": "wave/1/1",
+          "targetX": 179.98116269670427,
+          "targetY": -259.5315527519677,
+          "targetR": 32,
+          "age": 0,
+          "number": 1
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "left-edge",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 7,
+          "entityId": "right-edge",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 1
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "anchor-floor",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "anchor-floor",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "left-edge",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "anchor-floor",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-2",
+        "parentEventId": null,
+        "targetKey": "run-1/target-2",
+        "targetId": "right-edge",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 2
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 3
+      }
+    ]
+  },
+  "anchor-dedup": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "hp": 3,
+            "edge": 3,
+            "focus": 1,
+            "score": 100,
+            "chain": 1,
+            "kills": 1,
+            "shots": 0,
+            "blade": 6,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "throughcuts": 0,
+            "floorKicks": 1,
+            "floorIgnore": 11
+          },
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "kind": "fang",
+              "hp": 1,
+              "lastSlash": -1
+            },
+            {
+              "id": "left-edge",
+              "kind": "fang",
+              "hp": 1,
+              "lastSlash": 0
+            },
+            {
+              "id": "outside",
+              "kind": "fang",
+              "hp": 1,
+              "lastSlash": -1
+            },
+            {
+              "id": "not-fang",
+              "kind": "bastion",
+              "hp": 2,
+              "lastSlash": -1
+            }
+          ],
+          "stroke": null,
+          "swordFx": [],
+          "equipmentFx": {
+            "echoes": 0,
+            "projectiles": 0,
+            "bursts": 2
+          }
+        }
+      ],
+      "final": {
+        "state": {
+          "hp": 3,
+          "edge": 3,
+          "focus": 1,
+          "score": 100,
+          "chain": 1,
+          "kills": 1,
+          "shots": 0,
+          "blade": 5,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "throughcuts": 0,
+          "floorKicks": 1,
+          "floorIgnore": 10
+        },
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          },
+          {
+            "id": "left-edge",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": 0
+          },
+          {
+            "id": "outside",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          },
+          {
+            "id": "not-fang",
+            "kind": "bastion",
+            "hp": 2,
+            "lastSlash": -1
+          }
+        ],
+        "stroke": null,
+        "swordFx": [],
+        "equipmentFx": {
+          "echoes": 0,
+          "projectiles": 0,
+          "bursts": 2
+        }
+      },
+      "threw": false,
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "right-edge",
+          "x": -180,
+          "y": -100,
+          "angle": 0.507098504392337,
+          "r": 33,
+          "kind": "fang",
+          "cut": -0.65,
+          "hpBefore": 1,
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 100,
+          "points": 100,
+          "chain": 1,
+          "speed": 0,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "floorKick",
+          "vy": -22,
+          "edge": 3
+        },
+        {
+          "type": "storyMoment",
+          "id": "hold-the-wave",
+          "chip": "LET IT PASS.",
+          "mechanic": "pulse",
+          "lesson": "Dodge the expanding rim; the space behind it is safe.",
+          "consequence": "The Watcher holds the wave so the Cutter can pass.",
+          "chapter": "seal",
+          "emotion": "friendship",
+          "wave": 1,
+          "targetId": "wave/1/1",
+          "targetX": 179.98116269670427,
+          "targetY": -259.5315527519677,
+          "targetR": 32,
+          "age": 0,
+          "number": 1
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "right-edge",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 0
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "anchor-floor",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "anchor-floor",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "left-edge",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": false,
+        "outcome": "shot-duplicate",
+        "targetHpBefore": 1,
+        "targetHpAfter": 1,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "anchor-floor",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-2",
+        "parentEventId": null,
+        "targetKey": "run-1/target-2",
+        "targetId": "right-edge",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 2
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 3
+      }
+    ]
+  },
+  "shear-multi-armor": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "hp": 3,
+            "edge": 3,
+            "focus": 1,
+            "score": 600,
+            "chain": 2,
+            "kills": 2,
+            "shots": 1,
+            "blade": 36.57142857142857,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "throughcuts": 1,
+            "floorKicks": 0,
+            "floorIgnore": 0
+          },
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 10,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "kind": "fang",
+              "hp": 1,
+              "lastSlash": -1
+            },
+            {
+              "id": "wave-a",
+              "kind": "bastion",
+              "hp": 6,
+              "lastSlash": 1
+            },
+            {
+              "id": "wave-b",
+              "kind": "bastion",
+              "hp": 6,
+              "lastSlash": 1
+            }
+          ],
+          "stroke": {
+            "contacts": 2,
+            "primaries": 2,
+            "kills": 2,
+            "released": true,
+            "points": 600
+          },
+          "swordFx": [],
+          "equipmentFx": {
+            "echoes": 0,
+            "projectiles": 0,
+            "bursts": 2
+          }
+        }
+      ],
+      "final": {
+        "state": {
+          "hp": 3,
+          "edge": 3,
+          "focus": 1,
+          "score": 600,
+          "chain": 2,
+          "kills": 2,
+          "shots": 1,
+          "blade": 35.57142857142857,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "throughcuts": 1,
+          "floorKicks": 0,
+          "floorIgnore": 0
+        },
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 10,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          },
+          {
+            "id": "wave-a",
+            "kind": "bastion",
+            "hp": 6,
+            "lastSlash": 1
+          },
+          {
+            "id": "wave-b",
+            "kind": "bastion",
+            "hp": 6,
+            "lastSlash": 1
+          }
+        ],
+        "stroke": {
+          "contacts": 2,
+          "primaries": 2,
+          "kills": 2,
+          "released": true,
+          "points": 600
+        },
+        "swordFx": [],
+        "equipmentFx": {
+          "echoes": 0,
+          "projectiles": 0,
+          "bursts": 2
+        }
+      },
+      "threw": false,
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "tier",
+          "id": "cruise",
+          "label": "CRUISE",
+          "multiplier": 2,
+          "speed": 24
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "first",
+          "x": -275,
+          "y": -100,
+          "angle": 0.348771003583907,
+          "r": 33,
+          "kind": "fang",
+          "cut": 0,
+          "hpBefore": 1,
+          "armorRemoved": 0,
+          "secondary": false,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": false,
+          "strokePoints": 100,
+          "points": 100,
+          "chain": 1,
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.8,
+          "gained": 0.8,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "second",
+          "x": -230,
+          "y": -100,
+          "angle": 0.41012734054149097,
+          "r": 33,
+          "kind": "fang",
+          "cut": 0,
+          "hpBefore": 1,
+          "armorRemoved": 0,
+          "secondary": false,
+          "small": false,
+          "paper": false,
+          "release": true,
+          "fromShear": false,
+          "strokePoints": 500,
+          "points": 500,
+          "chain": 2,
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "shear",
+          "x": -230,
+          "y": -100,
+          "angle": 0
+        },
+        {
+          "type": "armor",
+          "entityId": "wave-a",
+          "x": -30,
+          "y": -100,
+          "r": 41,
+          "cut": 0,
+          "hp": 6,
+          "hpBefore": 8,
+          "kind": "bastion",
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "armorRemoved": 2,
+          "secondary": true
+        },
+        {
+          "type": "armor",
+          "entityId": "wave-b",
+          "x": 70,
+          "y": -100,
+          "r": 41,
+          "cut": 0,
+          "hp": 6,
+          "hpBefore": 8,
+          "kind": "bastion",
+          "speed": 17,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "armorRemoved": 2,
+          "secondary": true
+        },
+        {
+          "type": "storyMoment",
+          "id": "hold-the-wave",
+          "chip": "LET IT PASS.",
+          "mechanic": "pulse",
+          "lesson": "Dodge the expanding rim; the space behind it is safe.",
+          "consequence": "The Watcher holds the wave so the Cutter can pass.",
+          "chapter": "seal",
+          "emotion": "friendship",
+          "wave": 1,
+          "targetId": "wave/1/1",
+          "targetX": 179.98116269670427,
+          "targetY": -259.5315527519677,
+          "targetR": 32,
+          "age": 0,
+          "number": 1
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "contact-batch",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "attacking": true,
+          "entities": "first",
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "first",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": false,
+          "sequence": 1
+        },
+        {
+          "type": "contact-batch",
+          "tick": 2,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 30.57142857142857,
+          "attacking": true,
+          "entities": "second",
+          "sequence": 2
+        },
+        {
+          "type": "cut-contact",
+          "tick": 2,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 30.57142857142857,
+          "entityId": "second",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": false,
+          "sequence": 3
+        },
+        {
+          "type": "cut-contact",
+          "tick": 2,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 37.57142857142857,
+          "entityId": "wave-a",
+          "kind": "bastion",
+          "targetHp": 8,
+          "fromShear": true,
+          "sequence": 4
+        },
+        {
+          "type": "cut-contact",
+          "tick": 2,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 37.57142857142857,
+          "entityId": "wave-b",
+          "kind": "bastion",
+          "targetHp": 8,
+          "fromShear": true,
+          "sequence": 5
+        },
+        {
+          "type": "contact-batch",
+          "tick": 3,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 36.57142857142857,
+          "attacking": true,
+          "entities": "second",
+          "sequence": 6
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 0,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "first",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "legacy-shear",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "tick": 2,
+        "worldClock": 0,
+        "sequence": 2
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "legacy-shear",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "eventId": "run-1/contact-3",
+        "parentEventId": "run-1/contact-2",
+        "targetKey": "run-1/target-3",
+        "targetId": "wave-a",
+        "targetKind": "bastion",
+        "tick": 2,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": true,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 8,
+        "targetHpAfter": 6,
+        "scope": "target-only",
+        "sequence": 3
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "legacy-shear",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "eventId": "run-1/contact-4",
+        "parentEventId": "run-1/contact-2",
+        "targetKey": "run-1/target-4",
+        "targetId": "wave-b",
+        "targetKind": "bastion",
+        "tick": 2,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": true,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 8,
+        "targetHpAfter": 6,
+        "scope": "target-only",
+        "sequence": 4
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-2",
+        "parentEventId": null,
+        "targetKey": "run-1/target-2",
+        "targetId": "second",
+        "targetKind": "fang",
+        "tick": 2,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 5
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 6
+      }
+    ]
+  },
+  "shear-coil": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "hp": 3,
+            "edge": 3,
+            "focus": 1,
+            "score": 600,
+            "chain": 2,
+            "kills": 2,
+            "shots": 1,
+            "blade": 36.57142857142857,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "throughcuts": 1,
+            "floorKicks": 0,
+            "floorIgnore": 0
+          },
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 17,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "kind": "fang",
+              "hp": 1,
+              "lastSlash": -1
+            },
+            {
+              "id": "wave-a",
+              "kind": "bastion",
+              "hp": 6,
+              "lastSlash": 1
+            },
+            {
+              "id": "wave-b",
+              "kind": "bastion",
+              "hp": 7,
+              "lastSlash": 1
+            }
+          ],
+          "stroke": {
+            "contacts": 2,
+            "primaries": 2,
+            "kills": 2,
+            "released": true,
+            "points": 600
+          },
+          "swordFx": [],
+          "equipmentFx": {
+            "echoes": 0,
+            "projectiles": 0,
+            "bursts": 3
+          }
+        }
+      ],
+      "final": {
+        "state": {
+          "hp": 3,
+          "edge": 3,
+          "focus": 1,
+          "score": 600,
+          "chain": 2,
+          "kills": 2,
+          "shots": 1,
+          "blade": 35.57142857142857,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "throughcuts": 1,
+          "floorKicks": 0,
+          "floorIgnore": 0
+        },
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 17,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          },
+          {
+            "id": "wave-a",
+            "kind": "bastion",
+            "hp": 6,
+            "lastSlash": 1
+          },
+          {
+            "id": "wave-b",
+            "kind": "bastion",
+            "hp": 7,
+            "lastSlash": 1
+          }
+        ],
+        "stroke": {
+          "contacts": 2,
+          "primaries": 2,
+          "kills": 2,
+          "released": true,
+          "points": 600
+        },
+        "swordFx": [],
+        "equipmentFx": {
+          "echoes": 0,
+          "projectiles": 0,
+          "bursts": 3
+        }
+      },
+      "threw": false,
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "tier",
+          "id": "cruise",
+          "label": "CRUISE",
+          "multiplier": 2,
+          "speed": 24
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "first",
+          "x": -275,
+          "y": -100,
+          "angle": 0.348771003583907,
+          "r": 33,
+          "kind": "fang",
+          "cut": 0,
+          "hpBefore": 1,
+          "armorRemoved": 0,
+          "secondary": false,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": false,
+          "strokePoints": 100,
+          "points": 100,
+          "chain": 1,
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.8,
+          "gained": 0.8,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "second",
+          "x": -230,
+          "y": -100,
+          "angle": 0.41012734054149097,
+          "r": 33,
+          "kind": "fang",
+          "cut": 0,
+          "hpBefore": 1,
+          "armorRemoved": 0,
+          "secondary": false,
+          "small": false,
+          "paper": false,
+          "release": true,
+          "fromShear": false,
+          "strokePoints": 500,
+          "points": 500,
+          "chain": 2,
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "shear",
+          "x": -230,
+          "y": -100,
+          "angle": 0
+        },
+        {
+          "type": "armor",
+          "entityId": "wave-b",
+          "x": 70,
+          "y": -100,
+          "r": 41,
+          "cut": 0,
+          "hp": 7,
+          "hpBefore": 8,
+          "kind": "bastion",
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "armorRemoved": 1,
+          "secondary": true
+        },
+        {
+          "type": "armor",
+          "entityId": "wave-a",
+          "x": -30,
+          "y": -100,
+          "r": 41,
+          "cut": 0,
+          "hp": 6,
+          "hpBefore": 8,
+          "kind": "bastion",
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "armorRemoved": 2,
+          "secondary": true
+        },
+        {
+          "type": "storyMoment",
+          "id": "hold-the-wave",
+          "chip": "LET IT PASS.",
+          "mechanic": "pulse",
+          "lesson": "Dodge the expanding rim; the space behind it is safe.",
+          "consequence": "The Watcher holds the wave so the Cutter can pass.",
+          "chapter": "seal",
+          "emotion": "friendship",
+          "wave": 1,
+          "targetId": "wave/1/1",
+          "targetX": 179.98116269670427,
+          "targetY": -259.5315527519677,
+          "targetR": 32,
+          "age": 0,
+          "number": 1
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "contact-batch",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "attacking": true,
+          "entities": "first",
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "first",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": false,
+          "sequence": 1
+        },
+        {
+          "type": "contact-batch",
+          "tick": 2,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 30.57142857142857,
+          "attacking": true,
+          "entities": "second",
+          "sequence": 2
+        },
+        {
+          "type": "cut-contact",
+          "tick": 2,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 30.57142857142857,
+          "entityId": "second",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": false,
+          "sequence": 3
+        },
+        {
+          "type": "cut-contact",
+          "tick": 2,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 37.57142857142857,
+          "entityId": "wave-a",
+          "kind": "bastion",
+          "targetHp": 8,
+          "fromShear": true,
+          "sequence": 4
+        },
+        {
+          "type": "cut-contact",
+          "tick": 2,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 37.57142857142857,
+          "entityId": "wave-b",
+          "kind": "bastion",
+          "targetHp": 8,
+          "fromShear": true,
+          "sequence": 5
+        },
+        {
+          "type": "contact-batch",
+          "tick": 3,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 36.57142857142857,
+          "attacking": true,
+          "entities": "second",
+          "sequence": 6
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 0,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "first",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "legacy-shear",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "tick": 2,
+        "worldClock": 0,
+        "sequence": 2
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-3",
+        "sourceKind": "coil-relay",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-2",
+        "originKnown": true,
+        "tick": 2,
+        "worldClock": 0,
+        "sequence": 3
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-3",
+        "sourceKind": "coil-relay",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-2",
+        "originKnown": true,
+        "eventId": "run-1/contact-4",
+        "parentEventId": "run-1/contact-3",
+        "targetKey": "run-1/target-4",
+        "targetId": "wave-b",
+        "targetKind": "bastion",
+        "tick": 2,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 8,
+        "targetHpAfter": 7,
+        "scope": "target-only",
+        "sequence": 4
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "legacy-shear",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "eventId": "run-1/contact-3",
+        "parentEventId": "run-1/contact-2",
+        "targetKey": "run-1/target-3",
+        "targetId": "wave-a",
+        "targetKind": "bastion",
+        "tick": 2,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": true,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 8,
+        "targetHpAfter": 6,
+        "scope": "target-only",
+        "sequence": 5
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "legacy-shear",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "eventId": "run-1/contact-5",
+        "parentEventId": "run-1/contact-2",
+        "targetKey": "run-1/target-4",
+        "targetId": "wave-b",
+        "targetKind": "bastion",
+        "tick": 2,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": true,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": false,
+        "outcome": "shot-duplicate",
+        "targetHpBefore": 7,
+        "targetHpAfter": 7,
+        "scope": "target-only",
+        "sequence": 6
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-2",
+        "parentEventId": null,
+        "targetKey": "run-1/target-2",
+        "targetId": "second",
+        "targetKind": "fang",
+        "tick": 2,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 7
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 8
+      }
+    ]
+  },
+  "sword-echo": {
+    "snapshot": {
+      "checkpoints": [],
+      "final": {
+        "state": {
+          "hp": 3,
+          "edge": 3,
+          "focus": 1,
+          "score": 300,
+          "chain": 2,
+          "kills": 2,
+          "shots": 0,
+          "blade": 11.57857142857143,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "throughcuts": 0,
+          "floorKicks": 0,
+          "floorIgnore": 0
+        },
+        "world": {
+          "clock": 2.4214285714285713,
+          "position": {
+            "x": -350,
+            "y": -98.52366709183673
+          },
+          "velocity": {
+            "x": 0,
+            "y": 0.9080357142857148
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          },
+          {
+            "id": "plate",
+            "kind": "bastion",
+            "hp": 6,
+            "lastSlash": 0
+          }
+        ],
+        "stroke": null,
+        "swordFx": [
+          {
+            "kind": "echo",
+            "fired": true,
+            "delay": 0,
+            "life": 12.57857142857143,
+            "hits": [
+              "plate",
+              "lane-second"
+            ]
+          },
+          {
+            "kind": "echo",
+            "fired": true,
+            "delay": 0,
+            "life": 12.57857142857143,
+            "hits": [
+              "plate",
+              "lane-cap-excluded"
+            ]
+          }
+        ],
+        "equipmentFx": {
+          "echoes": 0,
+          "projectiles": 0,
+          "bursts": 2
+        }
+      },
+      "threw": false,
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "armor",
+          "entityId": "plate",
+          "x": -400,
+          "y": -350,
+          "r": 41,
+          "cut": -0.65,
+          "hp": 7,
+          "hpBefore": 8,
+          "kind": "bastion",
+          "speed": 0.375,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "armorRemoved": 1,
+          "secondary": true
+        },
+        {
+          "type": "swordHit",
+          "x": -400,
+          "y": -350,
+          "kind": "echo"
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "lane-second",
+          "x": -360,
+          "y": -350,
+          "angle": 0.7713145875745882,
+          "r": 33,
+          "kind": "fang",
+          "cut": -0.65,
+          "hpBefore": 1,
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 100,
+          "points": 100,
+          "chain": 1,
+          "speed": 0.375,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "swordHit",
+          "x": -360,
+          "y": -350,
+          "kind": "echo"
+        },
+        {
+          "type": "armor",
+          "entityId": "plate",
+          "x": -400,
+          "y": -350,
+          "r": 41,
+          "cut": -0.65,
+          "hp": 6,
+          "hpBefore": 7,
+          "kind": "bastion",
+          "speed": 0.375,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "armorRemoved": 1,
+          "secondary": true
+        },
+        {
+          "type": "swordHit",
+          "x": -400,
+          "y": -350,
+          "kind": "echo"
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.8,
+          "gained": 0.8,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "lane-cap-excluded",
+          "x": -320,
+          "y": -350,
+          "angle": 0.8301443948520639,
+          "r": 33,
+          "kind": "fang",
+          "cut": -0.65,
+          "hpBefore": 1,
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 200,
+          "points": 200,
+          "chain": 2,
+          "speed": 0.375,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "swordHit",
+          "x": -320,
+          "y": -350,
+          "kind": "echo"
+        },
+        {
+          "type": "storyMoment",
+          "id": "hold-the-wave",
+          "chip": "LET IT PASS.",
+          "mechanic": "pulse",
+          "lesson": "Dodge the expanding rim; the space behind it is safe.",
+          "consequence": "The Watcher holds the wave so the Cutter can pass.",
+          "chapter": "seal",
+          "emotion": "friendship",
+          "wave": 1,
+          "targetId": "wave/1/1",
+          "targetX": 179.98116269670427,
+          "targetY": -259.5315527519677,
+          "targetR": 32,
+          "age": 0,
+          "number": 1
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 1,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "plate",
+          "kind": "bastion",
+          "targetHp": 8,
+          "fromShear": true,
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 1,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "lane-second",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 1
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 1,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 7,
+          "entityId": "plate",
+          "kind": "bastion",
+          "targetHp": 7,
+          "fromShear": true,
+          "sequence": 2
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 1,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 7,
+          "entityId": "lane-cap-excluded",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 3
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "sword-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 1,
+        "worldClock": 1,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "sword-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "plate",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 1,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": true,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 8,
+        "targetHpAfter": 7,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "sword-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-2",
+        "parentEventId": null,
+        "targetKey": "run-1/target-2",
+        "targetId": "lane-second",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 1,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": true,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 2
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "sword-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 1,
+        "worldClock": 1,
+        "sequence": 3
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "sword-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-3",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "plate",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 1,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": true,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 7,
+        "targetHpAfter": 6,
+        "scope": "target-only",
+        "sequence": 4
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "sword-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-4",
+        "parentEventId": null,
+        "targetKey": "run-1/target-3",
+        "targetId": "lane-cap-excluded",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 1,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": true,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 5
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 6
+      }
+    ]
+  },
+  "sword-pulse": {
+    "snapshot": {
+      "checkpoints": [],
+      "final": {
+        "state": {
+          "hp": 3,
+          "edge": 3,
+          "focus": 1,
+          "score": 300,
+          "chain": 2,
+          "kills": 2,
+          "shots": 0,
+          "blade": 11.57857142857143,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "throughcuts": 0,
+          "floorKicks": 0,
+          "floorIgnore": 0
+        },
+        "world": {
+          "clock": 2.4214285714285713,
+          "position": {
+            "x": -350,
+            "y": -98.52366709183673
+          },
+          "velocity": {
+            "x": 0,
+            "y": 0.9080357142857148
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          },
+          {
+            "id": "plate",
+            "kind": "bastion",
+            "hp": 6,
+            "lastSlash": 0
+          }
+        ],
+        "stroke": null,
+        "swordFx": [
+          {
+            "kind": "pulse",
+            "fired": true,
+            "delay": 0,
+            "life": 12.57857142857143,
+            "hits": [
+              "plate",
+              "lane-second"
+            ]
+          },
+          {
+            "kind": "pulse",
+            "fired": true,
+            "delay": 0,
+            "life": 12.57857142857143,
+            "hits": [
+              "plate",
+              "lane-cap-excluded"
+            ]
+          }
+        ],
+        "equipmentFx": {
+          "echoes": 0,
+          "projectiles": 0,
+          "bursts": 2
+        }
+      },
+      "threw": false,
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "armor",
+          "entityId": "plate",
+          "x": -400,
+          "y": -350,
+          "r": 41,
+          "cut": -0.65,
+          "hp": 7,
+          "hpBefore": 8,
+          "kind": "bastion",
+          "speed": 0.375,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "armorRemoved": 1,
+          "secondary": true
+        },
+        {
+          "type": "swordHit",
+          "x": -400,
+          "y": -350,
+          "kind": "pulse"
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "lane-second",
+          "x": -360,
+          "y": -350,
+          "angle": 0.7713145875745882,
+          "r": 33,
+          "kind": "fang",
+          "cut": -0.65,
+          "hpBefore": 1,
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 100,
+          "points": 100,
+          "chain": 1,
+          "speed": 0.375,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "swordHit",
+          "x": -360,
+          "y": -350,
+          "kind": "pulse"
+        },
+        {
+          "type": "armor",
+          "entityId": "plate",
+          "x": -400,
+          "y": -350,
+          "r": 41,
+          "cut": -0.65,
+          "hp": 6,
+          "hpBefore": 7,
+          "kind": "bastion",
+          "speed": 0.375,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "armorRemoved": 1,
+          "secondary": true
+        },
+        {
+          "type": "swordHit",
+          "x": -400,
+          "y": -350,
+          "kind": "pulse"
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.8,
+          "gained": 0.8,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "lane-cap-excluded",
+          "x": -320,
+          "y": -350,
+          "angle": 0.8301443948520639,
+          "r": 33,
+          "kind": "fang",
+          "cut": -0.65,
+          "hpBefore": 1,
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 200,
+          "points": 200,
+          "chain": 2,
+          "speed": 0.375,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "swordHit",
+          "x": -320,
+          "y": -350,
+          "kind": "pulse"
+        },
+        {
+          "type": "storyMoment",
+          "id": "hold-the-wave",
+          "chip": "LET IT PASS.",
+          "mechanic": "pulse",
+          "lesson": "Dodge the expanding rim; the space behind it is safe.",
+          "consequence": "The Watcher holds the wave so the Cutter can pass.",
+          "chapter": "seal",
+          "emotion": "friendship",
+          "wave": 1,
+          "targetId": "wave/1/1",
+          "targetX": 179.98116269670427,
+          "targetY": -259.5315527519677,
+          "targetR": 32,
+          "age": 0,
+          "number": 1
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 1,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "plate",
+          "kind": "bastion",
+          "targetHp": 8,
+          "fromShear": true,
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 1,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "lane-second",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 1
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 1,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 7,
+          "entityId": "plate",
+          "kind": "bastion",
+          "targetHp": 7,
+          "fromShear": true,
+          "sequence": 2
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 1,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 7,
+          "entityId": "lane-cap-excluded",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 3
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "sword-pulse",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 1,
+        "worldClock": 1,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "sword-pulse",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "plate",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 1,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": true,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 8,
+        "targetHpAfter": 7,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "sword-pulse",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-2",
+        "parentEventId": null,
+        "targetKey": "run-1/target-2",
+        "targetId": "lane-second",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 1,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": true,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 2
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "sword-pulse",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 1,
+        "worldClock": 1,
+        "sequence": 3
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "sword-pulse",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-3",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "plate",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 1,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": true,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 7,
+        "targetHpAfter": 6,
+        "scope": "target-only",
+        "sequence": 4
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "sword-pulse",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-4",
+        "parentEventId": null,
+        "targetKey": "run-1/target-3",
+        "targetId": "lane-cap-excluded",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 1,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": true,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 5
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 6
+      }
+    ]
+  },
+  "sword-unknown": {
+    "snapshot": {
+      "checkpoints": [],
+      "final": {
+        "state": {
+          "hp": 3,
+          "edge": 3,
+          "focus": 1,
+          "score": 300,
+          "chain": 2,
+          "kills": 2,
+          "shots": 0,
+          "blade": 11.57857142857143,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "throughcuts": 0,
+          "floorKicks": 0,
+          "floorIgnore": 0
+        },
+        "world": {
+          "clock": 2.4214285714285713,
+          "position": {
+            "x": -350,
+            "y": -98.52366709183673
+          },
+          "velocity": {
+            "x": 0,
+            "y": 0.9080357142857148
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          },
+          {
+            "id": "plate",
+            "kind": "bastion",
+            "hp": 6,
+            "lastSlash": 0
+          }
+        ],
+        "stroke": null,
+        "swordFx": [
+          {
+            "kind": "restored-legacy",
+            "fired": true,
+            "delay": 0,
+            "life": 12.57857142857143,
+            "hits": [
+              "plate",
+              "lane-second"
+            ]
+          },
+          {
+            "kind": "restored-legacy",
+            "fired": true,
+            "delay": 0,
+            "life": 12.57857142857143,
+            "hits": [
+              "plate",
+              "lane-cap-excluded"
+            ]
+          }
+        ],
+        "equipmentFx": {
+          "echoes": 0,
+          "projectiles": 0,
+          "bursts": 2
+        }
+      },
+      "threw": false,
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "armor",
+          "entityId": "plate",
+          "x": -400,
+          "y": -350,
+          "r": 41,
+          "cut": -0.65,
+          "hp": 7,
+          "hpBefore": 8,
+          "kind": "bastion",
+          "speed": 0.375,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "armorRemoved": 1,
+          "secondary": true
+        },
+        {
+          "type": "swordHit",
+          "x": -400,
+          "y": -350,
+          "kind": "restored-legacy"
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "lane-second",
+          "x": -360,
+          "y": -350,
+          "angle": 0.7713145875745882,
+          "r": 33,
+          "kind": "fang",
+          "cut": -0.65,
+          "hpBefore": 1,
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 100,
+          "points": 100,
+          "chain": 1,
+          "speed": 0.375,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "swordHit",
+          "x": -360,
+          "y": -350,
+          "kind": "restored-legacy"
+        },
+        {
+          "type": "armor",
+          "entityId": "plate",
+          "x": -400,
+          "y": -350,
+          "r": 41,
+          "cut": -0.65,
+          "hp": 6,
+          "hpBefore": 7,
+          "kind": "bastion",
+          "speed": 0.375,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "armorRemoved": 1,
+          "secondary": true
+        },
+        {
+          "type": "swordHit",
+          "x": -400,
+          "y": -350,
+          "kind": "restored-legacy"
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.8,
+          "gained": 0.8,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "lane-cap-excluded",
+          "x": -320,
+          "y": -350,
+          "angle": 0.8301443948520639,
+          "r": 33,
+          "kind": "fang",
+          "cut": -0.65,
+          "hpBefore": 1,
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 200,
+          "points": 200,
+          "chain": 2,
+          "speed": 0.375,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "swordHit",
+          "x": -320,
+          "y": -350,
+          "kind": "restored-legacy"
+        },
+        {
+          "type": "storyMoment",
+          "id": "hold-the-wave",
+          "chip": "LET IT PASS.",
+          "mechanic": "pulse",
+          "lesson": "Dodge the expanding rim; the space behind it is safe.",
+          "consequence": "The Watcher holds the wave so the Cutter can pass.",
+          "chapter": "seal",
+          "emotion": "friendship",
+          "wave": 1,
+          "targetId": "wave/1/1",
+          "targetX": 179.98116269670427,
+          "targetY": -259.5315527519677,
+          "targetR": 32,
+          "age": 0,
+          "number": 1
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 1,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "plate",
+          "kind": "bastion",
+          "targetHp": 8,
+          "fromShear": true,
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 1,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "lane-second",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 1
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 1,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 7,
+          "entityId": "plate",
+          "kind": "bastion",
+          "targetHp": 7,
+          "fromShear": true,
+          "sequence": 2
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 1,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 7,
+          "entityId": "lane-cap-excluded",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 3
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "unknown-sword",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 1,
+        "worldClock": 1,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "unknown-sword",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "plate",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 1,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": true,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 8,
+        "targetHpAfter": 7,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "unknown-sword",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-2",
+        "parentEventId": null,
+        "targetKey": "run-1/target-2",
+        "targetId": "lane-second",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 1,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": true,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 2
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "unknown-sword",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 1,
+        "worldClock": 1,
+        "sequence": 3
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "unknown-sword",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-3",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "plate",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 1,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": true,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 7,
+        "targetHpAfter": 6,
+        "scope": "target-only",
+        "sequence": 4
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "unknown-sword",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-4",
+        "parentEventId": null,
+        "targetKey": "run-1/target-3",
+        "targetId": "lane-cap-excluded",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 1,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": true,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 5
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 6
+      }
+    ]
+  },
+  "sword-not-due": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "hp": 3,
+            "edge": 3,
+            "focus": 1,
+            "score": 100,
+            "chain": 1,
+            "kills": 1,
+            "shots": 0,
+            "blade": 4.578571428571428,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "throughcuts": 0,
+            "floorKicks": 0,
+            "floorIgnore": 0
+          },
+          "world": {
+            "clock": 4.421428571428572,
+            "position": {
+              "x": -350,
+              "y": -95.58259566326531
+            },
+            "velocity": {
+              "x": 0,
+              "y": 1.6580357142857138
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "kind": "fang",
+              "hp": 1,
+              "lastSlash": -1
+            },
+            {
+              "id": "plate",
+              "kind": "bastion",
+              "hp": 7,
+              "lastSlash": 0
+            },
+            {
+              "id": "lane-cap-excluded",
+              "kind": "fang",
+              "hp": 1,
+              "lastSlash": -1
+            }
+          ],
+          "stroke": null,
+          "swordFx": [
+            {
+              "kind": "echo",
+              "fired": true,
+              "delay": 0,
+              "life": 12.57857142857143,
+              "hits": [
+                "plate",
+                "lane-second"
+              ]
+            }
+          ],
+          "equipmentFx": {
+            "echoes": 0,
+            "projectiles": 0,
+            "bursts": 1
+          }
+        },
+        {
+          "state": {
+            "hp": 3,
+            "edge": 3,
+            "focus": 1,
+            "score": 100,
+            "chain": 1,
+            "kills": 1,
+            "shots": 0,
+            "blade": 3.8357142857142854,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "throughcuts": 0,
+            "floorKicks": 0,
+            "floorIgnore": 0
+          },
+          "world": {
+            "clock": 5.164285714285715,
+            "position": {
+              "x": -350,
+              "y": -94.14397321428572
+            },
+            "velocity": {
+              "x": 0,
+              "y": 1.9366071428571359
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "kind": "fang",
+              "hp": 1,
+              "lastSlash": -1
+            },
+            {
+              "id": "plate",
+              "kind": "bastion",
+              "hp": 7,
+              "lastSlash": 0
+            },
+            {
+              "id": "lane-cap-excluded",
+              "kind": "fang",
+              "hp": 1,
+              "lastSlash": -1
+            }
+          ],
+          "stroke": null,
+          "swordFx": [
+            {
+              "kind": "echo",
+              "fired": true,
+              "delay": 0,
+              "life": 11.835714285714285,
+              "hits": [
+                "plate",
+                "lane-second"
+              ]
+            }
+          ],
+          "equipmentFx": {
+            "echoes": 0,
+            "projectiles": 0,
+            "bursts": 1
+          }
+        }
+      ],
+      "final": {
+        "state": {
+          "hp": 3,
+          "edge": 3,
+          "focus": 1,
+          "score": 100,
+          "chain": 1,
+          "kills": 1,
+          "shots": 0,
+          "blade": 2.2857142857142856,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "throughcuts": 0,
+          "floorKicks": 0,
+          "floorIgnore": 0
+        },
+        "world": {
+          "clock": 6.714285714285714,
+          "position": {
+            "x": -350,
+            "y": -90.46648596938778
+          },
+          "velocity": {
+            "x": 0,
+            "y": 2.517857142857131
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          },
+          {
+            "id": "plate",
+            "kind": "bastion",
+            "hp": 7,
+            "lastSlash": 0
+          },
+          {
+            "id": "lane-cap-excluded",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          }
+        ],
+        "stroke": null,
+        "swordFx": [
+          {
+            "kind": "echo",
+            "fired": true,
+            "delay": 0,
+            "life": 10.285714285714285,
+            "hits": [
+              "plate",
+              "lane-second"
+            ]
+          }
+        ],
+        "equipmentFx": {
+          "echoes": 0,
+          "projectiles": 0,
+          "bursts": 1
+        }
+      },
+      "threw": false,
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "storyMoment",
+          "id": "hold-the-wave",
+          "chip": "LET IT PASS.",
+          "mechanic": "pulse",
+          "lesson": "Dodge the expanding rim; the space behind it is safe.",
+          "consequence": "The Watcher holds the wave so the Cutter can pass.",
+          "chapter": "seal",
+          "emotion": "friendship",
+          "wave": 1,
+          "targetId": "wave/1/1",
+          "targetX": 179.98116269670427,
+          "targetY": -259.5315527519677,
+          "targetR": 32,
+          "age": 0,
+          "number": 1
+        },
+        {
+          "type": "armor",
+          "entityId": "plate",
+          "x": -400,
+          "y": -350,
+          "r": 41,
+          "cut": -0.65,
+          "hp": 7,
+          "hpBefore": 8,
+          "kind": "bastion",
+          "speed": 1.125,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "armorRemoved": 1,
+          "secondary": true
+        },
+        {
+          "type": "swordHit",
+          "x": -400,
+          "y": -350,
+          "kind": "echo"
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "lane-second",
+          "x": -360,
+          "y": -350,
+          "angle": 0.7713145875745882,
+          "r": 33,
+          "kind": "fang",
+          "cut": -0.65,
+          "hpBefore": 1,
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 100,
+          "points": 100,
+          "chain": 1,
+          "speed": 1.125,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "swordHit",
+          "x": -360,
+          "y": -350,
+          "kind": "echo"
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "cut-contact",
+          "tick": 3,
+          "worldClock": 3,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "plate",
+          "kind": "bastion",
+          "targetHp": 8,
+          "fromShear": true,
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 3,
+          "worldClock": 3,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "lane-second",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 1
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "sword-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 3,
+        "worldClock": 3,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "sword-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "plate",
+        "targetKind": "bastion",
+        "tick": 3,
+        "worldClock": 3,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": true,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 8,
+        "targetHpAfter": 7,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "sword-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-2",
+        "parentEventId": null,
+        "targetKey": "run-1/target-2",
+        "targetId": "lane-second",
+        "targetKind": "fang",
+        "tick": 3,
+        "worldClock": 3,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": true,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 2
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 3
+      }
+    ]
+  },
+  "coil-exception": {
+    "snapshot": {
+      "checkpoints": [],
+      "final": {
+        "state": {
+          "hp": 3,
+          "edge": 2,
+          "focus": 1,
+          "score": 0,
+          "chain": 0,
+          "kills": 0,
+          "shots": 1,
+          "blade": 24.57142857142857,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "throughcuts": 0,
+          "floorKicks": 0,
+          "floorIgnore": 0
+        },
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 24,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "kind": "fang",
+            "hp": 1,
+            "lastSlash": -1
+          },
+          {
+            "id": "parent",
+            "kind": "bastion",
+            "hp": 5,
+            "lastSlash": 1
+          },
+          {
+            "id": "relay",
+            "kind": "bastion",
+            "hp": 5,
+            "lastSlash": 1
+          }
+        ],
+        "stroke": {
+          "contacts": 0,
+          "primaries": 0,
+          "kills": 0,
+          "released": false,
+          "points": 0
+        },
+        "swordFx": [],
+        "equipmentFx": {
+          "echoes": 0,
+          "projectiles": 0,
+          "bursts": 1
+        }
+      },
+      "threw": true,
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "tier",
+          "id": "cruise",
+          "label": "CRUISE",
+          "multiplier": 2,
+          "speed": 24
+        },
+        {
+          "type": "armor",
+          "entityId": "relay",
+          "x": -180,
+          "y": -100,
+          "r": 41,
+          "cut": 0,
+          "hp": 5,
+          "hpBefore": 6,
+          "kind": "bastion",
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "armorRemoved": 1,
+          "secondary": true
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "contact-batch",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "attacking": true,
+          "entities": "parent",
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "parent",
+          "kind": "bastion",
+          "targetHp": 6,
+          "fromShear": false,
+          "sequence": 1
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "relay",
+          "kind": "bastion",
+          "targetHp": 6,
+          "fromShear": true,
+          "sequence": 2
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 0,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "coil-relay",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 1
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "coil-relay",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "eventId": "run-1/contact-2",
+        "parentEventId": "run-1/contact-1",
+        "targetKey": "run-1/target-2",
+        "targetId": "relay",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "exception",
+        "targetHpBefore": 6,
+        "targetHpAfter": 5,
+        "scope": "target-only",
+        "sequence": 2
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "parent",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "exception",
+        "targetHpBefore": 6,
+        "targetHpAfter": 5,
+        "scope": "target-only",
+        "sequence": 3
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 4
+      }
+    ]
+  }
+}

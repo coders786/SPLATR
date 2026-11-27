@@ -1,4 +1,4 @@
-import {HYBRIDS} from './hybrids.js';
+import {HYBRIDS,activeHybrid} from './hybrids.js';
 
 /** Authoritative, immutable styles. No luck, targeting correction or save writes.
  * Width multiplies the existing forward sensor; reach is measured from cube centre.
@@ -48,8 +48,9 @@ function describeStyle(style){
 }
 export const SWORD_BUILDS=Object.freeze(HYBRIDS.map(h=>Object.freeze({id:h.id,title:h.title,parts:h.parts,color:h.color,style:assignments[h.id][0],tier:assignments[h.id][1]})));
 export function swordProfile(equipment={}){
- // More specific recipes win; catalogue order resolves equal-length overlaps.
- const build=SWORD_BUILDS.filter(b=>Object.entries(b.parts).every(([k,v])=>equipment[k]===v)).sort((a,b)=>Object.keys(b.parts).length-Object.keys(a.parts).length)[0];
+ // Art, hints and combat share selection; sword tuning stays in this module.
+ const selected=activeHybrid(equipment);
+ const build=selected?SWORD_BUILDS.find(b=>b.id===selected.id):null;
  const style=build?describeStyle({...SWORD_STYLES[build.style],...variants[build.id]}):SWORD_STYLES.standard;
  return Object.freeze({...style,build:build?.id||null,buildTitle:build?.title||'MIXED LOADOUT',tier:build?.tier||'standard',color:build?.color||style.color});
 }

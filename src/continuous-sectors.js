@@ -10,10 +10,23 @@ import {upgradeOffers} from './upgrades.js';
 import {recommendWaveOffer} from './encounters.js';
 import {gainFracture,FRACTURE_PER_WAVE_CLEAR} from './fracture.js';
 import {LANDLORD_STORY,storyForWave,storyMomentForWave} from './story-arc.js';
+// CHUNK 3: the landlord's cadence and the live bonus goal are rules, not
+// director trivia — see flow.js for why each one is shaped the way it is.
+import {landlordDue,goalFor,goalProgress,goalPayout} from './flow.js';
+// CHUNK 4: the post — the run-length upgrade catalogue, granted on a clear
+// with no chooser. See post.js for why it is a grant and not a draft.
+import {postDue,choosePost,postLine} from './post.js';
 
 // The targets are Matter sensor shapes queried by the same forward blade ray
 // used for enemies. They are not proximity-triggered or timed objectives.
-export function createContinuousDirector({seed,world,combat,state,emit=()=>{},intro=false,catalogRewards=false,onUpgrade=null}) {
+// CHUNK 4: `catalogRewards` and `postRewards` are DIFFERENT things and must not
+// share a flag:
+//   catalogRewards — the rest chooser. Continuous play keeps this OFF; that is
+//                    the earlier decision recorded in waves.js, and turning it
+//                    on here would stop the field at every clear (verified: the
+//                    run parked in `phase:'choose'` with no picker on screen).
+//   postRewards    — one auto-picked card per clear, no UI, no stop.
+export function createContinuousDirector({seed,world,combat,state,emit=()=>{},intro=false,catalogRewards=false,postRewards=false,onUpgrade=null}) {
  const cells=new Map(), arena=world.arena, rules=equipmentRules(state.equipment);
  // CHUNK 1: the lift used to be the literal 1250 (the old arena top). Derive it
  // from the live arena so the 1.3x arena keeps spawn clearance honest. Captured
@@ -64,10 +77,72 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
   state.dimension=createDimensionField(wave.number-1);state.breakthrough=createBreakthrough(wave.number-1);
   wave.pace=createSpeedPace(wave.number);wave.cleanBanks=createCleanBanks();
   wave.startDamage=state.damageTaken||0;wave.startScore=state.score||0;wave.startCredits=state.killLedger?.credits||0;
-  emit('waveStart',{number:wave.number,total:wave.total});
+  // CHUNK 3: the goal's "since this sector started" baseline. Taken from the
+  // live counters, not assumed to be zero, because banks and crown kills are
+  // run-scoped totals that a previous sector already moved.
+  wave.startKills=state.kills||0;
+  wave.startBanks=wave.cleanBanks.total||0;
+  wave.startCrowns=state.killLedger?.rows?.crown?.kills||0;
+  wave.startTicks=wave.age||0;
+  wave.firstKillTick=-1;
+  // CHUNK 4: per-sector notification markers for the wave-mode events this
+  // director now publishes (pace hold, clean bank). Reset with the baselines.
+  wave.paceNotified=false;
+  wave.bankNotified=wave.cleanBanks.total||0;
+  // CHUNK 3: ONE LIVE BONUS GOAL PER SECTOR. Chosen from what the field can
+  // actually serve (no Crown, no crown goal) and never the same goal twice in a
+  // row. It is announced with the sector so the player can play toward it from
+  // the first cut rather than discovering it at the payout.
+  wave.goal=goalFor({number:wave.number,seed,hasCrown:[...combat.enemies.values()].some(e=>e.kind==='crown')});
+  wave.goalPaid=null;
+  emit('waveStart',{number:wave.number,total:wave.total,goal:wave.goal.id});
  }
  function startSector(){install();encounter();}
+ // CHUNK 3: the live goal's counters. Everything here already existed per
+ // sector (kills, banks, crowns); the goal is the first thing to READ them
+ // mid-fight instead of only at the receipt.
+ function goalMetrics(){
+  return {
+   kills:Math.max(0,(state.kills||0)-(wave.startKills||0)),
+   hits:Math.max(0,(state.damageTaken||0)-(wave.startDamage||0)),
+   banks:Math.max(0,(wave.cleanBanks?.total||0)-(wave.startBanks||0)),
+   crowns:Math.max(0,(state.killLedger?.rows?.crown?.kills||0)-(wave.startCrowns||0)),
+   paceHeld:!!wave.pace?.held,
+   overdrive:(state.overdriveBest||0)>0,
+   firstKillTicks:Number.isFinite(wave.firstKillTick)?wave.firstKillTick-wave.startTicks:-1,
+   ticks:Math.max(0,(wave.age||0)-(wave.startTicks||0)),
+  };
+ }
+ // Read by the HUD every frame: {goal, fraction, met, text}. Cheap and
+ // side-effect free so the presentation layer can call it as often as it likes.
+ function goalReadout(){
+  const m=goalMetrics(),p=goalProgress(wave.goal,m);
+  return {goal:wave.goal,fraction:p.fraction,met:p.met,value:p.value,target:p.target,line:p.met?`${wave.goal.label} ✓`:wave.goal.line};
+ }
+ // Pays the goal exactly once, at the clear boundary, beside the flawless and
+ // crown-pace payments rather than as a separate ceremony. Practice runs keep
+ // their habit of banking nothing.
+ function settleGoal(){
+  if(state.practice||!wave.goal||wave.goalPaid)return null;
+  const paid=goalPayout(wave.goal,goalMetrics());
+  wave.goalPaid=paid?paid.id:false;
+  if(!paid)return null;
+  gainFracture(state,paid.fracture,emit);
+  // The credit row goes through the same ledger shape every kill uses, so the
+  // receipt that itemises a run cannot be missing the one payment that was not
+  // a kill.
+  if(state.killLedger&&Number.isFinite(paid.credits)&&paid.credits>0){
+   const rows={...state.killLedger.rows},old=rows.goal||{kills:0,credits:0,points:0};
+   state.killLedger={...state.killLedger,credits:Math.min(10000,(state.killLedger.credits||0)+paid.credits),rows:{...rows,goal:{kills:old.kills,credits:old.credits+paid.credits,points:old.points}}};
+  }
+  if(Number.isFinite(paid.credits))state.score=(state.score||0)+paid.credits*25;
+  emit('goalPaid',{...paid,sector:wave.number});
+  return paid;
+ }
  function settleSectorReward(){
+  // The goal is settled even in practice (where it is a no-op) so the flag is
+  // set and a later real clear cannot re-pay the same sector's goal.
+  settleGoal();
   if(state.practice)return;
   const mods=state.upgradeModifiers||{},hits=Math.max(0,(state.damageTaken||0)-(wave.startDamage||0)),score=Math.max(0,(state.score||0)-(wave.startScore||0));
   if(hits===0){
@@ -84,6 +159,53 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
   }
   gainFracture(state,FRACTURE_PER_WAVE_CLEAR+(mods.fractureClear||0),emit);
   state.waveMult=(state.waveMult||0)+1;
+  admitPost();
+  // CHUNK 4: the sector's outcome, for the next sector's fit ranker. Until now
+  // `recommendWaveOffer` received `previous: wave.report` and `wave.report` was
+  // never built in this mode — the ranker was scoring every card as a blind
+  // guess. Same shape as waves.js's report, so one recommender serves both.
+  wave.report=Object.freeze({
+   ticks:Math.max(0,(wave.age||0)-(wave.startTicks||0)),
+   cuts:(state.kills||0)-(wave.startKills||0),
+   shots:0,
+   score:Math.max(0,(state.score||0)-(wave.startScore||0)),
+   hits:(state.damageTaken||0)-(wave.startDamage||0),
+   paceBest:wave.pace?.best||0,
+   paceHeld:!!wave.pace?.held,
+   paceTarget:wave.pace?.target||0,
+   cleanBanks:wave.cleanBanks?.total||0,
+   bestBanks:wave.cleanBanks?.best||0,
+   credits:(state.killLedger?.credits||0)-(wave.startCredits||0),
+   goal:wave.goal?.id||null,
+   goalMet:!!wave.goalPaid,
+   shattered:!!state.shatters,
+  });
+ }
+ // CHUNK 4: THE POST. One run-length card per clear, chosen by the fit ranker
+ // that already existed but had no way to be reached. No picker, no pause: the
+ // card arrives, the run continues, and the HUD prints what it was and why.
+ //
+ // Guarded by `postFor` (the sector it was mailed for) rather than a boolean, so
+ // a clear that somehow runs twice cannot mail two cards and a later sector is
+ // never denied one.
+ function admitPost(){
+  const sector=wave.number;
+  if(state.practice||!postRewards||!postDue(sector)||wave.postFor===sector)return null;
+  // The card arrives carrying the sector it came from; that marker is what
+  // makes the grant idempotent without a second flag to keep in sync.
+  const owned=(state.upgrades||[]).map(x=>x.id);
+  const offers=upgradeOffers(seed,sector,{shattered:(state.shatters|0)>0||state.arenaMode==='SHATTERED',owned});
+  const pick=choosePost(offers,{next:wave.brief,sword:state.sword,hp:state.hp,previous:wave.report});
+  if(!pick)return null;
+  const card=offers.find(x=>x.id===pick.id);
+  // Mark the sector only AFTER the grant lands: a refused card (already owned,
+  // or no upgrade sink) must not burn this sector's post.
+  if(!onUpgrade||!onUpgrade(card))return null;
+  wave.postFor=sector;
+  const post={...pick,sector,name:card.title||pick.name,at:state.elapsed||0};
+  state.post=post;
+  emit('postPaid',{...post,line:postLine(post)});
+  return post;
  }
  function rewardDimensionBreak(){
   if(state.practice)return;
@@ -143,6 +265,9 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
    story.lockBursts=story.lockBursts.filter(burst=>burst.age<30);
   }
   wave.age+=t;wave.remaining=combat.enemies.size;
+  // CHUNK 3: a speed goal needs a timestamp, and the director is the only
+  // place that knows when the sector's clock started.
+  if(wave.firstKillTick<0&&(state.kills||0)>(wave.startKills||0))wave.firstKillTick=wave.age;
   const storyActive=active&&wave.entry<=0&&!state.stop&&!state.cutscene;
   // The first real Pulse is the only authored mid-wave set piece. The guard is
   // run-scoped, not wave-scoped, so a later sector cannot replay it.
@@ -160,6 +285,11 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
    const finished=wave.number;state.shatters++;wave.cleared++;state.band=++wave.number;story.sector=wave.number;
    story.reaction=finished<=3?{kind:finished===1?'smug':finished===2?'alarm':'split',age:0}:null;
    emit('dimensionBreak',{x:p.x,y:p.y,cycle:finished-1});emit('sector',{band:wave.number,name:`SECTOR ${wave.number}`});
+   // CHUNK 4: continuous mode never emitted `waveClear`, so the 'CLEAR A WAVE'
+   // lesson (and anything else listening for the wave-mode clear) could never
+   // fire in the shipped mode. The sector seal breaking IS this mode's clear;
+   // it says so now. The goal is already settled above, and it is idempotent.
+   emit('waveClear',{number:finished,sector:finished,continuous:true,shattered:!!state.shatters});
    // CHUNK 6B: longer sector lifts — each corridor rises 1000px, and
    // the landlord fight happens on its own floor.
    arena.y-=1000;story.conduits=3;state.edge=state.edgeMax;state.focus=1;state.invul=Math.max(state.invul,45);
@@ -172,6 +302,20 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
   const speed=Math.hypot(world.player.velocity.x,world.player.velocity.y);
   wave.pace=stepSpeedPace(wave.pace,{speed:Math.min(speed,(state.moved||0)/Math.max(.001,t)),dt:t,holding:!!state.held,active:directorActive});
   state.bestPace=Math.max(state.bestPace||0,wave.pace.best);
+  // CHUNK 4: `paceHeld` was a wave-mode-only event, so the 'HOLD YOUR PACE'
+  // lesson could never be earned in the shipped mode even though the run was
+  // measuring the same thing every tick. Once per sector, on the first hold.
+  if(directorActive&&wave.pace.held&&!wave.paceNotified){wave.paceNotified=true;emit('paceHeld',{number:wave.number,sector:wave.number,continuous:true});}
+  // CHUNK 4: same for a clean bank. run.js emits `cleanBank` from the physics
+  // path in wave mode; the continuous director does not run that path, so it
+  // watches the bank total instead. One event per bank, never a per-tick stream.
+  {
+   const banks=wave.cleanBanks?.total||0;
+   if(directorActive&&banks>wave.bankNotified){
+    wave.bankNotified=banks;
+    emit('cleanBank',{number:wave.number,sector:wave.number,total:banks,continuous:true});
+   }
+  }
   state.breakthrough=stepBreakthrough(state.breakthrough,{dt:t,active:directorActive,paceHeld:wave.pace.held,atPace:wave.pace.speed>=wave.pace.target,holding:!!state.held});
   if(directorActive&&state.blade>0){
    const a=state.slashAngle||0,mods=state.upgradeModifiers||{},reach=(state.reach||1)*(state.sword?.reach||1)*(mods.reach||1),span=82.8*reach,width=21.85*reach*horizontalCutWidth(a,rules)*(state.sword?.width||1)*(mods.width||1);
@@ -191,7 +335,15 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
     }
     const seal=story.seal;seal.ready=targets.every(x=>x.broken);if(seal.ready&&sealBody)removeSeal();
     // CHUNK 4: a torn arena does not let the seam open. The Monolith answers.
-    if(seal.ready&&state.arenaMode==='SHATTERED'&&!state.monolith){
+    // CHUNK 3: and it answers on ITS OWN cadence, not only when the world has
+    // already torn. The old rule required `arenaMode==='SHATTERED'`, which tied
+    // the boss to a different system's progress bar — a player who never filled
+    // the fracture never met the landlord at all, and the fight the game is
+    // built around could be missed entirely in a short session. `landlordDue`
+    // raises it on sectors 3, 7, 11… regardless; a torn arena still brings it
+    // early, which is the one thing a tear is for.
+    const landlord = landlordDue(wave.number) || state.arenaMode==='SHATTERED';
+    if(seal.ready&&landlord&&!state.monolith){
     // Ordinary enemies still on the field are swept when the Monolith seats;
     // the seam is not for them.
     for(const e of [...combat.enemies.values()])combat.remove(e);combat.hazards.length=0;combat.links.length=0;
@@ -216,6 +368,9 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
       const finished=wave.number;state.shatters++;wave.cleared++;state.band=++wave.number;story.sector=wave.number;
       story.reaction=finished<=3?{kind:finished===1?'smug':finished===2?'alarm':'split',age:0}:null;
       emit('dimensionBreak',{x:p.x,y:seal.y,cycle:finished-1});emit('sector',{band:wave.number,name:`SECTOR ${wave.number}`});
+      // CHUNK 4: same clear, other door — the crossing path must announce it too
+      // or the lesson depends on which route the player took.
+      emit('waveClear',{number:finished,sector:finished,continuous:true,shattered:!!state.shatters});
       for(const e of [...combat.enemies.values()])combat.remove(e);combat.hazards.length=0;combat.links.length=0;
       // CHUNK 6B: longer sector lifts — each corridor rises 1000px, and
    // the landlord fight happens on its own floor.
@@ -227,5 +382,5 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
   }
   lastPosition={x:p.x,y:p.y};
  }
- return {tick,cells,choose,setPracticeLinks:()=>false,skipBreach:()=>false,dispose(){removeSeal();targets=[];cells.clear();}};
+ return {tick,cells,choose,goal:goalReadout,setPracticeLinks:()=>false,skipBreach:()=>false,dispose(){removeSeal();targets=[];cells.clear();}};
 }

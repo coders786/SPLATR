@@ -1,0 +1,44 @@
+/** Authoritative perks for previously visual-only parts. No rendering or RNG.
+ * Bonuses stack additively, with hard caps; no free hits or recursive procs. */
+const perk = (stat, value, title, chip, trigger, detail) => Object.freeze({stat,value,title,chip,trigger,detail});
+const blade = (n) => perk('blade',n,'BLADE EXTENSION',`BLADE +${n} TICKS`,'EVERY DASH',`Adds ${n} simulation ticks to the active launch blade.`);
+const grace = (n) => perk('grace',n,'CHAIN GRACE',`CHAIN +${n} TICKS`,'AFTER A KILL',`Adds ${n} simulation ticks to the chain expiry window after a kill.`);
+const focus = (n) => perk('focus',n,'FOCUS EFFICIENCY',`AIM COST −${n}%`,'WHILE AIMING',`Aiming consumes ${n}% less FOCUS. Does not slow physics further.`);
+const recovery = (n) => perk('recovery',n,'FOCUS RETURN',`RECOVERY +${n}%`,'NOT AIMING',`Passive FOCUS recovery is ${n}% faster when not aiming.`);
+const score = (n, when, trigger) => perk(`score:${when}`,n,'PRECISION BOUNTY',`SCORE +${n}%`,trigger,`Earn ${n}% more kill score ${trigger.toLowerCase()}. All equipment score perks together cap at +25%.`);
+export const PART_PERKS = Object.freeze({
+  neko: grace(12), visor: focus(10), blaze: perk('ignition',1,'IGNITION RESERVE','+1 EDGE / CAP KEPT','REAL OVERDRIVE ENTRY','On real Overdrive entry return one EDGE after the ordinary kill refund, clamped to the current maximum. Full cap consumes it; no queued refund or timer extension. Replaces the old +8% Drive score.'),
+  obsidian: score(8,'air','WHILE AIRBORNE'), hologram: perk('phase',4,'PRECISION PHASE','1 NEEDLE / FIRST 4 TICKS','LEGAL LAUNCH / READY','During the first 4 world ticks of a legal launch, phase through one Prism or Crown needle, then recharge for 120 world ticks. The needle continues. No beam, ring, zone, enemy, boss or wall immunity; no aim-cost discount.'),
+  katana: blade(2), laser: blade(3),
+  tokyo: score(8,'fast','AT SPEED 18+'), foundry: score(12,'armor','VS ARMORED FOES'),
+  glitch: recovery(12), smug: grace(12), hypno: perk('daze',12,'LOCAL DAZE','HOLD 18 / DAZE 12','ONE IDLE FANG / HOLD','After 18 continuous aim ticks of usable focus, defer one idle Fang’s new attack for 12 world ticks within 140 and clear static sight. Movement, existing tells, rushes and projectiles continue. Target immunity 90 ticks from acceptance. Walls and bosses resist; no aim-cost discount.'), sniper: perk('puncture',1,'PRECISION PUNCTURE','FIRST ARMOR +1 PLATE','RELEASE POWER 90%+','At 90% or greater released power, the first direct Crown or Bastion contact removes one extra plate. That shot has a 10% narrower corridor. Bosses and secondary hits do not consume it. No homing or score bonus; extra equipment plates share a +2 cap.'),
+  lava: grace(18), gold: score(10,'all','ON EVERY KILL'),
+  'viper-tails': perk('retention',15,'DIRECTIONAL RETENTION','KEEP 15% OF LOSS','LEGAL REDIRECTION','Retains 15% of ordinary steering speed loss on a legal relaunch: 85% retention becomes 87.25%, not +15% speed. No gain from rest or straight continuation; Hyper retention and the legal speed ceiling keep priority. Replaces the old speed-score bonus.'), spectrum: perk('sequence',3,'THREE-BAND REFILL','3 KILLS / +1 EDGE','PRIMARY KILLS / ONE CHAIN','Three primary kills in one chain return one EDGE, then start a 120-world-tick cooldown. Secondaries do not count. Chain break clears incomplete bands; full EDGE consumes the sequence without a queued refund. Replaces the old +12 chain ticks.'),
+  'glitch-fx': blade(2), confetti: score(12,'multi','ON MULTI-CUTS'), comic: grace(18), pixel: blade(2),
+  manga: score(10,'multi','ON MULTI-CUTS'), synth: recovery(15), void: score(15,'boss','VS LANDLORDS'),
+  chamfer: perk('recoil',20,'GLANCING RECOIL','ARMOR RECOIL −20%','PRIMARY ARMOR CONTACT','Reduces the primary armor shove component by 20%, without exceeding incoming speed or the legal ceiling. No extra blade time.'), notched: recovery(12), segmented: perk('spring',20,'COMPRESSION SPRING','STORE 20% / MAX 4','PRIMARY ARMOR LOSS','Stores 20% of actual forward momentum lost on the first primary armor shove per shot, up to 4 speed for 45 ticks. The next accepted launch returns it once, bounded by pre-impact speed and the legal ceiling. No extra chain grace.'),
+  'dash-ink': perk('width',12,'BRUSH CUTTER','CUT WIDTH +12%','EVERY DIRECT CUT','Widens the primary cutting corridor by 12%, within the shared +35% positive-width limit. Width gains compose before Viper/Sniper narrowing; temporary width stays separate. No extra blade time, repeated hits, speed, body size or persistent ink hazard.'), 'dash-fire': perk('ignite',2,'CONTACT IGNITION','2 DELAYED FIRE HITS','FIRST DIRECT CONTACT','The first eligible direct contact ignites its surviving target and up to two nonboss neighbors within 56 and clear static sight. Each takes one secondary damage at 18 and 36 world ticks. Active burns do not stack or refresh. Shot width is 10% narrower. No extra blade time, primary rewards, chain effects or boss damage from fire.'), 'dash-lightning': score(10,'fast','AT SPEED 18+'),
+  'dash-ice': perk('cold',18,'RIME BREAKER','FREEZE / HEAVY SLOW','FIRST DIRECT CONTACT','The first eligible direct contact chills its surviving victim and at most one nonboss neighbor within 60 and clear static sight. Fangs freeze movement and their own attack clocks for 18 world ticks. Other nonboss bodies move at 70% for 24 world ticks; their tells keep running. Actual thaw starts 90 world ticks of cold immunity. Active cold never stacks or refreshes. Bosses and protected teaching actors resist. Emitted hazards and rushing body contact remain dangerous. No extra damage, player physics change or aim-cost discount.'), 'dash-water': recovery(10), 'dash-void': perk('collapse',1,'COLLAPSE WELL','PULL / SMALL CORE HIT','FIRST DIRECT CONTACT / READY','The first eligible direct contact creates one 18-world-tick field at its fixed origin. Up to three nearest movable nonboss survivors within 110 and static sight are selected once. Each is pulled at most 32 total units with solids and post leash respected. Only those selected targets actually within the 28-unit core and static sight at expiry take one secondary armor/health unit. One live field; cooldown 36 from admission. No refresh, eviction, early payout, boss damage, projectile absorption, player phase, primary rewards or recursive procs. Replaces the old armor-score bonus.'), 'dash-echo': grace(12),
+  'pointer-diamond': blade(1), 'pointer-orbit': recovery(10), 'pointer-cross': focus(8),
+});
+export const BASE_PARTS = Object.freeze({
+  none: ['BALANCED HULL','3 BASE HEALTH'], ninja:['CLEAR SIGHT','STANDARD AIM'],
+  paper:['BALANCED HULL','3 BASE HEALTH'], ribbon:['STANDARD REBOUND','FULL BANK CONTROL'],
+  razor:['STANDARD BLADE','FULL BASE WINDOW'], twilight:['ARENA READ','STANDARD CONTRAST'],
+  'dash-auto':['ADAPTIVE DASH','FULL BASE SPEED'], 'pointer-reticle':['FIELD AIM','POWER READOUT'],
+});
+export function resolvePartPerks(equipment) {
+  const perks = Object.values(equipment).map(id => PART_PERKS[id]).filter(Boolean);
+  const sum = stat => perks.filter(p=>p.stat===stat).reduce((n,p)=>n+p.value,0);
+  return Object.freeze({
+    perkBlade: Math.min(8,sum('blade')),
+    chainGrace: Math.min(36,sum('grace')),
+    focusDrain: 1-Math.min(30,sum('focus'))/100,
+    focusRegen: 1+Math.min(40,sum('recovery'))/100,
+    scorePerks: Object.freeze(perks.filter(p=>p.stat.startsWith('score:'))),
+  });
+}
+export function perkScoreMultiplier(perks, {air=false,speed=0,power=0,drive=false,kind='',kills=0}={}) {
+  const active={all:true,air,fast:speed>=18,power:power>=.9,drive,armor:['bastion','crown','monolith'].includes(kind),boss:kind==='monolith',multi:kills>=1};
+  return 1+Math.min(25,perks.filter(p=>active[p.stat.slice(6)]).reduce((n,p)=>n+p.value,0))/100;
+}

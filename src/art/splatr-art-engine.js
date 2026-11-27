@@ -272,6 +272,28 @@ var cross = [
   [-1, -0.31],
   [-0.31, -0.31]
 ];
+// ── CHUNK 2: THE THREE-COLOUR LAW ────────────────────────────────────────
+// One vocabulary for the whole field, and three words in it:
+//
+//   SAFE    green  — you may cut this, with the blade you are holding NOW.
+//   LETHAL  rose   — this will hurt you. Wind-ups, live hazards, landed hits.
+//   REWARD  gold   — this pays you. Health, credits, a wave reward.
+//
+// The enemy body palette is deliberately free of the safe band (see
+// `ENEMY_HUES` in src/color-law.js and the test that re-reads these literals),
+// so green can only ever mean one thing. Nothing here is a new hue invented for
+// this pass: the greens are the acid the game already paints with, the red is
+// the hit line's own rose, and the gold is the pad's upgrade gold.
+var LAW = {
+  safe: "#ddff89",
+  safeCore: "#f4ffd0",
+  safeEdge: "#9dc94a",
+  lethal: "#ff2b4a",
+  lethalPale: "#ffd0d8",
+  reward: "#ffd166",
+  rewardCore: "#fff1c4",
+  rewardEdge: "#b47b18"
+};
 var INK = {
   void: "#100e19",
   black: "#16111e",
@@ -331,7 +353,9 @@ var TYPES = {
   bastion: species(
     "Bastion",
     "Shield",
-    "#ffba52",
+    // CHUNK 2: hot rust, not gold. A Bastion pays nothing when it breaks, and
+    // under the three-colour law gold is reserved for what DOES pay (see LAW).
+    "#ff6b3d",
     [[-0.85, -0.8], [0.85, -0.8], [0.92, 0.3], [0.5, 0.78], [0, 1], [-0.5, 0.78], [-0.92, 0.3]],
     41,
     300,
@@ -1051,12 +1075,72 @@ function drawHarmonyBindings(c,eq,t,p) {
     for(const side of [-1,1])panel(c,[[side*.65,.38],[side*.91,.32],[side*.91,.75],[side*.65,.82]],d.shadow,.028);
   }else if(eq.body==="notched"){
     for(const side of [-1,1])seam(c,[[side*.94,.39],[side*.76,.58],[side*.94,.78]],d.shadow,.05);
+    drawNotchedVents(c,eq,p);
   }
   // One material language across arbitrary mixes: head mounts and lower
   // tail socket carry the CORE trim, without recoloring the eye cuts.
   if(eq.head && eq.head!=="none")for(const side of [-1,1])seam(c,[[side*.63,-.91],[side*.78,-.84]],h.trim,.035);
   seam(c,[[-.91,.64],[-.77,.75],[-.59,.75]],h.trim,.035);
+  drawArmorShellState(c,eq,p);
   c.restore();
+}
+/** Portable state view; only authority-owned contacts/charges create a cue. */
+function armorShellPose(state={},angle=0){
+ const active=state.phase==='playing';
+ return {shellAmount:active?(state.shellSpring?.amount||0):0,
+  shellContactAngle:(state.shellSpring?.angle??state.shellImpact?.angle??state.shellRelease?.angle??0)-angle,
+  shellGlanceAge:active?(state.shellImpact?.age??-1):-1,
+  shellReleasedAmount:active?(state.shellRelease?.amount||0):0,
+  shellReleaseAge:active?(state.shellRelease?.age??-1):-1};
+}
+function shellCompression(p={}){
+ if(p.shellAmount>0)return .4+.6*Math.min(1,p.shellAmount/4);
+ return !p.reducedMotion&&p.shellReleasedAmount>0&&p.shellReleaseAge>=0&&p.shellReleaseAge<9?(.4+.6*Math.min(1,p.shellReleasedAmount/4))*Math.max(0,1-p.shellReleaseAge/9):0;
+}
+/** No particles, independent timers or collider deformation. Bevel line follows
+ * the actual contact bearing; interlocking plates hold only a real reserve. */
+export function drawArmorShellState(c,eq={},p={}){
+ const a=Number.isFinite(p.shellContactAngle)?p.shellContactAngle:0,pal=corePalette(eq.core);
+ c.save();try{
+ if(eq.body==='chamfer'&&p.shellGlanceAge>=0&&p.shellGlanceAge<7){
+  const age=p.reducedMotion?0:p.shellGlanceAge,quadrant=Math.round(a/(Math.PI/2))*Math.PI/2;
+  c.rotate(quadrant);c.globalAlpha*=1-age/7;
+  seam(c,[[.72,-.96],[.98,-.70],[.98,-.20]],pal.light,.075);
+  if(!p.reducedMotion){
+   const t=age/7;c.translate(.94,-.62+t*.35);c.rotate(a-quadrant+Math.PI/4);
+   seam(c,[[-.12,0],[.15,0]],pal.primary,.045);
+  }
+ }
+ if(eq.body==='segmented'){
+  const k=shellCompression(p);if(!(k>0))return;
+  const dx=-Math.cos(a)*k*.14,dy=-Math.sin(a)*k*.14;
+  for(const side of [-1,1]){
+   c.save();c.translate(dx,dy);
+   panel(c,[[side*.68,.22],[side*.97,.18],[side*.97,.79],[side*.66,.77]],'#37544e',.035);
+   seam(c,[[side*.73,.34],[side*.94,.31]],pal.light,.055);
+   seam(c,[[side*.73,.55],[side*.94,.52]],pal.primary,.045);c.restore();
+  }
+  // One compressed central ratchet, not an extra whole-body squash.
+  seam(c,[[-.38,.79],[-.21,.72],[-.08,.81],[.06,.72],[.19,.81],[.34,.74]],pal.light,.05);
+ }
+ }finally{c.restore();}
+}
+/** Normalized BODY-local vent gates. Reads an actual recovery view; no
+ * independent clock, particles, thrust, resource writes or ambient pulsing. */
+export function drawNotchedVents(c,eq={},pose={}) {
+  if(eq.body!=='notched'||!pose.focusRecovering||pose.aiming||!(pose.focusLevel<1)||!(pose.focusLevel>=0))return;
+  const palette=corePalette(eq.core),age=pose.recoveryAge??8;
+  c.save();try{
+    for(const side of [-1,1]){
+      panel(c,[[side*.77,.47],[side*1.01,.36],[side*1.04,.78],[side*.78,.69]],'#101723',.025);
+      for(let i=0;i<3;i++)seam(c,[[side*.83,.46+i*.1],[side*1.01,.41+i*.13]],i===1?palette.light:palette.primary,.055);
+      if(!pose.reducedMotion&&age>=0&&age<6){
+        c.globalAlpha=1-age/6;
+        seam(c,[[side*1.08,.58],[side*(1.26+age*.025),.58]],palette.light,.045);
+        c.globalAlpha=1;
+      }
+    }
+  }finally{c.restore();}
 }
 /** Pure presentation state. progress is normalized existing attack lifetime;
  * -1 means no attack. Contact is explicit, never inferred from an endpoint.
@@ -1154,101 +1238,154 @@ function materialMount(c, body, slot, t, palette) {
   }
   c.restore();
 }
-function drawCoreChamber(c, eq, t, palette, pose2) {
-  if (eq.core === "standard" && eq.body !== "hologram") return;
-  const energy = evolutionIntensity(pose2?.combo, pose2?.overdrive);
-  c.save();
-  const performance=pose2?.performance||resolveCharacterPerformance(pose2||{},t),charge=performance.charge;
-  const construction=resolveBodyConstruction(eq.body),material=construction.shadow;
-  c.translate(.36,.64);c.scale(.82,.82);
-  const cavity=construction.cavity;
-  panel(c,cavity,"#080b13",0);
-  seam(c,[cavity[0],cavity[1],cavity[2]],"#05070d",.07);
-  const bottom=cavity.filter(point=>point[1]>.10);
-  if(bottom.length>1)seam(c,bottom,construction.light,.045);
-  c.save();path(c,cavity);c.clip();
-  // The cut has a visible wall even with all internal emission disabled.
-  panel(c,[[-.48,-.31],[.44,-.31],[.39,-.15],[-.30,-.10],[-.29,.29],[-.48,.29]],material,0);
-  panel(c,[[.30,-.20],[.48,-.25],[.48,.30],[.22,.30]],"#101723",0);
-  c.save();c.globalAlpha*=Math.max(0,Math.min(1,pose2?.emission??1));
-  c.fillStyle=palette.primary+"24";c.beginPath();c.ellipse(0,.01,.36,.22,0,0,Math.PI*2);c.fill();
-  const breathe=1+Math.sin(t*.035)*.018-performance.coreCompression;
-  c.save();c.scale(.72*breathe,.59*breathe);
-  if(eq.core==="grav")c.rotate(performance.idleClock*.018+performance.release*.4);
-  else if(eq.core==="time")c.rotate(Math.floor(t/28)*Math.PI/12+performance.release*.2);
-  else if(eq.core==="echo")c.rotate(.25+performance.recovery*.7+Math.sin(t*.025)*.04);
-  else if(eq.core==="glass")c.rotate(.12+Math.sin(t*.018)*.035);
-  c.strokeStyle = palette.primary;
-  c.fillStyle = palette.primary;
-  c.lineWidth = 0.048;
-  if (eq.core === "grav") {
-    for (let j = 0; j < 3; j++) {
-      c.beginPath();
-      for (let i = 0; i < 24; i++) {
-        const u = i / 23, a = u * 4 + j * Math.PI * 2 / 3, r = 0.04 + u * 0.29;
-        c[i ? "lineTo" : "moveTo"](Math.cos(a) * r, Math.sin(a) * r);
-      }
-      c.stroke();
-    }
-  } else if (eq.core === "magnet") {
-    for (const [s, color] of [[-1, palette.primary], [1, palette.secondary]]) {
-      c.strokeStyle = color;
-      c.lineWidth = 0.11;
-      c.beginPath();
-      c.moveTo(s * 0.22, -0.25);
-      c.lineTo(s * 0.22, 0.1);
-      c.lineTo(0, 0.24);
-      c.stroke();
-    }
-    circle(c,Math.sin(t*.035)*.10,.02+performance.release*.08,.032,palette.light);
-  } else if (eq.core === "riot") {
-    c.scale(1+performance.release*.24,1-performance.charge*.20);
-    c.beginPath();
-    c.moveTo(0.1, -0.34);
-    c.lineTo(-0.23, 0.05);
-    c.lineTo(0.01, 0.02);
-    c.lineTo(-0.12, 0.34);
-    c.lineTo(0.26, -0.08);
-    c.lineTo(0.03, -0.04);
-    c.fill();
-  } else if (eq.core === "time") {
-    c.rotate(Math.PI / 4);
-    c.fillStyle = "#163c55";
-    c.strokeRect(-0.23, -0.23, 0.46, 0.46);
-    c.fillRect(-0.23, -0.23, 0.46, 0.46);
-    c.fillStyle = palette.light;
-    c.beginPath();
-    c.moveTo(-0.19, -0.19);
-    c.lineTo(0.19, 0.19);
-    c.lineTo(-0.19, 0.19);
-    c.lineTo(0.19, -0.19);
-    c.closePath();
-    c.fill();
-  } else if (eq.core === "glass") {
-    c.beginPath();
-    for (let i = 0; i < 12; i++) {
-      const a = i * Math.PI / 6, r = i % 2 ? 0.12 : 0.37;
-      c[i ? "lineTo" : "moveTo"](Math.cos(a) * r, Math.sin(a) * r);
-    }
-    c.fill();
-    c.strokeStyle = palette.secondary;
-    c.stroke();
-  } else {
-    c.beginPath();
-    c.ellipse(0, 0, 0.3, 0.19, 0.4, 0, Math.PI * 2);
-    c.stroke();
+/** Seven fixed mechanical grammars. Names describe construction, not powers.
+ * No actor, charge clock, emitter or ownership is retained in this catalogue. */
+export const CORE_MECHANISMS=freezeConstruction({
+ standard:{title:'Standard Heart',mechanism:'SEALED CROSS BRACE',parts:'DRY COVER / CENTRAL KEEPER',receipt:'BALANCED / NO STORED CORE ATTACK'},
+ grav:{title:'Grav Core',mechanism:'INWARD IRIS',parts:'THREE SHUTTERS / NEGATIVE CENTER',receipt:'AIM PULL / SMALL FANGS WITHIN 220'},
+ time:{title:'Time Crystal',mechanism:'CALIBRATED ESCAPEMENT',parts:'FORKED RAILS / CRYSTAL INDEX',receipt:'AFTER-KILL FOCUS RECOVERY / NOT A FREEZE'},
+ riot:{title:'Riot Reactor',mechanism:'IGNITION PISTON',parts:'OPPOSED SHOES / REACTOR SLUG',receipt:'4 CHAIN TO DRIVE / MAX EDGE 2'},
+ glass:{title:'Glass Cannon',mechanism:'SUSPENDED FRACTURE',parts:'SPLIT CRADLE / FRAGILE FACET',receipt:'SCORE x2 / MAX HEALTH 1 / NOT A SHIELD'},
+ magnet:{title:'Magnet Dynamo',mechanism:'TWIN POLE CLAMP',parts:'OPPOSED POLES / OPEN CONTACT GAP',receipt:'CLOSE CUT WIDTH +20% WITHIN 100'},
+ echo:{title:'Echo Heart',mechanism:'THREE LATCH REGISTER',parts:'THREE CHAIN CELLS / OUTLINED PLATES',receipt:'EVERY 3 CHAIN / STATIONARY CORE BLADE'},
+});
+const CORE_CARRIERS=freezeConstruction({
+ paper:[[-.72,-.29],[.61,-.29],[.73,-.13],[.73,.26],[-.60,.30],[-.72,.16]],
+ gold:[[-.72,-.19],[-.53,-.30],[.63,-.30],[.73,-.10],[.73,.24],[-.56,.30],[-.72,.12]],
+ obsidian:[[-.73,-.12],[-.43,-.30],[.39,-.27],[.73,-.11],[.62,.23],[.18,.30],[-.61,.25]],
+ prism:[[-.72,-.13],[-.44,-.30],[.41,-.30],[.73,-.11],[.61,.21],[.13,.30],[-.55,.25]],
+ hologram:[[-.72,-.29],[.73,-.29],[.73,.29],[-.72,.29]],
+ iron:[[-.72,-.19],[-.59,-.30],[.58,-.30],[.73,-.15],[.73,.20],[.56,.30],[-.59,.30],[-.72,.16]],
+ lava:[[-.72,-.19],[-.52,-.29],[-.12,-.24],[.26,-.30],[.62,-.25],[.73,-.10],[.66,.17],[.45,.30],[-.21,.25],[-.61,.30],[-.72,.11]],
+ chamfer:[[-.56,-.30],[.56,-.30],[.73,-.12],[.73,.12],[.56,.30],[-.56,.30],[-.72,.12],[-.72,-.12]],
+ notched:[[-.72,-.29],[.73,-.29],[.73,-.09],[.66,.005],[.73,.10],[.73,.29],[-.72,.29],[-.72,.10],[-.65,.005],[-.72,-.09]],
+ segmented:[[-.72,-.26],[-.25,-.26],[-.25,-.30],[.23,-.30],[.23,-.26],[.73,-.26],[.73,.26],[.23,.26],[.23,.30],[-.25,.30],[-.25,.26],[-.72,.26]],
+});
+export function resolveCoreMechanism(core='standard'){return Object.hasOwn(CORE_MECHANISMS,core)?CORE_MECHANISMS[core]:CORE_MECHANISMS.standard;}
+/** Read-only view of EXISTING authority. No inferred shot charge or timer.
+ * Time reports real passive return, never pretends to know its private bonus
+ * timer. Echo distinguishes chain remainder from actual stationary sources. */
+export function coreMechanismPose(state={}){
+ const playing=state.phase==='playing'&&!state.opening,finite=(n,fallback=0)=>Number.isFinite(n)?n:fallback;
+ let echoes=0;if(playing)for(const source of state.equipmentFx?.echoes||[])if(!source.upgradeEcho&&source.ticks>0)echoes++;
+ return {coreLive:playing,coreChain:playing?Math.max(0,Math.floor(finite(state.chain))):0,
+  coreEchoes:echoes,coreDrive:playing&&finite(state.drive)>0,
+  corePull:playing&&state.held===true,coreRecovering:playing&&state.focusRecoveryActive===true,
+  coreFocus:playing?Math.max(0,Math.min(1,finite(state.focus))):0,
+  coreHull:playing&&Number.isFinite(state.hp)?Math.max(0,state.hp):null};
+}
+/** Fitted, capped cartridge. Opaque shells are not made transparent. This
+ * replaces the old small floating symbol; the chamber itself owns all energy.
+ * Body-local bounds x[-.66,.81], y[.32,.94] protect eyes and side shell cues. */
+function drawCoreChamber(c,eq,t,palette,pose2={}){
+ const id=Object.hasOwn(CORE_MECHANISMS,eq.core)?eq.core:'standard',body=resolveBodyConstruction(eq.body),
+  material=resolveAssemblyConstruction(eq).material,detail=(pose2.artRadius??48)>=38,
+  live=pose2.coreLive===true,drive=live&&pose2.coreDrive===true,
+  pull=live&&pose2.corePull===true,recover=live&&pose2.coreRecovering===true,
+  chain=live&&Number.isFinite(pose2.coreChain)?Math.max(0,Math.floor(pose2.coreChain)):0,
+  echoes=live&&Number.isFinite(pose2.coreEchoes)?Math.max(0,pose2.coreEchoes):0,
+  emission=Math.max(0,Math.min(1,pose2.emission??1)),clock=pose2.reducedMotion?0:t;
+ c.save();try{
+ c.translate(.075,.635);
+ const outer=CORE_CARRIERS[Object.hasOwn(CORE_CARRIERS,eq.body)?eq.body:'paper'];
+ panel(c,outer,material.shade,.045);
+ panel(c,[[-.69,-.18],[-.56,-.265],[.56,-.265],[.67,-.15],[-.55,-.15],[-.66,-.05]],material.edge,0);
+ panel(c,[[-.64,-.13],[.61,-.13],[.64,.15],[.52,.23],[-.54,.23],[-.64,.13]],material.well,.025);
+ // Opaque casing, not a transparent hole through the cube.
+ const well=[[-.55,-.17],[.54,-.17],[.61,-.08],[.61,.12],[.50,.22],[-.53,.22],[-.62,.11],[-.62,-.08]];
+ c.save();path(c,well);c.clip();
+ panel(c,well,'#10141e',0);
+ panel(c,[[-.61,-.17],[.59,-.17],[.52,-.09],[-.46,-.09],[-.46,.22],[-.61,.22]],body.shadow,0);
+ // Fixed silhouettes remain different even when energy is disabled.
+ const bright=blend(material.face,palette.primary,.30*emission),edge=blend(material.edge,palette.light,.45*emission),
+  energy=blend('#444554',palette.primary,emission),secondary=blend('#3e4353',palette.secondary,emission),
+  light=blend(material.edge,palette.light,emission);
+ if(id==='standard'){
+  panel(c,[[-.53,-.12],[-.12,-.12],[.01,.015],[-.17,.19],[-.54,.19]],material.face,.025);
+  panel(c,[[.53,-.12],[.13,-.12],[.01,.015],[.18,.19],[.54,.19]],material.shade,.025);
+  seam(c,[[-.49,-.09],[-.04,.04],[-.19,.17]],edge,.035);
+  panel(c,[[-.14,-.10],[.14,-.10],[.23,.04],[.11,.17],[-.11,.17],[-.23,.04]],material.well,.025);
+  seam(c,[[-.09,.025],[.10,.025]],energy,.055);
+ }else if(id==='grav'){
+  // Broad iris jaws route inward. Only a real aim field closes the aperture.
+  const spin=clock*.012,aperture=pull?.045:.105;
+  c.save();c.translate(0,.025);c.scale(1,.68);c.rotate(spin);
+  for(let i=0;i<3;i++){c.rotate(Math.PI*2/3);
+   panel(c,[[aperture,-.04],[.18,-.23],[.37,-.14],[.28,.11],[.12,.16]],i%2?material.shade:bright,.026);
+   seam(c,[[.35,-.11],[.23,-.15],[aperture,-.015]],pull?light:energy,.032);
   }
-  c.fillStyle = palette.light;
-  c.beginPath();
-  c.arc(0, 0, 0.055, 0, Math.PI * 2);
-  c.fill();
-  c.restore();
-  c.restore();
-  // Recess shadow and fixed ribs occlude the moving energy, giving depth.
-  panel(c,[[-.43,-.22],[.39,-.22],[.39,-.14],[-.43,-.10]],"#070815aa",0);
-  if(construction.kind==="plate")seam(c,[[-.14,-.25],[-.14,-.07]],material,.07);
-  c.restore();
-  c.restore();
+  circle(c,0,0,aperture,'#05070e');c.restore();
+  if(detail)for(const side of [-1,1])seam(c,[[side*.49,-.10],[side*.40,.015],[side*.49,.14]],secondary,.03);
+ }else if(id==='time'){
+  for(const side of [-1,1]){
+   panel(c,[[side*.15,-.15],[side*.42,-.15],[side*.42,-.06],[side*.30,-.06],[side*.30,.12],[side*.43,.12],[side*.43,.19],[side*.15,.19]],bright,.022);
+   if(detail)for(let i=0;i<3;i++)seam(c,[[side*.35,-.09+i*.10],[side*.45,-.09+i*.10]],edge,.02);
+  }
+  panel(c,[[0,-.17],[.20,.02],[0,.22],[-.20,.02]],secondary,.025);
+  panel(c,[[0,-.14],[.13,.02],[0,.17]],light,0);
+  panel(c,[[0,-.14],[-.13,.02],[0,.17]],energy,0);
+  // Calibration index is ambient mechanism motion, never a fill/charge meter.
+  const index=Math.sin(clock*.05)*.09;
+  seam(c,[[-.095,index+.02],[.095,index+.02]],edge,.025);
+  if(recover){const focus=Math.max(0,Math.min(1,pose2.coreFocus||0));seam(c,[[-.48,.18],[-.48,.18-.28*focus]],light,.045);}
+ }else if(id==='riot'){
+  const gap=drive?.105:0;
+  for(const side of [-1,1]){
+   panel(c,[[side*(.26+gap),-.14],[side*.53,-.14],[side*.53,.17],[side*(.26+gap),.17]],material.face,.028);
+   seam(c,[[side*.48,-.09],[side*.48,.12]],drive?light:secondary,.055);
+   if(detail)for(let i=0;i<2;i++)seam(c,[[side*(.28+gap),-.07+i*.16],[side*.43,-.07+i*.16]],material.well,.025);
+  }
+  panel(c,[[.05,-.19],[-.22,.04],[-.045,.035],[-.10,.23],[.23,-.03],[.04,-.025]],drive?light:energy,.02);
+  if(drive)seam(c,[[-.16,-.15],[.20,-.15]],energy,.04);
+ }else if(id==='glass'){
+  for(const side of [-1,1]){
+   panel(c,[[side*.31,-.14],[side*.52,-.14],[side*.39,.04],[side*.53,.18],[side*.31,.18],[side*.19,.04]],material.face,.025);
+  }
+  panel(c,[[0,-.18],[.31,-.025],[.16,.21],[-.17,.21],[-.31,-.025]],'#746879',.025);
+  panel(c,[[0,-.18],[.31,-.025],[.02,.025]],edge,0);
+  panel(c,[[0,-.18],[-.31,-.025],[.02,.025]],bright,0);
+  panel(c,[[.02,.025],[.31,-.025],[.16,.21]],'#b2a5b6',0);
+  panel(c,[[.02,.025],[-.31,-.025],[-.17,.21]],secondary,0);
+  seam(c,[[.01,-.15],[-.04,-.025],[.07,.055],[.02,.19]],secondary,.035);
+  // Fragile construction is not an invented renewable shield gauge.
+  if(live&&pose2.coreHull===0)seam(c,[[-.25,-.08],[.20,.17]],'#171320',.065);
+  if(detail){const x=Math.sin(clock*.025)*.025;seam(c,[[.09+x,-.09],[.19+x,-.04]],light,.022);}
+ }else if(id==='magnet'){
+  for(const side of [-1,1]){
+   const col=side<0?energy:secondary;
+   panel(c,[[side*.10,-.15],[side*.46,-.15],[side*.53,-.07],[side*.53,.18],[side*.32,.18],[side*.32,-.015],[side*.10,-.015]],col,.025);
+   panel(c,[[side*.10,-.15],[side*.23,-.15],[side*.23,-.015],[side*.10,-.015]],edge,0);
+   seam(c,[[side*.37,.04],[side*.47,.04]],material.well,.03);
+  }
+  // Open gap; no cosmetic tether/pull beam between non-targets.
+  seam(c,[[-.07,.17],[.07,.17]],bright,.035);
+ }else if(id==='echo'){
+  const count=chain%3;
+  for(let i=0;i<3;i++){
+   const x=-.46+i*.33,filled=live&&i<count;
+   panel(c,[[x,-.14],[x+.24,-.14],[x+.29,-.07],[x+.29,.17],[x+.03,.17],[x,.10]],filled?secondary:'#1b1929',.022);
+   seam(c,[[x+.01,-.10],[x+.20,-.10],[x+.25,-.045],[x+.25,.13]],filled?light:bright,.03);
+   if(detail){const offset=Math.sin(clock*.03+i)*.008;seam(c,[[x+.05,.02+offset],[x+.19,.02+offset]],filled?energy:material.shade,.03);}
+  }
+  // A stationary source is NOT a fourth charge cell or a next-dash pulse.
+  if(echoes>0)seam(c,[[-.46,.20],[.44,.20]],light,.04);
+ }
+ c.restore();
+ // Seated fasteners/wall stay over internal movement. Never cut eye surfaces.
+ for(const side of [-1,1]){
+  if(body.kind==='facet')panel(c,[[side*.58,-.09],[side*.69,-.03],[side*.62,.17],[side*.55,.07]],material.face,.018);
+  else if(body.kind==='fold'||eq.body==='gold'){
+   panel(c,[[side*.56,-.12],[side*.70,-.08],[side*.68,.17],[side*.57,.12]],material.face,.018);
+   seam(c,[[side*.57,-.10],[side*.66,.13]],material.edge,.025);
+  }else if(body.kind==='glass'){
+   seam(c,[[side*.59,-.11],[side*.69,-.11],[side*.69,.16],[side*.59,.16]],material.edge,.025);
+  }else{
+   panel(c,[[side*.60,-.08],[side*.69,-.08],[side*.69,.15],[side*.59,.15]],material.face,.018);
+   if(detail)seam(c,[[side*.62,-.015],[side*.66,-.015]],material.well,.027);
+  }
+ }
+ seam(c,[[-.55,.265],[.51,.265],[.66,.18]],material.edge,.028);
+ }finally{c.restore();}
 }
 
 // consolidated/hybrids.js
@@ -1292,11 +1429,20 @@ function hybridMatches(eq = {}) {
     return { ...recipe, matched, total: entries.length, complete: matched === entries.length };
   });
 }
+/** Shared functional/artistic family priority: most recipe parts wins;
+ * equal specificity keeps catalogue order. Never reorder the discovery list. */
+function selectedHybrid(matches) {
+  let active = null;
+  for (const match of matches) {
+    if (match.complete && (!active || match.total > active.total)) active = match;
+  }
+  return active;
+}
 function activeHybrid(eq) {
-  return hybridMatches(eq).find((x) => x.complete) || null;
+  return selectedHybrid(hybridMatches(eq));
 }
 function hybridHint(eq) {
-  const matches = hybridMatches(eq), active = matches.find((x) => x.complete);
+  const matches = hybridMatches(eq), active = selectedHybrid(matches);
   if (active) return active.title;
   const near = matches.filter((x) => x.matched >= 2).sort((a, b) => b.matched / b.total - a.matched / a.total)[0];
   return near ? `??? / ${near.matched} OF ${near.total} PARTS` : "HYBRID / MIX A RECIPE";
@@ -1309,11 +1455,11 @@ function collectionBadges(items, owned) {
  * Recipe data and gameplay matching are never changed by this descriptor.
  */
 function resolveArtDirection(eq={},radius=23,pose={}) {
-  const h=resolveVisualHarmony(eq,0,pose),family=activeHybrid(eq)?.id||null;
+  const h=resolveVisualHarmony(eq,0,pose),selected=activeHybrid(eq),family=selected?.id||null;
   const performance=pose.performance||resolveCharacterPerformance(pose,0);
   const detail=radius<29?0:radius<49?1:2;
   return Object.freeze({family,detail,energy:h.primary,light:h.light,
-    accent:family?blend(h.primary,activeHybrid(eq).color,.22):h.trim,
+    accent:family?blend(h.primary,selected.color,.22):h.trim,
     shadow:resolveBodyConstruction(eq.body).shadow,activity:performance.release,
     // One bounded selected rim, never a complete glowing outline.
     rim:blend(resolveBodyConstruction(eq.body).light,h.rim,.20)});
@@ -1383,59 +1529,52 @@ function drawHybridAura(c,eq,t=0,pose=null) {
   }else if(id==="sun"){
     // Three rays grow from the Halo's rear crown, not a second luminous ring.
     for(const [x,tip]of [[-.61,-1.70],[0,-1.94],[.59,-1.69]])panel(c,[[x-.12,-1.21],[x,tip],[x+.14,-1.23]],"#c79c4c",.045);
-  }else if(id==="phantom"&&d.activity>.05){
-    c.globalAlpha=d.activity*.16;seam(c,[[-1.12,-.91],[-1.23,.77],[-.91,.94]],d.accent,.055);
+  }else if(id==='phantom'){
+    panel(c,[[-.94,-.72],[-1.17,-.72],[-1.17,.73],[-.93,.93]],'#18333c',.055);
+    seam(c,[[-1.13,-.59],[-1.13,.65],[-.95,.80]],d.light,.045);
   }
   c.restore();
 }
-function drawHybridIntegration(c,eq,t,p) {
-  const d=resolveArtDirection(eq,p.artRadius??45,p);if(!d.family)return;
-  c.save();
-  if(d.family==="glacier"){
-    // Crest struts overlap Halo: the crystals now physically grow from its mount.
-    for(const [x,tip]of [[-.47,-1.66],[0,-1.92],[.47,-1.66]]){
-      panel(c,[[x-.14,-1.01],[x-.10,tip+.15],[x,tip],[x+.16,-1.01]],"#3c6077",.045);
-      panel(c,[[x,-1.03],[x,tip],[x+.10,-1.07]],"#b4dce3",0);
-    }
-  }
-  path(c,SHAPE_MODIFIERS.find(x=>x.id===eq.body)?.outline||HERO_SHELL);c.clip();
-  // Front layer modifies shell planes, never crosses eye cuts or CORE machinery.
-  if(["storm","forge","wraith","bulwark","razoredge","orbit"].includes(d.family)){
-    for(const side of [-1,1]){
-      panel(c,[[side*.80,.35],[side*.96,.23],[side*.96,.78],[side*.77,.88]],d.shadow,0);
-      seam(c,[[side*.89,.40],[side*.89,.68],[side*.73,.78]],d.energy,.032);
-    }
-  }
-  if(d.family==="glacier"){
-    for(const side of [-1,1])panel(c,[[side*.76,-.94],[side*.98,-.75],[side*.90,-.56],[side*.71,-.75]],"#a6d4dd",0);
-  }else if(d.family==="briar"){
-    seam(c,[[-.92,.24],[-.76,.38],[-.88,.61],[-.76,.85]],d.shadow,.075);
-    if(d.detail)panel(c,[[-.83,.54],[-.61,.40],[-.74,.68]],d.accent,0);
-  }else if(d.family==="sentinel"){
-    panel(c,[[-.95,.30],[-.66,.25],[-.66,.83],[-.95,.94]],"#2c4940",0);
-    seam(c,[[-.90,.36],[-.73,.33],[-.73,.57]],d.energy,.03);
-  }else if(d.family==="arcade"){
-    const px=.11;c.fillStyle=d.accent;for(const [x,y]of [[.79,-.69],[.79,-.58],[.68,-.58],[-.70,.72],[-.59,.72]])c.fillRect(x,y,px,px);
-  }else if(d.family==="phantom"){
-    panel(c,[[.70,-.72],[.97,-.83],[.97,.94],[.71,.76]],"#65bec726",0);
-    seam(c,[[.83,.32],[.83,.72],[.65,.79]],d.accent,.035);
-  }else if(d.family==="reaper"){
-    for(const side of [-1,1])panel(c,[[side*.93,.31],[side*.70,.39],[side*.70,.72],[side*.94,.84]],"#64636e",0);
-  }else if(d.family==="ronin"){
-    panel(c,[[-.74,.33],[.92,.29],[.92,.46],[-.74,.51]],"#382c34",0);
-    if(d.detail)seam(c,[[-.60,.43],[.76,.37]],"#ac998e",.025);
-  }else if(d.family==="king"){
-    panel(c,[[-.69,.35],[.08,.39],[.22,.53],[.08,.67],[-.70,.59]],"#423047",0);
-    seam(c,[[-.63,.42],[-.20,.46]],"#baa273",.035);
-  }else if(d.family==="sun"){
-    panel(c,[[-.70,-.70],[.86,-.77],[.78,-.57],[-.61,-.55]],"#e9c56b",0);
-  }else if(d.family==="eater"){
-    if(d.detail)for(const [x,y]of [[-.69,.36],[-.53,.51],[-.68,.70]])circle(c,x,y,.026,d.light);
-  }else if(d.family==="wyrm"){
-    panel(c,[[-.73,.33],[-.50,.28],[-.40,.42],[-.61,.56]],d.shadow,0);
-    seam(c,[[-.68,.38],[-.52,.35]],d.accent,.03);
-  }
-  c.restore();
+// Front construction replaces the old generic family stripe. All plates stay
+// in the shell silhouette, outside eye cuts and the supported core chamber.
+const ASSEMBLY_FAMILY_PLATES=freezeConstruction({
+ wyrm:[[[.66,.23],[.97,.17],[.88,.78],[.60,.91],[.70,.55]],[[-.75,.24],[-.47,.39],[-.56,.75],[-.75,.88]]],
+ ronin:[[[-.75,.27],[.90,.22],[.90,.37],[-.75,.45]],[[-.73,.55],[.90,.49],[.89,.64],[-.73,.70]]],
+ king:[[[-.76,.28],[-.22,.30],[.00,.60],[-.28,.91],[-.75,.77]],[[.79,.24],[.96,.21],[.96,.85],[.79,.95]]],
+ phantom:[[[-.76,-.65],[-.58,-.65],[-.58,.78],[-.27,.78],[-.27,.94],[-.76,.94]],[[.79,-.68],[.97,-.68],[.97,.89],[.79,.89]]],
+ reaper:[[[-.76,.22],[-.44,.39],[-.45,.86],[-.77,.73]],[[.71,.29],[.97,.18],[.97,.80],[.70,.94]]],
+ eater:[[[-.78,.22],[-.51,.41],[-.63,.65],[-.36,.90],[-.72,.85],[-.87,.54]],[[.80,.27],[.96,.34],[.89,.84],[.72,.94]]],
+ sun:[[[-.76,.22],[.02,.50],[-.36,.90],[-.74,.77]],[[.02,.50],[.93,.20],[.78,.86]]],
+ glacier:[[[-.75,-.69],[-.42,-.81],[-.08,-.65],[-.37,-.56]],[[.40,-.78],[.79,-.86],[.98,-.68],[.72,-.53]],[[-.77,.34],[-.56,.23],[-.51,.77],[-.75,.91]]],
+ briar:[[[-.84,.19],[-.60,.34],[-.73,.53],[-.53,.74],[-.75,.94],[-.91,.65]],[[.79,-.69],[.96,-.79],[.96,-.55],[.76,-.44]]],
+ sentinel:[[[-.79,.25],[-.53,.28],[-.53,.85],[-.78,.94]],[[.76,.22],[.97,.22],[.97,.86],[.76,.93]]],
+ arcade:[[[-.77,.25],[-.55,.25],[-.55,.58],[-.38,.58],[-.38,.77],[-.19,.77],[-.19,.95],[-.77,.95]],[[.78,-.73],[.97,-.73],[.97,-.54],[.78,-.54]]],
+ storm:[[[-.73,-.69],[-.59,-.91],[-.28,-.91],[-.14,-.64]],[[.20,-.66],[.36,-.91],[.70,-.91],[.87,-.70]],[[-.76,.25],[-.55,.32],[-.55,.86],[-.76,.94]]],
+ forge:[[[-.76,.22],[-.40,.36],[-.39,.90],[-.76,.81]],[[.70,.24],[.97,.17],[.97,.78],[.71,.95]],[[-.73,-.68],[.85,-.76],[.79,-.56],[-.64,-.50]]],
+ wraith:[[[-.77,-.70],[-.58,-.70],[-.58,.78],[-.32,.78],[-.32,.95],[-.77,.95]],[[.76,-.71],[.96,-.74],[.96,.93],[.76,.93]]],
+ bulwark:[[[-.77,.22],[-.45,.30],[-.43,.71],[-.62,.94],[-.79,.72]],[[.70,.29],[.97,.20],[.97,.75],[.79,.96],[.65,.75]]],
+ razoredge:[[[-.77,.20],[-.56,.28],[-.43,.88],[-.72,.95]],[[.75,.22],[.96,.18],[.96,.84],[.75,.95]],[[-.71,-.68],[.03,-.60],[.85,-.77],[.85,-.62],[.03,-.45],[-.68,-.54]]],
+ orbit:[[[-.78,.23],[-.48,.40],[-.53,.74],[-.79,.91]],[[.73,.32],[.95,.18],[.95,.81],[.72,.94]],[[-.71,-.70],[.08,-.57],[.85,-.76],[.68,-.48],[.09,-.38],[-.54,-.48]]],
+});
+function drawHybridIntegration(c,eq,t,p){
+ const a=resolveAssemblyConstruction(eq),shapes=ASSEMBLY_FAMILY_PLATES[a.family];if(!shapes)return;
+ const d=resolveArtDirection(eq,p.artRadius??24,p),m=a.material;
+ c.save();try{
+ path(c,SHAPE_MODIFIERS.find(x=>x.id===eq.body)?.outline||HERO_SHELL);c.clip();
+ // Static structural zones only. Protect the eyes and chamber from all families.
+ c.beginPath();c.rect(-2,-2,4,4);c.rect(-.73,-.53,1.61,.76);c.rect(-.66,.32,1.47,.62);c.clip('evenodd');
+ shapes.forEach((shape,i)=>{
+  panel(c,shape,i%2?m.shade:m.well,.045);
+  // A broad bevel face, not a glowing family aura or additional emitter.
+  seam(c,[shape[0],shape[1],shape[2]],i%2?m.light||m.edge:d.rim,.045);
+ });
+ if(d.detail){
+  if(['sentinel','storm','bulwark'].includes(a.family))for(let i=0;i<3;i++)seam(c,[[-.73,.41+i*.14],[-.59,.41+i*.14]],d.energy,.035);
+  if(['ronin','razoredge'].includes(a.family))for(let i=0;i<3;i++)seam(c,[[-.67+i*.18,.33],[-.63+i*.18,.43]],d.light,.025);
+  if(['king','sun','forge'].includes(a.family))panel(c,[[-.66,.37],[-.49,.48],[-.63,.66],[-.72,.51]],d.accent,.025);
+  if(a.family==='arcade')for(let i=0;i<3;i++){c.fillStyle=i%2?d.accent:m.edge;c.fillRect(-.71+i*.14,.80,.09,.09);}
+ }
+ }finally{c.restore();}
 }
 var SPARKS2 = Object.freeze([
   { id: "chrono", title: "CHRONO RING", parts: { head: "halo", core: "time" }, color: "#a8efff" },
@@ -1475,6 +1614,9 @@ function drawSparkMutation(c,eq,t,layer="front",pose=null) {
   const sparks=activeSparks(eq);if(!sparks.length)return;
   const d=resolveArtDirection(eq,pose?.artRadius??45,pose||{});
   c.save();
+  // Spark routing can terminate at the casing, never become fake charge cells
+  // or paint over the seven mechanisms' protected live-state interior.
+  c.beginPath();c.rect(-10,-10,20,20);c.rect(-.55,.455,1.25,.41);c.clip('evenodd');
   for(const h of sparks){
     const newSpark=["stormlink","furnace","blink","guardlink","glassedge","riftlens","lifeline","darklink"].indexOf(h.id);
     if(newSpark>=0){
@@ -1503,7 +1645,7 @@ function drawSparkMutation(c,eq,t,layer="front",pose=null) {
     }else if(h.id==="relay"){
       seam(c,[[-.87,.73],[-.87,.43],[-.71,.37]],d.energy,.035);
     }else if(h.id==="afterimage"){
-      c.fillStyle=d.accent;for(let i=0;i<(d.detail?3:2);i++)c.fillRect(-.69+i*.12,.76,.07,.07);
+      seam(c,[[-.72,.76],[-.62,.76]],d.accent,.035);
     }
   }
   c.restore();
@@ -1795,7 +1937,7 @@ function circle(c, x, y, r, fill) {
  * @returns {Readonly<Object>} Deep-frozen material/cutaway descriptor.
  */
 function resolveBodyConstruction(body="paper") { return BODY_CONSTRUCTION[body]||BODY_CONSTRUCTION.paper; }
-const freezeConstruction=x=>{if(x&&typeof x==="object"){Object.values(x).forEach(freezeConstruction);Object.freeze(x);}return x;};
+function freezeConstruction(x){if(x&&typeof x==="object"){Object.values(x).forEach(freezeConstruction);Object.freeze(x);}return x;}
 var BODY_CONSTRUCTION=freezeConstruction(Object.fromEntries([
   ["paper","fold","#fff8e8","#b39a91",[[-.46,-.25],[.23,-.24],[.43,-.04],[.26,.24],[-.38,.21]]],
   ["iron","plate","#aab7c4","#344252",[[-.43,-.25],[.28,-.25],[.43,-.10],[.43,.20],[-.43,.20]]],
@@ -1808,6 +1950,112 @@ var BODY_CONSTRUCTION=freezeConstruction(Object.fromEntries([
   ["gold","bevel","#fff0b0","#9a6827",[[-.30,-.28],[.28,-.28],[.44,-.08],[.25,.25],[-.30,.25],[-.43,.02]]],
   ["lava","cut","#a17568","#1c1922",[[-.46,-.25],[-.08,-.17],[.30,-.30],[.42,-.04],[.18,.24],[-.37,.18]]]
 ].map(([id,kind,light,shadow,cavity])=>[id,{id,kind,light,shadow,cavity}])));
+/** Shared shell architecture: broad cel planes, never a new collision shape.
+ * Surface names describe construction only, not unimplemented powers. */
+const ASSEMBLY_MATERIALS=freezeConstruction({
+ paper:{name:'FOLDED PAPER',mount:'FOLDED TAB',face:'#f0e6ce',edge:'#fffbed',shade:'#b29787',well:'#514344'},
+ obsidian:{name:'KEYED OBSIDIAN',mount:'INSET KEY',face:'#343849',edge:'#a6adc0',shade:'#131824',well:'#080d17'},
+ hologram:{name:'PROJECTED MESH',mount:'VERTEX BRACKET',face:'#205060',edge:'#9ae9ef',shade:'#122936',well:'#0c1b29'},
+ prism:{name:'FACETED CRYSTAL',mount:'FACET COLLAR',face:'#b39ed3',edge:'#f5e6ff',shade:'#54466f',well:'#28223c'},
+ iron:{name:'BOLTED IRON',mount:'BOLTED PLATE',face:'#71838f',edge:'#dbe1df',shade:'#33414b',well:'#1b2631'},
+ lava:{name:'CRACKED BASALT',mount:'THERMAL SEAT',face:'#51444a',edge:'#a59891',shade:'#211d29',well:'#100f18'},
+ gold:{name:'FOLDED FOIL',mount:'CREASED SEAT',face:'#d6af63',edge:'#fff3bd',shade:'#886236',well:'#49352a'},
+ chamfer:{name:'MACHINED BEVEL',mount:'BEVELED SEAT',face:'#9aaec0',edge:'#ecf4fb',shade:'#4c657a',well:'#253746'},
+ notched:{name:'VENTED FRAME',mount:'RECESSED SOCKET',face:'#b887a0',edge:'#ffe0e9',shade:'#74445c',well:'#352434'},
+ segmented:{name:'INTERLOCKED PLATES',mount:'FLOATING SEAT',face:'#8eb2a4',edge:'#d7eee1',shade:'#3d6058',well:'#1c3633'},
+});
+const assemblyCache=new Map(),ASSEMBLY_CACHE_LIMIT=128;
+/** A bounded immutable construction cache, keyed only by visual-owning slots.
+ * No actors, canvas surfaces, time, ownership or mutable equipment are retained. */
+export function resolveAssemblyConstruction(equipment={}){
+ const eq=equipment||{},body=Object.hasOwn(ASSEMBLY_MATERIALS,eq.body)?eq.body:'paper';
+ const key=[body,eq.head||'none',eq.eyes||'ninja',eq.core||'standard',eq.tail||'ribbon',eq.slash||'razor',eq.world||'twilight'].join('|');
+ let value=assemblyCache.get(key);if(value)return value;
+ const selected=activeHybrid({...eq,body,head:eq.head||'none',eyes:eq.eyes||'ninja',core:eq.core||'standard',tail:eq.tail||'ribbon',slash:eq.slash||'razor',world:eq.world||'twilight'});
+ value=freezeConstruction({body,head:eq.head||'none',eyes:eq.eyes||'ninja',core:eq.core||'standard',tail:eq.tail||'ribbon',
+  headTitle:ITEMS.find(i=>i.id===(eq.head||'none'))?.name||'Bare Head',
+  coreTitle:ITEMS.find(i=>i.id===(eq.core||'standard'))?.name||'Standard Heart',
+  tailTitle:ITEMS.find(i=>i.id===(eq.tail||'ribbon'))?.name||'Ribbon',
+  material:ASSEMBLY_MATERIALS[body],family:selected?.id||null,familyTitle:selected?.title||'CUSTOM ASSEMBLY',
+  headSeat:[0,-.96],tailSeat:[-.96,-.30],weaponSeat:[.87,.62],
+  worldRim:{tokyo:'#89ccd6',foundry:'#dca780',manga:'#c7bfc8',synth:'#c9a1c6',void:'#acb6ce'}[eq.world]||'#d9d6c6'});
+ if(assemblyCache.size>=ASSEMBLY_CACHE_LIMIT)assemblyCache.delete(assemblyCache.keys().next().value);
+ assemblyCache.set(key,value);return value;
+}
+export function assemblyCacheStats(){return Object.freeze({entries:assemblyCache.size,limit:ASSEMBLY_CACHE_LIMIT});}
+export function clearAssemblyCache(){assemblyCache.clear();}
+/** Large material shapes survive at gameplay scale. Detail is radius-gated;
+ * nothing emits, pulses, opens a cooling vent or claims a charge at idle. */
+function drawAssemblyShell(c,eq,p){
+ const a=resolveAssemblyConstruction(eq),m=a.material,detail=p.artRadius>=38,pal=corePalette(eq.core);
+ c.save();try{
+ // One deep lower chassis beneath the face. Eye cuts are drawn later on top.
+ panel(c,[[-.77,.20],[.91,.16],[.91,.88],[-.70,.91]],m.shade,.045);
+ if(a.body==='paper'){
+  panel(c,[[-.77,.20],[.91,.16],[.08,.74]],m.edge,.035);
+  panel(c,[[-.77,.20],[.08,.74],[-.70,.91]],m.face,0);
+  panel(c,[[.91,.16],[.91,.88],[.08,.74]],m.face,0);
+  seam(c,[[-.67,.87],[.08,.74],[.84,.85]],m.well,.035);
+  if(detail)seam(c,[[-.63,.39],[-.38,.47]],m.shade,.025);
+ }else if(a.body==='obsidian'){
+  panel(c,[[-.76,.23],[-.09,.44],[-.37,.93],[-.74,.87]],m.face,.04);
+  panel(c,[[-.09,.44],[.91,.17],[.66,.83],[-.37,.93]],'#242938',.04);
+  seam(c,[[-.73,.24],[-.09,.44],[.66,.83]],m.edge,.038);
+  if(detail)seam(c,[[-.09,.44],[-.37,.86]],'#656e88',.025);
+ }else if(a.body==='hologram'){
+  panel(c,[[-.74,.22],[.89,.19],[.89,.88],[-.73,.89]],m.well,.035);
+  seam(c,[[-.73,.52],[.89,.49]],m.face,.045);
+  seam(c,[[-.30,.23],[-.30,.88],[.30,.87],[.30,.21]],m.face,.03);
+  for(const side of [-1,1])seam(c,[[side*.50,.22],[side*.77,.22],[side*.77,.42]],m.edge,.05);
+  seam(c,[[-.73,.69],[-.73,.89],[-.47,.89]],m.edge,.045);
+ }else if(a.body==='prism'){
+  panel(c,[[-.76,.21],[.02,.28],[-.30,.92],[-.72,.82]],m.edge,.04);
+  panel(c,[[.02,.28],[.91,.18],[.80,.85],[-.30,.92]],m.face,.04);
+  panel(c,[[.02,.28],[.80,.85],[.27,.80]],'#75638f',0);
+  if(detail)seam(c,[[-.71,.25],[-.44,.42],[-.28,.80]],'#ffffffb0',.028);
+ }else if(a.body==='iron'){
+  panel(c,[[-.78,.22],[.91,.18],[.91,.81],[.70,.96],[-.56,.96],[-.77,.79]],m.face,.07);
+  panel(c,[[-.65,.34],[.78,.31],[.78,.79],[-.56,.83]],m.shade,.035);
+  seam(c,[[-.65,.34],[.78,.31]],m.edge,.055);
+  for(const [x,y]of [[-.66,.29],[.80,.27],[-.63,.82]]){circle(c,x,y,.055,m.well);if(detail)seam(c,[[x-.027,y],[x+.027,y]],m.edge,.02);}
+ }else if(a.body==='lava'){
+  panel(c,[[-.77,.24],[-.14,.24],[-.29,.57],[-.03,.74],[-.20,.94],[-.73,.86]],m.face,.05);
+  panel(c,[[.06,.23],[.89,.19],[.90,.84],[.02,.93],[.19,.68],[-.07,.54]],'#39323c',.05);
+  seam(c,[[-.04,.25],[-.17,.54],[.09,.72],[-.07,.91]],'#d9845b',.065);
+  if(detail)seam(c,[[.09,.72],[.50,.56],[.89,.68]],'#9d604b',.035);
+ }else if(a.body==='gold'){
+  panel(c,[[-.76,.22],[.89,.18],[.89,.87],[-.65,.90]],m.face,.04);
+  panel(c,[[-.76,.22],[.18,.57],[-.65,.90]],m.edge,0);
+  panel(c,[[.18,.57],[.89,.18],[.79,.83]],m.shade,0);
+  seam(c,[[-.70,.24],[.18,.57],[.80,.85]],'#fff4c7',.045);
+  if(detail)panel(c,[[-.65,.66],[-.38,.78],[-.65,.89]],'#fff8dc',0);
+ }else if(a.body==='chamfer'){
+  panel(c,[[-.76,.22],[.75,.19],[.92,.34],[.92,.74],[.71,.95],[-.55,.95],[-.77,.74]],m.face,.05);
+  panel(c,[[-.60,.35],[.67,.32],[.78,.43],[.78,.72],[.61,.82],[-.50,.82],[-.63,.70]],m.shade,.035);
+  seam(c,[[-.76,.71],[-.55,.94],[.71,.94],[.91,.74]],m.edge,.05);
+ }else if(a.body==='notched'){
+  panel(c,[[-.76,.20],[.90,.18],[.90,.38],[.72,.46],[.78,.74],[.62,.93],[-.57,.93],[-.76,.72]],m.face,.05);
+  panel(c,[[-.56,.36],[.64,.32],[.61,.78],[-.47,.82]],m.shade,.035);
+  // Physical recesses stay unlit: C25 alone owns the active vent slats.
+  for(const side of [-1,1])panel(c,[[side*.74,.39],[side*.94,.35],[side*.94,.80],[side*.74,.75]],m.well,.025);
+ }else if(a.body==='segmented'){
+  const k=shellCompression(p),dx=-Math.cos(p.shellContactAngle||0)*k*.14,dy=-Math.sin(p.shellContactAngle||0)*k*.14;
+  for(const side of [-1,1]){
+   c.save();c.translate(dx,dy);
+   panel(c,[[side*.07,.25],[side*.85,.20],[side*.85,.83],[side*.11,.91]],m.face,.065);
+   seam(c,[[side*.13,.51],[side*.83,.46]],m.well,.07);
+   seam(c,[[side*.16,.30],[side*.76,.27]],m.edge,.045);c.restore();
+  }
+ }
+ // Restrained rim: world light may tint a surface, never recolor the face/core.
+ seam(c,[[.93,.22],[.93,.84],[.77,.95]],a.worldRim,.03);
+ // A supported core seat even on the free Standard Heart. No fake power light.
+ if((eq.core||'standard')==='standard'){
+  panel(c,[[.07,.55],[.49,.52],[.65,.66],[.48,.84],[.08,.85],[-.02,.70]],m.well,.035);
+  for(let i=0;i<3;i++)panel(c,[[.08+i*.15,.65],[.17+i*.15,.64],[.17+i*.15,.76],[.08+i*.15,.77]],m.edge,0);
+ }
+ }finally{c.restore();}
+}
 function drawConstructedFace(c,eq) {
   const d=resolveBodyConstruction(eq.body),single=["visor","sniper"].includes(eq.eyes);
   c.save();
@@ -1845,29 +2093,161 @@ function drawConstructedFace(c,eq) {
   }
   c.restore();
 }
-// Occlusion collars share the shell construction: attachment roots disappear
-// behind a lip, then re-emerge through an inset socket. Never changes physics.
-function attachmentCollars(c,eq,t,p) {
-  const d=resolveBodyConstruction(eq.body);
-  c.save();
-  if(eq.tail){
-    const roots=eq.tail==="thrusters"?[-.5,.48]:[eq.tail==="anchor"?.25:eq.tail==="wings"?0:eq.tail==="spectrum"||eq.tail==="viper-tails"?-.55:-.34];
-    for(const y of roots){
-      // Root tucks behind the side plane: no floating socket badge or bolt.
-      panel(c,[[-1.015,y-.17],[-.79,y-.12],[-.79,y+.16],[-1.015,y+.11]],d.shadow,0);
-      seam(c,[[-.81,y-.12],[-.81,y+.16]],"#0b0912",.045);
-      if(d.kind==="plate")panel(c,[[-1.02,y-.18],[-.91,y-.15],[-.91,y+.16],[-1.02,y+.12]],d.light,0);
-    }
+/** A fitted mechanical/material joint, not an ability indicator. Socket-local
+ * dimensions are bounded; callers seat it under the owned attachment. */
+function drawAssemblySocket(c,assembly,detail=false){
+ const m=assembly.material,id=assembly.body;
+ panel(c,[[-.32,-.11],[.23,-.11],[.32,-.03],[.25,.13],[-.28,.13]],m.well,.045);
+ if(id==='paper'||id==='gold'){
+  panel(c,[[-.31,-.11],[-.05,-.04],[-.08,.14],[-.31,.08]],m.face,.025);
+  panel(c,[[.23,-.11],[.31,-.03],[.25,.13],[.04,.09]],m.edge,.025);
+  seam(c,[[-.25,-.06],[-.08,-.02]],m.edge,.025);
+ }else if(id==='hologram'){
+  seam(c,[[-.32,.09],[-.32,-.12],[-.15,-.12]],m.edge,.035);
+  seam(c,[[.14,.13],[.32,.13],[.32,-.08]],m.edge,.035);
+ }else if(id==='iron'){
+  panel(c,[[-.32,-.13],[.32,-.13],[.32,.13],[-.32,.13]],m.face,.035);
+  for(const x of [-.23,.23]){circle(c,x,0,.045,m.well);if(detail)seam(c,[[x-.025,0],[x+.025,0]],m.edge,.017);}
+ }else if(id==='prism'||id==='obsidian'||id==='chamfer'){
+  panel(c,[[-.33,-.01],[-.22,-.15],[.20,-.15],[.34,0],[.22,.14],[-.22,.14]],m.face,.035);
+  seam(c,[[-.23,-.12],[.20,-.12],[.29,0]],m.edge,.04);
+  panel(c,[[-.13,-.04],[.14,-.04],[.14,.05],[-.13,.05]],m.well,0);
+ }else if(id==='lava'){
+  panel(c,[[-.33,-.12],[-.07,-.07],[.13,-.15],[.33,-.05],[.27,.14],[-.27,.14]],m.face,.035);
+  seam(c,[[-.10,-.09],[-.04,.02],[-.12,.12]],'#b67858',.035);
+ }else if(id==='notched'){
+  panel(c,[[-.32,-.13],[.32,-.13],[.32,.14],[-.32,.14]],m.shade,.035);
+  for(const x of [-.21,.16])panel(c,[[x,-.07],[x+.07,-.07],[x+.07,.09],[x,.09]],m.well,0);
+  seam(c,[[-.30,-.11],[.29,-.11]],m.edge,.03);
+ }else{
+  for(const side of [-1,1])panel(c,[[side*.05,-.12],[side*.30,-.12],[side*.30,.13],[side*.05,.13]],m.face,.035);
+  seam(c,[[-.27,.07],[-.07,.07]],m.edge,.025);
+ }
+}
+function attachmentCollars(c,eq,t,p){
+ const a=resolveAssemblyConstruction(eq),detail=p.artRadius>=38;
+ c.save();try{
+ if(eq.tail){
+  const roots=eq.tail==='thrusters'?[-.5,.48]:[eq.tail==='anchor'?.25:eq.tail==='wings'?0:eq.tail==='spectrum'||eq.tail==='viper-tails'?-.55:-.34];
+  for(const y of roots){c.save();c.translate(-.92,y);c.rotate(Math.PI/2);drawAssemblySocket(c,a,detail);c.restore();}
+ }
+ if(eq.head&&eq.head!=='none'){
+  c.save();c.translate(0,-.96);c.scale(2.15,.9);drawAssemblySocket(c,a,detail);c.restore();
+ }
+ }finally{c.restore();}
+}
+/** Seven physical tail rigs. Motion reads accepted action/velocity, never an
+ * independent idle clock. No tail path is a weapon or a particle source. */
+export function drawTailToolkit(c,{equipment={},pose={},radius=23}={}){
+ const id=equipment.tail||'ribbon',raw=pose.tailAbility,q=raw?.kind===id?raw:null,
+  reduced=pose.reducedMotion===true,lag=reduced?0:Math.max(-.3,Math.min(.3,(pose.performance?.tailLag||0)+(pose.tailMotion?.bend||0))),
+  flash=reduced?0:Math.max(0,Math.min(1,q?.flash||0)),detail=radius>=38,
+  active=q?.active===true,ready=q?.ready===true,mat=resolveAssemblyConstruction(equipment).material;
+ const rect=(x,y,w,h,color)=>{c.fillStyle=color;c.fillRect(x,y,w,h);};
+ const plate=(points,color,outline=.045)=>panel(c,points,color,outline);
+ const stitch=(points,color,width=.03)=>seam(c,points,color,width);
+ c.save();try{
+ if(id==='wings'){
+  // Two rigid feather banks around a central wall-recharge cartridge.
+  for(const side of [-1,1]){
+   c.save();c.scale(1,side);c.translate(0,-flash*.07);
+   plate([[-.86,-.08],[-1.45,-.27],[-2.92,-1.58],[-2.52,-.43],[-1.28,.03]],'#372b51',.075);
+   for(let k=0;k<3;k++){
+    const tx=-2.94+k*.36,ty=-1.55+k*.16;
+    plate([[-1.06,-.09],[-1.67-k*.15,-.18], [tx,ty],[tx+.22,ty+.65]],k===0?'#cdb8eb':k===1?'#9e81c8':'#725493',.04);
+    stitch([[-1.19,-.12],[tx+.08,ty+.15]],'#e4d5f1',.025);
+   }
+   stitch([[-1.05,-.04],[-1.61,-.24],[-2.66,-1.35]],'#4b3c61',.07);c.restore();
   }
-  if(eq.head&&eq.head!=="none"){
-    seam(c,[[-.72,-.925],[.68,-.925]],d.shadow,.05);
-    // Horn feet disappear under the top plane, instead of two universal studs.
-    if(["viper","oni"].includes(eq.head))for(const side of [-1,1]){
-      panel(c,[[side*.34,-1.01],[side*.73,-1.01],[side*.68,-.92],[side*.39,-.92]],d.shadow,0);
-      seam(c,[[side*.39,-.91],[side*.67,-.91]],d.light,.025);
-    }
+  plate([[-.91,-.35],[-1.39,-.25],[-1.50,0],[-1.35,.26],[-.91,.31]],mat.shade,.055);
+  plate([[-1.07,-.18],[-1.31,-.13],[-1.35,.08],[-1.08,.15]],q?(ready?'#d6c0fa':'#332e47'):'#78658f',.025);
+  if(q&&!ready)stitch([[-1.3,-.09],[-1.1,.1]],'#9d83b9',.04);
+ }else if(id==='anchor'){
+  // Chunky interlocked links, then a blunt split-face weight (not a blade).
+  const points=[];
+  for(let k=0;k<6;k++){
+   const u=k/5,x=-1.1-u*1.38,y=.24+u*.50+lag*u*u-flash*.13;points.push([x,y]);
+   c.save();c.translate(x,y);c.rotate(k%2?.7:-.35);c.strokeStyle=k%2?'#a5a9b5':'#66707e';c.lineWidth=.095;c.beginPath();c.ellipse(0,0,.2,k%2?.085:.13,0,0,Math.PI*2);c.stroke();c.restore();
   }
-  c.restore();
+  const [x,y]=points.at(-1);c.save();c.translate(x-.26,y+.08);
+  plate([[-.44,-.25],[.16,-.37],[.49,-.08],[.44,.42],[-.17,.57],[-.50,.30]],'#727d8b',.085);
+  plate([[.16,-.37],[.49,-.08],[.44,.42],[.13,.20]],'#394652',0);
+  stitch([[-.39,-.19],[.08,-.28],[.38,-.04]],'#c5c8c6',.045);
+  plate([[-.23,-.02],[.04,-.08],[.19,.07],[.02,.24],[-.24,.26]],'#313c49',.025);
+  if(q?.action==='floor')stitch([[-.42,.4],[.39,.4]],'#d3b88c',.05);c.restore();
+ }else if(id==='thrusters'){
+  // Closed idle nozzles. ONLY an accepted marginal jet boost opens exhaust.
+  const jet=q?.action==='jet'?flash:0;
+  for(const y of [-.59,.57]){
+   const dx=jet*.08;
+   plate([[-.83,y-.25],[-1.61-dx,y-.26],[-1.91-dx,y-.12],[-1.91-dx,y+.16],[-1.58-dx,y+.29],[-.83,y+.23]],'#66717d',.07);
+   plate([[-1.65-dx,y-.25],[-1.91-dx,y-.12],[-1.91-dx,y+.16],[-1.61-dx,y+.27],[-1.48-dx,y+.10],[-1.49-dx,y-.10]],'#293949',.035);
+   plate([[-1.69-dx,y-.12],[-1.82-dx,y-.07],[-1.82-dx,y+.1],[-1.68-dx,y+.14]],jet?'#e4bf8c':'#101d2b',.025);
+   stitch([[-.91,y-.19],[-1.52,y-.19]],'#b3b7bb',.035);
+   rect(-1.20,y-.1,.1,.2,mat.edge);rect(-1.44,y-.1,.06,.2,'#354653');
+   if(jet){plate([[-1.89,y-.10],[-2.35-jet*.65,y+.01],[-1.89,y+.13]],'#c38464',0);plate([[-1.9,y-.05],[-2.22-jet*.35,y+.01],[-1.9,y+.07]],'#f1d8a9',0);}
+  }
+  stitch([[-1.08,-.31],[-1.08,.28]],mat.shade,.11);
+ }else if(id==='ghost'){
+  for(const [j,len,y]of [[0,3.17,-.49],[1,2.54,.12]]){
+   c.save();c.globalAlpha*=j?.62:.78;
+   plate([[-.85,y-.17],[-1.60,y-.26],[-2.11,y+.03+lag],[-len,y-.11+lag],[-len+.30,y+.23+lag],[-1.93,y+.34+lag],[-1.31,y+.02],[-.85,y+.12]],j?'#648d9b':'#a4c7cc',.045);
+   stitch([[-1.09,y-.10],[-1.63,y-.16],[-2.11,y+.14+lag],[-len+.28,y+.01+lag]],active?'#dff8e7':'#bed6d2',active?.055:.025);
+   if(detail)stitch([[-1.13,y+.06],[-1.87,y+.23+lag]],'#415e72',.025);c.restore();
+  }
+  plate([[-.91,-.38],[-1.18,-.38],[-1.28,-.12],[-1.06,.18],[-.88,.10]],mat.shade,.045);
+  if(q)rect(-1.17,-.23,.15,.13,active?'#cce6d3':'#354655');
+ }else if(id==='viper-tails'){
+  const taut=q?.action==='retention'?flash:0;
+  for(const side of [-1,1]){
+   const y=side*.30,bend=lag+side*(.11-taut*.09);
+   plate([[-.92,y-.13],[-1.44,y-.23],[-2.04,y+.10+bend],[-3.13,y-.16+bend],[-2.85,y+.19+bend],[-1.99,y+.37+bend],[-1.35,y+.06],[-.92,y+.15]],side===1?'#973d55':'#c26370',.055);
+   plate([[-1.22,y-.12],[-1.49,y-.14],[-2.05,y+.21+bend],[-2.91,y-.03+bend],[-2.83,y+.08+bend],[-2.02,y+.29+bend]],'#e6b0aa',0);
+   if(detail)for(let k=0;k<4;k++)stitch([[-1.66-k*.24,y+.06+bend],[-1.7-k*.24,y+.14+bend]],'#5a2b42',.025);
+  }
+  plate([[-.91,-.46],[-1.33,-.37],[-1.42,.34],[-.91,.44]],mat.shade,.055);
+  stitch([[-1.15,-.31],[-1.2,.29]],q?.action==='retention'?'#e7c7ad':'#a2717f',.05);
+ }else if(id==='spectrum'){
+  const colors=['#b6a16f','#7dac9c','#a28cbe'],n=Math.max(0,Math.min(2,q?.count||0));
+  // Three separated cloth bands. Their hues never cycle with elapsed time.
+  for(let k=0;k<3;k++){
+   const y=-.51+k*.37,len=3.12-k*.18,bend=lag*(1-k*.2);
+   plate([[-1.00,y-.12],[-1.72,y-.06],[-2.17,y-.20+bend],[-len,y-.10+bend],[-len+.27,y+.17+bend],[-2.14,y+.10+bend],[-1.63,y+.20],[-1.00,y+.12]],colors[k],.045);
+   stitch([[-1.5,y+.02],[-2.16,y-.05+bend],[-len+.27,y+.02+bend]],'#e0d8bd',.02);
+  }
+  plate([[-.89,-.75],[-1.38,-.65],[-1.48,.62],[-.89,.67]],mat.shade,.06);
+  for(let k=0;k<3;k++){
+   rect(-1.31,-.49+k*.33,.25,.21,q?(k<n?colors[k]:'#293740'):'#69717a');
+   if(q?.remaining>0)stitch([[-1.32,-.48+k*.33],[-1.08,-.29+k*.33]],'#8b869a',.03);
+  }
+ }else{
+  // Free kit: folded cloth, distinct hem and a real knot, no idle flutter.
+  plate([[-.83,-.53],[-1.4,-.65],[-2.08,-.31+lag],[-3.11,-.48+lag],[-2.76,-.08+lag],[-2.05,.04+lag],[-1.38,-.27],[-.83,-.12]],'#29213b',.06);
+  plate([[-1.02,-.46],[-1.47,-.52],[-2.06,-.2+lag],[-2.89,-.36+lag],[-2.73,-.18+lag],[-2.06,-.08+lag],[-1.40,-.35]],'#bbc784',0);
+  stitch([[-1.38,-.48],[-2.08,-.15+lag],[-2.75,-.26+lag]],'#e1dfb8',.025);
+  plate([[-.86,-.57],[-1.12,-.64],[-1.29,-.35],[-1.1,-.09],[-.84,-.13]],mat.shade,.05);
+  stitch([[-1.1,-.53],[-1.2,-.35],[-1.08,-.17]],'#bac78c',.04);
+ }
+ }finally{c.restore();}
+}
+
+/** Labelled ability illustration; it does not run collisions or grant EDGE. */
+export function drawTailToolkitStudy(c,w,h,{equipment={},study={}}={}){
+ const q=study.tail||{},view=q.view||{},motion=q.motion!==false;
+ c.save();try{
+ c.fillStyle='#101a23';c.fillRect(0,0,w,h);c.scale(w/640,h/400);
+ c.fillStyle='#23313b';c.fillRect(22,83,596,218);
+ c.fillStyle='#bdcdc3';c.font='11px monospace';c.fillText('TAIL TOOLKIT / SLOWED ABILITY ILLUSTRATION',24,26);
+ c.fillStyle='#f0ead7';c.font='bold 23px sans-serif';c.fillText((study.title||'TAIL RIG').toUpperCase(),24,57);
+ drawCubeHero(c,{x:403,y:195,radius:68,equipment,motion,time:0,pose:{blink:1,breathe:0,tailAbility:view}});
+ // Installed shape at gameplay scale; enlarged hardware above is identical.
+ drawCubeHero(c,{x:563,y:271,radius:23,equipment,motion,time:0,pose:{blink:1,breathe:0,tailAbility:view}});
+ c.fillStyle='#b1c4bb';c.font='10px monospace';c.fillText('PLAY SIZE',530,300);
+ c.fillStyle='#d2daca';c.font='bold 13px monospace';c.fillText(q.label||'BASELINE CONTROL',24,332);
+ c.fillStyle='#a3b7b4';c.font='11px monospace';
+ const id=equipment.tail,text=id==='spectrum'?q.beat===0?'0 / 3 PRIMARY KILLS':q.beat===1?'2 / 3 PRIMARY KILLS':'3RD KILL → +1 EDGE / 120 TICK RECHARGE':id==='wings'?q.beat===0?'READY / FIRST WALL ONLY':'SPENT / FLOOR CONTACT REARMS':id==='thrusters'?'ONLY A REAL MARGINAL BANK BOOST FIRES THE JETS':id==='viper-tails'?'ORDINARY 85% → 87.25% / HYPER UNCHANGED':id==='ghost'?'TWO CLOTH FOLDS / SCARF IS NOT A COLLIDER':id==='anchor'?'QUALIFIED FLOOR ONLY / NO NEW SLAM BUTTON':'NO EXTRA FORCE / NO IDLE FLUTTER';
+ c.fillText(text,24,357);c.fillStyle='#708e94';c.font='10px monospace';c.fillText('ILLUSTRATION ONLY / SHOW PRACTICE CONTROLS FOR LIVE TESTING',24,385);
+ }finally{c.restore();}
 }
 function ribbon(c, eq, t, accent, ink2, performance=resolveCharacterPerformance({},t)) {
   const wave2 = Math.sin(t * .025) * .035 + performance.tailLag, ghost = eq.tail === "ghost";
@@ -1986,81 +2366,100 @@ function head(c, id, t, palette, ink2) {
   }
 }
 function eyes(c, id, t, pose2, palette) {
-  const performance=pose2.performance||resolveCharacterPerformance(pose2,t),engage=performance.focus;
-  const lookX=Math.max(-1,Math.min(1,pose2.look?.[0]||0));
-  c.save();
-  // Socket stays fixed; only the luminous eye surface tracks and compresses.
-  const saccade=Math.sin(Math.floor(t/24)*2.31)*.018;
-  c.translate(lookX*.055+saccade,-engage*.045);
-  c.translate(0,-.14);c.scale(1+engage*.055,1-engage*.27);c.translate(0,.14);
-  c.translate((pose2.look?.[0] || 0) * 0.08, (pose2.look?.[1] || 0) * 0.045);
-  c.translate(0, -0.1);
-  // Display hardware stays readable even during a blink; slit eyes may close.
-  c.scale(1, Math.max(id==="visor"?.42:id==="sniper"?.32:.06, (pose2.blink ?? 1) * (pose2.eyes ?? 1)));
-  c.translate(0, 0.1);
-  if (id === "visor") {
-
-    const g = c.createLinearGradient(0, -0.4, 0, 0.1);
-    g.addColorStop(0, "#082332");
-    g.addColorStop(0.6, "#12556b");
-    g.addColorStop(1, "#4de9f5");
-    panel(c, [[-0.7, -0.34], [0.68, -0.28], [0.6, -0.02], [-0.63, 0.02]], g, 0);
-    panel(c, [[-0.58, -0.33], [-0.31, -0.32], [-0.58, -0.01], [-0.7, -0.01]], "#d7ffff", 0);
-    seam(c, [[-0.13, -0.12], [0.08, -0.08], [0.43, -0.15]], "#b7ffff", 0.045);
-    c.save();path(c,[[-.7,-.34],[.68,-.28],[.6,-.02],[-.63,.02]]);c.clip();
-    const scan=((performance.idleClock+engage*28)*.018%2.1)-1.05;
-    panel(c,[[scan,-.42],[scan+.16,-.42],[scan-.13,.1],[scan-.29,.1]],"#e0ffff77",0);c.restore();
-    if(engage>.05){
-      seam(c,[[-.57,-.25],[-.32,-.20]],palette.light,.04);
-      seam(c,[[.31,-.20],[.56,-.25]],palette.light,.04);
+  const performance=pose2.performance||resolveCharacterPerformance(pose2,t),q=pose2.eyeAbility?.kind===id?pose2.eyeAbility:null,
+    aiming=!!q?.active,hot=!!pose2.overdrive,recover=!!pose2.focusRecovering&&!pose2.aiming&&pose2.focusLevel<1,
+    power=aiming?Math.max(0,Math.min(1,pose2.eyePower||0)):0;
+  const plate=(points,color,ink=.035)=>panel(c,points,color,ink),line=(points,color,width=.04)=>seam(c,points,color,width);
+  c.save();try{
+  // Hardware is mounted to the face. Only pupils track; no idle scans or orbit.
+  const gaze=Math.max(-1,Math.min(1,pose2.look?.[0]||0))*.035;
+  const blink=Math.max(.06,(pose2.blink??1)*(pose2.eyes??1));
+  // Expression is not ability state: a tense squint never grants or lights a power.
+  c.translate((pose2.look?.[0]||0)*.02,-performance.focus*.025);
+  c.translate(0,-.14);c.scale(1+performance.focus*.025,(1-performance.focus*.13)*Math.max(['visor','sniper','glitch','hypno'].includes(id)?.72:.06,blink));c.translate(0,.14);
+  if(id==='visor'){
+    plate([[-.83,-.36],[.70,-.40],[.82,-.25],[.72,.06],[-.72,.10],[-.83,-.05]],'#111e2b',.055);
+    plate([[-.71,-.29],[.66,-.32],[.69,-.22],[.61,-.035],[-.65,.005]],'#164857',0);
+    plate([[-.64,-.27],[-.35,-.28],[-.53,-.01],[-.66,0]],'#71a4a8',0);
+    line([[-.79,-.15],[-.70,-.15]],'#7e919e',.065);line([[.70,-.16],[.78,-.16]],'#7e919e',.065);
+    line([[-.27,-.06],[.47,-.09]],aiming?'#c2ffff':'#4a7a86',aiming?.055:.025);
+    if(aiming){for(let i=0;i<3;i++)line([[.24+i*.12,-.26],[.24+i*.12,-.20]],'#a9ffff',.035);}
+  }else if(id==='hypno'){
+    const charge=aiming?Math.min(1,(q.age||0)/18):0;
+    for(const [x,side]of [[-.43,-1],[.43,1]]){
+      circle(c,x,-.14,.315,'#111120');circle(c,x,-.14,.258,'#43335d');
+      // A true continuous spiral, not concentric disks or a global time glyph.
+      c.beginPath();for(let i=0;i<=44;i++){const a=i/44*Math.PI*3.8*side-charge*.65,r=.025+i/44*.205;const px=x+Math.cos(a)*r,py=-.14+Math.sin(a)*r;if(i)c.lineTo(px,py);else c.moveTo(px,py);}c.strokeStyle=q?.remaining>0?'#f0dcff':charge?'#d6b1ff':'#a184be';c.lineWidth=.045;c.stroke();
+      line([[x-.23,-.39],[x-.09,-.43]],'#837790',.035);
+      if(q?.remaining>0)line([[x-.07,.17],[x+.07,.17]],'#dfbaff',.06);
     }
-  } else if (id === "hypno") {
-    for (const x of [-0.43, 0.47]) {
-      circle(c, x, -0.13, 0.29, "#080610");
-      for (const [r, col] of [[0.23, "#6936b0"], [0.175, "#d493ff"], [0.12, "#291536"], [0.065, "#a976f1"]]) {
-        c.beginPath();
-        c.arc(x, -0.13, r, 0, Math.PI * 2);
-        c.strokeStyle = col;
-        c.lineWidth = 0.045;
-        c.stroke();
-      }
-      const spin=performance.idleClock*.045+engage*2.2+(x<0?0:Math.PI);
-      seam(c,[[x+Math.cos(spin)*.09,-.13+Math.sin(spin)*.09],[x+Math.cos(spin+.5)*.21,-.13+Math.sin(spin+.5)*.21]],palette.light,.038);
-      circle(c, x+lookX*.05, -.13, .045+engage*.025, "#fff");
+  }else if(id==='glitch'){
+    const cyan=recover?'#8ffff1':'#548b97',pink=recover?'#ff91db':'#9c527e',shift=recover?.035:0;
+    plate([[-.78,-.38],[-.16,-.33],[-.14,.04],[-.75,.07]],'#15202a',.03);
+    plate([[.17,-.35],[.75,-.39],[.80,.03],[.17,.07]],'#211a2d',.03);
+    line([[-.67-shift,-.28],[-.30-shift,-.01]],cyan,.09);line([[-.63+shift,-.015],[-.29+shift,-.29]],pink,.09);
+    circle(c,.46,-.14,.19,cyan);circle(c,.46,-.14,.105,'#181829');
+    line([[.29,-.26],[.63,-.01]],pink,.055);
+    // Deliberate broken conductor; closes ONLY during passive recovery.
+    line([[-.13,-.12],[-.04,-.12],[-.04,-.04]],cyan,.035);
+    line([[.04,-.04],[.12,-.04]],pink,.035);
+    if(recover)line([[-.04,-.04],[.04,-.04]],'#e6fff7',.04);
+  }else if(id==='sniper'){
+    plate([[-.80,-.29],[.69,-.35],[.80,-.21],[.71,.05],[-.76,.07]],'#211b28',.055);
+    line([[-.66,-.14],[-.22,-.14]],'#9c5865',.05);
+    circle(c,.37,-.14,.30,'#65404c');circle(c,.37,-.14,.238,'#231b2b');
+    const gap=.19-power*.07;
+    for(const side of [-1,1]){
+      line([[.37+side*gap,-.20],[.37+side*gap,-.08]],power>=.9?'#ffafbd':'#b76a7c',.035);
+      line([[.31,-.14+side*gap],[.43,-.14+side*gap]],power>=.9?'#ffafbd':'#b76a7c',.035);
     }
-  } else if (id === "glitch") {
-    for (const [x, s] of [[-0.43, -1], [0.45, 1]]) {
-      for (const [dx, color] of [[-.035-Math.sin(Math.floor(t/19)*2.1)*(.008+engage*.045), "#ff40af"], [.035+Math.sin(Math.floor(t/19)*2.1)*(.008+engage*.045), "#58efff"]]) {
-        seam(c, [[x - 0.22 + dx, -0.35], [x - 0.22 + dx, -0.08], [x - 0.1 + dx, 0.03]], color, 0.075);
-        seam(c, [[x + 0.22 + dx, -0.29], [x + 0.22 + dx, -0.02], [x + 0.1 + dx, 0.06]], color, 0.065);
-      }
-      panel(c, [[x - 0.13, -0.2], [x + 0.12, -0.15], [x + 0.06, -0.045], [x - 0.12, -0.08]], "#e9ffff", 0);
-    }
-  } else if (id === "sniper") {
-    seam(c, [[-0.73, -0.16], [0.7, -0.16]], "#6c263d", 0.045);
-    circle(c, 0.08, -0.16, 0.18, "#9d2848");
-    circle(c, 0.08, -0.16, 0.1, "#ff4e79");
-    circle(c, .05+lookX*.12, -.2, .04, "#fff5e9");
-    c.save();c.translate(.08,-.16);c.rotate(performance.idleClock*.018+engage*.65);
-    for(let i=0;i<4;i++){c.rotate(Math.PI/2);seam(c,[[.21+engage*.04,0],[.29+engage*.04,0]],palette.light,.027);}c.restore();
-  } else {
-    const col = id === "blaze" ? "#fff1b1" : id === "smug" ? palette.light : "#faffdb";
-    panel(c, [[-0.77, -0.33], [-0.16, -0.19], [-0.08, -0.02], [-0.64, -0.08]], col, 0);
-    panel(c, [[0.1, -0.02], [0.2, -0.2], [0.77, -0.36], [0.65, -0.08]], col, 0);
-    if (id === "smug") seam(c, [[-0.77, -0.3], [0.76, -0.3]], BLACK, 0.14);
-    // Moving highlights stay inside the eye cuts, not pasted onto the shell.
+    circle(c,.37+gaze,-.14,power>=.9?.065:.044,power>=.9?'#ffe0dc':'#ea6d85');
+  }else if(id==='blaze'){
     for(const side of [-1,1]){
       const x=side*.43;
-      const glint=Math.sin(t*.065+side)*.055;
-      seam(c,[[x-.10+glint,-.14],[x+.05+glint,-.12]],palette.primary,.026);
-      if(id==="blaze"){
-        const flicker=.04+(.5+.5*Math.sin(t*.12+side))* (.018+engage*.08);
-        panel(c,[[x-.14,-.19],[x-.08,-.29-flicker],[x,-.22],[x+.08,-.32-flicker*.7],[x+.13,-.16]],palette.primary,0);
-      }
+      plate([[x-side*.30,-.03],[x-side*.27,-.29],[x-side*.10,-.22],[x+side*.01,-.48],[x+side*.12,-.26],[x+side*.31,-.38],[x+side*.23,-.05]],'#3c2c2b',.04);
+      plate([[x-side*.22,-.07],[x-side*.17,-.22],[x-side*.05,-.17],[x+side*.02,-.34],[x+side*.11,-.18],[x+side*.23,-.28],[x+side*.17,-.07]],hot?'#ffe4a1':'#b8976b',0);
+      line([[x-side*.14,-.10],[x+side*.16,-.15]],q?.flash>0&&!pose2.reducedMotion?'#ffffff':hot?'#fff8db':'#efe2c2',.055*blink);
+    }
+  }else if(id==='smug'){
+    for(const side of [-1,1]){
+      const x=side*.44;
+      plate([[x-.29,-.28],[x+.29,-.28],[x+.22,hot?.09:-.02],[x-.23,hot?.09:-.02]],'#242331',.035);
+      plate([[x-.22,-.19],[x+.22,-.19],[x+.17,hot?.015:-.065],[x-.18,hot?.015:-.065]],hot?'#f3ca72':'#b6c4ad',0);
+      line([[x-.32,-.29],[x+.29,-.29]],'#111521',.095);
+      if(pose2.combo>0)line([[x-.14,.12],[x+.14,.12]],hot?'#f3ca72':'#829a85',.035);
+    }
+  }else{
+    // Free baseline: two hand-cut apertures with a folded ink rim.
+    for(const side of [-1,1]){
+      plate([[side*.80,-.39],[side*.12,-.22],[side*.07,.02],[side*.69,-.055]],'#1a2230',.025);
+      plate([[side*.70,-.29],[side*.20,-.18],[side*.15,-.065],[side*.63,-.115]],'#faffdb',0);
+      line([[side*.66+gaze,-.19],[side*.47+gaze,-.15]],palette.secondary,.035*blink);
     }
   }
-  c.restore();
+  }finally{c.restore();}
 }
+
+/** Fitted eye hardware in a quiet editorial shop plate, at two honest sizes. */
+export function drawEyeToolkitStudy(c,w,h,{equipment={},study={}}={}){
+ const q=study.eye||{},motion=q.motion!==false;
+ c.save();try{
+  c.fillStyle='#111d27';c.fillRect(0,0,w,h);c.scale(w/640,h/400);
+  c.fillStyle='#718c96';c.font='11px monospace';c.fillText('EYE SYSTEM / LABELLED ABILITY ILLUSTRATION',24,27);
+  c.fillStyle='#f0eadc';c.font='bold 24px sans-serif';c.fillText((study.title||'EYES').toUpperCase(),24,59);
+  c.fillStyle='#1c2b36';c.fillRect(22,79,596,219);
+  // Neutral time keeps unearned ambient movement out of this inspection.
+  drawCubeHero(c,{x:352,y:191,radius:77,equipment,motion,time:0,pose:{...q.pose,reducedMotion:!motion}});
+  drawCubeHero(c,{x:558,y:257,radius:23,equipment,motion,time:0,pose:{...q.pose,reducedMotion:!motion}});
+  c.fillStyle='#99aeb5';c.font='10px monospace';c.fillText('PLAY SIZE',526,288);
+  c.fillStyle='#c5d2cb';c.font='11px monospace';c.fillText(['BASELINE','CONDITION','RESULT'][q.beat||0],39,105);
+  c.fillStyle='#a6c9cb';c.font='11px monospace';c.fillText(q.label||'',24,325);
+  c.fillStyle='#f0eadc';c.font='bold 15px monospace';c.fillText(q.benefit||'',24,348);
+  c.fillStyle='#b7c5c5';c.font='10px monospace';c.fillText(q.detail||'',24,369);
+  c.fillStyle='#738e9a';c.fillText('ILLUSTRATION ONLY / PRACTICE CONTROLS FOR MANUAL TESTING',24,390);
+ }finally{c.restore();}
+}
+
 // Four cel values and a fixed screen-tone lattice. No offscreen surfaces or DOM.
 var COMIC_TONE = Object.freeze(Array.from({length:72},(_,i)=>Object.freeze([
   -.78+(i%9)*.20+(Math.floor(i/9)%2)*.10, -.20+Math.floor(i/9)*.17
@@ -2103,12 +2502,14 @@ function drawComicHero(c, x, y, r, angle = 0, t = 0, face = 1, pose2 = null) {
   }
   if (p.forge?.active && p.forge.slot === "body") c.scale(p.forge.scale, p.forge.scale);
   drawHybridAura(c, eq, t, p);
-  c.save();
+  const seat=eq.body==='segmented'?shellCompression(p)*.06:0,
+    seatX=-Math.cos(p.shellContactAngle||0)*seat,seatY=-Math.sin(p.shellContactAngle||0)*seat;
+  c.save();c.translate(seatX,seatY);
   if (eq.body === "hologram") c.globalAlpha = 0.65;
-  if (eq.tail === "wings") wings(c, eq, t, accent, ink2, energy);
-  else if (!extraTail(c, eq.tail, t, { ...p, palette })) ribbon(c, eq, t, accent, ink2,performance);
+  drawTailToolkit(c,{equipment:eq,pose:p,radius:r});
   c.restore();
   c.save();
+  c.translate(seatX,seatY);
   if (p.forge?.active && p.forge.slot === "head") c.scale(p.forge.scale, p.forge.scale);
   head(c, eq.head, t, palette, ink2);
   c.restore();
@@ -2117,7 +2518,7 @@ function drawComicHero(c, x, y, r, angle = 0, t = 0, face = 1, pose2 = null) {
   const profileFill={chamfer:"#b0c4dc",notched:"#d3a6bd",segmented:"#93b8a9"}[eq.body];
   const shell = profileFill || (eq.body === "obsidian" ? "#181821" : eq.body === "hologram" ? "#163348bb" : shellMaterial(c, eq.body) || CREAM);
   sculptedShell(c,eq,palette,shell,ink2);
-  panel(c, [[-.75,.72],[.35,.81],[.96,.61],[.96,.91],[.8,.96],[-.75,.96]], eq.body === "paper" || !eq.body ? "#bca299" : "#09091266", 0);
+  drawAssemblyShell(c,eq,p);
   if(eq.body!=="iron"&&(r>=29||eq.body==="lava"))shellDetails(c, eq.body, t, { ...p, palette });
   if (p.equipment) bodyFinish(c, eq, palette, t, p);
   // Rear head silhouettes stay behind the shell. The forward mounting band
@@ -2125,7 +2526,7 @@ function drawComicHero(c, x, y, r, angle = 0, t = 0, face = 1, pose2 = null) {
   if(eq.head&&eq.head!=='none'&&eq.head!=='halo'){
     c.save();c.beginPath();c.rect(-2.2,-2.5,4.4,1.85);c.clip();
     if(p.forge?.active&&p.forge.slot==='head')c.scale(p.forge.scale,p.forge.scale);
-    head(c,eq.head,t,palette,ink2);c.restore();
+    c.translate(seatX,seatY);head(c,eq.head,t,palette,ink2);c.restore();
   }
   drawConstructedFace(c,eq);
   c.save();
@@ -2133,14 +2534,10 @@ function drawComicHero(c, x, y, r, angle = 0, t = 0, face = 1, pose2 = null) {
   c.translate(.08,-.02);c.scale(.91,.96);
   eyes(c, eq.eyes, t, p, palette);
   c.restore();
-  if (eq.core && eq.core !== "standard" || eq.body === "hologram") {
-    c.save();
-    if (p.forge?.active && p.forge.slot === "core") c.scale(p.forge.scale, p.forge.scale);
-    drawCoreChamber(c, { ...eq, core: eq.core || "standard" }, t, palette, p);
-    c.restore();
-  } else {
-    seam(c,[[-.53,.70],[.32,.70],[.63,.57]],resolveBodyConstruction(eq.body).shadow,.035);
-  }
+  c.save();
+  if(p.forge?.active&&p.forge.slot==='core')c.scale(p.forge.scale,p.forge.scale);
+  drawCoreChamber(c,{...eq,core:eq.core||'standard'},t,palette,p);
+  c.restore();
 
   if (eq.head === "oni") {
     panel(c, [[-1, -1.04], [-0.2, -1.04], [-0.14, -0.65], [-0.43, -0.43], [-0.88, -0.55], [-1.08, -0.35]], "#fff0cf", ink2 * 0.7);
@@ -2148,8 +2545,9 @@ function drawComicHero(c, x, y, r, angle = 0, t = 0, face = 1, pose2 = null) {
     seam(c, [[-0.64, -1.03], [-0.55, -0.84], [-0.68, -0.7], [-0.54, -0.52]], "#492c38", 0.055);
   }
   c.restore();
-  if(p.equipment){attachmentCollars(c,eq,t,p);drawHarmonyBindings(c,eq,t,p);drawHybridIntegration(c,eq,t,p);}
+  if(p.equipment){c.save();c.translate(seatX,seatY);attachmentCollars(c,eq,t,p);c.restore();drawHybridIntegration(c,eq,t,p);drawHarmonyBindings(c,eq,t,p);}
   drawSparkMutation(c, eq, t, "front", p);
+  drawReactiveShellState(c,eq,p);
   drawForge(c, p.forge, palette);
   c.restore();
 }
@@ -2752,7 +3150,7 @@ function polygon(c, points, color) {
  * move independent depth planes; deterministic tile coordinates avoid respawns.
  * All masses are scenery: muted edges, no gameplay lime/red or collision writes.
  */
-function drawIndustrialDistrict(c,w,h,camera={},seed=41,band=1,time=0) {
+function drawIndustrialDistrict(c,w,h,camera={},seed=41,band=1,time=0,bake=null) {
   const x=Number.isFinite(camera.x)?camera.x:0,y=Number.isFinite(camera.y)?camera.y:0;
   const scale=Math.max(.65,Math.min(1.3,camera.scale||1));
   const palettes=[
@@ -2766,6 +3164,22 @@ function drawIndustrialDistrict(c,w,h,camera={},seed=41,band=1,time=0) {
   const sky=c.createLinearGradient(0,0,w,h);sky.addColorStop(0,p.sky);sky.addColorStop(.65,p.haze);sky.addColorStop(1,p.sky);c.fillStyle=sky;c.fillRect(0,0,w,h);
   // Far light well: broad value separation, not a colored bloom cloud.
   const well=c.createRadialGradient(w*.48,h*.43,0,w*.48,h*.43,w*.69);well.addColorStop(0,"#a8b7af13");well.addColorStop(1,"#08121c00");c.fillStyle=well;c.fillRect(0,0,w,h);
+  // Neutral skyline landmark: distant freight crane, no powered rail or emitter.
+  // Continuous world tiles, culled before any paths; kept behind the district.
+  const ct=1200*scale,cr=1000*scale,cx=-x*.045,cy=-y*.045;
+  for(let row=Math.floor(-cy/cr);row<=Math.floor((h-cy)/cr);row++)for(let col=Math.floor(-cx/ct);col<=Math.floor((w-cx)/ct);col++){
+    const px=col*ct+cx,py=row*cr+cy;
+    if(px+1050*scale<0||px+110*scale>w||py+850*scale<0||py+80*scale>h)continue;
+    c.save();c.translate(px,py);c.scale(scale,scale);
+    polygon(c,[[160,850],[196,260],[238,260],[278,850],[250,850],[217,365],[189,850]],p.far);
+    polygon(c,[[110,240],[670,90],[1050,240],[1040,260],[668,132],[119,265]],p.far);
+    seam(c,[[217,260],[668,110],[991,246]],p.edge+"80",2);
+    line2(c,p.far,5,668,110,668,81);line2(c,p.far,3,836,187,836,438);
+    c.fillStyle=p.far;c.fillRect(818,435,37,32);
+    seam(c,[[836,466],[836,490],[823,499]],p.edge+"80",3);
+    for(let k=0;k<3;k++)line2(c,p.edge+"55",2,192-k*4,420+k*122,248+k*7,487+k*122);
+    c.restore();
+  }
   // Each tier is continuous through positive/negative camera movement.
   for(let tier=0;tier<3;tier++){
     const depth=[.09,.22,.40][tier],tw=[490,790,1360][tier]*scale,th=[640,820,1140][tier]*scale;
@@ -2776,6 +3190,7 @@ function drawIndustrialDistrict(c,w,h,camera={},seed=41,band=1,time=0) {
       const bounds=tier===0?[50,35,370,640]:tier===1?[30,-30,670,820]:[924,-70,1360,1140];
       if(px+(bounds[2]+16)*scale<0||px+(bounds[0]-16)*scale>w||py+(bounds[3]+16)*scale<0||py+(bounds[1]-16)*scale>h)continue;
       c.save();c.translate(px,py);c.scale(scale,scale);
+      const drawTile=c=>{
       if(tier===0){
         // Distant compression towers: visible through the larger machinery.
         const top=100+(n%90),bw=120+(n>>>9)%60;
@@ -2846,6 +3261,16 @@ function drawIndustrialDistrict(c,w,h,camera={},seed=41,band=1,time=0) {
         line2(c,p.near,3,930,0,930,250+(n%90));
         c.fillStyle=p.edge;c.fillRect(924,240+(n%90),12,17);
       }
+      };
+      if(bake&&tier!==1){
+        const bx=tier===0?34:908,by=tier===0?19:-86,bw=tier===0?352:468,bh=tier===0?637:1242;
+        // Muted scenery needs only half-resolution art. Keep a whole visible
+        // working set in the cache rather than thrashing full-size tiles.
+        c.translate(bx,by);c.scale(2,2);
+        bake.paint(c,`district:${seed}:${band%4}:${tier}:${n}`,Math.ceil(bw/2),Math.ceil(bh/2),context=>{
+          context.save();context.scale(.5,.5);context.translate(-bx,-by);drawTile(context);context.restore();
+        });
+      }else drawTile(c);
       c.restore();
     }
   }
@@ -3107,151 +3532,172 @@ function drawShatteredRails(c, w, h, v, arena, time, motion) {
   c.restore();
 }
 
-function drawEquipmentWorld(c, w, h, id, t = 0, camera = {}) {
-
-  if(!id||id==="twilight"){drawIndustrialDistrict(c,w,h,camera,41,1,t);return;}
-  c.save();
-  if (id === "void") {
-    c.fillStyle = "#020205";
-    c.fillRect(0, 0, w, h);
-    const bx=w*.67,by=h*.32,br=Math.min(w,h)*.105;
-    const halo=c.createRadialGradient(bx,by,br*.6,bx,by,br*3.3);
-    halo.addColorStop(0,"#8d6fe738");halo.addColorStop(.5,"#33235b33");halo.addColorStop(1,"#07070d00");
-    c.fillStyle=halo;c.fillRect(0,0,w,h);
-    for(let i=0;i<24;i++)disk2(c,i%6===0?"#d8dcffa0":"#a7b0d744",(i*137+29)%w,(i*71+11)%h,i%9===0?1.5:.7);
-    c.save();c.translate(bx,by);c.rotate(-.22);
-    c.strokeStyle="#bba0ff45";c.lineWidth=br*.28;c.beginPath();c.ellipse(0,0,br*2.2,br*.53,0,0,Math.PI*2);c.stroke();
-    c.strokeStyle="#f1e6ff99";c.lineWidth=Math.max(.8,br*.045);c.beginPath();c.ellipse(0,0,br*2.1,br*.53,0,0,Math.PI*2);c.stroke();
-    disk2(c,"#020206",0,0,br);c.strokeStyle="#d4d2ffaa";c.lineWidth=1.2;c.beginPath();c.arc(0,0,br,0,Math.PI*2);c.stroke();
-    c.strokeStyle="#ffd6b399";c.lineWidth=br*.07;c.beginPath();c.ellipse(0,0,br*2.1,br*.53,0,0,Math.PI);c.stroke();c.restore();
-    for(let i=0;i<4;i++){const x=w*(.13+i*.23),y=h*(.58+(i%2)*.19)+Math.sin(t*.014+i)*3,r=h*(.035+i*.008);polygon(c,[[x-r*.7,y-r],[x+r*.5,y-r*.7],[x+r*.7,y+r*.8],[x-r*.5,y+r]],"#111021");line2(c,"#8c86b655",1,x-r*.7,y-r,x+r*.5,y-r*.7);}
-    c.strokeStyle = "#ededf51a";
-    c.lineWidth = 1;
-    c.strokeRect(14, 14, w - 28, h - 28);
-    for (const x of [14, w - 14]) for (const y of [14, h - 14]) {
-      line2(c, "#d3d3df77", 1, x, y, x + (x === 14 ? 12 : -12), y);
-      line2(c, "#d3d3df77", 1, x, y, x, y + (y === 14 ? 12 : -12));
-    }
-    c.restore();
-    return;
+/** Architectural world adapters. Two continuous, independently camera-relative
+ * tile planes; no simulation, emitters, collision surfaces or powered rails.
+ * All static geometry can share the renderer-owned bounded half-resolution bake.
+ * Coordinates stay inside each tile so cached/direct paths have identical bounds.
+ */
+const WORLD_SCENERY = {
+ tokyo:{sky:['#080f20','#22384a','#101b2c'],far:'#1c3045',mass:'#142638',edge:'#385265',ink:'#0c1b2b',light:'#7b9aa8',accent:'#926b89'},
+ foundry:{sky:['#1c121c','#4b3035','#211b28'],far:'#4a3039',mass:'#30232e',edge:'#6e4b4d',ink:'#211b26',light:'#bd8864',accent:'#985d4e'},
+ manga:{sky:['#b1a694','#d0c3aa','#a89d8c'],far:'#a09689',mass:'#857d75',edge:'#625e5c',ink:'#514f52',light:'#dbcfb6',accent:'#77716b'},
+ synth:{sky:['#17162b','#432841','#191c33'],far:'#3c2b48',mass:'#24263d',edge:'#64516d',ink:'#171c30',light:'#ad8195',accent:'#7c6b9b'},
+ void:{sky:['#040610','#16172a','#070c19'],far:'#1e2038',mass:'#171e31',edge:'#3e425e',ink:'#0d1424',light:'#8b87a9',accent:'#5e577d'}
+};
+function drawWorldArchitecture(c,id,tier,variant,p){
+ const rect=(color,x,y,w,h)=>{c.fillStyle=color;c.fillRect(x,y,w,h);};
+ const edge=(points,color=p.edge,width=2)=>seam(c,points,color,width);
+ const ring=(x,y,rx,ry,color,width=2,rotation=0)=>{c.strokeStyle=color;c.lineWidth=width;c.beginPath();c.ellipse(x,y,rx,ry,rotation,0,Math.PI*2);c.stroke();};
+ if(id==='tokyo'){
+  if(tier===0){
+   // Needle tower, terraced roof decks and the enormous moon behind the city.
+   disk2(c,'#75889738',740,175,105);disk2(c,p.far,760,163,92);
+   polygon(c,[[60,680],[60,330],[100,330],[100,280],[170,280],[170,680]],p.far);
+   polygon(c,[[258,700],[258,260],[291,240],[291,188],[310,155],[329,188],[329,240],[362,260],[362,700]],p.far);
+   edge([[310,78],[310,183]],p.edge,2);ring(310,275,85,18,p.edge,4);
+   for(let i=0;i<4;i++){rect(p.far,465+i*80,420-i%2*115,68,300);rect(p.edge+'50',472+i*80,440-i%2*115,2,110);}
+   edge([[80,545],[260,545],[440,490],[750,490]],p.edge,9);
+  }else{
+   const y=115+variant*22;
+   // Faceted sidewall with inset window strips, external service spine/sign.
+   polygon(c,[[30,775],[30,y+36],[72,y],[244,y],[280,y+32],[280,775]],p.mass);
+   polygon(c,[[244,y],[280,y+32],[280,775],[244,775]],p.ink);
+   for(let i=0;i<7;i++){rect(p.ink,60,y+62+i*69,156,34);rect(p.light+'65',67,y+68+i*69,52,3);rect(p.edge,135,y+68+i*69,62,3);}
+   edge([[45,y+52],[45,750]],p.edge);rect(p.ink,220,y+100,42,205);rect(p.accent,225,y+109,25,184);
+   // Architectural sign marks, never gameplay glyphs or status lettering.
+   for(let i=0;i<5;i++){rect(p.mass,230,y+123+i*30,15,3);rect(p.mass,236,y+117+i*30,3,16);}
+   polygon(c,[[645,780],[645,365],[688,330],[886,330],[927,365],[927,780]],p.mass);
+   rect(p.ink,675,385,216,300);for(let i=0;i<5;i++)rect(p.edge,688,403+i*48,183,3);
+   edge([[505,60],[505,590],[616,650],[616,780]],p.ink,13);edge([[500,60],[500,592],[612,654]],p.edge,2);
+   edge([[280,557],[645,557]],p.ink,30);edge([[280,542],[645,542]],p.edge,3);
+   for(let i=0;i<5;i++)edge([[302+i*65,555],[339+i*65,586]],p.edge,3);
+   edge([[289,120],[460,178],[645,150]],p.ink,2);
   }
-  if (id === "manga") {
-    c.fillStyle = "#f1e8d7";
-    c.fillRect(0, 0, w, h);
-    for(let i=0;i<16;i++){const a=i*Math.PI*2/16,inner=h*(.28+(i%4)*.08);line2(c,"#34253e12",i%5?1:2,w*.55+Math.cos(a)*inner,h*.40+Math.sin(a)*inner,w*.55+Math.cos(a)*w,h*.4+Math.sin(a)*w);}
-    c.fillStyle="#24182d12";c.beginPath();for(let row=0;row<9;row++)for(let col=0;col<12;col++)if(row+col<12){const x=col*12,y=row*10;c.moveTo(x+1.4,y);c.arc(x,y,1.4,0,TAU4);}c.fill();
-    for (let i = 0; i < 18; i++) {
-      const x = i * 137 % w, y = i * 73 % h;
-      line2(c, "#66564716", 1, x, y, x + 20, y - 8);
-    }
-    for (let i = 0; i < 18; i++) {
-      const bw = w / 15, x = i * w / 16, y = h * (0.48 + i * 7 % 9 / 24);
-      c.fillStyle = i % 2 ? "#d0c2a9" : "#b5a98f";
-      c.fillRect(x, y, bw, h - y);
-      c.strokeStyle = "#776956";
-      c.lineWidth = .8;
-      c.strokeRect(x, y, bw, h - y);
-      for (let j = 0; j < 6; j++) line2(c, "#4d415d2b", .8, x, y + 10 + j * 15, x + bw, y + j * 15);
-    }
-    c.strokeStyle = "#51445444";
-    c.lineWidth = 1;
-    c.strokeRect(9, 9, w - 18, h - 18);
-    c.restore();
-    return;
+ }else if(id==='foundry'){
+  if(tier===0){
+   // Monumental crucible pressure vessel rather than a hot-coloured city.
+   rect(p.far,560,95,180,615);ring(650,110,90,26,p.edge,5);
+   for(let i=0;i<4;i++){ring(650,245+i*115,90,25,p.edge,4);rect(p.edge+'50',575,150+i*115,9,64);}
+   edge([[650,100],[650,42],[830,42],[830,585]],p.far,22);
+   rect(p.far,95,240,96,485);rect(p.edge,83,227,120,18);
+   edge([[155,245],[155,160],[365,160],[365,650]],p.far,32);
+   polygon(c,[[62,700],[82,650],[429,650],[458,700]],p.far);
+  }else{
+   const cy=280+variant*26;
+   polygon(c,[[55,780],[55,cy-150],[102,cy-202],[338,cy-202],[383,cy-150],[383,780]],p.mass);
+   disk2(c,p.ink,220,cy,129);ring(220,cy,116,116,p.edge,12);disk2(c,'#794b40',220,cy,94);
+   // Deep furnace throat, heavy shutters and a recessed warm slit, not lava.
+   disk2(c,p.ink,220,cy+8,77);rect(p.accent,157,cy+13,126,27);rect(p.light,178,cy+24,84,3);
+   for(let k=0;k<5;k++)rect(p.mass,141,cy-64+k*32,157,13);
+   for(let k=0;k<6;k++){const a=k*Math.PI/3;disk2(c,p.edge,220+Math.cos(a)*116,cy+Math.sin(a)*116,4);}
+   rect(p.ink,111,cy+165,215,230);for(let k=0;k<5;k++)rect(p.edge,125,cy+184+k*35,185,3);
+   edge([[690,40],[690,295],[797,400],[797,780]],p.ink,45);edge([[673,40],[673,300],[780,407],[780,780]],p.edge,3);
+   for(let k=0;k<4;k++){rect(p.mass,661,100+k*64,57,12);rect(p.edge,663,101+k*64,53,2);}
+   rect(p.ink,465,612,455,23);rect(p.edge,465,610,455,3);
+   for(let k=0;k<5;k++)edge([[490+k*82,635],[532+k*82,691]],p.mass,9);
+   // Solid hoist block and chain, no spark/rain curtain.
+   edge([[470,40],[910,40]],p.ink,20);edge([[860,40],[860,210]],p.edge,3);
+   rect(p.mass,840,205,40,45);edge([[860,250],[860,277],[843,285]],p.edge,4);
   }
-  if (id === "synth") {
-    c.fillStyle = gradient(c, h, ["#070b26", "#35122f", "#b82b62"]);
-    c.fillRect(0, 0, w, h);
-    const sx = w * .79, sy = h * .24, r = h * .165;
-    c.save();
-    c.beginPath();
-    c.arc(sx, sy, r, 0, TAU4);
-    c.clip();
-    c.fillStyle = gradient(c, h * 0.65, ["#ffe396", "#ffaf85", "#ed3c9b"]);
-    c.fillRect(sx - r, sy - r, r * 2, r * 2);
-    c.fillStyle = "#33142f";
-    for (let i = 0; i < 8; i++) c.fillRect(sx - r, sy + i * r * 0.12, r * 2, 2 + i * 1.2);
-    c.restore();
-    polygon(c, [[0, h * 0.65], [w * 0.14, h * 0.47], [w * 0.26, h * 0.63], [w * 0.41, h * 0.53], [w * 0.58, h * 0.68], [w * 0.77, h * 0.49], [w, h * 0.65], [w, h], [0, h]], "#14152c");
-    const horizon = h * 0.72;
-    c.fillStyle = "#0c1123";
-    c.fillRect(0, horizon, w, h - horizon);
-    for (let i = -8; i <= 8; i++) line2(c, "#dd67c64d", 1, w * 0.5 + i * w * 0.07, horizon, w * 0.5 + i * w * 0.27, h);
-    for (let i = 0; i < 9; i++) {
-      const u = (i + t * 0.012) % 9 / 9, y = horizon + (h - horizon) * u * u;
-      line2(c, "#ce68cc55", 1, 0, y, w, y);
-    }
-    c.restore();
-    return;
+ }else if(id==='manga'){
+  if(tier===0){
+   // Large editorial ink panels with sparse halftone patches and a skyline.
+   polygon(c,[[62,58],[523,38],[491,303],[78,326]],'#c9bca4');
+   edge([[62,58],[523,38],[491,303],[78,326],[62,58]],p.far,4);
+   c.fillStyle=p.far;c.beginPath();
+   for(let row=0;row<6;row++)for(let col=0;col<9;col++){const px=108+col*31+row%2*10,py=95+row*29;c.moveTo(px+1.4,py);c.arc(px,py,1.4,0,Math.PI*2);}c.fill();
+   disk2(c,'#b3a694',729,182,103);
+   for(let k=0;k<6;k++){const x=70+k*143,y=480-(k*43)%160;polygon(c,[[x,745],[x,y],[x+35,y-23],[x+105,y-23],[x+105,745]],p.far);}
+   edge([[75,610],[887,560]],p.mass,5);
+  }else{
+   // Slanted printed architecture. Broken hatching seats the ink, not speed FX.
+   polygon(c,[[40,766],[61,374],[239,302],[331,327],[320,766]],p.mass);
+   polygon(c,[[239,302],[331,327],[320,766],[236,766]],p.ink);
+   for(let k=0;k<6;k++){const y=399+k*52;edge([[86,y],[211,y-26]],p.light,10);edge([[91,y+17],[207,y-9]],p.ink,2);}
+   polygon(c,[[640,764],[663,284],[856,265],[914,309],[914,764]],p.mass);
+   polygon(c,[[856,265],[914,309],[914,764],[849,764]],p.ink);
+   for(let k=0;k<7;k++)edge([[689,321+k*54],[826,306+k*54]],p.light,4);
+   edge([[46,51],[910,90],[889,221]],p.ink,7);edge([[63,63],[898,101]],p.light,2);
+   for(let k=0;k<8;k++)edge([[358+k*22,641],[370+k*22,610]],p.edge,1);
+   edge([[360,725],[608,689]],p.ink,5);
+   // Small ink registration bars are scenery, not an on-screen objective.
+   rect(p.ink,797,119,80,7);rect(p.ink,825,137,49,3);
   }
-  c.fillStyle = gradient(c, h, id === "foundry" ? ["#190f22", "#572032", "#a7463e"] : id === "tokyo" ? ["#080b25", "#122345", "#215066"] : ["#1b1227", "#553149"]);
-  c.fillRect(0, 0, w, h);
-  if (id === "foundry") {
-    const x = w * 0.76, y = h * 0.26, r = h * 0.17;
-    const glow = c.createRadialGradient(x, y, 0, x, y, r * 1.8);
-    glow.addColorStop(0, "#ed8d5b55");
-    glow.addColorStop(1, "#e35b4500");
-    c.fillStyle = glow;
-    c.fillRect(x - r * 2, y - r * 2, r * 4, r * 4);
-    disk2(c, "#b85755", x, y, r);
-    disk2(c, "#db82704a", x - r * 0.15, y - r * 0.18, r * 0.78);
-    for (let i = 0; i < 8; i++) line2(c, "#ec9b8633", 1, x - r * 0.7, y - r * 0.6 + i * r * 0.16, x + r * 0.7, y - r * 0.45 + i * r * 0.16);
+ }else if(id==='synth'){
+  if(tier===0){
+   // Eclipsed striped sun and angular mountain basins.
+   disk2(c,'#956b83',672,202,135);disk2(c,p.sky[1],700,170,110);
+   for(let k=0;k<7;k++)rect(p.sky[1],535,223+k*15,275,3+k);
+   polygon(c,[[28,654],[133,433],[243,558],[375,330],[551,615],[689,405],[934,656],[934,755],[28,755]],p.far);
+   edge([[133,433],[184,572],[243,558],[375,330],[417,552],[551,615]],p.edge,2);
+   edge([[689,405],[748,591],[934,656]],p.edge,2);
+   for(let k=0;k<4;k++)edge([[70,682+k*17],[900,682+k*17]],p.edge+'60',1);
+  }else{
+   // Hollow obelisks and an architectural perspective deck; no moving tunnel.
+   for(const [x,y,s]of [[75,120,1],[730,290,.8]]){
+    polygon(c,[[x,y+590*s],[x,y+54*s],[x+46*s,y],[x+139*s,y],[x+177*s,y+54*s],[x+177*s,y+590*s]],p.mass);
+    polygon(c,[[x+139*s,y],[x+177*s,y+54*s],[x+177*s,y+590*s],[x+139*s,y+590*s]],p.ink);
+    rect(p.ink,x+36*s,y+90*s,96*s,340*s);edge([[x+36*s,y+430*s],[x+36*s,y+90*s],[x+132*s,y+90*s]],p.edge,3);
+    edge([[x+55*s,y+110*s],[x+55*s,y+407*s]],p.accent,3);
+   }
+   polygon(c,[[310,581],[574,548],[684,772],[264,772]],p.ink);
+   edge([[310,581],[574,548],[684,772]],p.edge,3);
+   for(let k=0;k<5;k++){const q=k/5;edge([[310-46*q,581+191*q],[574+110*q,548+224*q]],p.edge+'88',1);}
+   edge([[359,575],[342,772]],p.edge,1);edge([[476,561],[526,772]],p.edge,1);
+   ring(496,245,98,98,p.edge,5);ring(496,245,86,86,p.mass,2);
+   polygon(c,[[479,187],[522,245],[479,303],[489,245]],p.accent);
   }
-  for (let layer = 0; layer < 3; layer++) for (let i = 0; i < 18; i++) {
-    const bw = w / (14 - layer * 2), x = i * w / 16 - layer * w * 0.018, y = h * (0.4 + layer * 0.13 + (i * 7 + layer * 3) % 9 / 30);
-    c.fillStyle = id === "tokyo" ? ["#172c46", "#13273e", "#101e33"][layer] : ["#4b2e40", "#332434", "#241f30"][layer];
-    c.fillRect(x, y, bw, h - y);
-    if (id === "tokyo") {
-      for (let row = 0; row < 3; row++) for (let col = 0; col < 2; col++) {
-        c.fillStyle = (i + row + col) % 3 ? "#7295a51b" : "#c18fa52b";
-        c.fillRect(x + 4 + col * bw * 0.25, y + 12 + row * 19, 2, 6);
-      }
-      if (layer === 1 && i % 3 === 0) {
-        c.fillStyle = i % 2 ? "#a96e98" : "#5b92a7";
-        c.fillRect(x + bw * 0.2, y + 8, 4, 29);
-        line2(c, "#a5d8e522", 1, x - 5, y, x + bw + 5, y);
-      }
-    }
+ }else if(id==='void'){
+  if(tier===0){
+   // One lensed eclipse and large remote orbital wreckage, not noisy stars.
+   ring(680,223,151,151,'#534c6c55',32);ring(680,223,188,46,p.accent,9,-.24);
+   disk2(c,'#040610',680,223,112);ring(680,223,113,113,p.light,2);
+   c.strokeStyle=p.light;c.lineWidth=3;c.beginPath();c.ellipse(680,223,188,46,-.24,0,Math.PI);c.stroke();
+   polygon(c,[[72,609],[125,563],[221,585],[193,637],[116,653]],p.far);
+   polygon(c,[[350,112],[374,75],[410,89],[397,126]],p.far);
+   edge([[125,563],[221,585],[193,637]],p.edge,2);
+   for(let k=0;k<18;k++)disk2(c,p.light+'55',45+(k*137)%866,40+(k*83)%700,k%7===0?1.5:.7);
+  }else{
+   // Broken orbital gate: offset arc segments, radial ribs and a cut ring seat.
+   const cx=250,cy=406,r=190;
+   for(let k=0;k<3;k++){
+    const a=.32+k*2.1;c.strokeStyle=p.mass;c.lineWidth=54;c.beginPath();c.arc(cx,cy,r,a,a+1.3);c.stroke();
+    c.strokeStyle=p.edge;c.lineWidth=3;c.beginPath();c.arc(cx,cy,r-27,a,a+1.3);c.stroke();
+    const angle=a+.66;edge([[cx+Math.cos(angle)*177,cy+Math.sin(angle)*177],[cx+Math.cos(angle)*221,cy+Math.sin(angle)*221]],p.edge,9);
+   }
+   polygon(c,[[690,705],[664,385],[731,308],[805,331],[859,691],[779,761]],p.mass);
+   polygon(c,[[731,308],[805,331],[859,691],[804,658]],p.ink);
+   edge([[681,396],[737,337],[793,351]],p.edge,3);edge([[703,462],[726,654],[773,689]],p.accent,3);
+   polygon(c,[[516,154],[552,123],[612,144],[597,190],[546,202]],p.mass);edge([[516,154],[552,123],[612,144]],p.edge,2);
+   polygon(c,[[465,700],[499,667],[557,694],[531,742]],p.mass);
   }
-  if (id === "foundry") {
-    for (let i = 0; i < 8; i++) {
-      const x = i * w / 7, top = h * (0.52 + i % 3 * 0.09), bw = w * 0.065;
-      c.fillStyle = gradient(c, h, ["#59505a", "#25212c", "#151722"]);
-      c.fillRect(x, top, bw, h - top);
-      line2(c, "#ed985b", Math.max(1, w * 15e-4), x + bw * 0.35, h, x + bw * 0.35, top + 12);
-      line2(c, "#ffd59a88", 2, x + bw * 0.35, top + 12, x + bw * 0.88, top + 12);
-      c.fillStyle = "#bba18a44";
-      c.fillRect(x - 2, top + 3, bw + 4, 6);
-      for (let j = 0; j < 5; j++) line2(c, "#cf8e6a22", 1, x, top + 40 + j * 40, x + bw, top + 40 + j * 40);
-    }
-    for (let i = 0; i < 20; i++) {
-      c.fillStyle = i % 3 ? "#ffbb7766" : "#fff2bd88";
-      c.fillRect(i * 79 % w, h - (i * 37 + t * 0.8) % h, 1.5, 2.5);
-    }
+ }
+}
+function drawEquipmentWorld(c,w,h,id,t=0,camera={},bake=null){
+ if(!WORLD_SCENERY[id]){drawIndustrialDistrict(c,w,h,camera,41,1,t,bake);return;}
+ const p=WORLD_SCENERY[id],x=Number.isFinite(camera.x)?camera.x:0,y=Number.isFinite(camera.y)?camera.y:0;
+ const scale=Math.max(.65,Math.min(1.3,camera.scale||1)),u=Math.max(.4,Math.min(w/740,h/720))*scale;
+ c.save();try{
+ const sky=c.createLinearGradient(0,0,w,h);p.sky.forEach((color,i)=>sky.addColorStop(i/2,color));c.fillStyle=sky;c.fillRect(0,0,w,h);
+ for(let tier=0;tier<2;tier++){
+  const depth=tier===0?.055:.19,tw=1000*u,th=(tier===0?1600:800)*u,ox=-x*depth,oy=-y*depth;
+  const c0=Math.floor(-ox/tw),c1=Math.floor((w-ox)/tw),r0=Math.floor(-oy/th),r1=Math.floor((h-oy)/th);
+  for(let row=r0;row<=r1;row++)for(let col=c0;col<=c1;col++){
+   const px=col*tw+ox,py=row*th+oy;if(px>=w||py>=h||px+tw<=0||py+th<=0)continue;
+   const variant=hash(41,col,row+tier*71)%3;
+   c.save();c.translate(px,py);c.scale(u,u);
+   if(bake){c.scale(2,2);bake.paint(c,`world:${id}:${tier}:${tier===1&&(id==='tokyo'||id==='foundry')?variant:0}`,500,tier===0?800:400,context=>{context.save();context.scale(.5,.5);drawWorldArchitecture(context,id,tier,variant,p);context.restore();});}
+   else drawWorldArchitecture(c,id,tier,variant,p);
+   if(id==='foundry'&&tier===1){c.globalAlpha=.28+Math.sin(t*.025)*.09;c.fillStyle=p.ink;c.fillRect(178,304+variant*26,84,3);}
+   c.restore();
   }
-  if (id === "tokyo") {
-    const haze = c.createLinearGradient(0, h * 0.6, 0, h);
-    haze.addColorStop(0, "#60b9de00");
-    haze.addColorStop(1, "#64b2d322");
-    c.fillStyle = haze;
-    c.fillRect(0, 0, w, h);
-    for (let i = 0; i < 19; i++) {
-      const x = (i * 97 + t * 2) % (w + 40), y = (i * 53 + t * 5) % h;
-      line2(c, "#92c2d51c", 1, x, y, x - 8, y + 22);
-    }
-  }
-  if(id==="tokyo") {
-    for(let i=0;i<2;i++){const dir=i%2?1:-1,x=((i*143+t*dir*2.2)%(w+100)+w+100)%(w+100)-50,y=h*(.2+(i%3)*.12);line2(c,i%2?"#8acbd333":"#d79ab733",1.5,x,y,x-dir*28,y);disk2(c,"#d9fbff",x,y,1);}
-  } else if(id==="foundry") {
-    for(const x of [w*.29,w*.64]){const y=h*.48;c.fillStyle="#281d29";c.fillRect(x-12,y-9,24,13);line2(c,"#ffa05c99",3,x,y+4,x,h);line2(c,"#fff0baaa",1,x,y+4,x,h);}
-    line2(c,"#1c1524",4,0,h*.18,w,h*.18);
-    for(const x of [w*.16,w*.83])for(let y=h*.18;y<h*.45;y+=9){c.strokeStyle="#96808b44";c.lineWidth=1.3;c.beginPath();c.ellipse(x,y,2.5,4.5,0,0,TAU4);c.stroke();}
-  } else if(id!=="tokyo"&&id!=="foundry") {
-    const mx=w*.74,my=h*.25,mr=Math.min(w,h)*.115;
-    const glow=c.createRadialGradient(mx,my,mr*.6,mx,my,mr*2.9);glow.addColorStop(0,"#ffb5be3a");glow.addColorStop(1,"#c65b9200");c.fillStyle=glow;c.fillRect(mx-mr*3,my-mr*3,mr*6,mr*6);
-    disk2(c,"#eeb5b188",mx,my,mr);disk2(c,"#b8709c22",mx-mr*.19,my-mr*.14,mr*.8);
-  }
-  c.restore();
+ }
+ // Bounded environmental motion: no particles, no glow pass. Fixed pose at t=0
+ // is used by reduced motion. Rain is eight dim strokes; furnace slit stays local.
+ if(id==='tokyo')for(let i=0;i<8;i++){const px=((i*173+t*.6-x*.025)%(w+24)+w+24)%(w+24)-12,py=((i*97+t*1.6-y*.03)%(h+26)+h+26)%(h+26)-13;line2(c,'#88a5ba24',1,px,py,px-4,py+13);}
+ // One quiet value veil seats architecture below live combat, without a shader.
+ const shade=c.createRadialGradient(w*.5,h*.48,0,w*.5,h*.48,Math.max(w,h)*.7);shade.addColorStop(0,id==='manga'?'#211d2310':'#080c1412');shade.addColorStop(1,id==='manga'?'#211d2330':'#080c1470');c.fillStyle=shade;c.fillRect(0,0,w,h);
+ }finally{c.restore();}
 }
 function inkCrescent(c, x, y, tx, ty, width, color, bend = -.40, start = 0, end = 1) {
   const dx = tx - x, dy = ty - y, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len, cx = (x + tx) / 2 + nx * len * bend, cy = (y + ty) / 2 + ny * len * bend, top = [], bottom = [];
@@ -3319,11 +3765,13 @@ function drawEquipmentImpact(c, x, y, id, progress2, floorY = Infinity) {
   }
   c.restore();
 }
-function drawEquipmentEffects(c, fx, t = 0, floorY = Infinity) {
+function drawEquipmentEffects(c, fx, t = 0, floorY = Infinity,glowBake=null) {
   if (!fx) return;
   for (const b of fx.bursts) {
     const progress2 = 1 - b.ticks / 30;
-    if (b.style === "spark" && b.from) {
+    if (b.style?.startsWith('perk-')) {
+      drawPartPerkPulse(c,{x:b.x,y:b.y,kind:b.style.slice(5),age:30-b.ticks});
+    } else if (b.style === "spark" && b.from) {
       line2(c, "#8feeff", 2, b.from.x, b.from.y, b.x, b.y);
       disk2(c, "#e3ffff", b.x, b.y, 4 * (1 - progress2));
     } else if (b.style === "floor" || b.style === "guard") {
@@ -3338,10 +3786,12 @@ function drawEquipmentEffects(c, fx, t = 0, floorY = Infinity) {
     } else drawEquipmentImpact(c, b.x, b.y, b.style, progress2, floorY);
   }
   for (const p of fx.projectiles) {
+    drawBakedGlow(c,glowBake,p.x,p.y,22,'#00f0ff');
     line2(c, "#b88fff", 3, p.x, p.y, p.x - p.vx * 2, p.y - p.vy * 2);
     disk2(c, "#f5d9ff", p.x, p.y, 2);
   }
   for (const e of fx.echoes) {
+    drawBakedGlow(c,glowBake,e.x,e.y,37,'#dfff00');
     c.save();
     c.globalAlpha = Math.max(0, e.ticks / 30) * 0.6;
     c.translate(e.x, e.y);
@@ -5240,6 +5690,7 @@ __export(radar_exports, {
 });
 /** Only explicitly equipped catalogue IDs can unlock sensor detail. */
 export function sensorTier(id,slot){return id===`${slot}-1`?1:id===`${slot}-2`?2:id===`${slot}-3`?3:0;}
+export function radarRange(id){return [1,1.35,1.7,2.2][sensorTier(id,'radar')];}
 export function trajectorySamples(id){return [24,36,55,95][sensorTier(id,'trajectory')];}
 function radarRect(width, height) {
   const side = Math.min(width, height);
@@ -5247,11 +5698,13 @@ function radarRect(width, height) {
   const pad2 = Math.max(12, side * 0.022);
   return { x: width - size - pad2, y: height - size - pad2, w: size, h: size };
 }
+// The BODY colours. `LAW` owns meaning; these own identity, and by contract
+// none of them may read as safe (green) or as reward (gold).
 var COLORS = {
   fang: "#ff507b",
   prism: "#b28cff",
   fork: "#ffa54d",
-  bastion: "#ffc35b",
+  bastion: "#ff6b3d",
   crown: "#ffd166",
   rift: "#ff4277",
   pulse: "#e178ed",
@@ -5274,13 +5727,20 @@ function localRadar(view, player, rect, enemies = [], portal = null, {range = 1}
   for (const e of enemies) {
     if (Math.abs(e.x - player.x) > view.w * range || e.y < player.y - view.h * 2 * range || e.y > player.y + view.h * 0.5 * range)
       continue;
-    const r = e.kind === "crown" ? 5 : 3;
+    const r = e.kind === "crown" ? 5 : 3,
+      isBody = !!TYPES[e.kind];
     blips.push({
       ...project(e, r),
       r,
       id: e.id,
       kind: e.kind,
       mode: e.mode,
+      ...(e.frostCold?.phase==='active'?{cold:e.frostCold.kind}:{}),
+      // CHUNK 2: only an ENEMY BODY may be drawn in the body palette. A wave
+      // source (a wave marker, a breach point, a portal) is not a creature and
+      // gets the neutral teal diamond instead of a rose dot that reads as one
+      // more thing to cut.
+      shape: isBody ? 'body' : 'source',
       onScreen: e.x >= view.x && e.x <= view.x + view.w && e.y >= view.y && e.y <= view.y + view.h,
       color: COLORS[e.kind] || "#ff507b"
     });
@@ -5445,7 +5905,8 @@ function ticks(c, r, ink2, from, count) {
     );
   }
 }
-function createBackdrop(c) {
+function createBackdrop(c,surface=null) {
+  const bake=createArtBake({surface,maxEntries:24,maxPixels:2000000});
   const glints = Array.from({ length: 190 }, (_, i) => {
     const rand = randomSource(hash(41, i, 9));
     return [rand(), rand(), rand(), rand(), rand()];
@@ -5716,7 +6177,7 @@ function createBackdrop(c) {
     c.restore();
   }
   function world(v, seed, band, time=0) {
-    drawIndustrialDistrict(c,v.width,v.height,{x:v.panX*v.scale,y:v.panY*v.scale,scale:v.scale},seed,band,time);
+    drawIndustrialDistrict(c,v.width,v.height,{x:v.panX*v.scale,y:v.panY*v.scale,scale:v.scale},seed,band,time,bake);
   }
   function title(w, h, time) {
     const tall = w < h * 0.85;
@@ -5821,9 +6282,9 @@ function createBackdrop(c) {
         c.font = "italic 800 39px Riot,Impact,sans-serif";
         c.fillText("THROUGHCUT", -183, 152);
         line(c, "#652843", 2, -179, 161, 183, 161);
-        c.font = "italic 800 29px Riot,Impact,sans-serif";
-        c.textAlign = "right";
-        c.fillText("+300", 180, 151);
+        // CHUNK 1: the stray "+300" floating-score sticker used to sit here,
+        // on top of the hero's key art, over a poster that has nothing to do
+        // with scoring. A price tag on a character portrait.
       }
       c.restore();
     }
@@ -5959,7 +6420,7 @@ function createBackdrop(c) {
     c.restore();
     c.restore();
   }
-  return { world, title, bench };
+  return { world, title, bench,equipment:(w,h,id,time,camera)=>drawEquipmentWorld(c,w,h,id,time,camera,bake),dispose:()=>bake.clear(),bakeStats:()=>bake.stats() };
 }
 
 // consolidated/renderer.js
@@ -6592,7 +7053,10 @@ export function enemyAttackZone(kind,x,y,angle=0,r=32){
 }
 /** Dashed outlines are non-damaging tells; solid filled regions are active. */
 export function drawEnemyZone(c,zone,active=false,scale=1){
- if(!zone)return;const unit=1/Math.max(.1,scale),color={fork:'#ffc19b',bastion:'#ffe1a0',rift:'#ffb5c7',well:'#ead3ff'}[zone.kind]||'#ffffff';
+ // CHUNK 2: every strike zone speaks in the LETHAL voice. These were four
+ // warm tints, including a gold (Bastion at hue 41) and a pale lavender; a
+ // player reading colour as meaning needs one colour for "this will hit you".
+ if(!zone)return;const unit=1/Math.max(.1,scale),color={fork:'#ff9a86',bastion:'#ff8f72',rift:'#ff6b86',well:'#ff8fa8'}[zone.kind]||LAW.lethal;
  c.save();try{
   c.lineJoin='round';c.lineWidth=(active?2.7:2)*unit;c.strokeStyle=color;
   c.fillStyle=color;c.globalAlpha=active?.25:.08;
@@ -6625,6 +7089,7 @@ export function enemyIntent(enemy, hazards=[], links=[]) {
  const verb=INTENT_VERBS[enemy.kind];if(!verb||enemy.paper||enemy.pinned)return null;
  const link=links.find(l=>(l.a.id===enemy.id||l.b.id===enemy.id)&&(l.mode==='tell'||l.mode==='live'));
  if(link)return {label:'LINK / BEAM',state:link.mode==='tell'?'WINDUP':'ATTACK',progress:link.mode==='tell'?clamp(link.f,0,1):null};
+ if(enemy.frostCold?.phase==='active'&&enemy.frostCold.kind==='freeze')return {label:`${enemy.kind.toUpperCase()} / ${verb}`,state:'FROZEN',cold:'freeze',progress:enemy.mode==='tell'?clamp(1-enemy.clock/Math.max(1,enemy.span),0,1):null};
  if(enemy.mode==='tell')return {label:`${enemy.kind.toUpperCase()} / ${verb}`,state:'WINDUP',progress:clamp(1-enemy.clock/Math.max(1,enemy.span),0,1)};
  if(enemy.mode==='rush'||hazards.some(h=>!h.spent&&h.sourceId===enemy.id))return {label:`${enemy.kind.toUpperCase()} / ${verb}`,state:'ATTACK',progress:null};
  return {label:`${enemy.kind.toUpperCase()} / ${verb}`,state:enemy.mode==='recover'?'RECOVER':'IDLE',progress:null};
@@ -6637,7 +7102,7 @@ export function enemyIntentBadges(v,combat,player,alpha=1){
   const position={x:mix(Number.isFinite(e.px)?e.px:e.x,e.x,alpha),y:mix(Number.isFinite(e.py)?e.py:e.y,e.y,alpha)};
   const p=toScreen(v,position);if(p.x<0||p.x>v.width||p.y<0||p.y>v.height)continue;
   const distance=Math.hypot(e.x-player.x,e.y-player.y);
-  list.push({...intent,bodyX:p.x,bodyY:p.y,offset:Math.max(25,e.r*v.scale+18),distance});
+  list.push({...intent,...(e.frostCold?.phase==='active'?{cold:e.frostCold.kind}:{}),bodyX:p.x,bodyY:p.y,offset:Math.max(25,e.r*v.scale+18),distance});
  }
  list.sort((a,b)=>(a.state==='WINDUP'?0:a.state==='ATTACK'?1:2)-(b.state==='WINDUP'?0:b.state==='ATTACK'?1:2)||a.distance-b.distance);
  const chosen=[];
@@ -6660,9 +7125,9 @@ export function drawEnemyIntentBadges(c,v,combat,player,alpha=1){
   for(const b of badges){
    const width=Math.max(96,Math.min(142,c.measureText(b.label).width+14)),active=b.state==='WINDUP'||b.state==='ATTACK';
    c.fillStyle='#17101deb';c.fillRect(b.x-width/2,b.y-17,width,32);
-   c.strokeStyle=active?'#ffbbac':'#aa9eae';c.lineWidth=active?1.5:1;c.strokeRect(b.x-width/2,b.y-17,width,32);
+   c.strokeStyle=active?LAW.lethalPale:'#aa9eae';c.lineWidth=active?1.5:1;c.strokeRect(b.x-width/2,b.y-17,width,32);
    c.fillStyle='#fff5ed';c.fillText(b.label,b.x,b.y-9,width-6);
-   c.font='bold 10px monospace';c.fillStyle=active?'#ffb2a8':'#c5b6c5';c.fillText(b.state==='WINDUP'?'CHARGING':b.state==='ATTACK'?'ATTACK':b.state==='RECOVER'?'RECOVER':'',b.x,b.y+3,width-6);
+   c.font='bold 10px monospace';c.fillStyle=active?LAW.lethalPale:'#c5b6c5';c.fillText((b.state==='WINDUP'?'CHARGING':b.state==='ATTACK'?'ATTACK':b.state==='RECOVER'?'RECOVER':b.state==='FROZEN'?'FROZEN':'')+(b.cold==='slow'?' / SLOWED':''),b.x,b.y+3,width-6);
    if(b.progress!==null){c.fillStyle='#61414b';c.fillRect(b.x-width/2+2,b.y+11,width-4,3);c.fillStyle='#ffcaad';c.fillRect(b.x-width/2+2,b.y+11,(width-4)*b.progress,3);}
    c.font='bold 11px monospace';
   }
@@ -6688,7 +7153,7 @@ export function enemyThreatIndicators(v,combat){
   out.push({x:w/2+dx*k,y:h/2+dy*k,angle:Math.atan2(dy,dx),label,state,progress,verb,distance:Math.hypot(dx,dy)});
  };
  for(const e of combat.enemies.values())if(e.mode==='tell'||e.mode==='rush'){
-  add(e,e.kind.toUpperCase(),e.mode==='tell'?'TELL':'ATTACK',`enemy:${e.id}`,e.mode==='tell'&&Number.isFinite(e.clock)&&Number.isFinite(e.span)?clamp(1-e.clock/Math.max(1,e.span),0,1):null,INTENT_VERBS[e.kind]);
+  add(e,e.kind.toUpperCase(),e.frostCold?.phase==='active'&&e.frostCold.kind==='freeze'?'FROZEN':e.mode==='tell'?'TELL':'ATTACK',`enemy:${e.id}`,e.mode==='tell'&&Number.isFinite(e.clock)&&Number.isFinite(e.span)?clamp(1-e.clock/Math.max(1,e.span),0,1):null,INTENT_VERBS[e.kind]);
   if(e.kind==='rift'&&e.mode==='tell'&&e.attackZone)add(e.attackZone,'RIFT','LANDING',`rift:${e.id}`,Number.isFinite(e.clock)&&Number.isFinite(e.span)?clamp(1-e.clock/Math.max(1,e.span),0,1):null,'STRIKE');
  }
  for(const h of combat.hazards||[])if(!h.spent)add(h,String(h.source||'ATTACK').toUpperCase(),'ATTACK',`hazard:${h.attackId||h.source}`);
@@ -6709,6 +7174,103 @@ export function drawEnemyThreatIndicators(c,v,combat,{top=32,gutter=20}={}){
  }finally{c.restore();}return items;
 }
 
+/**
+ * CHUNK 2 — "SAFE TO SLICE".
+ *
+ * One bracket per body the live blade would actually reach, drawn from the
+ * SAME sweep geometry the hit test uses (`src/slice-safe.js` feeds this; the
+ * run publishes the exact `reach/width/closeWidth` it swept with). A body that
+ * is mid-attack is drawn in the lethal rose and never in green, because "green"
+ * has exactly one meaning in this game.
+ *
+ * Deliberately cheap: no `shadowBlur`, no gradient, four short strokes and one
+ * pip per body, all at the world's own stroke scale so it survives a phone
+ * zoom. It reads as a target acquisition bracket, not as another enemy.
+ */
+export function resolveSliceMark(slice={}, time=0){
+  if(!slice||!slice.armed)return null;
+  const lethal=slice.state==='lethal';
+  return Object.freeze({
+    id:slice.id,
+    kind:slice.kind,
+    x:slice.x,
+    y:slice.y,
+    r:Math.max(6,Number(slice.r)||20),
+    // THE BRACKET IS ALWAYS ABOUT THE CUT: green when the blade may take it,
+    // rose when it is a live attack. Every other meaning gets its own glyph,
+    // so "I can cut this" and "this pays" can never be confused.
+    color:lethal?LAW.lethal:LAW.safe,
+    core:lethal?LAW.lethalPale:LAW.safeCore,
+    shielded:!!slice.shielded,
+    reward:!!slice.reward,
+    lethal,
+    // A slow, deterministic breathing so the mark is alive without a clock the
+    // caller has to own.
+    pulse:.72+.28*Math.sin((Number(time)||0)*.11+(Number(slice.along)||0)*.012)
+  });
+}
+export function drawSliceSafe(c, slices=[], {scale=1, motion=true, time=0}={}){
+  if(!Array.isArray(slices)||!slices.length)return 0;
+  const unit=1/Math.max(.1,scale);
+  let drawn=0;
+  c.save();try{
+    c.lineCap='round';c.lineJoin='miter';
+    for(const slice of slices){
+      const m=resolveSliceMark(slice,time);
+      if(!m)continue;
+      const gap=m.r+9*unit, arm=Math.max(5*unit,m.r*.42), w=Math.max(1.8,2.4*unit);
+      // Four corner brackets: a targeting frame, never a filled shape, so it
+      // cannot be mistaken for a body or for a hazard field. Each stroke is
+      // laid over a dark underlay, the same trick the hit line uses, so the
+      // mark survives a bright body underneath it.
+      for(const pass of [0,1]){
+        c.globalAlpha=(pass
+          ? (motion?m.pulse:1)*(m.lethal?.95:.9)
+          : .5*(motion?m.pulse:1));
+        c.strokeStyle=pass?m.color:'#0b0408';
+        c.lineWidth=pass?w:w+2*unit;
+        for(const sx of [-1,1])for(const sy of [-1,1]){
+          const x=m.x+sx*gap, y=m.y+sy*gap;
+          c.beginPath();
+          c.moveTo(x-sx*arm,y);c.lineTo(x,y);c.lineTo(x,y-sy*arm);
+          c.stroke();
+        }
+      }
+      // The core pip says WHICH of the three voices this is at a glance. It
+      // uses the STRONG ink of its role (a pale highlight would not read as a
+      // colour signal on a dark field).
+      c.globalAlpha=motion?m.pulse:1;
+      c.fillStyle=m.lethal?LAW.lethal:LAW.safe;
+      const pip=m.r*.14+1*unit;
+      c.beginPath();c.arc(m.x,m.y,pip,0,TAU);c.fill();
+      if(m.shielded){
+        // Armour notch: cut it and it does NOT die. Red, because that is the
+        // honest consequence, and it is the same red as a hazard. One thick
+        // tick on the bracket's left top and one on its right bottom, so the
+        // gold bounty chevron above the frame has a corner of its own.
+        c.strokeStyle=LAW.lethal;c.lineWidth=Math.max(1.8,2.4*unit);
+        for(const [sx,sy] of [[-1,-1],[1,1]]){
+          const x=m.x+sx*gap, y=m.y+sy*gap;
+          c.beginPath();c.moveTo(x-sx*arm,y);c.lineTo(x,y);c.stroke();
+        }
+      }
+      if(m.reward){
+        // GOLD IS A PROMISE: a chevron above the frame, never the frame itself.
+        // The one body in the field that pays is the one body that wears it.
+        const cy=m.y-gap-arm-8*unit, s2=5.5*unit;
+        c.globalAlpha=motion?m.pulse:1;
+        c.fillStyle=LAW.reward;
+        c.beginPath();
+        c.moveTo(m.x,cy-s2);c.lineTo(m.x+s2,cy);c.lineTo(m.x,cy+s2);c.lineTo(m.x-s2,cy);
+        c.closePath();c.fill();
+        c.strokeStyle=LAW.rewardEdge;c.lineWidth=Math.max(1,1.3*unit);c.stroke();
+      }
+      drawn++;
+    }
+  }finally{c.restore();}
+  return drawn;
+}
+
 export function drawEnemyWarning(c, e, p, time, scale=1, motion=true, arena=null) {
   const col = TYPES[e.kind].color;
   if (e.kind === "well") {
@@ -6726,7 +7288,7 @@ export function drawEnemyWarning(c, e, p, time, scale=1, motion=true, arena=null
   }
   if (e.kind === "fang" && e.mode === "rush") {
     // Active charge is marked at the real body, distinct from the lane tell.
-    c.save();c.translate(p.x,p.y);c.rotate(e.aim);c.strokeStyle='#fff0e2';c.lineWidth=Math.max(1.8,2/Math.max(.1,scale));
+    c.save();c.translate(p.x,p.y);c.rotate(e.aim);c.strokeStyle=LAW.lethalPale;c.lineWidth=Math.max(1.8,2/Math.max(.1,scale));
     c.beginPath();c.moveTo(e.r*.25,-e.r*.78);c.lineTo(e.r*1.08,0);c.lineTo(e.r*.25,e.r*.78);c.stroke();c.restore();
   }
   if (e.mode !== "tell") return;
@@ -6740,7 +7302,7 @@ export function drawEnemyWarning(c, e, p, time, scale=1, motion=true, arena=null
   if (e.kind === "pulse") {
     // Dashed nested diaphragms are a wind-up, not the solid moving hit rim.
     for(const radius of [e.r+10+(1-f)*12,e.r+19+(1-f)*12])
-      arc(c,'#ffd2df',Math.max(1.8,2*unit),p.x,p.y,radius);
+      arc(c,LAW.lethalPale,Math.max(1.8,2*unit),p.x,p.y,radius);
   } else if (e.kind === "prism" || e.kind === "crown") {
     const count = e.kind === "crown" ? 10 : 1, length = e.kind === "prism" ? 840 : 230;
     for (let j = 0; j < count; j++) {
@@ -6898,6 +7460,9 @@ export function resolveDashTreatment(equipment={},sword=null,buff=null){
 /** Local bounded geometry follows actual velocity. Age is simulation ticks, not RAF count.
  * No randomness, filters, particles, DOM, imported state, or gameplay mutations. */
 export function drawElementalDash(c,{x=0,y=0,vx=0,vy=0,angle=null,travel=0,age=-1,element='ink',radius=22,motion=true,equipment=null,sword=null,buff=null}={}){
+ if(equipment?.dash==='dash-void'){drawVoidLaunch(c,{x,y,vx,vy,angle,age,radius,motion});return;}
+ if(equipment?.dash==='dash-ice'){drawFrostLaunch(c,{x,y,vx,vy,angle,age,radius,motion});return;}
+ if(equipment?.dash==='dash-fire'){drawEmberLaunch(c,{x,y,vx,vy,angle,age,radius,motion});return;}
  if(!motion||!Number.isFinite(age)||age<0||age>20||![x,y,vx,vy,radius].every(Number.isFinite))return;
  const speed=Math.hypot(vx,vy);if(speed<4||radius<=0)return;
  const treatment=resolveDashTreatment(equipment||{},sword,buff);
@@ -6924,6 +7489,10 @@ export function drawElementalDash(c,{x=0,y=0,vx=0,vy=0,angle=null,travel=0,age=-
  for(let i=0;i<3;i++){const xx=-r-length*(i+.3)/3,rr=r*(.5+i*.12);c.strokeStyle=color;c.lineWidth=2.2;c.beginPath();c.ellipse(xx,0,rr*.36,rr,-.15,-1.5,1.5);c.stroke();shape([[xx+4,0],[xx-5,-3],[xx-5,3]],light);}
  }else if(element==='echo'){
  for(let i=1;i<=3;i++){const xx=-r-length*i/3,rr=r*(1-i*.14);line([[xx+rr*.6,-rr],[xx-rr,-rr],[xx-rr,rr],[xx+rr*.6,rr]],1.8,color);line([[xx+rr,rr*.5],[xx+rr,-rr*.5]],1,light);}
+ }else if(equipment?.dash==='dash-ink'){
+ shape([[-r*.72,-r*.88],[-length,-r*.26],[-length*.74,0],[-length*.95,r*.28],[-r*.72,r*.88]],'#181321');
+ line([[-length*.91,-r*.08],[-r*.8,-r*.32]],2.4,color);
+ for(let i=0;i<3;i++)line([[-length*(.42+i*.17),-r*(.37-i*.34)],[-length*(.59+i*.15),-r*(.35-i*.34)]],1.3,light);
  }else{
  shape([[-r*.8,-r*.7],[-length,-r*.12],[-length*.7,r*.08],[-length*.9,r*.24],[-r*.8,r*.6]],'#181321');
  line([[-length*.9,0],[-r*.8,-r*.2]],2,color);for(let i=0;i<3;i++)line([[-length*(.3+i*.2),r*.6],[-length*(.45+i*.2),r*.7]],1.5,color);
@@ -7094,11 +7663,27 @@ function recordPopup(pops, d) {
   return pop;
 }
 function createRenderer(c, viewport) {
-  const camera = createCamera(), back = createBackdrop(c);
+  const camera = createCamera(), back = createBackdrop(c,viewport.surface);
   let scene = null, sceneTicks = 0, w, h, lastView, revision = 0, anim = "rest", shake = createShake(), shakeLevel = "full", mapOpacity = 0.92, frameDt = 1, ghosts = createSmear(10), lastSwing = -1, justLaunched = 0, ghostClock = 0, holdDir = 0, stain = 0, facing = 1, rand = randomSource(1);
   const trail = [], shards = [], pops = [], beams = [], imprints = [], sparks = [];
   const dashDust = [];
+  const dustPool=createVisualPool(90,{create:()=>({brake:false,x:0,y:0,vx:0,vy:0,life:0,age:0,len:0,hot:false}),clear:()=>{}});
+  const sparkPool=createVisualPool(MOTION.maxSparks,{create:()=>({x:0,y:0,px:0,py:0,pa:0,angle:0,vx:0,vy:0,l:0,life:0,col:''}),clear:()=>{}});
+  const renderCuller=createRenderCuller();
+  const glowBake=viewport.surface?createArtBake({surface:viewport.surface,maxEntries:3,maxPixels:49152}):null;
   const wardBreaks=[],contactBursts=[];let cutExitSource=null;
+  const dimensionImpact = createDimensionImpact();
+  // CHUNK 1: view-time payloads owned by the shell (main.js): the screen-space
+  // aim ring and the "what hit me" reaction. Never read from the simulation.
+  let hitFeedbackView = null;
+  /** CHUNK 2: bodies the live blade would reach this frame (see slice-safe.js). */
+  let sliceMarkView = [];
+  function setAimFeedback({ hit = null, slices = null } = {}) {
+    hitFeedbackView = hit;
+    // CHUNK 2: the "safe to slice" brackets. A snapshot, never a live read of
+    // the enemy map -- the painter must not be able to move the simulation.
+    if (slices !== null) sliceMarkView = Array.isArray(slices) ? slices : [];
+  }
   let dashBurstAt = -1, dashBurstSwing = null;
   let dashTravel = { age: null, x: 0, y: 0, along: 0 };
   let viewListener = null;
@@ -7122,6 +7707,7 @@ function createRenderer(c, viewport) {
     c.lineJoin = "miter";
   }
   function reset(seed, room = false) {
+    dimensionImpact.reset();dustPool.reset();sparkPool.reset();renderCuller.reset();
     scene = null;
     sceneTicks = 0;
     facing = openingFacing(seed);
@@ -7137,6 +7723,7 @@ function createRenderer(c, viewport) {
     dashBurstAt = -1; dashBurstSwing = null;
   }
   function event(type, d, motion) {
+    dimensionImpact.event(type,d,motion && shakeLevel !== 'off');
     if(['cut','armor'].includes(type)&&!d.secondary&&d.entityId!=null)cutExitSource={id:d.entityId,x:d.x,y:d.y};
     if(["cut","armor","hurt","break","waveBlock"].includes(type)){contactBursts.push({x:d.x,y:d.y,type,kind:d.kind,r:d.r,cut:d.cut,hpBefore:d.hpBefore,hp:d.hp,fromShear:d.fromShear,entityId:d.entityId,sword:d.sword,equipment:d.equipment,upgrade:d.upgrade,armorRemoved:d.armorRemoved,secondary:d.secondary,contact:d.contact||null,attack:d.attack||null,life:type==="break"?27:18});if(contactBursts.length>12)contactBursts.shift();}
     if(type==="waveBlock"){wardBreaks.push({x:d.x,y:d.y,life:24,contact:d.contact,equipment:d.equipment,sword:d.sword});if(wardBreaks.length>4)wardBreaks.shift();return;}
@@ -7201,18 +7788,11 @@ function createRenderer(c, viewport) {
     if (motion)
       for (let i = 0; i < Math.min(force>.65?6:3,Math.ceil(mat.flecks*(.5+force*.65))); i++) {
         const theta = a + (rand() - 0.5) * 1.4, speed = (3 + rand() * 5)*(.6+force*.7), x = d.x + Math.cos(theta) * r * 0.65, y = d.y + Math.sin(theta) * r * 0.65;
-        sparks.push({
-          x,
-          y,
-          px: x,
-          py: y,
-          angle: theta,
-          vx: Math.cos(theta) * speed,
-          vy: Math.sin(theta) * speed,
-          l: 3 + rand() * 7,
-          life: 10 + rand() * 6,
-          col: i % 2 ? col : INK.paper
-        });
+        if(sparks.length>=MOTION.maxSparks)sparkPool.release(sparks.shift());
+        const spark=sparkPool.getFirstDead();if(spark){
+          spark.x=x;spark.y=y;spark.px=x;spark.py=y;spark.angle=theta;spark.vx=Math.cos(theta)*speed;spark.vy=Math.sin(theta)*speed;
+          spark.l=3+rand()*7;spark.life=10+rand()*6;spark.col=i%2?col:INK.paper;sparks.push(spark);
+        }
       }
     if (shards.length > MOTION.maxShards) shards.splice(0, shards.length - MOTION.maxShards);
     if (sparks.length > MOTION.maxSparks) sparks.splice(0, sparks.length - MOTION.maxSparks);
@@ -7230,6 +7810,7 @@ function createRenderer(c, viewport) {
   const hudGutter = () => viewport.gutter ?? 20;
   function tick(run, motion) {
     const { state: s, world } = run;
+    dimensionImpact.tick(motion && shakeLevel !== 'off');
     syncScene(run, s.story ? run.nearest() : null);
     if (scene) sceneTicks++;
     frameRun(camera, run, motion);
@@ -7240,12 +7821,12 @@ function createRenderer(c, viewport) {
     frameDt = dt;
     // Particle age belongs to simulation ticks, not the number of draws. A
     // 144 Hz display must not make the same burst expire 2.4 times faster.
-    if (!motion) dashDust.length = 0;
+    if (!motion){dashDust.length=0;dustPool.reset();}
     else {
       for (let i = dashDust.length - 1; i >= 0; i--) {
         const d = dashDust[i];d.age++;d.x += d.vx;d.y += d.vy;
         const drag = d.brake ? 0.84 : 0.92;d.vx *= drag;d.vy *= drag;
-        if (d.age >= d.life) dashDust.splice(i, 1);
+        if (d.age >= d.life){dustPool.release(d);dashDust.splice(i,1);}
       }
       if (s.swingStart !== dashBurstSwing || s.slashAge < 0) { dashBurstSwing = s.swingStart; dashBurstAt = -1; }
       const launchAngle = Number.isFinite(s.launchAngle)
@@ -7259,8 +7840,10 @@ function createRenderer(c, viewport) {
           const src = brake ? dash.lead : dash.trail, p = world.player.position;
           for (const b of dashBurst(dash, brake ? "brake" : "launch")) {
             const n = Math.hypot(b.dx, b.dy) || 1;
-            dashDust.push({brake,x:p.x+src.x*R*.92,y:p.y+src.y*R*.92,vx:b.dx/n*b.speed,vy:b.dy/n*b.speed,
-              life:brake?9+rand()*5:15+rand()*8,age:0,len:brake?.22+rand()*.3:.07+rand()*.1,hot:b.hot});
+            if(dashDust.length>=90)dustPool.release(dashDust.shift());
+            const particle=dustPool.getFirstDead();if(!particle)continue;
+            particle.brake=brake;particle.x=p.x+src.x*R*.92;particle.y=p.y+src.y*R*.92;particle.vx=b.dx/n*b.speed;particle.vy=b.dy/n*b.speed;
+            particle.life=brake?9+rand()*5:15+rand()*8;particle.age=0;particle.len=brake?.22+rand()*.3:.07+rand()*.1;particle.hot=b.hot;dashDust.push(particle);
           }
           if (dashDust.length > 90) dashDust.splice(0, dashDust.length - 90);
         }
@@ -7298,6 +7881,7 @@ function createRenderer(c, viewport) {
         const e = list[i];
         e.life -= dt;
         if (e.life <= 0) {
+          if(list===sparks)sparkPool.release(e);
           list.splice(i, 1);
           continue;
         }
@@ -7391,7 +7975,7 @@ function createRenderer(c, viewport) {
     const target = near ? 0.3 : 0.78, step = 0.84 / 6.2 * Math.max(frameDt, 1e-4);
     mapOpacity += Math.sign(target - mapOpacity) * Math.min(Math.abs(target - mapOpacity), step);
     const landing=state.wave?.phase==='return'&&state.wave.platform?{x:state.wave.platform.x+state.wave.platform.w/2,y:state.wave.platform.y}:null;
-    const level=sensorTier(state.equipment?.radar,"radar"),range=[1,1.35,1.7,2.2][level];
+    const level=sensorTier(state.equipment?.radar,"radar"),range=radarRange(state.equipment?.radar);
     const radar = localRadar(v, p, rect, combat.enemies.values(), state.questPortal||state.wave?.breach||landing,{range});
     c2.save();
     c2.globalAlpha = mapOpacity;
@@ -7425,7 +8009,13 @@ function createRenderer(c, viewport) {
       c2.fillStyle = c2.strokeStyle = blip.color;
       c2.lineWidth = 1.4;
       c2.beginPath();
-      if (blip.kind === "bastion") c2.rect(blip.x - blip.r, blip.y - blip.r, blip.r * 2, blip.r * 2);
+      // A non-body source on the map is a diamond, not a creature.
+      if (blip.shape === 'source') {
+        const r2 = Math.max(3, blip.r);
+        c2.moveTo(blip.x, blip.y - r2); c2.lineTo(blip.x + r2, blip.y);
+        c2.lineTo(blip.x, blip.y + r2); c2.lineTo(blip.x - r2, blip.y);
+        c2.closePath();
+      } else if (blip.kind === "bastion") c2.rect(blip.x - blip.r, blip.y - blip.r, blip.r * 2, blip.r * 2);
       else if (blip.kind === "crown") {
         c2.moveTo(blip.x, blip.y - blip.r);
         c2.lineTo(blip.x + blip.r, blip.y);
@@ -7435,6 +8025,7 @@ function createRenderer(c, viewport) {
       } else c2.arc(blip.x, blip.y, blip.r, 0, TAU);
       if (blip.onScreen) c2.fill();
       else c2.stroke();
+      if(blip.cold){c2.strokeStyle='#bce6ec';c2.lineWidth=1.2;c2.beginPath();if(blip.cold==='freeze'){c2.rect(blip.x-blip.r-2,blip.y-blip.r-2,blip.r*2+4,blip.r*2+4);c2.moveTo(blip.x-1,blip.y-2);c2.lineTo(blip.x-1,blip.y+2);c2.moveTo(blip.x+1,blip.y-2);c2.lineTo(blip.x+1,blip.y+2);}else{c2.moveTo(blip.x-blip.r-3,blip.y-3);c2.lineTo(blip.x-blip.r-5,blip.y);c2.lineTo(blip.x-blip.r-3,blip.y+3);}c2.stroke();}
       if(level>=3&&blip.mode==='tell'){c2.strokeStyle='#ffb491';c2.setLineDash([2,2]);c2.beginPath();c2.arc(blip.x,blip.y,blip.r+4,0,TAU);c2.stroke();c2.setLineDash([]);}
     }
     if(level>=2){for(const h of (combat.hazards||[]).slice(0,24)){if(h.spent||!Number.isFinite(h.x)||!Number.isFinite(h.y))continue;const q=radar.project(h,3);if(q.outside)continue;c2.strokeStyle='#ffb080';c2.lineWidth=1.3;c2.beginPath();if(h.kind==='ring'||h.kind==='zone'||h.kind==='shock')c2.arc(q.x,q.y,4,0,TAU);else{c2.moveTo(q.x,q.y-4);c2.lineTo(q.x+4,q.y+3);c2.lineTo(q.x-4,q.y+3);c2.closePath();}c2.stroke();}}
@@ -7804,6 +8395,101 @@ function createRenderer(c, viewport) {
     watcherMask(c,watcherX,watcherY,Math.min(w,h)*.00092+.25,{glow:watcherGlow,eye:returnShot?.22:.42+.45*(1-phase),split:returnShot?.18:phase>.82?(phase-.82)*.25:0});
     c.restore();
   }
+  // ── CHUNK 1: "WHAT HIT ME?" ──────────────────────────────────────────────
+  // One red line from the cube to the body that hit it, an impact ring on
+  // that body, and a rim flash at the screen edge. The rim is capped at 25%
+  // opacity by design (src/damage-feedback.js): a flash bright enough to hide
+  // the attacker is the bug, not the feature.
+  function drawHitFeedback(c, w, h, s, v, p, motion, time, fb) {
+    if (!fb || !fb.live) return;
+    const dir = fb.direction;
+    if (fb.rim > 0) {
+      const inner = c.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.32, w / 2, h / 2, Math.max(w, h) * 0.78);
+      inner.addColorStop(0, 'rgba(200,16,46,0)');
+      inner.addColorStop(0.62, `rgba(200,16,46,${fb.rim * 0.5})`);
+      inner.addColorStop(1, `rgba(125,0,24,${fb.rim})`);
+      c.save();
+      c.fillStyle = inner;
+      c.fillRect(0, 0, w, h);
+      c.restore();
+    }
+    if (!dir) return;
+    const px = (p.x - v.x) * v.scale, py = (p.y - v.y) * v.scale,
+      ex = (dir.x - v.x) * v.scale, ey = (dir.y - v.y) * v.scale,
+      ramp = Math.max(0, 1 - (fb.age || 0) / 36);
+    c.save();
+    c.lineCap = 'round';
+    // The connector: dark underlay then the red line, so it reads over any
+    // wall. It is clipped to the viewport by construction (both ends are).
+    const ux = Math.cos(dir.angle), uy = Math.sin(dir.angle),
+      startX = px + ux * 26, startY = py + uy * 26,
+      pull = Math.min(1, (fb.age || 0) / 6),
+      endX = startX + (ex - startX) * pull, endY = startY + (ey - startY) * pull;
+    c.globalAlpha = 0.9 * ramp;
+    c.strokeStyle = '#0b0408';
+    c.lineWidth = 7;
+    c.beginPath(); c.moveTo(startX, startY); c.lineTo(endX, endY); c.stroke();
+    c.strokeStyle = '#ff2b4a';
+    c.lineWidth = 3;
+    c.beginPath(); c.moveTo(startX, startY); c.lineTo(endX, endY); c.stroke();
+    // Arrowhead at the attacker's end.
+    const ah = 11;
+    c.fillStyle = '#ff2b4a';
+    c.beginPath();
+    c.moveTo(ex + ux * 12, ey + uy * 12);
+    c.lineTo(ex - ux * 2 - uy * ah, ey - uy * 2 + ux * ah);
+    c.lineTo(ex - ux * 2 + uy * ah, ey - uy * 2 - ux * ah);
+    c.closePath(); c.fill();
+    // The impact ring tightens onto the body.
+    const ringR = 34 - 20 * fb.impact;
+    c.globalAlpha = 0.9 * ramp;
+    c.strokeStyle = LAW.lethalPale;
+    c.lineWidth = 2.5;
+    c.beginPath(); c.arc(ex, ey, ringR, 0, Math.PI * 2); c.stroke();
+    // ── CHUNK 2: THE KILLER POINTER ──────────────────────────────────────
+    //
+    // The line says WHERE; it still left the player doing the arithmetic on a
+    // 960px field with four bodies in it. So the attacker gets named at its own
+    // body — one short word, in the same rose as the line, in the same
+    // body-first vocabulary as the corner readout (`FANG HIT`, `RING HIT`) —
+    // and the name is pinned to the viewport edge when the attacker is off it.
+    const label = fb.label || 'HIT';
+    c.font = 'bold 12px monospace';
+    const tw = Math.min(112, c.measureText(label).width + 12);
+    const lx = Math.max(46, Math.min(w - 46, ex)), ly = Math.max(70, Math.min(h - 26, ey - 30));
+    c.globalAlpha = 0.92 * ramp;
+    c.fillStyle = '#280e18';
+    c.fillRect(lx - tw / 2, ly - 10, tw, 19);
+    c.strokeStyle = LAW.lethal;
+    c.lineWidth = 1.4;
+    c.strokeRect(lx - tw / 2, ly - 10, tw, 19);
+    c.fillStyle = '#fff4e9';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText(label, lx, ly - 1, tw - 6);
+    // A tag stem down to the body, so the word cannot be read as a HUD chip.
+    c.globalAlpha = 0.55 * ramp;
+    c.strokeStyle = LAW.lethal;
+    c.beginPath(); c.moveTo(lx, ly + 9); c.lineTo(lx, ly + 13); c.stroke();
+    c.textAlign = 'left';
+    c.textBaseline = 'alphabetic';
+    // Off-screen attacker: point at it from the edge, because a line clipped by
+    // the viewport is not a warning, it is a hint that something happened.
+    const off = ex < 8 || ex > w - 8 || ey < hudTop() + 8 || ey > h - 8;
+    if (off) {
+      const sx = clamp(ex, 22, w - 22), sy = clamp(ey, hudTop() + 22, h - 22);
+      c.save();
+      c.translate(sx, sy);
+      c.rotate(dir.angle);
+      c.globalAlpha = 0.95 * ramp;
+      c.fillStyle = LAW.lethal;
+      c.beginPath(); c.moveTo(15, 0); c.lineTo(0, -8); c.lineTo(0, 8); c.closePath(); c.fill();
+      c.restore();
+    }
+    c.globalAlpha = 1;
+    c.restore();
+  }
+
   function drawCutsceneOverlay(c, w, h, s, v, p, time, motion) {
     const cs = s.cutscene;
     if (!cs) return;
@@ -8157,7 +8843,7 @@ function createRenderer(c, viewport) {
       });
     syncScene(run, nearest);
     if (s.opening) back.bench(v);
-    else if (["tokyo", "foundry", "manga", "synth", "void"].includes(s.equipment?.world)) drawEquipmentWorld(c, w, h, s.equipment.world, motion ? time : 0,{x:v.panX*v.scale,y:v.panY*v.scale,scale:v.scale});
+    else if (["tokyo", "foundry", "manga", "synth", "void"].includes(s.equipment?.world)) back.equipment(w,h,s.equipment.world,motion?time:0,{x:v.panX*v.scale,y:v.panY*v.scale,scale:v.scale});
     else back.world(v, s.seed, s.band,motion?time:0);
     // CHUNK 2/3: the sky breaks before the words do. The meter is on the run;
     // once the event is spent the sky stays in shards for the rest of the run.
@@ -8425,6 +9111,7 @@ function createRenderer(c, viewport) {
       c.globalAlpha = 1;
       c.restore();
     }
+    if(s.voidWell)drawVoidField(c,{field:s.voidWell,now:world.clock,motion,scale:v.scale,layer:'outer'});
     for (const e of combat.enemies.values())
       if (inView(v, e, 870)) drawEnemyWarning(c, e, { ...pose(e, alpha), r: e.r }, time,v.scale,motion,world.arena);
     for (const l of combat.links) {
@@ -8525,8 +9212,9 @@ function createRenderer(c, viewport) {
           arc(c, INK.acid, 2 / v.scale, q.x, q.y, e.r + 6, -0.44 + i * Math.PI, 0.44 + i * Math.PI);
       }
     }
+    renderCuller.update(world.clock*1000/60,v,combat.enemies.values());
     for (const e of combat.enemies.values()) {
-      if (!inView(v, e, 100)) continue;
+      if (!renderCuller.visible(e,v)) continue;
       const q = pose(e, alpha);
       c.globalAlpha = 1;
       c.filter = "none";
@@ -8578,10 +9266,34 @@ function createRenderer(c, viewport) {
         slamPlate: e.slamPlate ?? -1,
         lensTell: e.lensTell || 0,
         lensT: e.lensT || 0,
-        time:motion?time:0
-      });c.restore();
+        time:motion?(e.frostCold?.phase==='active'&&e.frostCold.kind==='freeze'?e.frostCold.born:time):0
+      });
+      if(e.frostCold)drawFrostStatus(c,{x:q.x,y:q.y,radius:e.r,angle:q.angle,status:e.frostCold,now:world.clock,motion});
+      if(e.emberBurn)drawEmberBurn(c,{x:q.x,y:q.y,radius:e.r,status:e.emberBurn,now:world.clock,motion});
+      c.restore();
+      // ── CHUNK 2: GOLD IS A PROMISE, NOT DECORATION ────────────────────
+      // The Crown is the one body in the field that PAYS: breaking it restores
+      // a hull point. The mark for that is the gold chevron `drawSliceSafe`
+      // hangs above its bracket — NOT a ring or a second frame on the body.
+      // A body-hugging gold ring was tried in this pass and read as a second
+      // targeting bracket, which made "you can cut this" and "this pays" look
+      // like the same sentence. The bubble above the active mark is a bubble:
+      // it only exists while the bounty is actually within reach.
       if (s.equipment?.world === "manga") c.restore();
     }
+    // A small local notch denotes REAL Hypno admission. Not a second target bracket.
+    if(s.equipment?.eyes==='hypno')for(const e of combat.enemies.values())if(e.hypnoUntil>world.clock){
+      const x=mix(e.px,e.x,alpha),y=mix(e.py,e.y,alpha)-e.r-8;
+      if(motion&&e.hypnoUntil-world.clock>10){c.save();c.globalAlpha=.32;seam(c,[[p.x,p.y-6],[x,y+5]],'#c8a3ec',1);c.restore();}
+      seam(c,[[x-5,y-3],[x+5,y-3],[x+5,y+3],[x,y+3]],'#ddbaff',1.5);
+    }
+    // Core damage boundary stays visible over large enemy silhouettes, while
+    // actual hazard paint below still has priority over both field layers.
+    if(s.voidWell)drawVoidField(c,{field:s.voidWell,now:world.clock,motion,scale:v.scale,layer:'core'});
+    // CHUNK 2: "safe to slice", drawn OVER the bodies and UNDER the hazards, so
+    // a live ring is never hidden behind a bracket. Screen-space free: the view
+    // array is built once per frame by the shell.
+    if (sliceMarkView.length && !s.opening) drawSliceSafe(c, sliceMarkView, { scale: v.scale, motion, time });
     for (const a of combat.hazards) {
       const x = mix(a.px, a.x, alpha), y = mix(a.py, a.y, alpha);
       if (a.kind === "zone") {
@@ -8589,16 +9301,16 @@ function createRenderer(c, viewport) {
       } else if (a.kind === "ring") {
         c.save();
         c.globalAlpha = a.spent ? 0.26 : 1;
-        arc(c, "#b93863", 6, x, y, mix(a.previousRadius, a.radius, alpha));
-        arc(c, "#ffb7c8", 2, x, y, mix(a.previousRadius, a.radius, alpha));
+        arc(c, "#a3122f", 6, x, y, mix(a.previousRadius, a.radius, alpha));
+        arc(c, LAW.lethalPale, 2, x, y, mix(a.previousRadius, a.radius, alpha));
         c.restore();
       } else if (a.kind === "shock") {
         // CHUNK 6B: the landlord's slam — a bone-white concussion ring, not a
         // Pulse. Cracked and amber, spent fading.
         c.save();
         c.globalAlpha = a.spent ? 0.3 : Math.max(0.25, 1 - a.radius / ((a.maxRadius || 150) + 30));
-        arc(c, "#7d6a52", 7, x, y, mix(a.previousRadius, a.radius, alpha));
-        arc(c, "#ffe4b3", 2.4, x, y, mix(a.previousRadius, a.radius, alpha));
+        arc(c, "#5b2a2e", 7, x, y, mix(a.previousRadius, a.radius, alpha));
+        arc(c, LAW.lethalPale, 2.4, x, y, mix(a.previousRadius, a.radius, alpha));
         c.restore();
       } else if (a.source === "monolith") {
         // Debris off the slab — a tumbling ember rock, not a needle.
@@ -8615,7 +9327,7 @@ function createRenderer(c, viewport) {
           Math.max(1.8,1.4/v.scale/markerScale)
         );
         line(c, '#ff8f4d', Math.max(1.5,1.35/v.scale/markerScale), -7, 1, 4, 3);
-        line(c, '#ffd9a0', Math.max(1.2,1.1/v.scale/markerScale), -4, -3, 5, -2);
+        line(c, LAW.lethalPale, Math.max(1.2,1.1/v.scale/markerScale), -4, -3, 5, -2);
         c.restore();
       } else {
         c.save();
@@ -8626,7 +9338,7 @@ function createRenderer(c, viewport) {
         c.scale(markerScale,markerScale);
         poly2(
           c,
-          a.source === "crown" ? "#ffc27f" : "#d5adff",
+          a.source === "crown" ? LAW.lethalPale : "#d5adff",
           a.source === "crown" ? [[10,0],[-5,-6],[-3,-2],[-17,-5],[-12,0],[-17,5],[-3,2],[-5,6]]
             : [[10,0],[-9,-4],[-18,0],[-9,4]],
           INK.black,
@@ -8981,6 +9693,12 @@ function createRenderer(c, viewport) {
         // being pushed by the world it is moving through.
         equipment: s.equipment,
         aiming: s.held,
+        focusRecovering:s.focusRecoveryActive&&s.phase==='playing',
+        focusLevel:s.focus,
+        recoveryAge:s.focusRecoveryAge,
+        ...armorShellPose(s,p.angle),
+        ...coreMechanismPose(s),
+        shellAbility:s.shellAbility,tailAbility:s.tailAbility,eyeAbility:s.eyeAbility,eyePower:aim?.power||0,tailMotion:{bend:motion&&!dash?Math.max(-.18,Math.min(.18,world.player.velocity.y/MAX_SPEED*.18)):0},
         attackProgress:motion&&s.blade>0?1-Math.min(1,s.blade/12):-1,
         reducedMotion:!motion,
         contact:motion&&!!s.impact&&s.impactAge<3,
@@ -9048,11 +9766,12 @@ function createRenderer(c, viewport) {
       if(s.sword){
         const swordReach=(s.reach||1)*s.sword.reach*(s.waveBuff?.reach||1);
         const swordAngle=s.held&&aim?Math.atan2(aim.y,aim.x):s.slashAngle;
-        drawSwordWeapon(c,{x:p.x,y:p.y,radius:R,angle:swordAngle,active:s.blade>0,aiming:s.held,sword:s.sword,reach:swordReach,charge:s.swordCharge,motion,time,buff:visualBuff,equipment:s.equipment,bladeRemaining:s.blade,finish:structural?upgradePhase.amount:1,age:s.slashAge,reveal:structural?1:s.waveBuff?Math.min(1,(s.wave?.age||0)/18):1});
+        drawSwordWeapon(c,{x:p.x,y:p.y,radius:R,angle:swordAngle,active:s.blade>0,aiming:s.held,sword:s.sword,reach:swordReach,charge:s.swordCharge,motion,time,buff:visualBuff,equipment:s.equipment,widthScale:(s.precisionShot?.widthScale??1)*(s.inkCutScale??1)*(s.equipment?.dash==='dash-fire'?.9:1),bladeRemaining:s.blade,finish:structural?upgradePhase.amount:1,age:s.slashAge,reveal:structural?1:s.waveBuff?Math.min(1,(s.wave?.age||0)/18):1});
         for(const attack of s.swordFx||[])drawSwordAttack(c,attack,s.sword,!motion);
       }
       if (s.equipment?.head === "oni" && s.hp === 1 && s.blade > 0) drawEquipmentSlash(c, p.x, p.y, p.x + Math.cos(s.slashAngle) * 80, p.y + Math.sin(s.slashAngle) * 80, "blood", 1,{progress:1-Math.min(1,s.blade/12),equipment:s.equipment,reducedMotion:!motion});
-      drawEquipmentEffects(c, motion ? s.equipmentFx : { ...s.equipmentFx, bursts: [] }, motion ? time : 0, ARENA.y + ARENA.h);
+      if(s.equipment?.dash==='dash-void'&&s.held)drawVoidReadiness(c,{x:p.x,y:p.y,radius:R,readyIn:s.voidWell?.readyIn||0});
+      drawEquipmentEffects(c, motion ? s.equipmentFx : { ...s.equipmentFx, bursts: [] }, motion ? time : 0, ARENA.y + ARENA.h,motion?glowBake:null);
       if (s.equipment?.head === "beacon") {
         for (const enemy of combat.enemies.values()) if (enemy.kind === "fang" && enemy.mode === "tell") {
           const ex = clamp(enemy.x, v.x + 35, v.x + v.w - 35), ey = clamp(enemy.y, v.y + 50, v.y + v.h - 45);
@@ -9140,20 +9859,50 @@ function createRenderer(c, viewport) {
     }
     c.restore();
     if(s.visualTutorial?.guide?.kind==='dodge')drawTutorialGuidance(c,v,s.visualTutorial,p,motion,device);
+    // ── CHUNK 1: THE CUT CHARGES, ON THE CUBE ────────────────────────────
+    //
+    // These three marks already existed — as three 7×3.6px bars tucked under
+    // the cube at a fixed screen size, which at a 960×540 embed is a smudge
+    // nobody can count, in the one place the eye is. They are the whole
+    // resource the game is built on ("NO CUTS" was a real dead end for new
+    // players) and the far-right HUD copy of them has been deleted.
+    //
+    // So: same place, same idea, drawn at the player's own scale with a dark
+    // well, a full-height block per charge, a crisp white recharge fill, and a
+    // red pulse when empty. Screen-space, so the size is honest at every zoom.
     {
-      const ux = s.visualTutorial ? 1 : 1 / v.scale, sp = toScreen(v, p);
-      if (!s.opening?.free && (s.phase !== "ready" || s.visualTutorial))
-        for (let i = 0; i < 3; i++) {
-          const x = sp.x + (i - 1) * 9 * ux, y = s.visualTutorial ? sp.y + R * Math.SQRT2 * v.scale + 8 : sp.y + (R * Math.SQRT2 + 9) * ux;
-          c.fillStyle = INK.black;
-          c.fillRect(x - 4.6 * ux, y - ux, 9.2 * ux, 6 * ux);
-          c.fillStyle = i < s.edge ? INK.acid : "#766978";
-          c.fillRect(x - 3.5 * ux, y, 7 * ux, 3.6 * ux);
-          if (i === s.edge) {
+      const ux = 1 / Math.max(0.25, v.scale), sp = toScreen(v, p);
+      if (!s.opening?.free && (s.phase !== "ready" || s.visualTutorial)) {
+        const max = Math.max(1, s.edgeMax || 3),
+          now = clamp(s.edge ?? max, 0, max),
+          empty = now <= 0,
+          pulse = motion ? 0.5 + 0.5 * Math.sin(time * 0.42) : 0.7,
+          blockW = 9 * ux, blockH = 8 * ux, gap = 3.5 * ux,
+          total = max * blockW + (max - 1) * gap,
+          y = s.visualTutorial ? sp.y + R * Math.SQRT2 * v.scale + 10 * ux : sp.y + (R * Math.SQRT2 + 8) * ux,
+          x0 = sp.x - total / 2;
+        // A dark plate under the row so the charges read on a lit floor or a
+        // white flash frame alike.
+        c.fillStyle = 'rgba(10,8,16,0.72)';
+        c.fillRect(x0 - 3 * ux, y - 2 * ux, total + 6 * ux, blockH + 4 * ux);
+        for (let i = 0; i < max; i++) {
+          const x = x0 + i * (blockW + gap), filled = i < now;
+          c.fillStyle = filled ? INK.acid : empty ? `rgba(255,53,84,${0.45 + 0.55 * pulse})` : '#4b4050';
+          c.fillRect(x, y, blockW, blockH);
+          if (filled) {
+            // One white notch per block so the count survives a colour-blind
+            // read and the shapes are countable at a glance.
             c.fillStyle = INK.paper;
-            c.fillRect(x - 3.5 * ux, y, 7 * ux * Math.min(1, (s.recharge || 0) / (s.regenWindow || 60)), 3.6 * ux);
+            c.fillRect(x + blockW * 0.28, y + blockH * 0.28, blockW * 0.44, blockH * 0.44);
+          }
+          if (i === now) {
+            // The charge being REGENERATED fills in white from the left, so an
+            // empty row says when it will not be empty.
+            c.fillStyle = INK.paper;
+            c.fillRect(x, y, blockW * Math.min(1, (s.recharge || 0) / (s.regenWindow || 60)), blockH);
           }
         }
+      }
     }
     if (!s.visualTutorial && (s.phase === "playing" || s.caught) && !s.opening?.finishing) pointer(c, v, p, nearest);
     if (s.warning > 0 && s.phase === "playing") {
@@ -9257,7 +10006,24 @@ function createRenderer(c, viewport) {
     c.save();
     c.setTransform(viewport.width / w, 0, 0, viewport.height / h, 0, 0);
     drawSpine(c, w, h, s, motion, time);
+    const fractureImpact = dimensionImpact.snapshot();
+    if(fractureImpact&&!s.opening&&!s.visualTutorial)drawDimensionImpact(c,w,h,{
+      ...fractureImpact,
+      x:fractureImpact.x===null?w*.5:(fractureImpact.x-v.x)*v.scale,
+      y:fractureImpact.y===null?h*.5:(fractureImpact.y-v.y)*v.scale,
+      motion:motion&&shakeLevel!=='off',low:shakeLevel==='low',
+    });
     drawCutsceneOverlay(c, w, h, s, v, p, time, motion);
+    c.restore();
+    // CHUNK 1: the two pieces of aim/damage feedback that belong in SCREEN
+    // space, drawn last so nothing in the world can cover them. Both read a
+    // view-time payload the shell sets (`setAimFeedback`); neither invents
+    // state. The reticle exists because the OS cursor is hidden over the
+    // arena; the hit line exists because "what hurt me?" was the loudest
+    // question in the whole report.
+    c.save();
+    c.setTransform(viewport.width / w, 0, 0, viewport.height / h, 0, 0);
+    drawHitFeedback(c, w, h, s, v, p, motion, time, hitFeedbackView);
     c.restore();
   }
   return {
@@ -9277,9 +10043,11 @@ function createRenderer(c, viewport) {
     setShakeLevel(level) {
       shakeLevel = level === "off" || level === "low" ? level : "full";
     },
+    /** CHUNK 1: screen-space aim ring + damage reaction, supplied per frame. */
+    setAimFeedback,
     // Read-only hooks for the headless camera checks.
     effectState() {
-      return { ghosts: ghosts.size, trail: trail.length, beams: beams.length };
+      return { ghosts: ghosts.size, trail: trail.length, beams: beams.length, dimensionImpact:dimensionImpact.snapshot() };
     },
     mapFade() {
       return mapOpacity;
@@ -9294,6 +10062,7 @@ function createRenderer(c, viewport) {
       };
     },
     field(origin, side) {
+      dimensionImpact.reset();dustPool.reset();sparkPool.reset();renderCuller.reset();dashDust.length=0;
       camera.reset(origin, side);
       lastView = camera.view(1);
       trail.length = 0;
@@ -9318,7 +10087,9 @@ function createRenderer(c, viewport) {
     get animationState() {
       return anim;
     },
+    performanceState(){return {background:back.bakeStats(),dust:dustPool.stats(),sparks:sparkPool.stats(),culling:renderCuller.stats(),glow:glowBake?.stats()||null};},
     dispose() {
+      back.dispose();glowBake?.clear();dustPool.reset();sparkPool.reset();renderCuller.reset();
     }
   };
 }
@@ -9334,15 +10105,15 @@ var item = (id, slot, name, price, tag, detail) => Object.freeze({ id, slot, nam
 var ITEMS = Object.freeze([
   item("none", "head", "Bare Head", 0, "Original Cut", "No headgear. Clean silhouette."),
   item("halo", "head", "Gold Halo", 250, "Focus Float", "While holding aim and falling, gravity is 15% lighter."),
-  item("neko", "head", "Cyber Ears", 200, "Neon Paws", "Pink ears perk on launch. Cosmetic wall sparks."),
+  item("neko", "head", "Cyber Ears", 200, "Chain Grace", "Pink ears perk on launch. Cosmetic wall sparks. Adds 12 simulation ticks to the chain expiry window after a kill."),
   item("viper", "head", "Viper Horns", 300, "Fast Narrow", "20% faster launch, 15% thinner cut. Blade lifetime scales down to preserve straight-line active reach; ballistic landing distance can change."),
   item("oni", "head", "Broken Oni", null, "Last Health", "Defeat a Crown at 1 HEALTH to unlock. Kills at 1 HEALTH earn 50% more score."),
   item("ninja", "eyes", "Ninja Slits", 0, "Sharp Focus", "Classic expressive eyes."),
-  item("visor", "eyes", "Cyber Visor", 200, "Scan Line", "Sweeping cyan visor. Appearance only."),
-  item("blaze", "eyes", "SSJ Blaze", 150, "Golden Gaze", "Gold-white eyes with small light streaks while aiming. Appearance only."),
+  item("visor", "eyes", "Cyber Visor", 200, "Focus Efficiency", "Fitted cyan glass with aim-only calibration bars. Aiming consumes 10% less FOCUS. Does not slow physics further. No target lock."),
+  item("blaze", "eyes", "SSJ Blaze", 150, "Ignition Reserve", "Flame-cut eyes brighten on real Overdrive. On real Overdrive entry return one EDGE after the ordinary kill refund, clamped to the current maximum. Full cap consumes it; no queued refund or timer extension. Replaces the old +8% Drive score."),
   item("paper", "body", "Paper Ninja", 0, "Comic Paper", "White paper shell with a bold black edge."),
-  item("obsidian", "body", "Obsidian Stealth", 200, "Lime Edge", "Matte black shell, inset neon-lime seams."),
-  item("hologram", "body", "Hologram Wire", 500, "Visible Core", "Transparent cyan wire shell with a visible spinning core. Appearance only."),
+  item("obsidian", "body", "Obsidian Stealth", 200, "Precision Bounty", "Matte black shell, inset neon-lime seams. Earn 8% more kill score while airborne. All equipment score perks together cap at +25%."),
+  item("hologram", "body", "Hologram Wire", 500, "Precision Phase", "During the first 4 world ticks of a legal launch, phase through one Prism or Crown needle, then recharge for 120 world ticks. The needle continues. No beam, ring, zone, enemy, boss or wall immunity; no aim-cost discount."),
   item("standard", "core", "Standard Heart", 0, "Balanced Build", "Balanced movement. Three EDGE bars."),
   item("time", "core", "Time Crystal", 400, "Focus Recovery", "Kills start a 120-tick window of twice-normal passive FOCUS recovery."),
   item("riot", "core", "Riot Reactor", 500, "Quick Overdrive", "Overdrive activates every four consecutive kills instead of six (1.5x faster). Maximum two EDGE bars."),
@@ -9351,51 +10122,51 @@ var ITEMS = Object.freeze([
   item("wings", "tail", "Prism Wings", 400, "Wall Recharge", "First side-wall contact per airborne streak restores one EDGE. Floor contact resets it."),
   item("ghost", "tail", "Ghost Scarf", 350, "Lingering Blade", "Twin spectral ribbons. Adds six simulation ticks to each launch blade; never repeats a hit on the same enemy in one shot."),
   item("razor", "slash", "White Razor", 0, "Clean Cut", "White cut flash and shard impact."),
-  item("katana", "slash", "Katana Ink", 150, "Brush Stroke", "Layered black-and-white brush cut with ink droplets."),
-  item("laser", "slash", "Neon Laser", 250, "Electric Scar", "Cyan-pink cut scar lingers for half a second with a quiet electric accent. Cosmetic only."),
+  item("katana", "slash", "Katana Ink", 150, "Blade Extension", "Layered black-and-white brush cut with ink droplets. Adds 2 simulation ticks to the active launch blade."),
+  item("laser", "slash", "Neon Laser", 250, "Blade Extension", "Cyan-pink cut scar lingers for half a second with a quiet electric accent. Adds 3 simulation ticks to the active launch blade."),
   item("twilight", "world", "Twilight Undercut", 0, "Plum Skyline", "Original twilight arena."),
-  item("tokyo", "world", "Cyber Tokyo", 450, "Neon Rain", "Electric-blue skyline and diagonal neon rain. Danger colors stay unchanged."),
-  item("foundry", "world", "Blood Foundry", 300, "Crimson Industry", "Crimson sky, orange furnace pipes and a deeper procedural bass voice. Danger colors stay unchanged."),
+  item("tokyo", "world", "Cyber Tokyo", 450, "Precision Bounty", "Electric-blue skyline and diagonal neon rain. Danger colors stay unchanged. Earn 8% more kill score at speed 18+. All equipment score perks together cap at +25%."),
+  item("foundry", "world", "Blood Foundry", 300, "Precision Bounty", "Crimson sky, orange furnace pipes and a deeper procedural bass voice. Danger colors stay unchanged. Earn 12% more kill score vs armored foes. All equipment score perks together cap at +25%."),
   item("crown", "head", "Cube Crown", 600, "Armor Break", "Removes two Crown/Bastion plates per hit. Launch speed is 8% lower; no effect on Hyper steering."),
   item("samurai", "head", "Samurai Crest", 350, "Wide Horizontal", "Within 25 degrees of horizontal, cuts are 20% wider."),
   item("coil", "head", "Lightning Coil", 400, "Chain Spark", "A direct slice zaps one enemy within 160 pixels for one plate. Sparks cannot trigger more sparks."),
   item("beacon", "head", "Danger Beacon", 250, "Early Warning", "Shows an amber threat bracket when a Fang begins winding up, before its charge."),
-  item("glitch", "eyes", "Glitch X-Eyes", 250, "Signal Error", "Mismatched X and ring eyes with stepped cyan/pink color changes. No full-screen flashes."),
-  item("smug", "eyes", "Smug Half-Lid", 150, "Cool Stare", "Half-lidded eyes open gold in Overdrive."),
-  item("hypno", "eyes", "Hypno Spiral", 300, "Rift Gaze", "Twin animated purple spirals."),
-  item("sniper", "eyes", "Sniper Dot", 250, "Single Sight", "One crimson sight inside a black band."),
+  item("glitch", "eyes", "Glitch X-Eyes", 250, "Focus Return", "An offset X and ring joined by broken conductors. The circuit closes during actual passive FOCUS recovery. Passive FOCUS recovery is 12% faster when not aiming."),
+  item("smug", "eyes", "Smug Half-Lid", 150, "Chain Grace", "Half-lidded eyes open gold in Overdrive. Adds 12 simulation ticks to the chain expiry window after a kill."),
+  item("hypno", "eyes", "Hypno Spiral", 300, "Local Daze", "After 18 continuous aim ticks of usable focus, defer one idle Fang’s new attack for 12 world ticks within 140 and clear static sight. Movement, existing tells, rushes and projectiles continue. Target immunity 90 ticks from acceptance. Walls and bosses resist; no aim-cost discount."),
+  item("sniper", "eyes", "Sniper Dot", 250, "Precision Puncture", "At 90% or greater released power, the first direct Crown or Bastion contact removes one extra plate. That shot has a 10% narrower corridor. Bosses and secondary hits do not consume it. No homing or score bonus; extra equipment plates share a +2 cap."),
   item("prism", "body", "Prism Shell", 550, "Wall Needles", "Faceted crystal. Side-wall contact launches two upward needles; each removes one Fang plate. 45-tick cooldown."),
   item("iron", "body", "Bastion Iron", 450, "Rush Guard", "Blocks one Fang rush per run and pushes you clear. Arena walls already do no health damage."),
-  item("lava", "body", "Lava Cracked", 350, "Combo Heat", "Charcoal shell with magma seams that brighten as the chain grows."),
-  item("gold", "body", "Gold Foil", 800, "Mirror Finish", "Polished gold facets and a white star glint while nearly still."),
+  item("lava", "body", "Lava Cracked", 350, "Chain Grace", "Charcoal shell with magma seams that brighten as the chain grows. Adds 18 simulation ticks to the chain expiry window after a kill."),
+  item("gold", "body", "Gold Foil", 800, "Precision Bounty", "Polished gold facets and a white star glint while nearly still. Earn 10% more kill score on every kill. All equipment score perks together cap at +25%."),
   item("grav", "core", "Grav Core", 450, "Aim Pull", "While aiming, pulls small Fangs within 220 pixels gently toward the aim line. Maximum 0.35 pixels per simulation tick."),
   item("magnet", "core", "Magnet Dynamo", 350, "Close Throughcut", "Close passes within 100 pixels have a 20% wider blade, helping real two-contact Throughcuts. Quest rules unchanged."),
   item("echo", "core", "Echo Heart", 550, "Ghost Blade", "Every third direct chain kill leaves a stationary ghost blade for 30 simulation ticks, slicing nearby Fangs once each."),
-  item("viper-tails", "tail", "Viper Tails", 250, "Forked Ribbons", "Twin crimson streamers with ember stitches."),
+  item("viper-tails", "tail", "Viper Tails", 250, "Directional Retention", "Retains 15% of ordinary steering speed loss on a legal relaunch: 85% retention becomes 87.25%, not +15% speed. No gain from rest or straight continuation; Hyper retention and the legal speed ceiling keep priority. Replaces the old speed-score bonus."),
   item("anchor", "tail", "Anchor Chain", 400, "Floor Breaker", "Floor rebound is 15% stronger and clears Fangs within 170 pixels. Floor recovery cooldown still applies."),
   item("thrusters", "tail", "Mini Thrusters", 450, "Jet Rebound", "Twin jet nozzles. Earned rail rebounds are 8% stronger; cannot compound above the existing speed ceiling."),
-  item("spectrum", "tail", "Neon Spectrum", 600, "Speed Colors", "Rainbow ribbon shifts faster at higher movement speed."),
-  item("glitch-fx", "slash", "Glitch Tear", 400, "RGB Fracture", "Offset stepped red/cyan scar with a crunchy hit accent."),
-  item("confetti", "slash", "Gold Confetti", 650, "Victory Shards", "Gold foil fragments fan out on impacts, with a soft bright chime."),
-  item("comic", "slash", "Comic Impact", 300, "Manga Burst", "Black/yellow starburst at each impact."),
-  item("pixel", "slash", "Pixel Shatter", 350, "Arcade Debris", "Square debris falls with gravity for 30 simulation ticks; never collides or deals damage."),
-  item("manga", "world", "Manga Paper", 700, "Printed World", "Warm paper, crosshatched skyline and black comic marks. Danger lasers keep their color."),
-  item("synth", "world", "Synthwave Grid", 550, "Neon Horizon", "Striped sunset, perspective grid, violet mountain silhouettes and a higher synth voice."),
-  item("chamfer","body","Chamfer Frame",280,"Cut Corners","Eight beveled corners and CORE-linked edge caps. Cosmetic profile only; hitbox and movement unchanged."),
-  item("notched","body","Notched Frame",320,"Vented Shape","Inward-cut side vents repeat your CORE chevron. Cosmetic only; no collision or combat changes."),
-  item("segmented","body","Segmented Frame",380,"Linked Plates","Layered side plates share CORE conduits and world rim light. Cosmetic only; no extra armor."),
+  item("spectrum", "tail", "Neon Spectrum", 600, "Three-Band Refill", "Three primary kills in one chain return one EDGE, then start a 120-world-tick cooldown. Secondaries do not count. Chain break clears incomplete bands; full EDGE consumes the sequence without a queued refund. Replaces the old +12 chain ticks."),
+  item("glitch-fx", "slash", "Glitch Tear", 400, "Blade Extension", "Offset stepped red/cyan scar with a crunchy hit accent. Adds 2 simulation ticks to the active launch blade."),
+  item("confetti", "slash", "Gold Confetti", 650, "Precision Bounty", "Gold foil fragments fan out on impacts, with a soft bright chime. Earn 12% more kill score on multi-cuts. All equipment score perks together cap at +25%."),
+  item("comic", "slash", "Comic Impact", 300, "Chain Grace", "Black/yellow starburst at each impact. Adds 18 simulation ticks to the chain expiry window after a kill."),
+  item("pixel", "slash", "Pixel Shatter", 350, "Blade Extension", "Square debris falls with gravity for 30 simulation ticks; never collides or deals damage. Adds 2 simulation ticks to the active launch blade."),
+  item("manga", "world", "Manga Paper", 700, "Precision Bounty", "Warm paper, crosshatched skyline and black comic marks. Danger lasers keep their color. Earn 10% more kill score on multi-cuts. All equipment score perks together cap at +25%."),
+  item("synth", "world", "Synthwave Grid", 550, "Focus Return", "Striped sunset, perspective grid, violet mountain silhouettes and a higher synth voice. Passive FOCUS recovery is 15% faster when not aiming."),
+  item("chamfer","body","Chamfer Frame",280,"Glancing Recoil", "Reduces the primary armor shove component by 20%, without exceeding incoming speed or the legal ceiling. No extra blade time."),
+  item("notched","body","Notched Frame",320,"Vent Cooling", "Recessed side vents open only during real recovery. Passive FOCUS recovery is 12% faster when not aiming. Shared recovery bonus caps at 40%. No aim-cost discount or thrust."),
+  item("segmented","body","Segmented Frame",380,"Compression Spring", "Stores 20% of actual forward momentum lost on the first primary armor shove per shot, up to 4 speed for 45 ticks. The next accepted launch returns it once, bounded by pre-impact speed and the legal ceiling. No extra chain grace."),
   item("dash-auto", "dash", "Adaptive Dash", 0, "Build Resonance", "Dash trails follow your equipment and sword. Cosmetic only."),
-  item("dash-ink", "dash", "Ink Dash", 150, "Brush Wake", "A sharp ink-brush wake. Cosmetic only; movement is unchanged."),
-  item("dash-fire", "dash", "Ember Dash", 250, "Flame Wake", "Layered flame ribbons trail your launch. Cosmetic only."),
-  item("dash-lightning", "dash", "Volt Dash", 300, "Electric Wake", "Angular electric streaks follow your launch. Cosmetic only."),
-  item("dash-ice", "dash", "Frost Dash", 300, "Crystal Wake", "Crystalline shards mark your launch. Cosmetic only."),
-  item("dash-water", "dash", "Tide Dash", 250, "Flowing Wake", "Sweeping water ribbons follow your launch. Cosmetic only."),
-  item("dash-void", "dash", "Void Dash", 350, "Orbital Wake", "Broken orbital rings trail your launch. Cosmetic only."),
-  item("dash-echo", "dash", "Echo Dash", 350, "Afterimage Wake", "Geometric afterimages trace your launch. Cosmetic only."),
+  item("dash-ink", "dash", "Ink Dash", 150, "Brush Cutter", "Widens the primary cutting corridor by 12%, within the shared +35% positive-width limit. Width gains compose before Viper/Sniper narrowing; temporary width stays separate. No extra blade time, repeated hits, speed, body size or persistent ink hazard."),
+  item("dash-fire", "dash", "Ember Dash", 250, "Contact Ignition", "The first eligible direct contact ignites its surviving target and up to two nonboss neighbors within 56 and clear static sight. Each takes one secondary damage at 18 and 36 world ticks. Active burns do not stack or refresh. Shot width is 10% narrower. No extra blade time, primary rewards, chain effects or boss damage from fire."),
+  item("dash-lightning", "dash", "Volt Dash", 300, "Precision Bounty", "Angular electric streaks follow your launch. Earn 10% more kill score at speed 18+. All equipment score perks together cap at +25%."),
+  item("dash-ice", "dash", "Frost Dash", 300, "Rime Breaker", "The first eligible direct contact chills its surviving victim and at most one nonboss neighbor within 60 and clear static sight. Fangs freeze movement and their own attack clocks for 18 world ticks. Other nonboss bodies move at 70% for 24 world ticks; their tells keep running. Actual thaw starts 90 world ticks of cold immunity. Active cold never stacks or refreshes. Bosses and protected teaching actors resist. Emitted hazards and rushing body contact remain dangerous. No extra damage, player physics change or aim-cost discount."),
+  item("dash-water", "dash", "Tide Dash", 250, "Focus Return", "Sweeping water ribbons follow your launch. Passive FOCUS recovery is 10% faster when not aiming."),
+  item("dash-void", "dash", "Void Dash", 350, "Collapse Well", "The first eligible direct contact creates one 18-world-tick field at its fixed origin. Up to three nearest movable nonboss survivors within 110 and static sight are selected once. Each is pulled at most 32 total units with solids and post leash respected. Only those selected targets actually within the 28-unit core and static sight at expiry take one secondary armor/health unit. One live field; cooldown 36 from admission. No refresh, eviction, early payout, boss damage, projectile absorption, player phase, primary rewards or recursive procs. Replaces the old armor-score bonus."),
+  item("dash-echo", "dash", "Echo Dash", 350, "Chain Grace", "Geometric afterimages trace your launch. Adds 12 simulation ticks to the chain expiry window after a kill."),
   item("pointer-reticle", "pointer", "Field Reticle", 0, "Clean Aim", "A segmented reticle marks the point where you press. Cosmetic only."),
-  item("pointer-diamond", "pointer", "Prism Pointer", 200, "Cut Crystal", "A faceted diamond marks your drag origin. Cosmetic only."),
-  item("pointer-orbit", "pointer", "Orbit Pointer", 250, "Twin Orbits", "Broken orbital arcs frame your drag origin. Cosmetic only."),
-  item("pointer-cross", "pointer", "Crosshair Pointer", 200, "Precision Mark", "Four precision brackets mark your drag origin. Cosmetic only."),
+  item("pointer-diamond", "pointer", "Prism Pointer", 200, "Blade Extension", "A faceted diamond marks your drag origin. Adds 1 simulation ticks to the active launch blade."),
+  item("pointer-orbit", "pointer", "Orbit Pointer", 250, "Focus Return", "Broken orbital arcs frame your drag origin. Passive FOCUS recovery is 10% faster when not aiming."),
+  item("pointer-cross", "pointer", "Crosshair Pointer", 200, "Focus Efficiency", "Four precision brackets mark your drag origin. Aiming consumes 8% less FOCUS. Does not slow physics further."),
   item("radar-base", "radar", "Field Radar", 0, "Local Scan", "The standard local radar tracks nearby enemies and objectives."),
   item("radar-1", "radar", "Long-Range Array", 1200, "Range +35%", "See 35% farther on the radar. Existing enemy and objective markers remain visible."),
   item("radar-2", "radar", "Threat Array", 3000, "Range +70%", "See 70% farther and mark nearby active projectiles and danger zones."),
@@ -9404,7 +10175,7 @@ var ITEMS = Object.freeze([
   item("trajectory-1", "trajectory", "Vector Lens", 1200, "Extended Path", "Shows more of the calculated launch path while aiming."),
   item("trajectory-2", "trajectory", "Impact Lens", 3000, "Impact Markers", "A longer path adds time ticks and a first-impact marker for the current field snapshot."),
   item("trajectory-3", "trajectory", "Oracle Lens", 6500, "Flight Analysis", "Shows the longest visible path, impact marker and live speed, angle and estimated time. Enemies can move; it does not predict bounces."),
-  item("void", "world", "Pro Void", 1e3, "Clean Space", "Pitch-black background, restrained white boundary detail and sparse audio. Danger colors remain visible.")
+  item("void", "world", "Pro Void", 1e3, "Precision Bounty", "Pitch-black background, restrained white boundary detail and sparse audio. Danger colors remain visible. Earn 15% more kill score vs landlords. All equipment score perks together cap at +25%.")
 ]);
 
 // consolidated/vault-art.js
@@ -9671,6 +10442,11 @@ function drawUpgradeBladeInlay(c,{root,tip,width,radius,upgrade,equipment,sword,
 // Sword artwork is a pure projection of the authoritative profile supplied by the caller.
 // No catalogue resolution, simulation or persistence lives in the renderer.
 function drawSwordWeapon(c, spec = {}) {
+  // CHUNK 7: a canvas that failed to get a 2D context hands us null, and the
+  // first thing this function does is `c.save()` -- which threw an exception
+  // straight up through the wave HUD's update and killed the frame loop. An
+  // undrawable prop is a cosmetic problem; it must never be a fatal one.
+  if (!c || typeof c.save !== 'function') return;
   const {x=0,y=0,radius=24,angle=0,active=false,aiming=false,charge=0,motion=true,time=0}=spec;
   const original=spec.sword||{family:'standard',color:'#deff73',reach:1,width:1};
   const buff=spec.buff,upgrade=buff?.id||buff,finish=spec.finish??1;
@@ -9678,7 +10454,7 @@ function drawSwordWeapon(c, spec = {}) {
   const family=sword.family||'standard',color=sword.color||'#deff73',R=radius;
   const extension=upgrade==='reach'?1+.2*finish:upgrade==='comet'?.85:1;
   const length=active?3.6*R*(spec.reach??sword.reach??1):R*(family==='rapier'?2.35:1.95)*extension;
-  const width=R*(family==='cleaver'?.42:family==='breaker'?.32:family==='rapier'?.085:family==='reaper'?.22:.16)*(active?(sword.width||1):1);
+  const width=R*(family==='cleaver'?.42:family==='breaker'?.32:family==='rapier'?.085:family==='reaper'?.22:.16)*(active?(sword.width||1)*(spec.widthScale??1):1);
   const root=R*1.08,tip=Math.max(root+8,length),span=tip-root;
   c.save();
   try{
@@ -9692,6 +10468,10 @@ function drawSwordWeapon(c, spec = {}) {
     shape([[R*.78,-R*.11],[root+R*.15,-R*.11],[root+R*.15,R*.12],[R*.78,R*.12]],'#302d43');
     for(let i=0;i<3;i++){c.strokeStyle='#a69bb3';c.lineWidth=R*.035;c.beginPath();c.moveTo(R*(.81+i*.07),-R*.07);c.lineTo(R*(.86+i*.07),R*.07);c.stroke();}
     shape([[root-R*.08,-R*.27],[root+R*.12,-R*.19],[root+R*.12,R*.21],[root-R*.08,R*.28]],'#85778e');
+    if(spec.equipment){
+      c.save();c.translate(R*.91,0);c.scale(R,R);c.rotate(Math.PI/2);
+      drawAssemblySocket(c,resolveAssemblyConstruction(spec.equipment),R>=38);c.restore();
+    }
     let pts;
     if(family==='cleaver')pts=[[root,-width*.72],[tip-span*.19,-width],[tip,width*.2],[tip-span*.13,width],[root,width*.48]];
     else if(family==='breaker')pts=[[root,-width*.65],[tip-span*.18,-width*.68],[tip,-width*.16],[tip-span*.10,width*.66],[root,width*.58]];
@@ -9916,8 +10696,8 @@ function drawSwordChamber(c,spec={}) {
   for(const a of s.swordFx)drawSwordAttack(c,a,s.sword,!motion);
   drawElementalDash(c,{x:p.x,y:p.y,vx:p.vx||0,vy:p.vy||0,age:s.slashAge,element:dashElement(equipment,s.sword),equipment,sword:s.sword,buff:s.waveBuff,radius:24,motion});
   if(!s.impact)drawCubeDashSmear(c,{x:p.x,y:p.y,vx:p.vx||0,vy:p.vy||0,age:s.slashAge,radius:24,equipment,motion});
-  drawCubeHero(c,{x:p.x,y:p.y,radius:24,angle:0,equipment,motion:motion,time:age,face:1});
-  drawSwordWeapon(c,{x:p.x,y:p.y,radius:24,angle:s.slashAngle,active:s.blade>0,sword:s.sword,reach:(s.reach||1)*s.sword.reach,charge:s.swordCharge,motion:motion,time:age});c.restore();
+  drawCubeHero(c,{x:p.x,y:p.y,radius:24,angle:0,equipment,motion:motion,time:age,face:1,pose:{aiming:s.held,focusRecovering:s.focusRecoveryActive,focusLevel:s.focus,recoveryAge:s.focusRecoveryAge,...armorShellPose(s),...coreMechanismPose(s),shellAbility:s.shellAbility,tailAbility:s.tailAbility,eyeAbility:s.eyeAbility}});
+  drawSwordWeapon(c,{x:p.x,y:p.y,radius:24,angle:s.slashAngle,active:s.blade>0,sword:s.sword,reach:(s.reach||1)*s.sword.reach,charge:s.swordCharge,widthScale:(s.precisionShot?.widthScale??1)*(s.inkCutScale??1)*(s.equipment?.dash==='dash-fire'?.9:1),motion:motion,time:age});c.restore();
   }finally{c.restore();}
 }
 
@@ -10278,7 +11058,7 @@ export function drawSensorPreview(c,w,h,{slot='radar',level=0,time=0,motion=true
    c.save();c.translate(45,128);c.rotate(-.65);c.fillStyle='#f8f4e4';c.fillRect(-9,-9,18,18);c.strokeStyle='#14151d';c.lineWidth=2;c.strokeRect(-9,-9,18,18);c.restore();
    if(level>=2){const p=pts[count-1];c.strokeStyle='#ffd79c';c.lineWidth=1.4;for(let j=0;j<4;j++){c.beginPath();c.arc(p.x,p.y,11,j*Math.PI/2+.12,j*Math.PI/2+1);c.stroke();}}
    if(level>=3){c.fillStyle='#10272d';c.fillRect(145,102,130,30);c.strokeStyle='#9de3ca';c.strokeRect(145,102,130,30);c.fillStyle='#d9f6df';c.font='8px monospace';c.textAlign='left';c.fillText('SPD 32.0  ANG -38°',151,113);c.fillText('IMPACT ~0.60s',151,124);}
-   c.textAlign='left';c.fillStyle='#abc2bd';c.font='8px monospace';c.fillText(['SHORT PATH','EXTENDED PATH','TIME TICKS / IMPACT','LIVE FLIGHT ANALYSIS'][level],14,158);
+   c.textAlign='left';c.fillStyle='#abc2bd';c.font='8px monospace';c.fillText(['SHORT PATH','EXTENDED PATH','TIME MARKS / IMPACT','LIVE FLIGHT ANALYSIS'][level],14,158);
  }
  }finally{c.restore();}
 }
@@ -10482,4 +11262,792 @@ export function drawEnemyAttackImpact(c,{x=0,y=0,type='hurt',attack=null,age=0,m
    const d=27-u*8;for(let i=0;i<4;i++){const a=i*Math.PI/2; c.save();c.rotate(a);const p=[[d,-7],[d-9,0],[d,7]];stroke('#241522',6,p);stroke('#e4ceff',2.5,p);c.restore();}ring('#fff0ff',2,9);
   }
  }finally{c.restore();}
+}
+
+/** Local perk receipts: focus dial, blade chevrons, chain links or score diamonds.
+ * Render-only, bounded to 30 simulation ticks. Caller gates reduced motion. */
+export function drawPartPerkPulse(c,{x=0,y=0,kind='score',age=0,motion=true}={}) {
+ if(!c||!motion||age<0||age>=30)return;
+ const u=age/30,r=20+u*20,color={focus:'#00F0FF',blade:'#DFFF00',chain:'#c4a2ff',score:'#DFFF00'}[kind]||'#00F0FF';
+ c.save();try{c.translate(x,y);c.globalAlpha=(1-u)*.8;c.strokeStyle=color;c.lineWidth=1.8;
+ for(let i=0;i<4;i++){c.save();c.rotate(i*Math.PI/2+u*.3);c.beginPath();
+ if(kind==='focus')c.arc(0,0,r,.1,.9);
+ else if(kind==='blade'){c.moveTo(r-5,-5);c.lineTo(r+5,0);c.lineTo(r-5,5);}
+ else if(kind==='chain'){c.ellipse(r,0,6,3,.4,0,Math.PI*2);}
+ else{c.moveTo(r-4,0);c.lineTo(r,-5);c.lineTo(r+4,0);c.lineTo(r,5);c.closePath();}
+ c.stroke();c.restore();}
+ }finally{c.restore();}
+}
+
+/** Literal perk comparison overlay for the shop. Numeric deltas, not a second
+ * combat simulator. A static readout when motion is disabled. */
+export function drawPartPerkDemo(c,w,h,{stat='',value=0,chip='',time=0,motion=true}={}) {
+ if(!c)return;
+ const t=motion?Math.min(1,Math.max(0,(time%1500-250)/700)):1;
+ const labels={blade:'EXTRA CUTTING TIME',grace:'EXTRA COMBO TIME',focus:'FOCUS COST',recovery:'FOCUS RECOVERY'};
+ const percent=stat==='focus'||stat==='recovery'||stat.startsWith('score:');
+ const base=percent?100:0,next=percent?(stat==='focus'?100-value:100+value):value;
+ const max=Math.max(100,next);
+ c.save();try{c.fillStyle='#14101ef2';c.fillRect(14,h-94,w-28,80);c.font='bold 12px monospace';c.fillStyle='#00f0ff';c.fillText(labels[stat]||'QUALIFYING KILL SCORE',26,h-72);
+ for(const [i,name,n,color] of [[0,'BASE',base,'#9f93ad'],[1,'PART',next,'#dfff00']]){const y=h-54+i*23;c.fillStyle=color;c.fillText(`${name} ${percent?n:Math.round(n/60*100)/100}${percent?'%':'s'}`,26,y+10);c.fillStyle='#3c3149';c.fillRect(142,y,w-210,10);c.fillStyle=color;c.fillRect(142,y,(w-210)*n/max*t,10);}
+ }finally{c.restore();}
+}
+
+/** A single major-impact envelope. Simulation ticks only, one event at a time;
+ * long cooldown prevents a multi-hit chain becoming a strobe. Render-only state. */
+export function createDimensionImpact() {
+ let shot=null,cooldown=0;
+ return {
+  event(type,d={},enabled=true) {
+   if(!enabled||cooldown>0)return false;
+   const rupture=['dimensionBreak','monolithDown'].includes(type);
+   const cut=type==='cut'&&!d.small&&!d.paper&&!d.secondary&&!d.fromShear&&(d.throughcut||d.strokeKills>=3||d.kind==='crown');
+   if(!rupture&&!cut)return false;
+   shot={x:Number.isFinite(d.x)?d.x:null,y:Number.isFinite(d.y)?d.y:null,angle:Number.isFinite(d.cut)?d.cut:Math.PI*-.18,age:0,major:rupture};
+   cooldown=90;return true;
+  },
+  tick(enabled=true) {if(cooldown>0)cooldown--;if(!enabled){shot=null;return;}if(shot&&++shot.age>=24)shot=null;},
+  reset(){shot=null;cooldown=0;},
+  snapshot:()=>shot?{...shot}:null,
+ };
+}
+
+/** Anime impact: ink snap -> fractured glass fans -> clean release.
+ * No canvas readback, full-screen white flashes, filters, randomness, gameplay
+ * writes, or repeating inversion. Drawn below DOM HUD, at most 12 glass panes. */
+export function drawDimensionImpact(c,w,h,{x=w*.5,y=h*.5,angle=-.5,age=0,major=false,motion=true,low=false}={}) {
+ if(!c||!motion||age<0||age>=24||w<=0||h<=0)return;
+ x=Math.max(w*.16,Math.min(w*.84,Number.isFinite(x)?x:w*.5));
+ y=Math.max(h*.2,Math.min(h*.8,Number.isFinite(y)?y:h*.5));
+ const release=Math.max(0,(age-3)/21),fade=(1-release)**2,extent=Math.hypot(w,h),strength=low?.4:1;
+ c.save();try{
+ c.globalAlpha=strength*fade;
+ // One dark exposure, not alternating light/dark frames.
+ c.fillStyle=age<3?'#100c18':'#14101e';c.globalAlpha*=age<3?.34:.12;c.fillRect(0,0,w,h);
+ c.globalAlpha=strength*fade;c.translate(x,y);c.rotate(angle);c.lineJoin='miter';
+ // A long ink tear, with a single ivory core that releases into two lips.
+ const slit=Math.min(w,h)*(major?.16:.11),opening=release*slit*.45;
+ for(const side of [-1,1]){
+  c.beginPath();c.moveTo(-extent*.58,side*opening);c.lineTo(-slit*.4,side*(4+opening));c.lineTo(slit*.28,side*(2+opening));c.lineTo(extent*.58,side*(opening+8));
+  c.lineTo(slit*.7,side*(opening+17));c.lineTo(-slit,side*(opening+11));c.closePath();c.fillStyle='#0a0710';c.fill();
+  c.strokeStyle=side<0?'#f5f0e8':'#00f0ff';c.lineWidth=age<3?2.4:1.1;c.stroke();
+ }
+ const count=major?12:8;
+ for(let i=0;i<count;i++){
+  const a=i/count*Math.PI*2+.16*(i%3),cs=Math.cos(a),sn=Math.sin(a),length=Math.min(w,h)*(.25+(i%4)*.055),drift=release*(low?14:54),start=18+drift;
+  c.save();c.translate(cs*start,sn*start);c.rotate(a+release*(i%2?-.07:.07));
+  c.beginPath();c.moveTo(0,0);c.lineTo(length*.5,-8-(i%3)*3);c.lineTo(length,6+(i%2)*9);c.lineTo(length*.37,9);c.closePath();
+  c.fillStyle=i%2?'#20162ecc':'#06050bcc';c.fill();c.strokeStyle=i%3?'#b8b1cb':'#00f0ff';c.lineWidth=.9;c.stroke();
+  // Branch cracks are fixed angular geometry, never noisy particle clouds.
+  c.beginPath();c.moveTo(length*.25,0);c.lineTo(length*.48,-15);c.lineTo(length*.62,-13);c.stroke();c.restore();
+ }
+ // The contact stamp stays local: no white full-canvas inversion.
+ if(age<3){
+  if(!low){
+   // A single local negative-space stamp: the anime contact frame, not a
+   // full-screen white flash. It never alternates polarity or repeats.
+   const radius=Math.min(w,h)*(major?.12:.085);
+   c.beginPath();for(let i=0;i<16;i++){const a=i*Math.PI/8,r=i%2?radius*.2:radius*(i%4?.7:1.25);const px=Math.cos(a)*r,py=Math.sin(a)*r;i?c.lineTo(px,py):c.moveTo(px,py);}c.closePath();
+   c.fillStyle='#f5f0e8';c.fill();c.strokeStyle='#08060d';c.lineWidth=3;c.stroke();
+   c.fillStyle='#08060d';c.beginPath();c.moveTo(-radius*.4,-radius*.25);c.lineTo(radius*.3,-radius*.38);c.lineTo(radius*.45,radius*.2);c.lineTo(-radius*.25,radius*.35);c.closePath();c.fill();
+  }
+  c.strokeStyle='#f5f0e8';c.lineWidth=low?2:4;c.beginPath();c.moveTo(-slit,0);c.lineTo(slit,0);c.stroke();
+ }
+ }finally{c.restore();}
+}
+
+/** Bounded LRU raster bake. Callers supply a surface factory; the portable
+ * engine never reaches into the DOM. Cached pixels are explicitly released. */
+export function createArtBake({surface,maxEntries=20,maxPixels=1600000}={}){
+ const entries=new Map();let pixels=0;
+ const drop=key=>{const e=entries.get(key);if(!e)return;pixels-=e.w*e.h;e.canvas.width=e.canvas.height=1;entries.delete(key);};
+ return {
+  paint(c,key,w,h,draw){
+   if(!surface||w*h>maxPixels){draw(c);return false;}
+   let e=entries.get(key);
+   if(e&&(e.w!==w||e.h!==h)){drop(key);e=null;}
+   if(!e){
+    while(entries.size&&(entries.size>=maxEntries||pixels+w*h>maxPixels))drop(entries.keys().next().value);
+    const canvas=surface(w,h);if(!canvas){draw(c);return false;}canvas.width=w;canvas.height=h;const context=canvas.getContext('2d');
+    if(!context){draw(c);return false;}draw(context);e={canvas,w,h};entries.set(key,e);pixels+=w*h;
+   }else{entries.delete(key);entries.set(key,e);}
+   c.drawImage(e.canvas,0,0,w,h);return true;
+  },
+  clear(){for(const key of entries.keys())drop(key);},
+  stats:()=>({entries:entries.size,pixels}),
+ };
+}
+
+/** Read-only world tour: real backdrop adapter + unchanged foreground silhouettes.
+ * Camera travel is illustrative, never a replay or a source of World powers. */
+export function drawWorldArchitectureStudy(c,w,h,{equipment={},time=0,motion=true,bake=null}={}){
+ const t=motion?time:0;c.save();try{
+ drawEquipmentWorld(c,w,h,equipment.world,t,{x:Math.sin(t*.003)*140,y:-t*1.6,scale:1},bake);
+ drawCubeHero(c,{x:w*.46,y:h*.61,radius:23,equipment,motion:false,time:0,pose:{blink:1}});
+ foe(c,'fang',w*.72,h*.41,22,.2,{hp:1});foe(c,'prism',w*.66,h*.77,20,0,{hp:1});
+ c.fillStyle='#101521da';c.fillRect(16,h-37,w-32,24);c.fillStyle='#e3dfd4';c.font='10px monospace';c.fillText('SCENERY TOUR / UNCHANGED ARENA GEOMETRY',25,h-21);
+ }finally{c.restore();}
+}
+
+/** Sixteen cause → action → result plates. Existing rules, not invented powers. */
+export function drawAbilityShowcase(c,w,h,{equipment={},study={}}={}){
+ const q=study.showcase;if(!q)return;const v=q.values,a=q.progress,on=q.phase>0,result=q.phase===2,id=q.id;
+ const txt=(text,x,y,color='#dce4d4',size=12)=>{c.fillStyle=color;c.font=`${size}px sans-serif`;c.fillText(text,x,y);};
+ const line=(points,color='#7e9c9d',width=2)=>seam(c,points,color,width);
+ const bar=(x,y,width,amount,color)=>{c.fillStyle='#394b50';c.fillRect(x,y,width,8);c.fillStyle=color;c.fillRect(x,y,width*Math.max(0,Math.min(1,amount)),8);};
+ c.save();try{
+ c.fillStyle='#10212b';c.fillRect(0,0,w,h);c.scale(w/640,h/400);
+ txt('SEE THE PART. KNOW THE POWER.',24,27,'#92bbbc',11);txt(study.title||'',24,60,'#f0ecdd',26);
+ for(let i=0;i<3;i++){c.fillStyle=i===q.phase?'#dced99':'#2c4249';c.fillRect(24+i*204,78,188,3);txt(['01  THE PART','02  USE IT','03  THE PAYOFF'][i],24+i*204,99,i===q.phase?'#e5edc1':'#829e9e',10);}
+ c.fillStyle='#1a303a';c.fillRect(24,115,280,205);c.fillStyle='#e3dfd0';c.fillRect(316,115,300,205);
+ const pose={blink:1,breathe:0,aiming:on&&['halo','grav'].includes(id),coreLive:true,corePull:id==='grav'&&on,coreRecovering:id==='time'&&on,coreFocus:v.focus,coreChain:on?(id==='echo'?3:id==='riot'?4:0):0,coreDrive:id==='riot'&&result,coreEchoes:id==='echo'&&result?1:0,coreHull:id==='glass'||id==='oni'?1:3,combo:id==='neko'&&on?3:0};
+ drawCubeHero(c,{x:186,y:242,radius:53,equipment,motion:q.motion,time:0,pose});
+ txt('FITTED TO YOUR BUILD',39,137,'#9ab8b7',10);
+ c.save();c.translate(338,144);
+ const dark='#304c51',green='#4d7250',red='#ab4b55',muted='#7a8884',label=(s,x,y)=>txt(s,x,y,dark,11),enemy=(x,y,kind='fang')=>foe(c,kind,x,y,16,Math.PI,{hp:1,time:0});
+ if(id==='halo'){
+  label('SAME FALL, WHILE AIMING',0,0);
+  line([[40,25],[40,133]],'#9fa6a0');line([[160,25],[160,133]],'#9fa6a0');
+  const fall=85*a;circle(c,40,30+fall,10,muted);circle(c,160,30+fall*v.gravity,10,green);
+  label('USUAL',14,158);label('15% LIGHTER',121,158);
+ }else if(id==='viper'||id==='samurai'||id==='magnet'){
+  const width=id==='viper'?v.width:id==='samurai'?v.horizontal:v.closeWidth;
+  label(id==='viper'?'FASTER DASH / NARROWER CUT':id==='samurai'?'NEARLY LEVEL / WIDER CUT':'CLOSE PASS / WIDER CUT',0,0);
+  c.fillStyle='#adb5a8';c.fillRect(8,33,226,22);c.fillStyle=green;c.fillRect(8,90,226,22*width);
+  line([[11,44],[11+190*a,44]],muted);line([[11,101],[11+Math.min(214,190*a*(id==='viper'?v.speed:1)),101]],'#e1edc0',3);
+  label('USUAL CUT',8,23);label(id==='viper'?'20% FASTER / 15% NARROWER':id==='magnet'?`CLOSE WIDTH +${Math.round((width-1)*1000)/10}% / LIMIT +35%`:'UP TO +20% WIDTH / LIMIT +35%',8,146);
+  if(id==='magnet'){line([[20,118],[100,118]],dark);label('WITHIN 100px',104,123);}
+ }else if(id==='crown'){
+  label('ONE DIRECT ARMOR HIT',0,0);
+  for(let i=0;i<3;i++){c.fillStyle=on&&i<2?'#b9b5a8':dark;c.fillRect(24+i*65,45,45,65);if(on&&i<2)line([[24+i*65,45],[69+i*65,110]],red,2);}
+  label(on?'2 PLATES REMOVED':'ARMOR BEFORE THE CUT',6,140);label('TRADEOFF: 8% SLOWER DASH',6,160);
+ }else if(id==='coil'){
+  label('DIRECT CUT → ONE NEARBY ZAP',0,0);enemy(42,77);enemy(199,77);
+  line([[8,35],[65,114]],dark,3);
+  if(on)line([[65,75],[108,59],[132,91],[156,67],[180,77]],'#367d91',3);
+  label(on?'ONE EXTRA PLATE HIT':'CUT WITH A NEIGHBOR CLOSE',0,142);label('NO REPEATING CHAIN OF ZAPS',0,161);
+ }else if(id==='beacon'){
+  label('FANG PREPARES TO RUSH',0,0);enemy(143,79);
+  if(on){line([[116,49],[108,49],[108,108],[116,108]],'#ad752d',3);line([[174,49],[182,49],[182,108],[174,108]],'#ad752d',3);txt('!',141,44,'#9b5a20',21);}
+  label(on?'AMBER WARNING / REACT NOW':'WATCH THE FANG',0,141);label('A WARNING, NOT A SHIELD',0,160);
+ }else if(id==='neko'){
+  label('MORE TIME TO KEEP THE COMBO',0,0);bar(0,50,235,.64,'#8b9890');bar(0,101,235,.64+Math.min(.3,v.chain/100)*a,green);
+  label('USUAL COMBO WINDOW',0,39);label(v.chain>0?`WITH EARS: ABOUT +${Math.round(v.chain/60*100)/100}s`:'COMBO BONUS ALREADY AT LIMIT',0,90);label('CUT AGAIN BEFORE IT FADES',0,150);
+ }else if(id==='oni'||id==='glass'){
+  label('HIGH REWARD / LOW HEALTH',0,0);for(let i=0;i<3;i++){c.fillStyle=i===0?red:'#b9b7a9';c.fillRect(16+i*40,28,24,24);}
+  txt('1 HEALTH',16,77,dark,13);txt(on?(id==='glass'?'100 → 200':'100 → 150'):'100 SCORE',16,118,dark,29);
+  label(id==='glass'?'DOUBLE SCORE / MAX HEALTH 1':'+50% SCORE AT LAST HEALTH',0,153);
+ }else if(id==='time'){
+  label('AFTER A KILL, RELEASE AIM',0,0);bar(0,45,235,v.without,'#8b9890');bar(0,101,235,v.focus,green);
+  label('USUAL FOCUS RETURN',0,35);label('TWICE-FAST RETURN',0,91);label('BOOST LASTS 2s AFTER A KILL',0,151);
+ }else if(id==='riot'||id==='echo'){
+  const count=id==='riot'?v.driveKills:3;label(id==='riot'?'FOUR KILLS TO OVERDRIVE':'THREE DIRECT COMBO KILLS',0,0);
+  for(let i=0;i<count;i++){c.fillStyle=on&&i<Math.ceil(a*count)?green:'#acb2a4';c.fillRect(10+i*53,30,37,25);txt(String(i+1),23+i*53,48,'#f8f2dd',14);}
+  if(id==='riot'){txt(result?'OVERDRIVE':'BUILD YOUR COMBO',8,105,dark,22);label('TRADEOFF: MAXIMUM 2 EDGE',0,151);}
+  else{line([[18,115],[227,115]],'#9faaa3');if(result){line([[100,71],[100,135]],'#836596',5);line([[88,126],[112,126]],dark,3);}label(result?'A BLADE STAYS HERE FOR 0.5s':'THE GHOST STAYS WHERE IT SPAWNS',0,151);}
+ }else if(id==='grav'){
+  label('HOLD AIM TO DRAW SMALL FANGS IN',0,0);line([[0,115],[237,115]],green,2);if(on){c.globalAlpha=.25;enemy(126,67);c.globalAlpha=1;enemy(126,115-v.pullY);line([[150,68],[150,115-v.pullY]],'#538085',2);}else enemy(126,67);
+  label('GENTLE PULL TOWARD THE AIM LINE',0,151);
+ }else{
+  label(id==='standard'?'A BALANCED START':'NO EXTRA RULES',0,0);
+  txt(id==='standard'?'3 EDGE':'YOUR USUAL DASH',8,65,dark,24);txt(id==='standard'?'3 HEALTH':'YOUR USUAL CUT',8,109,dark,22);
+  label('A FREE, FULLY USABLE BASELINE',0,152);
+ }
+ c.restore();
+ txt(study.showcaseHeadline||'See how this part helps your next run.',24,347,'#e4edbd',17);
+ txt('SLOWED EXAMPLE / NO PURCHASE NEEDED / PRACTICE TO TRY IT YOURSELF',24,382,'#8daead',10);
+ }finally{c.restore();}
+}
+
+/** One-part study. The selected part is large and always visible. No collateral
+ * explosions, noisy tiny dummies, or new gameplay rules are invented here. */
+export function drawShopItemStudy(c,w,h,{study={},equipment={},sword=null}={}){
+ if(!c)return;
+ if(study.dash){drawDashStudy(c,w,h,{equipment,study,sword});return;}
+ if(study.aim){drawAimStudy(c,w,h,{equipment,study,sword});return;}
+ if(study.showcase){drawAbilityShowcase(c,w,h,{equipment,study});return;}
+ if(study.eye){drawEyeToolkitStudy(c,w,h,{equipment,study});return;}
+ if(study.tail){drawTailToolkitStudy(c,w,h,{equipment,study});return;}
+ if(study.id==='notched'&&study.recovery){drawNotchedRecoveryStudy(c,w,h,{study,equipment});return;}
+ if(study.shell){drawArmorShellStudy(c,w,h,{study,equipment});return;}
+ if(study.reactive){drawReactiveShellStudy(c,w,h,{study,equipment});return;}
+ const {id='',slot='head',family='baseline',progress=0,phase='RESULT',motion=true,perk=null}=study;
+ if(slot==='radar'||slot==='trajectory'){drawSensorPreview(c,w,h,{slot,level:sensorTier(id,slot),time:progress*75,motion});return;}
+ if(slot==='pointer'){drawDragArrowPreview(c,w,h,{equipment,sword,power:.75});return;}
+ if(slot==='dash'){drawShopElementDash(c,w,h,{equipment,sword,time:progress*850,motion});return;}
+ if(slot==='slash'){drawShopElementSlash(c,w,h,{equipment,sword,time:progress*850,motion});return;}
+ c.save();try{
+ c.fillStyle='#14101e';c.fillRect(0,0,w,h);c.scale(w/480,h/300);
+ if(slot==='world')drawWorldBackdrop(c,480,300,id,motion?progress*70:0);
+ const act=phase==='READY'?0:progress,focus=family==='focus',bounce=family==='movement',hit=family==='defense';
+ const x=bounce?155+Math.sin(act*Math.PI)*70:150,y=focus?173-act*20:176;
+ c.strokeStyle='#51435f';c.lineWidth=2;c.beginPath();c.moveTo(34,235);c.lineTo(446,235);c.stroke();
+ if(bounce){c.fillStyle='#51435f';c.fillRect(262,74,7,162);}
+ const pose={aiming:focus,combo:family==='chain'?Math.round(act*5):0,overdrive:id==='blaze'&&act>.5,blink:1,bank:bounce?act:0};
+ // Calm, frontal close-up preserves the material, eyes and selected silhouette.
+ drawCubeHero(c,{x,y,radius:49,angle:bounce?-act*.15:0,time:motion?act*48:32,equipment,pose});
+ if(focus){
+  c.strokeStyle='#00f0ff';c.lineWidth=2;c.beginPath();c.arc(x,y,62,-Math.PI*.5,-Math.PI*.5+Math.PI*2*(.45+act*.5));c.stroke();
+ }else if(family==='chain'){
+  for(let i=0;i<4;i++){c.strokeStyle=i<Math.round(act*4)?'#dfff00':'#51435f';c.lineWidth=3;c.beginPath();c.ellipse(295+i*26,166,16,8,-.4,0,Math.PI*2);c.stroke();}
+ }else if(family==='score'){
+  c.fillStyle='#dfff00';c.font='bold 32px monospace';c.fillText(`+${perk?.value||0}%`,284,170);
+  c.font='12px monospace';c.fillStyle='#eee8f3';c.fillText('QUALIFYING SCORE',280,193);
+ }else if(hit){
+  foe(c,'fang',318-act*75,174,25,Math.PI,{hp:1});if(act>.6){c.strokeStyle='#00f0ff';c.lineWidth=3;c.beginPath();c.arc(x+9,y,62,-1.2,1.2);c.stroke();}
+ }else if(family==='combat'){
+  if(id==='coil'&&act>.5){c.strokeStyle='#00f0ff';c.lineWidth=3;c.beginPath();c.moveTo(x+40,y-20);c.lineTo(278,132);c.lineTo(265,161);c.lineTo(330,161);c.stroke();}
+  foe(c,'fang',335,170,26,0,{hp:1});
+ }
+ c.fillStyle='#a99bb7';c.font='12px monospace';c.fillText(phase==='READY'?'1  READY':phase==='TRIGGER'?'2  '+(study.trigger||'TRIGGER'):'3  RESULT',28,35);
+ c.fillStyle='#dfff00';c.font='bold 13px monospace';c.fillText((study.benefit||'BASELINE BUILD').slice(0,48),28,276);
+ // Perk delta gauges are intentionally labelled; this is not a combat replay.
+ if(perk&&(perk.stat==='focus'||perk.stat==='recovery'||perk.stat==='grace'||perk.stat==='blade')){
+  const label=perk.stat==='focus'?'AIM COST':perk.stat==='recovery'?'RECOVERY':perk.stat==='grace'?'CHAIN WINDOW':'BLADE WINDOW';
+  c.font='11px monospace';c.fillStyle='#eee8f3';c.fillText(label,280,102);
+  for(let i=0;i<2;i++){const delta=perk.stat==='focus'?-perk.value:perk.value;c.fillStyle=i?'#00f0ff':'#81728f';c.fillRect(280,116+i*25,(i?100+delta:100)*(.3+act*.7),10);c.fillText(i?`PART ${delta>0?'+':''}${delta}${['focus','recovery'].includes(perk.stat)?'%':' TICKS'}`:'BASE',280,113+i*25);}
+ }
+ }finally{c.restore();}
+}
+
+/** Render metadata only. Never writes visibility/AI state onto game entities.
+ * 100ms broadphase with immediate entry checks for fast movers/new spawns. */
+export function createRenderCuller({intervalMs=100,padding=100}={}){
+ let last=-Infinity,flags=new WeakMap(),scans=0;
+ const visible=(e,v)=>{
+  let q=flags.get(e);const r=Math.max(padding,e.r||0);
+  if(q&&q.x===e.x&&q.y===e.y&&q.r===r&&q.vx===v.x&&q.vy===v.y&&q.w===v.w&&q.h===v.h)return q.visible;
+  if(!q){q={};flags.set(e,q);}
+  q.x=e.x;q.y=e.y;q.r=r;q.vx=v.x;q.vy=v.y;q.w=v.w;q.h=v.h;
+  q.visible=e.x+r>=v.x&&e.x-r<=v.x+v.w&&e.y+r>=v.y&&e.y-r<=v.y+v.h;return q.visible;
+ };
+ return {
+  update(now,view,entities){if(now-last<intervalMs)return false;last=now;for(const e of entities)visible(e,view);scans++;return true;},
+  visible,
+  reset(){last=-Infinity;flags=new WeakMap();},
+  stats:()=>({scans}),
+ };
+}
+/** Fixed cosmetic storage, allocated once. Never pool Matter bodies or retain a
+ * killed enemy reference: gameplay ownership/lifetime must remain unchanged. */
+export function createVisualPool(maxSize=90,{create=()=>({}),clear=e=>{for(const k of Object.keys(e))delete e[k];}}={}){
+ const free=Array.from({length:maxSize},create),active=new Set();
+ return {
+  getFirstDead(){const e=free.pop();if(!e)return null;active.add(e);return e;},
+  release(e){if(!active.delete(e))return false;clear(e);free.push(e);return true;},
+  reset(){for(const e of active){clear(e);free.push(e);}active.clear();},
+  stats:()=>({maxSize,active:active.size,free:free.length}),
+ };
+}
+export function drawBakedGlow(c,bake,x,y,r=24,color='#00f0ff'){
+ if(!bake)return;c.save();try{c.globalCompositeOperation='lighter';c.globalAlpha*=.24;c.translate(x-r,y-r);c.scale(r*2/128,r*2/128);
+ bake.paint(c,'glow:'+color,128,128,context=>{const g=context.createRadialGradient(64,64,0,64,64,64);g.addColorStop(0,color+'a0');g.addColorStop(.3,color+'38');g.addColorStop(1,color+'00');context.fillStyle=g;context.fillRect(0,0,128,128);});
+ }finally{c.restore();}
+}
+
+/** A labelled comparison, not a promise of instant FOCUS or a combat replay.
+ * The caller supplies values from the shared passive-recovery step. */
+export function drawNotchedRecoveryStudy(c,w,h,{study={},equipment={}}={}) {
+ const q=study.recovery;if(!q)return;
+ c.save();try{
+ c.fillStyle='#11151d';c.fillRect(0,0,w,h);c.scale(w/480,h/300);
+ c.fillStyle='#8faaa1';c.font='11px monospace';c.fillText('NOTCHED FRAME / VENT COOLING',24,28);
+ c.fillStyle=q.active?'#dfff9b':'#a5a3b6';c.font='bold 15px monospace';c.fillText(q.phase,24,53);
+ drawCubeHero(c,{x:126,y:159,radius:62,equipment,face:1,motion:study.motion,time:0,
+   pose:{blink:1,aiming:q.held,focusRecovering:q.active,focusLevel:q.focus,recoveryAge:q.age}});
+ const bars=[['WITHOUT NOTCHED',q.without,'#7e788e'],['WITH NOTCHED',q.focus,corePalette(equipment.core).primary]];
+ bars.forEach(([label,value,color],i)=>{
+  const y=112+i*63;c.font='10px monospace';c.fillStyle='#e7e6d9';c.fillText(label,259,y);
+  c.fillStyle='#292936';c.fillRect(259,y+10,190,12);c.fillStyle=color;c.fillRect(259,y+10,190*value,12);
+  c.fillStyle='#e7e6d9';c.fillText(Math.round(value*100)+'% FOCUS',259,y+37);
+ });
+ c.fillStyle='#dfff9b';c.font='bold 12px monospace';c.fillText(`ACTUAL RETURN +${q.marginal}% / TOTAL +${Math.round((q.rate-1)*100)}%`,24,263);
+ c.fillStyle='#bcb8ca';c.font='10px monospace';c.fillText('RELEASE AIM TO RECOVER / SHARED BONUS CAP 40%',24,283);
+ }finally{c.restore();}
+}
+
+/** Enlarged policy illustration, driven by the same recoil/store/return
+ * functions as the run. No damage/power is simulated by this renderer. */
+export function drawArmorShellStudy(c,w,h,{study={},equipment={}}={}){
+ const q=study.shell;if(!q)return;const spring=study.id==='segmented',pal=corePalette(equipment.core);
+ c.save();try{
+ c.fillStyle='#11151d';c.fillRect(0,0,w,h);c.scale(w/480,h/300);
+ c.fillStyle='#8faaa1';c.font='11px monospace';c.fillText(spring?'SEGMENTED / COMPRESSION SPRING':'CHAMFER / GLANCING RECOIL',24,25);
+ c.fillStyle='#dfff9b';c.font='bold 12px monospace';c.fillText(q.phase,24,48);
+ const t=Math.min(1,q.time/1000),x=study.motion?110+t*70:180;
+ const pose={blink:1,shellContactAngle:q.angle,shellAmount:q.stored,
+  shellGlanceAge:q.age,shellReleaseAge:q.releaseAge,shellReleasedAmount:q.returned};
+ drawCubeHero(c,{x,y:143,radius:49,equipment,face:1,motion:study.motion,time:0,pose});
+ foe(c,'bastion',350,143,38,0,{hp:3,flash:q.contact&&q.age<7?8:0,mode:'idle'});
+ if(q.contact){
+  c.strokeStyle=pal.light;c.lineWidth=2;c.beginPath();c.moveTo(x+55,143);c.lineTo(306,143);c.stroke();
+ }
+ c.font='10px monospace';c.fillStyle='#bcb8ca';c.fillText('ILLUSTRATION / INCOMING 30 / ARMOR SHOVE 7',24,214);
+ c.fillStyle='#eeeada';c.font='bold 12px monospace';
+ c.fillText(spring?'ACTUAL LOSS 7 → STORED 1.4 SPEED':`OUTGOING: STANDARD ${q.normal} → CHAMFER ${q.outgoing}`,24,239);
+ c.fillStyle='#dfff9b';c.font='bold 12px monospace';
+ c.fillText(spring?(q.released?`NEXT LAUNCH: 24 → ${q.nextSpeed.toFixed(1)} / SPENT ONCE`:'STORED ONCE / USE WITHIN ABOUT 0.75s'):'20% LESS SHOVE / SAME DAMAGE & HIT WINDOW',24,263);
+ c.fillStyle='#bcb8ca';c.font='10px monospace';c.fillText(spring?'GIVES BACK LOST SPEED / NEVER BREAKS THE SPEED LIMIT':'SLOPED EDGES SOFTEN THE SHOVE / NO EXTRA ARMOR',24,284);
+ if(spring&&q.stored>0){c.fillStyle=pal.light;c.font='bold 13px monospace';c.fillText('+1.4',x-12,83);}
+ }finally{c.restore();}
+}
+
+/** Enlarged assembled-character inspection. Geometry only: no pretend active
+ * vents, stored spring, status, charge, projectile or combat consequence.
+ * The SAME hero and rest weapon are used in game/cards/this inspection. */
+export function drawAssemblyStudy(c,w,h,{equipment={},sword=null,time=0,motion=true,reference=false}={}){
+ if(!c||!(w>0&&h>0))return;
+ const a=resolveAssemblyConstruction(equipment),m=a.material;
+ c.save();try{
+ c.fillStyle='#10181d';c.fillRect(0,0,w,h);c.scale(w/640,h/400);
+ c.fillStyle='#19262c';c.beginPath();c.moveTo(165,64);c.lineTo(495,64);c.lineTo(584,335);c.lineTo(88,335);c.closePath();c.fill();
+ c.strokeStyle='#35434a';c.lineWidth=1;
+ for(const x of [160,240,320,400,480]){c.beginPath();c.moveTo(x,66);c.lineTo(x,334);c.stroke();}
+ c.beginPath();c.moveTo(88,335);c.lineTo(584,335);c.stroke();
+ c.fillStyle='#94b5b0';c.font='12px monospace';c.fillText(reference?'REFERENCE BUILD / FREE INSPECTION':'YOUR PREVIEW / ASSEMBLY INSPECTION',24,25);
+ c.fillStyle='#edead8';c.font='bold 23px sans-serif';c.fillText(a.familyTitle,24,53);
+ c.fillStyle='#080d13';c.beginPath();c.ellipse(342,315,108,10,0,0,Math.PI*2);c.fill();
+ const t=motion&&Number.isFinite(time)?time:0;
+ drawCubeHero(c,{x:348,y:222,radius:68,equipment,time:t,motion,face:1,pose:{blink:1}});
+ drawSwordWeapon(c,{x:348,y:222,radius:68,equipment,sword,motion:false,time:0,active:false});
+ const label=(x,y,title,text,points)=>{
+  c.strokeStyle='#8aaca1';c.lineWidth=1;c.beginPath();points.forEach(([px,py],i)=>i?c.lineTo(px,py):c.moveTo(px,py));c.stroke();
+  const [px,py]=points.at(-1);c.fillStyle=m.edge;c.fillRect(px-2,py-2,4,4);
+  c.fillStyle='#10181deb';c.fillRect(x-5,y-16,Math.min(180,Math.max(title.length*7,text.length*7))+10,44);
+  c.fillStyle='#9eb6ad';c.font='11px monospace';c.fillText(title,x,y-3);
+  c.fillStyle='#f0ead7';c.font='bold 13px sans-serif';c.fillText(text,x,y+16);
+ };
+ label(461,88,'HEAD SEAT',a.headTitle,[[457,97],[417,97],[349,156]]);
+ label(24,179,'TAIL ROOT',a.tailTitle,[[143,185],[204,185],[282,201]]);
+ label(24,293,'SHELL CONSTRUCTION',m.name,[[161,295],[228,295],[295,275]]);
+ label(468,295,'CORE CHAMBER',a.coreTitle,[[464,299],[428,299],[359,265]]);
+ c.fillStyle=m.edge;c.fillRect(24,353,3,26);c.fillStyle='#e6e4d4';c.font='bold 13px monospace';c.fillText(m.mount+' / KEYED WEAPON ROOT',37,365);
+ c.fillStyle='#93aaa6';c.font='11px monospace';c.fillText(reference?'EXAMPLE ONLY / SHOP SELECTION & OWNERSHIP UNCHANGED':'CONSTRUCTION VIEW / POWERS STAY IN PART IN ACTION',37,385);
+ }finally{c.restore();}
+}
+
+/** Same installed cartridge + enlarged mechanism, not a simulated activation.
+ * Preview mode deliberately supplies NO live counters/Drive/pull/recovery. */
+export function drawCoreMechanismStudy(c,w,h,{equipment={},time=0,motion=true}={}){
+ if(!c||!(w>0&&h>0))return;
+ const d=resolveCoreMechanism(equipment.core),material=resolveAssemblyConstruction(equipment).material;
+ const clock=motion&&Number.isFinite(time)?time:0;
+ c.save();try{
+ c.fillStyle='#10181d';c.fillRect(0,0,w,h);c.scale(w/640,h/400);
+ c.fillStyle='#99b5b0';c.font='12px monospace';c.fillText('CORE MECHANISM / FREE INSPECTION',24,26);
+ c.fillStyle='#f0ead7';c.font='bold 25px sans-serif';c.fillText(d.title.toUpperCase(),24,57);
+ c.fillStyle='#17252c';c.fillRect(24,80,285,227);c.fillStyle='#0d131b';c.fillRect(321,80,295,227);
+ c.strokeStyle='#3a5358';c.lineWidth=1;c.strokeRect(321,80,295,227);
+ c.fillStyle='#90aaa5';c.font='10px monospace';c.fillText('INSTALLED / SAME AS IN PLAY',37,99);c.fillText('ENLARGED FITTED CARTRIDGE',334,99);
+ drawCubeHero(c,{x:201,y:228,radius:56,equipment,time:clock,motion,face:1,pose:{blink:1}});
+ // Anchor is transformed, never reimplemented as an unrelated shop icon.
+ c.save();c.translate(468,189);c.scale(180,180);c.translate(-.075,-.635);
+ drawCoreChamber(c,equipment,clock,corePalette(equipment.core),{artRadius:180,reducedMotion:!motion});c.restore();
+ c.strokeStyle='#75988e';c.beginPath();c.moveTo(214,264);c.lineTo(294,264);c.lineTo(321,218);c.stroke();
+ c.fillStyle=material.edge;c.fillRect(211,261,5,5);
+ c.fillStyle='#e6e9d7';c.font='bold 11px monospace';c.fillText(d.mechanism,334,259);
+ c.fillStyle='#9eb9af';c.font='9px monospace';c.fillText(d.parts,334,280);
+ c.fillStyle=material.edge;c.fillRect(24,326,3,45);c.fillStyle='#e9eadb';c.font='bold 12px monospace';c.fillText(d.receipt,37,339);
+ c.fillStyle='#a4bbb0';c.font='10px monospace';c.fillText('PREVIEW HAS NO LIVE CHARGE / POWERS: PART IN ACTION',37,363);
+ c.fillStyle='#8ea59e';c.font='10px monospace';c.fillText('TRY PARTS FREELY / BUY AND EQUIP ARE SEPARATE',24,388);
+ }finally{c.restore();}
+}
+
+/** Fitted reactive hardware. No pose guess, loop or weapon charge can grant
+ * readiness. The supplied view comes from the run (or labelled policy study). */
+export function drawReactiveShellState(c,eq={},pose={}){
+ if(!c||!['hologram','iron','prism'].includes(eq.body))return;
+ const raw=pose.shellAbility,q=raw?.kind===eq.body?raw:null,ready=q?.ready===true,
+  detail=(pose.artRadius??23)>=38,flash=pose.reducedMotion?0:Math.max(0,Math.min(1,q?.flash||0));
+ c.save();try{
+ if(eq.body==='hologram'){
+  const open=q?.window===true,lit=ready?'#b9ffff':'#496a7d';
+  // One vertex gate. The body/eyes/weapon stay visible and collidable.
+  panel(c,[[-.60,-.88],[.61,-.88],[.61,-.58],[-.60,-.58]],'#142f40',.035);
+  seam(c,[[-.57,-.85],[.58,-.85]],'#8aa7ae',.028);
+  for(const side of [-1,1]){
+   const x=side*(open?.37:.18);
+   seam(c,[[x,-.79],[x+side*.09,-.79],[x+side*.09,-.65],[x,-.65]],lit,.045);
+  }
+  // A clear side aperture opens only during the legal launch interval.
+  for(const side of [-1,1]){
+   seam(c,[[side*.96,-.55],[side*.80,-.55],[side*.80,-.42]],open?'#e5ffff':'#4f8796',.035);
+   seam(c,[[side*.80,.10],[side*.80,.24],[side*.96,.24]],open?'#e5ffff':'#4f8796',.035);
+  }
+  if(detail&&!open)seam(c,[[0,-.79],[0,-.65]],lit,.035);
+  if(flash>0){c.globalAlpha*=flash;for(const side of [-1,1])panel(c,[[side*1.04,-.39],[side*1.10,-.32],[side*1.04,-.25],[side*.98,-.32]],'#b9ffff',0);}
+ }else if(eq.body==='iron'){
+  const spent=q?.spent===true;
+  panel(c,[[-.53,-.88],[.52,-.88],[.59,-.69],[.44,-.56],[-.43,-.56],[-.59,-.69]],'#293742',.045);
+  if(!spent){
+   panel(c,[[-.43,-.81],[.41,-.81],[.43,-.64],[-.44,-.64]],'#a9b8ba',.025);
+   panel(c,[[-.12,-.84],[.13,-.84],[.13,-.59],[-.12,-.59]],ready?'#e4ecc9':'#78868b',.025);
+   seam(c,[[-.07,-.73],[.08,-.73]],'#34434c',.025);
+  }else{
+   panel(c,[[-.45,-.81],[-.16,-.78],[-.21,-.61],[-.46,-.66]],'#78878a',.025);
+   panel(c,[[.20,-.80],[.42,-.81],[.43,-.65],[.22,-.61]],'#63717c',.025);
+   seam(c,[[-.15,-.84],[.03,-.74],[-.08,-.67],[.14,-.56]],'#111a24',.065);
+  }
+  if(detail)for(const side of [-1,1])circle(c,side*.49,-.70,.032,'#dae0d8');
+  if(flash>0){c.globalAlpha*=flash;seam(c,[[-.45,-.86],[.45,-.86]],'#ffffde',.055);}
+ }else{
+  // Exactly two solid needle hardpoints. No ornamental projectile swarm.
+  for(const side of [-1,1]){
+   panel(c,[[side*.72,-.79],[side*.94,-.88],[side*1.01,-.59],[side*.89,-.28],[side*.74,-.43]],'#45385d',.04);
+   panel(c,[[side*.83,-.78],[side*.93,-.71],[side*.89,-.40],[side*.79,-.50]],ready?'#f3e3ff':'#827091',.022);
+   if(ready)panel(c,[[side*.85,-.70],[side*.89,-.90],[side*.93,-.67]],'#e4ccff',.02);
+   if(detail)seam(c,[[side*.80,-.37],[side*.91,-.49]],ready?'#d7baff':'#514560',.03);
+  }
+  if(flash>0){c.globalAlpha*=flash;for(const side of [-1,1])seam(c,[[side*.85,-.91],[side*.83,-1.08]],'#fff4ff',.035);}
+ }
+ }finally{c.restore();}
+}
+
+/** Illustrations use the shared phase policy and existing guard/needle rules.
+ * They never run a pretend hit through the player's save or live run. */
+export function drawReactiveShellStudy(c,w,h,{study={},equipment={}}={}){
+ const q=study.reactive;if(!c||!q)return;
+ c.save();try{
+ c.fillStyle='#10181d';c.fillRect(0,0,w,h);c.scale(w/640,h/400);
+ const titles={hologram:'HOLOGRAM / PRECISION PHASE',iron:'IRON / ONE STRUCTURAL GUARD',prism:'PRISM / TWO WALL NEEDLES'};
+ c.fillStyle='#96b5ac';c.font='12px monospace';c.fillText('ABILITY STUDY / LABELLED ILLUSTRATION',24,25);
+ c.fillStyle='#f0ead7';c.font='bold 20px sans-serif';c.fillText(titles[q.kind],24,55);
+ c.fillStyle='#1a2c32';c.fillRect(24,75,592,227);
+ const phase=q.kind==='hologram',iron=q.kind==='iron',x=phase?274:iron?259:330;
+ drawCubeHero(c,{x,y:203,radius:63,equipment,motion:study.motion,time:0,pose:{blink:1,shellAbility:q}});
+ c.fillStyle='#d7e7d6';c.font='bold 12px monospace';
+ if(phase){
+  const needleX=q.phase==='PASS'?x+104:q.phase==='WINDOW'?x-106:x-164;
+  c.strokeStyle='#dc8769';c.lineWidth=2;c.beginPath();c.moveTo(needleX-33,203);c.lineTo(needleX+30,203);c.stroke();
+  polygon(c,[[needleX+32,203],[needleX+12,197],[needleX+12,209]],'#fff0c9');
+  c.fillText('HOSTILE NEEDLE',365,263);
+  c.fillStyle='#a4c2b6';c.font='11px monospace';c.fillText('NEEDLE STAYS ALIVE',365,150);c.fillText('WALLS STAY SOLID',365,174);c.fillText('NO GENERAL IMMUNITY',365,198);c.fillText('SLOWED ILLUSTRATION',365,285);
+  c.strokeStyle='#78918e';c.lineWidth=4;c.beginPath();c.moveTo(584,94);c.lineTo(584,285);c.stroke();
+ }else if(iron){
+  foe(c,'fang',420,198,39,Math.PI,{hp:1,mode:'rush'});
+  c.fillStyle='#bcd1c0';c.font='11px monospace';c.fillText(q.spent?'LATCH SPENT':'FANG RUSH',392,260);
+ }else{
+  c.strokeStyle='#78918e';c.lineWidth=5;c.beginPath();c.moveTo(393,88);c.lineTo(393,282);c.stroke();
+  if(!q.ready)for(const side of [-1,1]){
+   const n=(45-q.remaining)/45,px=x+side*(24+42*n),py=152-53*n;
+   polygon(c,[[px,py-18],[px+4,py+7],[px,py+2],[px-4,py+7]],'#ead9ff');
+  }
+  c.fillStyle='#c8c7d2';c.font='11px monospace';c.fillText(q.ready?'2 HARDPOINTS READY':`${(q.remaining/60).toFixed(1)}s TO RECHARGE`,425,170);
+  c.fillText('SIDE WALL ONLY',425,197);
+ }
+ c.fillStyle='#e6ecd9';c.font='bold 12px monospace';c.fillText(q.phase,24,324);
+ c.fillStyle='#a9c3b6';c.font='11px monospace';
+ const receipt=phase?'FIRST 4 WORLD TICKS /1 NEEDLE /120-TICK RECHARGE':iron?'ONE FANG RUSH PER RUN / NOT NEEDLES, BEAMS OR RINGS':'TWO REAL NEEDLES /45-TICK COOLDOWN / NO FLOOR PROC';
+ c.fillText(receipt,24,350);c.fillStyle='#8ea79d';c.font='10px monospace';c.fillText(phase?'EXCLUDES BOSSES & TUTORIALS / NO AIM-COST DISCOUNT':'ACTUAL LIVE HARDWARE READS AUTHORITY, NOT THIS DEMO CLOCK',24,376);
+ }finally{c.restore();}
+}
+
+/** Plain-language instrument lessons. Numbers/paths are supplied by the same
+ * helpers as play. Only this shop drawing changes; live instruments stay put. */
+export function drawAimStudy(c,w,h,{study={},equipment={},sword=null}={}){
+ const q=study.aim;if(!q)return;const {id,phase,progress:a}=q,on=phase>0;
+ c.save();try{
+ c.fillStyle='#10212b';c.fillRect(0,0,w,h);c.scale(w/640,h/400);
+ const text=(s,x,y,color='#dce5d5',size=12)=>{c.fillStyle=color;c.font=`${size}px sans-serif`;c.textAlign='left';c.fillText(s,x,y);};
+ const stroke=(pts,color='#81aaa5',width=2)=>seam(c,pts,color,width);
+ const bar=(x,y,value,color)=>{c.fillStyle='#acb8ab';c.fillRect(x,y,230,12);c.fillStyle=color;c.fillRect(x,y,230*clamp(value,0,1),12);};
+ text('AIM & READ / KNOW BEFORE YOU RELEASE',24,26,'#92bbbc',11);text(study.title||'',24,59,'#f0ecdd',26);
+ for(let i=0;i<3;i++){c.fillStyle=i===phase?'#dced99':'#2c4249';c.fillRect(24+i*204,78,188,3);text(['01  THE TOOL','02  USE IT','03  THE DIFFERENCE'][i],24+i*204,99,i===phase?'#e5edc1':'#829e9e',10);}
+ c.fillStyle='#1b333c';c.fillRect(24,115,280,205);c.fillStyle='#e3dfd0';c.fillRect(316,115,300,205);
+ const dark='#304c51',green='#4d7250',muted='#778b87',red='#b1485a',label=(s,x,y)=>text(s,x,y,dark,11);
+ if(id==='sniper'){
+  drawCubeHero(c,{x:174,y:228,radius:62,equipment,motion:q.motion,time:0,pose:{blink:1,aiming:phase===1,eyePower:q.power}});
+  text(on?'90% POWER / READY':'BELOW 90% / USUAL CUT',40,143,'#dce9bc',11);
+  label('SAME SHOT / TIGHTER CUT',334,140);c.fillStyle='#a4b0a5';c.fillRect(340,163,230,28);c.fillStyle=green;c.fillRect(340,166,230,28*q.narrow);
+  stroke([[340,178],[340+210*a,178]],red,2);
+  for(let i=0;i<4;i++){c.fillStyle=phase===2&&i<q.armor+1?'#b7b4a8':dark;c.fillRect(342+i*62,217,39,43);if(phase===2&&i<q.armor+1)stroke([[342+i*62,217],[381+i*62,260]],red,2);}
+  label(`USUAL ${q.armor} + PRECISION 1 PLATE`,334,284);label('FIRST ARMOR ONLY / BOSSES RESIST',334,306);
+ }else if(q.slot==='pointer'){
+  // The actual native drag-mark geometry, enlarged but not re-invented.
+  text('YOUR AIMING ORIGIN',40,143,'#a9c9c1',10);
+  c.save();c.translate(164,221);c.scale(2.3,2.3);drawPointerMark(c,0,0,equipment,on?a:0);c.restore();
+  text('PRESS → PULL BACK → RELEASE',40,300,'#c5dfbc',11);
+  if(id==='pointer-orbit'){
+   label('RELEASE AIM / FOCUS RETURNS',334,142);label('USUAL',334,179);bar(334,190,q.without,muted);label('WITH ORBIT',334,235);bar(334,246,q.focus,green);label(q.recoveryPoints?`RECOVERY BONUS +${q.recoveryPoints}%`:'RECOVERY ALREADY AT ITS LIMIT',334,294);
+  }else if(id==='pointer-cross'){
+   label('SAME HOLD / LESS FOCUS USED',334,142);label('USUAL FOCUS COST',334,179);bar(334,190,.7,muted);label('WITH CROSSHAIR',334,235);bar(334,246,.7*(on?q.drain:1),green);label('8% LESS COST / NO TARGET LOCK',334,294);
+  }else if(id==='pointer-diamond'){
+   label('YOUR CUT LASTS A LITTLE LONGER',334,142);stroke([[340,191],[550,191]],muted,9);stroke([[340,238],[550+(on&&q.blade?14*a:0),238]],green,9);label('USUAL CUT',334,173);label(q.blade?'ABOUT +0.02s OF CUTTING TIME':'EXTRA CUT TIME ALREADY AT LIMIT',334,275);label('THE DIAMOND IS NOT A PROJECTILE',334,301);
+  }else{
+   label('YOUR FREE REFERENCE MARK',334,142);stroke([[352,216],[542,166]],green,3);circle(c,352,216,7,dark);label('PULL BACK',334,255);label('RELEASE FORWARD',438,198);label('NO EXTRA DAMAGE OR TARGET LOCK',334,301);
+  }
+ }else if(q.slot==='radar'){
+  text('SAME FIELD / MORE INFORMATION',40,143,'#a9c9c1',10);
+  c.save();c.translate(46,158);c.fillStyle='#0d1d27';c.fillRect(0,0,234,143);
+  const map=q.radar;c.strokeStyle='#5e7b7e';c.lineWidth=1;c.strokeRect(map.viewport.x,map.viewport.y,map.viewport.w,map.viewport.h);
+  for(const p of map.blips){c.fillStyle=p.color;c.beginPath();c.arc(p.x,p.y,p.r+1,0,TAU);c.fill();if(q.tier===3&&p.id==='near'&&on){stroke([[p.x-5,p.y-8],[p.x-9,p.y-8],[p.x-9,p.y+8],[p.x-5,p.y+8]],'#efbe6c');stroke([[p.x+5,p.y-8],[p.x+9,p.y-8],[p.x+9,p.y+8],[p.x+5,p.y+8]],'#efbe6c');}}
+  if(q.tier===3){const x=map.player.x,y=map.player.y;polygon(c,[[x,y-7],[x+5,y+4],[x,y+1],[x-5,y+4]],'#deeda4');}else circle(c,map.player.x,map.player.y,4,'#deeda4');
+  if(q.tier>=2&&on){stroke([[120,65],[138,58]],'#f1908b',3);circle(c,169,45,8,'#b2729d');}
+  c.restore();
+  label(q.tier?'SEE FARTHER THAN THE BASE MAP':'NEARBY CONTACTS, NO UPGRADE',334,142);
+  label('BASE RANGE',334,177);bar(334,188,1/2.2,muted);label('THIS RADAR',334,229);bar(334,240,(on?q.range:1)/2.2,green);
+  label(q.tier>=2?'ALSO SHOWS ACTIVE HAZARDS':'NO EXTRA ATTACK RANGE',334,279);label(q.tier===3?'ADDS ATTACK WARNINGS + HEADING':q.tier===2?'WARNINGS DO NOT BLOCK DANGER':'MAP REACH, NOT CAMERA ZOOM',334,302);
+ }else{
+  // One real release forecast, shared by all tiers. Gray is the full example;
+  // green is ONLY the sample horizon this lens actually reveals.
+  c.fillStyle='#1b333c';c.fillRect(24,115,592,205);
+  text('SAME LAUNCH / DIFFERENT VISIBLE DISTANCE',40,139,'#a9c9c1',10);
+  const all=q.path,minY=Math.min(...all.map(p=>p.y)),maxY=Math.max(...all.map(p=>p.y)),maxX=Math.max(...all.map(p=>p.x)),scale=Math.min(520/maxX,111/Math.max(1,maxY-minY)),project=p=>[55+p.x*scale,170+(p.y-minY)*scale];
+  const points=all.map(project),visible=q.visible.map(project);
+  c.setLineDash([3,5]);stroke(points,'#58716e',1);c.setLineDash([]);stroke(visible.slice(0,Math.max(2,Math.ceil(visible.length*(on?.3+.7*a:.3)))),'#deec9e',3);
+  const origin=points[0];circle(c,origin[0],origin[1],5,'#f0eadb');
+  if(q.tier>=2&&on)for(let i=10;i<visible.length;i+=10){const [x,y]=visible[i];stroke([[x,y-4],[x,y+4]],'#a9d7d5',1);}
+  if(q.impact&&on){const [x,y]=project(q.impact);c.strokeStyle='#f4b482';c.lineWidth=2;c.strokeRect(x-7,y-7,14,14);text('FIRST WALL',x-55,y-14,'#f4c59c',10);}
+  text(['SHORT PATH','MORE PATH','TIME MARKS + FIRST IMPACT','SPEED / ANGLE / FIRST IMPACT'][q.tier],40,302,'#dcebb8',11);
+  if(q.tier===3)text(`${q.speed.toFixed(1)} SPEED   ${Math.round(q.angle)}°   ${q.impact?(q.impact.ticks/60).toFixed(2)+'s TO WALL':'WALL NOT YET VISIBLE'}`,310,302,'#e8f0d5',10);
+ }
+ text(study.showcaseHeadline||'See how this tool helps your next shot.',24,348,'#e4edbd',17);
+ text('SLOWED EXAMPLE / CURRENT SCENE ONLY / NO GUARANTEED FUTURE HIT',24,381,'#8daead',10);
+ }finally{c.restore();}
+}
+
+/** Eight dash lessons: production trail on the left, actual rule comparison on
+ * the right. These diagrams do not simulate a burn/freeze/relay/replay. */
+export function drawDashStudy(c,w,h,{study={},equipment={},sword=null}={}){
+ const q=study.dash;if(!q)return;if(q.ember){drawEmberLesson(c,w,h,{study,equipment,sword});return;}if(q.frost){drawFrostLesson(c,w,h,{study,equipment,sword});return;}if(q.void){drawVoidLesson(c,w,h,{study,equipment,sword});return;}const on=q.phase>0,a=q.progress,id=q.id;
+ c.save();try{
+ c.fillStyle='#10212b';c.fillRect(0,0,w,h);c.scale(w/640,h/400);
+ const text=(s,x,y,color='#dce5d5',size=12)=>{c.fillStyle=color;c.font=`${size}px sans-serif`;c.textAlign='left';c.fillText(s,x,y);};
+ const stroke=(pts,color='#81aaa5',width=2)=>seam(c,pts,color,width),dark='#304c51',green='#4d7250',muted='#83958b',red='#af515e',label=(s,x,y)=>text(s,x,y,dark,11);
+ const bar=(x,y,value,color)=>{c.fillStyle='#b4baad';c.fillRect(x,y,230,12);c.fillStyle=color;c.fillRect(x,y,230*clamp(value,0,1),12);};
+ text('DASH LAB / SEE THE TRAIL, UNDERSTAND THE POWER',24,26,'#92bbbc',11);text(study.title||'',24,59,'#f0ecdd',26);
+ for(let i=0;i<3;i++){c.fillStyle=i===q.phase?'#dced99':'#2c4249';c.fillRect(24+i*204,78,188,3);text(['01  THE LOOK','02  USE IT','03  THE DIFFERENCE'][i],24+i*204,99,i===q.phase?'#e5edc1':'#829e9e',10);}
+ c.save();c.beginPath();c.rect(24,115,280,205);c.clip();c.translate(24,115);
+ drawShopElementDash(c,280,205,{equipment,sword,time:q.poseTime,motion:q.motion});c.restore();
+ c.fillStyle='#e3dfd0';c.fillRect(316,115,300,205);
+ if(id==='dash-ink'){
+  label('SAME LAUNCH / WIDER CUTTING LANE',334,141);
+  c.fillStyle=muted;c.fillRect(340,167,224,24);c.fillStyle=green;c.fillRect(340,220,224,24*(on?q.farGain:1));
+  stroke([[340,179],[340+214*a,179]],'#dfe7ce',2);stroke([[340,232],[340+214*a,232]],'#e9edb6',2);
+  label('USUAL LANE',334,158);label(`FARTHER OUT: +${Math.round((q.farGain-1)*100)}% WIDTH`,334,273);
+  label(q.nearGain<1.119?`CLOSE PASS: +${Math.round((q.nearGain-1)*100)}% / SHARED LIMIT`:'CLOSE PASS: SAME +12% WIDTH',334,298);
+ }else if(id==='dash-lightning'){
+  label('CUT WHILE MOVING AT SPEED 18+',334,141);
+  stroke([[340,171],[412,171],[400,162],[424,171],[400,180]],green,3);
+  text(`${Math.round(100*q.baseScore)} → ${Math.round(100*(on?q.score:q.baseScore))}`,334,232,dark,32);
+  label(q.scorePoints?`SCORE BONUS +${q.scorePoints}%`:'SCORE BONUS ALREADY AT LIMIT',334,271);
+  label(id==='dash-lightning'?'NO EXTRA ZAP OR EXTRA SPEED':'NO PULL OR EXTRA ARMOR DAMAGE',334,300);
+ }else if(id==='dash-water'){
+  label('RELEASE AIM / FOCUS RETURNS',334,141);label('USUAL RECOVERY',334,178);bar(334,190,q.without,muted);label('WITH TIDE',334,233);bar(334,245,q.focus,green);
+  label(q.recovery?`RECOVERY BONUS +${q.recovery}%`:'RECOVERY ALREADY AT ITS LIMIT',334,277);label('NO EXTRA PUSH OR REBOUND FORCE',334,301);
+ }else if(id==='dash-echo'){
+  label('MORE TIME BETWEEN COMBO KILLS',334,141);label('USUAL COMBO WINDOW',334,178);bar(334,190,.65,muted);label('WITH ECHO',334,233);bar(334,245,.65+(on?q.grace/60*a:.0),green);
+  label(q.grace?`ABOUT +${Math.round(q.grace/60*100)/100}s TO KEEP THE COMBO`:'COMBO BONUS ALREADY AT LIMIT',334,277);label('AFTERIMAGES DO NOT ATTACK AGAIN',334,301);
+ }else{
+  label('YOUR FREE COMPLETE BASELINE',334,141);drawCubeHero(c,{x:449,y:214,radius:32,equipment,motion:false,time:0,pose:{blink:1}});
+  stroke([[344,272],[566,272]],green,3);label('NORMAL SPEED / NORMAL CUT / FREE AIM',334,300);
+ }
+ text(study.showcaseHeadline||'Use the trail. Know what it really changes.',24,348,'#e4edbd',17);
+ text('SLOWED EXAMPLE / NO PURCHASE NEEDED / PRACTICE TO TRY IT YOURSELF',24,381,'#8daead',10);
+ }finally{c.restore();}
+}
+
+/** A small steady target-attached seam, not a particle emitter or damage area.
+ * World time owns expiry/hit contraction; reduced motion keeps a static mark. */
+export function drawEmberBurn(c,{x=0,y=0,radius=20,status=null,now=0,motion=true}={}){
+ if(!status||now>=status.expires||radius<=0)return;
+ const hit=motion?Math.max(0,1-(now-status.lastHit)/4):0,r=radius*(1-.08*hit);
+ c.save();try{c.translate(x,y);c.strokeStyle='#f7ad79';c.lineWidth=1.6;c.lineCap='round';
+ seam(c,[[-r*.57,-r*.64],[-r*.29,-r*.49],[-r*.38,-r*.18]],'#f7ad79',1.6);
+ seam(c,[[r*.35,r*.64],[r*.57,r*.39],[r*.45,r*.13]],'#ffd3a1',1.6);
+ c.fillStyle='#ffb77a';c.fillRect(-2,-r*.83,4,3);
+ if(motion&&now-status.born<4){const age=now-status.born;c.globalAlpha*=1-age/4;seam(c,[[-r*.68,-r*.8],[-r*.15,-r*1.03],[r*.5,-r*.77]],'#ffe0ac',2);for(let i=0;i<2;i++)c.fillRect((i?1:-1)*(r*.6+age*1.3),-r-age*1.8,2,2);}
+ }finally{c.restore();}
+}
+
+/** Cause → spread → delayed damage. The shop data is generated by the real
+ * burn ledger, including the two deadlines, blocked target and resistant boss. */
+export function drawEmberLesson(c,w,h,{study={},equipment={},sword=null}={}){
+ const q=study.dash,e=q.ember,on=q.phase>0,values=new Map(e.targets.map(t=>[t.id,t]));
+ c.save();try{
+ c.fillStyle='#10212b';c.fillRect(0,0,w,h);c.scale(w/640,h/400);
+ const text=(s,x,y,color='#dce5d5',size=12)=>{c.fillStyle=color;c.font=`${size}px sans-serif`;c.textAlign='left';c.fillText(s,x,y);},dark='#304c51',orange='#eaa773',line=(pts,color=orange,width=2)=>seam(c,pts,color,width);
+ text('EMBER / CONTACT STARTS THE FIRE',24,26,'#a9c4bf',11);text(study.title||'Ember Dash',24,59,'#f2eddd',26);
+ for(let i=0;i<3;i++){c.fillStyle=i===q.phase?'#efd29d':'#2c4249';c.fillRect(24+i*204,78,188,3);text(['01  LINE UP','02  IGNITE','03  TWO FIRE HITS'][i],24+i*204,99,i===q.phase?'#f0dbad':'#829e9e',10);}
+ c.fillStyle='#1c313b';c.fillRect(24,115,376,201);c.fillStyle='#e3dfd0';c.fillRect(412,115,204,201);
+ const target=(id,x,y,r,kind='fang')=>{const v=values.get(id);if(v.hp>0){foe(c,kind,x,y,r,0,{hp:v.hp});if(v.burning)drawEmberBurn(c,{x,y,radius:r,status:{expires:36,lastHit:v.lastHit},now:e.now,motion:q.motion});}else{line([[x-7,y-7],[x+7,y+7]],'#aab9ae',1);line([[x+7,y-7],[x-7,y+7]],'#aab9ae',1);}text(`${v.hp} LEFT`,x-r-3,y+r+17,'#d5dfc7',10);};
+ drawCubeHero(c,{x:107,y:213,radius:25,equipment,motion:false,time:0,pose:{blink:1}});
+ if(on)drawElementalDash(c,{x:107,y:213,vx:42,vy:0,age:3,element:'fire',radius:23,equipment,sword,motion:true});
+ line([[139,213],[213,213]],'#a4bcb1',on?2:1);text('DIRECT CUT',139,246,'#9cb8b1',10);
+ target('armor',246,213,26,'crown');target('near-a',338,159,14);target('near-b',338,260,14);
+ if(on){line([[274,198],[320,166]],'#a67758',1);line([[274,224],[320,252]],'#a67758',1);}
+ text('UP TO 2 NEIGHBORS',264,301,'#a7c0b2',10);
+ c.fillStyle='#849b96';c.fillRect(175,127,4,37);text('WALL',138,143,'#a7c0b2',9);circle(c,151,161,4,'#b8c0b2');text('BLOCKED',110,181,'#a7c0b2',9);
+ text('REAL FIRE TIMING',428,140,dark,12);text('DIRECT HIT',428,175,dark,11);text(on?'1 PLATE NOW':'LINE UP THE CUT',428,194,dark,11);
+ for(const [i,label] of ['AFTER 0.3s','AFTER 0.6s'].entries()){const due=e.now>=[e.first,e.second][i]&&on;c.fillStyle=due?'#a96d40':'#a4b1a0';c.fillRect(428,211+i*39,8,8);text(label,443,220+i*39,dark,11);text(due?'−1':'WAIT',550,220+i*39,dark,11);}
+ text('10% NARROWER SHOT',428,293,dark,11);
+ text('First contact lights the group. Fire finishes its two hits.',24,345,'#eddbba',17);
+ text('BOSSES RESIST / WALLS BLOCK SPREAD / NO EXTRA EDGE OR COMBO',24,370,'#a4bdb3',10);
+ text('SLOWED EXAMPLE / REAL GAME TIMING SHOWN IN SECONDS',24,390,'#8daead',10);
+ }finally{c.restore();}
+}
+
+/** Three detached launch embers inherit a fraction of launch velocity. Fixed
+ * population, no replenishment, cone ends quickly; exactly two contact embers. */
+export function drawEmberLaunch(c,{x=0,y=0,vx=0,vy=0,angle=null,age=-1,radius=22,motion=true}={}){
+ if(!motion||![x,y,vx,vy,age,radius].every(Number.isFinite)||age<0||age>14||Math.hypot(vx,vy)<4||radius<=0)return;
+ const a=Number.isFinite(angle)?angle:Math.atan2(vy,vx),speed=Math.hypot(vx,vy),r=Math.min(30,radius);
+ c.save();try{c.translate(x,y);c.rotate(a);c.globalAlpha*=.7*(1-age/14)**2;
+ if(age<5){const k=1-age/5;seam(c,[[r*.4,-r*.7],[r*.88,0],[r*.4,r*.7]],'#ffbc81',1.8*k);}
+ for(let i=0;i<3;i++){const xx=-r*.8-age*speed*(.035+i*.007)-i*4,yy=(i-1)*(4+age*.4);seam(c,[[xx,yy],[xx-3-i,yy+(i-1)]],i===1?'#ffdfa6':'#f5a376',1.5);}
+ }finally{c.restore();}
+}
+
+/** Leading facets, never ice bullets. Ends with the actual launch envelope;
+ * Riot/Lava's core construction stays warm and is not turned into a cold gun. */
+export function drawFrostLaunch(c,{x=0,y=0,vx=0,vy=0,angle=null,age=-1,radius=22,motion=true}={}){
+ if(!motion||![x,y,vx,vy,age,radius].every(Number.isFinite)||age<0||age>12||radius<=0||Math.hypot(vx,vy)<4)return;
+ const a=Number.isFinite(angle)?angle:Math.atan2(vy,vx),r=Math.min(30,radius),fade=(1-age/12)**2;
+ c.save();try{c.translate(x,y);c.rotate(a);c.globalAlpha*=fade*.75;
+ const line=(p,col,w)=>seam(c,p,col,w);
+ line([[r*.35,-r*.8],[r*1.04,0],[r*.35,r*.8]],'#d6f1ef',2.2);
+ line([[r*.15,-r*.73],[r*.55,-r*.35]],'#91c3d6',1.5);line([[r*.15,r*.73],[r*.55,r*.35]],'#91c3d6',1.5);
+ // Two finite trailing facets refer to the launched shell, not projectiles.
+ for(const side of [-1,1])line([[-r*.85-age*.8,side*r*.55],[-r*1.25-age,side*r*.38],[-r*1.08-age,side*r*.7]],'#aacfdc',1.4);
+ }finally{c.restore();}
+}
+
+/** Read-only target clock presentation: closed stop-collar for frozen Fangs,
+ * open drag brackets for slowed heavy bodies; broken rim only on real thaw.
+ * Damage/warnings are never recolored safe. No ambient pulse or emitter. */
+export function drawFrostStatus(c,{x=0,y=0,radius=20,angle=0,status=null,now=0,motion=true,labels=true}={}){
+ if(!status||![x,y,radius,angle,now].every(Number.isFinite)||radius<=0)return;
+ const active=status.phase==='active'&&now<status.until,thaw=status.phase==='immune'&&now-status.thawedAt>=0&&now-status.thawedAt<8;
+ const immune=status.phase==='immune'&&now<status.immunityUntil;
+ if(!active&&!thaw&&!immune)return;
+ const r=radius+4,freeze=status.kind==='freeze',age=now-status.born;
+ c.save();try{c.translate(x,y);c.rotate(angle);c.lineJoin='miter';c.lineCap='butt';
+ if(active){
+  if(freeze){seam(c,[[-r*.78,-r*.7],[r*.2,-r*.7],[r*.92,0],[r*.2,r*.7],[-r*.78,r*.7],[-r*.78,-r*.7]],'#bce1e4',1.8);}
+  else{for(const side of [-1,1])seam(c,[[side*r*.62,-r*.86],[side*r*.92,-r*.62],[side*r*.92,r*.62],[side*r*.62,r*.86]],'#9cc8d8',1.8);}
+  if(labels){c.save();c.rotate(-angle);c.fillStyle='#d7e8df';c.font='8px sans-serif';c.textAlign=freeze?'center':'left';c.fillText(freeze?'FROZEN':'SLOWED',freeze?0:r+7,freeze?-r-17:3);c.restore();}
+  // A shape-coded stop notch never covers the enemy's active mouth/plates.
+  c.save();c.rotate(-angle);seam(c,[[-5,-r-5],[-5,-r-11]],'#e4f1df',2);seam(c,[[freeze?1:5,-r-5],[freeze?1:1,-r-11]],'#e4f1df',2);c.restore();
+  if(motion&&age>=0&&age<5){c.globalAlpha*=1-age/5;for(let i=0;i<3;i++){const a=-2.5+i*.9,xx=Math.cos(a)*(r+age*2),yy=Math.sin(a)*(r+age*2);seam(c,[[xx,yy-2],[xx+2,yy],[xx,yy+2]],'#d8f0ec',1.4);}}
+ }else{
+  if(!thaw){c.save();c.rotate(-angle);seam(c,[[-5,-r-6],[-1,-r-10]],'#8ba8b2',1.2);seam(c,[[2,-r-6],[6,-r-10]],'#8ba8b2',1.2);c.restore();return;}
+  const t=(now-status.thawedAt)/8;c.globalAlpha*=motion?1-t:.6;
+  for(const side of [-1,1]){const d=motion?t*7:0;seam(c,[[side*(r*.7+d),-r*.35],[side*(r*.9+d),0],[side*(r*.7+d),r*.35]],'#aac6cb',1.2);}
+ }
+ }finally{c.restore();}
+}
+
+/** Match the actual power: paused Fang countdown, slower heavy locomotion,
+ * emitted shot continuing and a separate, finite recovery window after thaw. */
+export function drawFrostLesson(c,w,h,{study={},equipment={},sword=null}={}){
+ const f=study.dash.frost,{sample:s,baseline:b,now}=f,active=f.started,freeze=active&&s.fang.status?.phase==='active',slow=active&&s.heavy.status?.phase==='active',immune=active&&s.fang.status?.phase==='immune';
+ c.save();try{c.fillStyle='#10212b';c.fillRect(0,0,w,h);c.scale(w/640,h/400);
+ const text=(s,x,y,color='#dfebde',size=12)=>{c.fillStyle=color;c.font=`${size}px sans-serif`;c.textAlign='left';c.fillText(s,x,y);},line=(p,col='#a6cdd4',width=1.5)=>seam(c,p,col,width);
+ text('FROST / A REAL OPENING, NOT A DAMAGE TRAIL',24,26,'#a3bdc3',11);text(study.title||'Frost Dash',24,59,'#f2eddd',26);
+ for(let i=0;i<3;i++){c.fillStyle=i===f.phase?'#d1e6df':'#2c4249';c.fillRect(24+i*204,78,188,3);text(['01  CUT INTO THE GROUP','02  STOP / SLOW','03  THAW / RESIST'][i],24+i*204,99,i===f.phase?'#e0efdf':'#829e9e',10);}
+ c.fillStyle='#1b303b';c.fillRect(24,115,354,198);c.fillStyle='#e3dfd0';c.fillRect(390,115,226,198);
+ text('FANG / ATTACK COUNTDOWN',40,138,'#bdd5cf',11);
+ const fangX=105-Math.min(30,Math.abs(s.fang.x+70)*.12),fang={...s.fang,x:fangX,y:185,r:21};
+ if(active&&freeze)drawFrostStatus(c,{x:fang.x,y:fang.y,radius:fang.r,angle:Math.PI,status:s.fang.status,now,motion:f.motion,labels:false});
+ foe(c,'fang',fang.x,fang.y,fang.r,Math.PI,{hp:1,mode:active?s.fang.mode:'tell',clock:active?s.fang.clock:30,span:66,aim:Math.PI,time:0});
+ if(active&&!freeze&&s.fang.status)drawFrostStatus(c,{x:fang.x,y:fang.y,radius:fang.r,angle:Math.PI,status:s.fang.status,now,motion:f.motion,labels:false});
+ text(!active?'LINE UP':freeze?'FROZEN':immune?'THAWED / COLD RESIST':'MOVING AGAIN',151,166,'#d9ebe1',12);
+ text(`COUNTDOWN: ${((active?s.fang.clock:30)/60).toFixed(2)}s`,151,186,'#b8d1ce',11);
+ text(`WITHOUT FROST: ${(b.fang.clock/60).toFixed(2)}s`,151,205,'#8faab0',10);
+ text('HEAVY / MOVEMENT ONLY',40,235,'#bdd5cf',11);
+ const unit=Math.min(1,110/Math.max(1,f.travel.baseline)),len=active?f.travel.cold*unit:0,base=active?f.travel.baseline*unit:0;
+ line([[96,275],[345,275]],'#3b575e',1);c.fillStyle='#536e72';c.fillRect(96+base,265,12,20);
+ foe(c,'bastion',102+len,275,18,0,{hp:1,mode:'idle'});if(active&&s.heavy.status)drawFrostStatus(c,{x:102+len,y:275,radius:18,status:s.heavy.status,now,motion:f.motion,labels:false});
+ text(slow?'30% SLOWER':!active?'CUT LEAVES ARMOR ALIVE':'NORMAL MOVEMENT',170,251,'#c0dad2',10);
+ const ink='#304c51';text('SHOTS ALREADY FIRED',406,139,ink,11);
+ const needle=590-(active?Math.min(1,f.needleTravel/360)*174:0);line([[409,165],[594,165]],'#b0bca9',1);line([[needle,165],[needle-9,165]],'#994852',2);text('KEEP MOVING / STILL DANGEROUS',406,190,ink,10);
+ text('AFTER THE ICE BREAKS',406,224,ink,11);
+ const remaining=s.fang.status?.phase==='immune'?Math.max(0,(s.fang.status.immunityUntil-now)/60):1.5;
+ text(immune?`COLD RESIST: ${remaining.toFixed(1)}s`:freeze?'THAW STARTS 1.5s RESIST':'1.5s COLD RESIST AFTER THAW',406,248,ink,11);
+ text('WALL / TOO FAR / BOSS',406,278,ink,11);text('NO COLD APPLIED',406,297,ink,10);
+ text(freeze?'The Fang stops. Its attack countdown stops with it.':immune?'The collar breaks at thaw. Cold cannot pin it forever.':'One direct contact. Up to one nearby enemy chilled.',24,341,'#e0eada',17);
+ text('HEAVY ATTACKS KEEP CHARGING / FROZEN RUSHING BODIES STILL HURT',24,368,'#a4bec2',10);
+ text('SLOWED EXAMPLE / NO EXTRA DAMAGE OR AIM DISCOUNT',24,389,'#8baab1',10);
+ // Production construction is present without obscuring the evidence lanes.
+ drawCubeHero(c,{x:345,y:173,radius:18,equipment,motion:false,time:0,pose:{blink:1}});
+ if(active&&now<3)drawFrostLaunch(c,{x:345,y:173,vx:-30,vy:0,age:now,radius:18,motion:f.motion});
+ }finally{c.restore();}
+}
+
+/** A compact keylined crescent, not a moving black hole or invulnerability
+ * bubble. Shared dark/pale construction leaves the equipped hero readable. */
+export function drawVoidLaunch(c,{x=0,y=0,vx=0,vy=0,angle=null,age=-1,radius=22,motion=true}={}){
+ if(!motion||![x,y,vx,vy,age,radius].every(Number.isFinite)||age<0||age>14||radius<=0||Math.hypot(vx,vy)<4)return;
+ const a=Number.isFinite(angle)?angle:Math.atan2(vy,vx),r=Math.min(30,radius),fade=(1-age/14)**2;
+ c.save();try{c.translate(x,y);c.rotate(a);c.globalAlpha*=fade*.8;
+ seam(c,[[r*.1,-r*.86],[r*.7,-r*.53],[r*.94,0],[r*.7,r*.53],[r*.1,r*.86]],'#191b30',5);
+ seam(c,[[r*.1,-r*.86],[r*.7,-r*.53],[r*.94,0],[r*.7,r*.53],[r*.1,r*.86]],'#d2cbeb',1.6);
+ for(const side of [-1,1])seam(c,[[-r*.9-age*.8,side*r*.65],[-r*1.25-age*.9,side*r*.46]],'#a79dcc',1.2);
+ }finally{c.restore();}
+}
+
+/** Exact outer force radius / exact smaller damage radius. No opaque fill,
+ * fake victim orbit, continuous spray or post-expiry decorative damage ring. */
+export function drawVoidField(c,{field=null,now=0,motion=true,scale=1,labels=true,layer='all'}={}){
+ if(!field||!['pull','collapse'].includes(field.phase)||![field.x,field.y,now].every(Number.isFinite))return;
+ const r=field.radius,core=field.core,unit=1/Math.max(.15,scale),age=now-field.born,after=now-field.expires;
+ if(field.phase==='collapse'&&(after<0||after>=8))return;
+ c.save();try{c.translate(field.x,field.y);c.lineCap='butt';
+ const ring=(radius,col,width,segments=1)=>{c.strokeStyle=col;c.lineWidth=width*unit;for(let i=0;i<segments;i++){c.beginPath();c.arc(0,0,radius,i*TAU/segments+.08,(i+1)*TAU/segments-(segments>1?.2:.08));c.stroke();}};
+ const outer=layer!=='core',inner=layer!=='outer';
+ if(field.phase==='pull'){
+  // The boundary never shrinks to pretend all of its area deals damage.
+  if(outer){c.globalAlpha=.8;ring(r,'#c0b3da',1.5,8);}
+  if(inner){c.globalAlpha=.95;ring(core,'#181428',4,1);ring(core,'#eee2f6',1.9,1);
+  for(let i=0;i<4;i++){const a=i*TAU/4,cs=Math.cos(a),sn=Math.sin(a);seam(c,[[cs*(core-5)-sn*3,sn*(core-5)+cs*3],[cs*core,sn*core],[cs*(core-5)+sn*3,sn*(core-5)-cs*3]],'#ddd1ed',1.2*unit);}
+  // A small timer seam counts actual time to the one pending pulse.
+  const progress=clamp(age/Math.max(.01,field.expires-field.born),0,1);c.strokeStyle='#bdb0df';c.lineWidth=2*unit;c.beginPath();c.arc(0,0,core-5,-Math.PI/2,-Math.PI/2+TAU*progress);c.stroke();}
+  if(outer)for(const t of (field.targets||[]).slice(0,3))if(t.moved>0){const dx=t.x-field.x,dy=t.y-field.y,d=Math.hypot(dx,dy);if(d<1)continue;const u=motion?clamp((age%4)/4,0,1):.5,px=dx*(.92-.05*u),py=dy*(.92-.05*u),ux=dx/d,uy=dy/d;c.globalAlpha=.6;seam(c,[[px+ux*5-uy*2,py+uy*5+ux*2],[px,py],[px+ux*5+uy*2,py+uy*5-ux*2]],'#b7acd4',1.2*unit);}
+  if(labels){c.globalAlpha=.85;c.font=`${8*unit}px sans-serif`;c.textAlign='center';c.fillStyle='#c8bedb';if(outer)c.fillText('PULL',0,-r-5*unit);if(inner){c.textAlign='left';c.fillText('CORE HIT',core+8*unit,core+12*unit);}}
+ }else{
+  const t=clamp(after/8,0,1);c.globalAlpha=(1-t)*.55;if(outer)ring(r,'#9387b2',1,8);
+  // Pulse cannot exceed the actual small core. Reduced motion is static.
+  if(inner){c.globalAlpha=(1-t)*.95;ring(core*(motion?.72+.28*Math.min(1,t*2):1),'#f1e7f8',2.2,1);
+  seam(c,[[-core*.35,0],[core*.35,0]],'#f1e7f8',1.3*unit);seam(c,[[0,-core*.35],[0,core*.35]],'#f1e7f8',1.3*unit);}
+ }
+ }finally{c.restore();}
+}
+
+/** A large field cutaway, result receipt and timeline. The production well
+ * owns selection, movement, clipped displacement and the actual core hit. */
+export function drawVoidLesson(c,w,h,{study={},equipment={},sword=null}={}){
+ const q=study.dash.void,{sample:s}=q,active=q.started,phase=q.phase,ink='#304653';
+ c.save();try{c.fillStyle='#111d2c';c.fillRect(0,0,w,h);c.scale(w/640,h/400);
+ const text=(s,x,y,color='#e4e4df',size=12)=>{c.fillStyle=color;c.font=`${size}px sans-serif`;c.textAlign='left';c.fillText(s,x,y);},line=(pts,col='#9c95b7',width=1.3)=>seam(c,pts,col,width);
+ text('VOID / TWO BOUNDARIES, TWO DIFFERENT JOBS',24,25,'#b8accb',11);text(study.title||'Void Dash',24,59,'#eee7e4',26);
+ for(let i=0;i<3;i++){c.fillStyle=i===phase?'#d8c9e8':'#354054';c.fillRect(24+i*204,78,188,3);text(['01  HIT / PLACE','02  DRAW IN','03  CORE COLLAPSE'][i],24+i*204,99,i===phase?'#e6d6ec':'#8e9cae',10);}
+ c.fillStyle='#1b293e';c.fillRect(24,115,360,224);c.fillStyle='#e1dfd4';c.fillRect(396,115,220,224);
+ // Stable field origin and a common unscaled world-to-panel transform.
+ c.save();c.translate(201,227);
+ if(active)drawVoidField(c,{field:s.field,now:s.now,motion:q.motion,scale:1,labels:false});
+ else{c.strokeStyle='#637087';c.setLineDash([3,5]);c.beginPath();c.arc(0,0,q.radius,0,TAU);c.stroke();c.setLineDash([]);}
+ for(const wall of s.geometry){c.fillStyle='#80909f';c.fillRect(wall.x,wall.y,wall.w,wall.h);}
+ for(const e of s.targets){
+  const startX=e.id==='inner'?54:e.id==='outer'?-92:e.x,startY=e.y,x=active?e.x:startX;
+  if(e.hp>0){foe(c,e.kind,x,startY,e.kind==='monolith'?8:e.r,0,{hp:e.hp,mode:'idle'});}
+  else{line([[x-4,startY-4],[x+4,startY+4]],'#c6bdd4');line([[x+4,startY-4],[x-4,startY+4]],'#c6bdd4');}
+ }
+ c.restore();
+ text('WALL BLOCKS',167,185,'#b8c3d1',9);text('OUTER: PULL ONLY',35,326,'#bab5cd',10);text('CORE: ONE HIT AT COLLAPSE',212,326,'#d4cae3',9);
+ text('ONE FIXED HIT LOCATION',412,140,ink,11);text('PULLS UP TO 3 ENEMIES',412,167,ink,12);text('BOUNDED PULL / NO HOMING',412,187,ink,10);
+ text('AFTER 0.3s',412,220,ink,12);
+ const inner=s.targets.find(e=>e.id==='inner'),outer=s.targets.find(e=>e.id==='outer');
+ text(active&&phase===2?'INNER TARGET: 1 HIT':'SMALL CORE: HIT PENDING',412,242,ink,11);text(`OUTER TARGET: ${active&&phase===2?outer.hp:1} HEALTH / NO HIT`,412,264,ink,10);
+ text('BOSSES RESIST / WALLS BLOCK',412,293,ink,10);text('READY AGAIN AFTER 0.6s',412,315,ink,10);
+ drawCubeHero(c,{x:57,y:149,radius:19,equipment,motion:false,time:0,pose:{blink:1}});if(active&&s.now<4)drawVoidLaunch(c,{x:57,y:149,vx:30,vy:0,age:s.now,radius:19,motion:q.motion});
+ text(phase===2?'Only the small core strikes. The outer ring never hurts.':'Draw them inward. The small core is the danger zone.',24,367,'#ded1e8',17);
+ text('SLOWED REAL FIELD / NO EXTRA ARMOR SCORE / NO PROTECTION OR PROJECTILE ABSORPTION',24,390,'#9eacc2',9);
+ }finally{c.restore();}
+}
+
+/** Aim-only source terminal. These three tiny bars are a recharge receipt,
+ * not another field, projectile, aura or player protection ring. */
+export function drawVoidReadiness(c,{x=0,y=0,radius=22,readyIn=0}={}){
+ if(![x,y,radius,readyIn].every(Number.isFinite)||radius<=0)return;
+ const amount=1-clamp(readyIn/36,0,1);c.save();try{c.translate(x+radius+6,y+radius*.4);c.fillStyle='#1b192b';c.fillRect(-2,-3,7,19);for(let i=0;i<3;i++){c.fillStyle=amount>=(3-i)/3?'#d8cbe8':'#75658b';c.fillRect(0,i*5,3,3);}}finally{c.restore();}
 }

@@ -1,3 +1,4 @@
+import { resolvePartPerks } from './part-perks.js';
 import { MUTATIONS } from './hybrids.js';
 import {ITEMS,SLOTS} from './art/splatr-art-engine.js';
 export {ITEMS,SLOTS};
@@ -22,24 +23,37 @@ export function buyEquipment(state,id,wallet) {
 /** Resolved once per run. Rendering never owns or modifies these rules. */
 export function equipmentRules(equipment) {
   const eq=normalizeEquipment(equipment);
+  const perks = resolvePartPerks(eq);
   return Object.freeze({
+    ...perks,
     healthMax:eq.core==='glass'?1:3,
     scoreMultiplier:eq.core==='glass'?2:1,
     lastHullBonus:eq.head==='oni'?1.5:1,
     edgeMax:eq.core==='riot'?2:3,
     dashSpeed:eq.head==='viper'?1.2:eq.head==='crown'?.92:1,
     cutWidth:eq.head==='viper'?.85:1,
-    bladeExtra:eq.tail==='ghost'?6:0,
+    inkWidth:eq.dash==='dash-ink'?1.12:1,
+    emberBurn:eq.dash==='dash-fire',
+    frostControl:eq.dash==='dash-ice',
+    voidWell:eq.dash==='dash-void',
+    dashNarrowing:eq.dash==='dash-fire'?.9:1,
+    bladeExtra:(eq.tail==='ghost'?6:0)+perks.perkBlade,
     overdriveKills:eq.core==='riot'?4:6,
     aimFallGravity:eq.head==='halo'?.85:1,
     focusRecoveryTicks:eq.core==='time'?120:0,
     wallRecharge:eq.tail==='wings',
+    viperRetention:eq.tail==='viper-tails',spectrumSequence:eq.tail==='spectrum',
     armorDamage:eq.head==='crown'?2:1,
     horizontalWidth:eq.head==='samurai'?1.2:1,
     coil:eq.head==='coil',
+    blazeEntry:eq.eyes==='blaze',
+    hypnoDaze:eq.eyes==='hypno',
     earlyWarning:eq.head==='beacon',
     wallNeedles:eq.body==='prism',
     bumpGuard:eq.body==='iron',
+    needlePhase:eq.body==='hologram',
+    armorRecoilScale:eq.body==='chamfer'?.8:1,
+    armorSpring:eq.body==='segmented',
     gravityPull:eq.core==='grav',
     closeWidth:eq.core==='magnet'?1.2:1,
     echo:eq.core==='echo',

@@ -128,7 +128,7 @@
               <svg class="icon"><use href="#i-play" /></svg><span>Start run</span
               ><kbd>↵</kbd></button
             ><button id="manual-btn" class="choice quiet">
-              <svg class="icon"><use href="#i-guide" /></svg>Field manual</button
+              <svg class="icon"><use href="#i-guide" /></svg>Practice &amp; help</button
             ><button id="options-btn" class="choice quiet">
               <svg class="icon"><use href="#i-options" /></svg>Options
             </button>
@@ -137,9 +137,9 @@
                run-persistent fracture meter, framed as progress toward the
                event it unlocks. -->
           <div id="title-fracture" class="fracture-mount fracture-menu" data-tier="stable" role="img" aria-label="Dimension fracture: 0 percent, Stable" hidden>
-            <div class="fracture-menu-head"><span class="fracture-name"><i class="slashes"></i>SHATTER EVENT</span><b class="fracture-pct">0%</b></div>
+            <div class="fracture-menu-head"><span class="fracture-name"><i class="slashes"></i>NEXT BOSS EVENT</span><b class="fracture-pct">0%</b></div>
             <span class="fracture-track"><i class="fracture-fill"></i><b class="fracture-tick" style="left:25%"></b><b class="fracture-tick" style="left:50%"></b><b class="fracture-tick" style="left:75%"></b></span>
-            <div class="fracture-menu-foot"><span class="fracture-tier">STABLE</span><em>Persists across runs · feeds off every cut</em></div>
+            <div class="fracture-menu-foot"><span class="fracture-tier">CALM</span><em>Builds with every cut · carries between runs</em></div>
           </div>
         </div>
         <div class="title-best">
@@ -159,13 +159,19 @@
              the field. Menu and RUN ENDED carry their own; all three are kept
              in step by src/fracture.js and the shell. -->
         <div id="fracture-hud" class="fracture-mount fracture-ribbon" data-tier="stable" role="img" aria-label="Dimension fracture: 0 percent, Stable" hidden>
-          <span class="fracture-name">SHATTER EVENT</span>
+          <span class="fracture-name">BOSS CHARGE</span>
           <span class="fracture-track"><i class="fracture-fill"></i><b class="fracture-tick" style="left:25%"></b><b class="fracture-tick" style="left:50%"></b><b class="fracture-tick" style="left:75%"></b></span>
-          <span class="fracture-read"><b class="fracture-pct">0%</b><small class="fracture-tier">STABLE</small></span>
+          <span class="fracture-read"><b class="fracture-pct">0%</b><small class="fracture-tier">NEXT BOSS · CALM</small></span>
         </div>
         <span id="hybrid-title" hidden></span>
         <div class="score-lock">
           <span class="small"><i class="slashes"></i> Score</span><strong id="score">000000</strong>
+          <!-- CHUNK 1: the hull, under the score, where the player already
+               looks. Bold 24px segments, one per point, cracked when lost. -->
+          <div id="hull-block" class="hull">
+            <div class="hull-head"><span>Health</span><b id="health-value">3/3</b></div>
+            <span id="health-bar" role="img" aria-label="Health: 3 of 3 remaining"><i></i><i></i><i></i></span>
+          </div>
           <div id="chain" hidden>
             <span id="chain-text"></span> <b id="multiplier"></b><i id="chain-meter"></i>
           </div>
@@ -181,11 +187,12 @@
         <div id="last-damage" hidden><b>LAST HIT</b><span id="last-damage-cause"></span></div>
         <div class="top-right">
           <div class="meters" role="group" aria-label="Run meters">
-            <div class="meter hull">
-              <small><b class="health-heart" aria-hidden="true">♥</b> Health <b id="health-value">3/3</b></small
-              ><span id="hull" role="img" aria-label="Health: 3 of 3 remaining"><i></i><i></i><i></i></span>
-            </div>
-            <div class="meter edge" id="edge-meter">
+            <!-- CHUNK 1: health is drawn under the score now, and the cut
+                 charges are the arc under the cube itself — both were in this
+                 column, 900px from the player they describe. The cut meter
+                 stays in the DOM (assistive tech and the headless checks read
+                 it) but is no longer painted. -->
+            <div class="meter edge" id="edge-meter" aria-hidden="true">
               <small>Edge</small
               ><span id="edge" role="img" aria-label="3 cuts remaining"
                 ><i></i><i></i><i></i><b id="edge-regen"></b
@@ -196,6 +203,9 @@
               ><span id="focus" role="img" aria-label="Focus full"
                 ><b id="focus-fill"></b
               ></span>
+              <small id="shell-reserve" role="status" hidden></small>
+              <small id="shell-ability" role="status" hidden></small>
+              <small id="tail-ability" hidden></small>
             </div>
           </div>
           <button id="pause-btn" class="tool" aria-label="Pause run">
@@ -244,6 +254,28 @@
         <span id="story-alt" class="sr" role="status"></span>
       </section>
       <div id="tutorial-objective" aria-hidden="true" hidden><span id="tutorial-objective-text"></span><small id="tutorial-objective-why"></small></div>
+      <!-- CHUNK 1: THE TARGETING RING. The OS cursor is hidden over the
+           arena during a run; this replaces it. Decorative — the aim is
+           already announced through the arena's aria-describedby text. -->
+      <div id="reticle" aria-hidden="true" hidden>
+        <svg viewBox="0 0 44 44">
+          <circle class="reticle-ring" cx="22" cy="22" r="14" />
+          <path class="reticle-tick" d="M22 2v5M22 37v5M2 22h5M37 22h5" />
+          <circle class="reticle-dot" cx="22" cy="22" r="2.2" />
+          <path class="reticle-cross" d="M13 13l18 18M31 13L13 31" />
+        </svg>
+      </div>
+      <!-- CHUNK 1: one red frame-edge flash on the tick health drops. -->
+      <div id="damage-rim" aria-hidden="true"></div>
+      <!-- CHUNK 1: the four-word starter hint, retired by the first kill. -->
+      <div id="start-hint" aria-hidden="true" hidden>AIM &amp; CLICK TO CUT</div>
+      <!-- CHUNK 2: the three-colour law, taught once on the bottom ticker.
+           Three words, three colours, retired after three cuts. -->
+      <div id="law-hint" aria-hidden="true" hidden>
+        <b class="law-safe">GREEN</b> CUTS
+        <b class="law-lethal">RED</b> HURTS
+        <b class="law-reward">GOLD</b> PAYS
+      </div>
       <!-- CHUNK 6A: THE STORY CHIP. One chip, ≤4 words, the only legible
            text allowed mid-play. Purely decorative — combat-relevant content
            always ships via ordinary focus order. -->
@@ -261,10 +293,17 @@
       <div class="panel-inner">
         <span class="small panel-brand"><i class="slashes"></i> SPLATR / Shape Riot <b id="dev-panel-badge" hidden> / DEV SANDBOX</b></span>
         <h2 id="panel-heading">Paused</h2>
-        <section id="pause-page" hidden>
+        <section id="pause-page" hidden data-intrusion="false">
+          <!-- CHUNK 7: an automatic pause states its cause here. -->
+          <p id="pause-why" class="pause-why" data-auto="false">PAUSED</p>
+          <!-- CHUNK 7: shown only when frame errors are repeating. A bug the
+               player can see is a bug they can report. -->
+          <p id="pause-fault" class="pause-fault" hidden>RECURRING FRAME ERROR — CHECK THE CONSOLE</p>
           <p id="pause-info"></p>
+          <p id="pause-back" class="pause-back" hidden>Press <kbd>↵</kbd> or <b>Resume</b> to get back in.</p>
           <button id="resume-btn" class="choice primary">Resume run <kbd>↵</kbd></button
           ><button class="choice quiet" id="skip-room" hidden>Skip warmup</button
+          ><button class="choice quiet" id="dev-fault" hidden>Copy frame-error report</button
           ><button class="choice quiet" id="dev-refill" hidden>Refill health / Edge / focus</button
           ><button class="choice quiet" id="dev-trace" hidden>Download combat trace</button
           ><button class="choice quiet" id="pause-manual">Field manual</button
@@ -277,6 +316,7 @@
             ><button id="music-opt">Beat track <b>On</b></button
             ><button id="assist-opt">Aim assist <b>On</b></button
             ><button id="motion-opt">Motion effects <b>On</b></button
+            ><button id="postfx-opt" aria-describedby="postfx-note">Post FX <b>Auto</b></button
             ><button id="shake-opt" aria-describedby="shake-note">Screen shake <b>Full</b></button
             ><button id="pace-opt" aria-describedby="pace-note">Reaction pace <b>Fast</b></button
             ><button id="opening-opt" aria-describedby="opening-note">
@@ -285,12 +325,20 @@
             ><button id="full-opt" class="full">Fullscreen <b>Toggle</b></button>
           </div>
           <p id="dev-note"></p>
+          <p id="postfx-note">Auto keeps the lighter Canvas path on low-memory devices. On enables the single-pass WebGL lens when supported.</p>
           <p id="shake-note"><b>Full</b> shakes. <b>Low</b> softens. <b>Off</b> stops.</p>
           <p id="pace-note"></p>
           <p id="opening-note"></p>
           <button class="back">← Back</button>
         </section>
         <section id="manual-page" hidden>
+          <!-- CHUNK 6: the two live practice modes belong here, on the page the
+               PRACTICE & HELP button already opens, not inside the contracts
+               modal where they were sitting next to a list of rewards. -->
+          <div id="manual-modes" class="manual-modes">
+            <button id="manual-teaching" class="choice quiet" type="button">LIVE ENEMY TRAINING</button>
+            <button id="manual-drill" class="choice quiet" type="button">CONTROL PRACTICE</button>
+          </div>
           <div class="visual-manual" aria-label="The Learning Ground — every way to practice the game"></div>
           <button class="back" id="manual-back">BACK</button>
         </section>
@@ -347,9 +395,9 @@
             <!-- CHUNK 2: the SHATTER EVENT bar on the debrief. What the
                  run fed the meter, and how close the next one is. -->
             <div id="result-fracture" class="fracture-mount fracture-result" data-tier="stable" role="img" aria-label="Dimension fracture: 0 percent, Stable" hidden>
-              <div class="fracture-result-head"><span class="fracture-name"><i class="slashes"></i>DIMENSION FRACTURE</span><b class="fracture-pct">0%</b></div>
+              <div class="fracture-result-head"><span class="fracture-name"><i class="slashes"></i>BOSS CHARGE</span><b class="fracture-pct">0%</b></div>
               <span class="fracture-track"><i class="fracture-fill"></i><b class="fracture-tick" style="left:25%"></b><b class="fracture-tick" style="left:50%"></b><b class="fracture-tick" style="left:75%"></b></span>
-              <div class="fracture-result-foot"><span class="fracture-tier">STABLE</span><em class="fracture-gained">+0.0 THIS RUN</em></div>
+              <div class="fracture-result-foot"><span class="fracture-tier">CALM</span><em class="fracture-gained">+0.0 THIS RUN</em></div>
             </div>
             <p id="run-record" class="keys"></p>
             <button id="retry-btn" class="choice primary">New run <kbd>↵</kbd></button

@@ -1,19 +1,31 @@
+import {tailToolkitReadout} from './tail-toolkit.js';
+import {reactiveShellReadout} from './needle-phase.js';
 import {installIconSprite,prependIcon} from './ui-icons.js';
 import {isDevMode,modeURL,createProfileStorage,refillForTesting} from './dev-mode.js';
 import {createCombatTrace} from './combat-trace.js';
+import {frameReport,createConsoleRing,captureConsole,CONSOLE_LINES} from './frame-report.js';
 import {createVisualTutorial,tutorialObjective,tutorialAnnouncement,tutorialWhy,TUTORIAL_LINES} from './visual-tutorial.js';
 import {createControlPracticeUI} from './control-practice-ui.js';
 import {createTeachingUI} from './teaching-ui.js';
 import {createTrainingHub} from './training-hub.js';
 import {healthDamageLabel,healthDeathMessage} from './health-ui.js';
+import {healthSegments,damageFeedback,dmgLabel,bearingWord,SAFE_BLINK_TICKS,HIT_RIM_TICKS} from './damage-feedback.js';
+// CHUNK 2: the live "safe to slice" set, measured against the blade's own sweep.
+import {sliceStates} from './slice-safe.js';
+import {lawHintVisible} from './color-law.js';
+import {reticleFor} from './pointer-reticle.js';
+import {OVERDRIVE} from './flow.js';
+import {bossChargeReadout,shortDamageLine,damageBearing,hintVisible} from './hud-copy.js';
 import {combatStatus} from './combat-status.js';
 import {runCoaching} from './run-coach.js';
 import {createWaveUI} from './wave-ui.js';
 import './lab.css';
 import { activeHybrid, activeSparks } from './hybrids.js';
 import { createCustomize } from './customize.js';
+import { ITEMS } from './equipment.js';
 import { overlapsHUD } from './radar.js';
-import { createQuestUI } from './quest-ui.js';
+import { createShopWallet } from './shop-wallet.js';
+import { createRoundRewardUI } from './round-reward-ui.js';
 import { createRun, CHAIN_TIME, HYPER } from './run.js';
 import { readForm, formLabel, GRADE_AT, GRADE_MARK, nextRank } from './form.js';
 import { createClock } from './clock.js';
@@ -32,7 +44,10 @@ import { FRACTURE_TIERS, FRACTURE_KEY, clampPct, persistFracture, fractureTier }
 import { createCutscene, coldOpenOnce } from './cutscene.js';
 import { COLD_OPEN_BEATS, midWaveBeats, sectorBeats, SHATTER_BEATS, lockTicks } from './cinematics.js';
 import { LANDLORD_STORY, storyChipForWave } from './story-arc.js';
-let questUI, customize, waveUI, controlPractice, teaching;let learningGround=false,tutorial=null,lastTutorialHint=null,lastRiftObjective='',lastTutorialWhy='';
+// CHUNK 7: why the pause screen is open — printed on it, so an automatic
+// pause never looks like the game freezing.
+let pauseCause = 'paused';
+let shopWallet, rewardUI, customize, waveUI, controlPractice, teaching;let learningGround=false,tutorial=null,lastTutorialHint=null,lastRiftObjective='',lastTutorialWhy='';
 const tutorialHintSpeech=Object.freeze({
  slice:'Slice the highlighted target. Tap it, or pull away and release toward it.',
  bank:'Launch into the glowing wall. Pull away from the wall and release.',
@@ -52,7 +67,7 @@ const $ = (id) => document.getElementById(id),
   dialog = $('panel'),
   hud = $('hud'),
   clock = createClock(),
-  renderer = createRenderer(canvas),
+  renderer = createRenderer(canvas,{postfx:storage.get('postfx','auto')}),
   audio = createAudio({ muteKey: devMode ? 'splatr.dev.muted' : 'splatr.muted' }),
   poki = createPokiBridge({ getSDK: devMode ? () => null : undefined, fetchSDK: !devMode && __LOAD_POKI_SDK__ });
 void poki.init();
@@ -81,6 +96,7 @@ const pref = matchMedia('(prefers-reduced-motion: reduce)'),
     // under them, which is a different complaint and deserves its own control.
     // Anyone who has asked for reduced motion starts at LOW rather than FULL.
     shake: storage.get('shake', pref.matches ? 'low' : 'full'),
+    postfx: storage.get('postfx','auto'),
     music: storage.get('music', '1') === '1',
     assist: storage.get('assist', '1') === '1',
   };
@@ -95,6 +111,7 @@ let best = Math.max(0, Math.floor(Number(storage.get('best', 0)) || 0));
 // what the menu and debrief bars paint from when no run is live.
 let fractureMirror = clampPct(Number(storage.get(FRACTURE_KEY, 0)) || 0);
 if (!Number.isSafeInteger(best)) best = 0;
+let disposedGame=false;
 let run = null,
   page = null,
   returnTo = 'title',
@@ -108,7 +125,7 @@ let run = null,
   receiptTicks = 0,
   noticeTicks = 0;
 const active = () =>
-  run && !teaching?.isOpen && !controlPractice?.isOpen && !waveUI?.open && !customize?.isOpen && !questUI?.vault && !dialog.open && !document.hidden && ['ready', 'playing'].includes(run.state.phase) && !run.state.inputLock;
+  run && !teaching?.isOpen && !controlPractice?.isOpen && !waveUI?.open && !customize?.isOpen && !dialog.open && !document.hidden && ['ready', 'playing'].includes(run.state.phase) && !run.state.inputLock;
 // ── CHUNK 6A: THE CUTSCENE DRIVER ─────────────────────────────────────────
 // Pure time; the art lives in the engine keyed off s.cutscene. The shell
 // owns input lock, the freeze, and the chip.
@@ -379,12 +396,18 @@ function record() {
 }
 function event(type, d) {
   if(type==='challenge' && customize?.unlock(d.id)) say(d.id==='oni'?'Broken Oni unlocked.':'Glass Cannon unlocked.');
-  questUI?.event(type, d);
+  if (type === 'over') rewardUI?.over(run);
   renderer.event(type, d, opts.motion);
   switch (type) {
     case 'breachOpen': input?.reset();audio.zone();break;
     case 'breachReady': audio.lock();break;
     case 'hyperSurge': audio.strike('drive');break;
+    // CHUNK 3: the bonus goal's payout is a real beat, not a ledger row — it is
+    // the one payment in a sector that arrives without a kill to punctuate it.
+    case 'goalPaid': audio.lock();break;
+    // CHUNK 4: the post is a card, not a kill — give it the upgrade beat so it
+    // is audible over the sector-clear music sting it lands under.
+    case 'postPaid': audio.strike('drive');break;
     case 'sonicBank': audio.strike('parry');break;
     case 'breachContact': audio.seamHit();break;
     case 'dimensionBreak': if(!run?.state.narrative)input?.reset();audio.shatter();break;
@@ -443,7 +466,9 @@ function event(type, d) {
       launchCutscene(SHATTER_BEATS, { reducedMotion: !opts.motion });
       break;
     case 'kineticOvercharge':
-      pop('OVERCHARGED — LETHAL', 70, 3);
+      // CHUNK 1: the old lethal-charge pill was a grey box in the far right
+      // corner describing the RUSH bar in the top centre. The bar says RUSH
+      // READY now; this beat keeps only what the bar cannot say.
       buzz(45);
       break;
     case 'monolithRise':
@@ -496,6 +521,12 @@ function event(type, d) {
       buzz(17);
       say('Throughcut.');
       break;
+    case 'needlePhase':
+      audio.strike('parry');
+      break;
+    case 'shellReturn':
+      audio.strike('spring');
+      break;
     case 'armor':
       audio.strike('armor');
       // CHUNK 6B: when a plate boundary breaks on the landlord, the world
@@ -520,7 +551,17 @@ function event(type, d) {
     case 'hurt':
       audio.strike('hurt');
       buzz(24);
-      pop(`HEALTH −1 / ${healthDamageLabel(d.cause)}`, 65, 3);
+      // CHUNK 1: remember WHERE it came from so the canvas can draw one red
+      // line to the exact body, orb or laser that did it. `pop` speaks the
+      // short body-first name (`RING HIT`) instead of a health paragraph.
+      hitAt = 0;
+      hitCause = d.cause || null;
+      hitSource = damageSource(run?.state, d);
+      // CHUNK 2: a bearing word ONLY when the attacker is off the viewport.
+      // On-screen, the drawn line already points at it and a compass would be
+      // noise; off-screen, the word is the whole message.
+      hitBearing = hitIsOffScreen() ? bearingWord(hitAngleFromPlayer()) : '';
+      pop(shortDamageLine(`${dmgLabel(d.cause)} HIT${hitBearing ? ` ${hitBearing}` : ''}`), 55, 3);
       break;
     case 'break':
       input.cancel();
@@ -591,6 +632,12 @@ const input = createInput(canvas, {
   get: () => run,
   active,
   point: renderer.worldPoint,
+  // CHUNK 1: the drawn reticle follows every pointer move, not just captured
+  // pulls, because the OS cursor is hidden over the arena during a run.
+  onPointerMove(e) {
+    if (e.type === 'touch') { pointerPos = null; return; }
+    pointerPos = { x: e.x, y: e.y };
+  },
   assist: () => opts.assist,
   engage(device) {
     lastDevice = device;
@@ -614,7 +661,15 @@ const input = createInput(canvas, {
     // A magnetised release really is a touch wider along that corridor. Only
     // this launch; the next unassisted shot is ordinary reach again.
     const ok = run.dash(v);
-    if (!ok && !run.state.opening && run.state.edge <= 0) {say('Out of cuts.');pop('NO CUTS / RECHARGING',45,2);}
+    // CHUNK 1: a refused shot used to print `NO CUTS / RECHARGING` in the far
+    // right corner, 900px from the cube that owns the charges. Nothing is
+    // printed now: the reticle snaps red with an X and shakes, and the charge
+    // arc under the cube is already pulsing red. Say it once for screen
+    // readers, where a visual shake cannot reach.
+    if (!ok && !run.state.opening && run.state.edge <= 0) {
+      refuseTicks = 0;
+      say('No cuts left. Cuts recharge.');
+    }
     return ok;
   },
 });
@@ -631,6 +686,8 @@ function syncSettings() {
   }
   $('shake-opt').querySelector('b').textContent =
     opts.shake === 'off' ? 'Off' : opts.shake === 'low' ? 'Low' : 'Full';
+  $('postfx-opt').querySelector('b').textContent=({auto:'Auto',on:'On',off:'Off'})[opts.postfx]||'Auto';
+  renderer.setPostFXMode(opts.postfx);
   $('pace-opt').querySelector('b').textContent=speed().label;
   setText('pace-note','Changes automatic reaction windows, not launch direction or power.');
   $('dev-opt').querySelector('b').textContent=devMode?'On':'Off';
@@ -664,6 +721,7 @@ function syncSettings() {
   if (fullOk)
     $('full-opt').querySelector('b').textContent = document.fullscreenElement ? 'Exit' : 'Enter';
 }
+$('postfx-opt').onclick=()=>{const modes=['auto','on','off'];opts.postfx=modes[(modes.indexOf(opts.postfx)+1)%modes.length];storage.set('postfx',opts.postfx);syncSettings();dirty=true;};
 $('dev-opt').onclick = () => {
   if (run && !confirm('Switching mode ends this run. Continue?')) return;
   location.assign(modeURL(location.href, !devMode));
@@ -733,6 +791,10 @@ $('form-pips').replaceChildren(
   ...GRADE_AT.map(() => document.createElement('i')),
 );
 let lastHp = null,
+  // Which health total the bar was last PAINTED with. `lastHp` is the damage
+  // detector for the whole HUD; this one exists only so the bar can crack the
+  // right block, and it is reset with the run beside it.
+  lastHpOnly = null,
   lastScore = null,
   lastChain = null,
   lastFormSig = '',
@@ -759,12 +821,14 @@ function setFractureUI(pct, gained = null) {
     if (fill) fill.style.width = `${fractureMirror}%`;
     const pc = mount.querySelector('.fracture-pct');
     if (pc) pc.textContent = `${Math.floor(fractureMirror)}%`;
+    // CHUNK 1: the meter is the player's goal, so its mounts say what it is
+    // charging (a boss event) instead of describing the world's mood. The
+    // internal tier id is untouched -- art, sound and difficulty still key off
+    // `data-tier`; only the words a player reads changed.
+    const copy = bossChargeReadout(fractureMirror, tier);
     const tr = mount.querySelector('.fracture-tier');
-    if (tr) tr.textContent = tierDef.label;
-    mount.setAttribute(
-      'aria-label',
-      `Dimension fracture: ${Math.floor(fractureMirror)} percent. Tier ${tierDef.label.toLowerCase()}.`,
-    );
+    if (tr) tr.textContent = mount.id === 'fracture-hud' ? copy.tier : copy.tier.replace('NEXT BOSS · ', '');
+    mount.setAttribute('aria-label', copy.speech);
   }
   const gainedEl = $('result-fracture')?.querySelector('.fracture-gained');
   if (gainedEl && gained !== null && Number.isFinite(gained)) gainedEl.textContent = `+${gained.toFixed(1)} THIS RUN`;
@@ -793,6 +857,81 @@ function setFractureUI(pct, gained = null) {
 function persistFractureMirror(pct) {
   fractureMirror = clampPct(pct);
   try { storage.set(FRACTURE_KEY, fractureMirror); } catch {}
+}
+// ── CHUNK 1: THE AIM RING, THE DAMAGE REACTION AND THE STARTER HINT ──────
+//
+// Three small view-time values owned by the shell. None of them is simulation
+// state, so none of them may live on `run.state`: the engine reads them
+// through `renderer.setAimFeedback` and the HUD reads the same objects.
+let pointerPos = null,          // canvas-local CSS px, or null
+  reticleArmed = true,
+  refuseTicks = -1,             // ticks since a refused shot, -1 = none
+  hintUntil = 0,                // wall clock the four-word hint retires
+  hitAt = -1,                   // ticks since the last real health loss
+  hitSource = null,             // where that hit came from, if anywhere
+  hitCause = null,
+  hitBearing = '',             // CHUNK 2: a compass word, only when off-screen
+  hitRimTimer = 0;
+// Which body is allowed to own the "what hit me" line: the run names the
+// cause, the attack names the source, and the combat map turns an id into a
+// position. Nothing here guesses.
+function damageSource(s, d) {
+  const attack = d?.attack || null;
+  if (attack && Number.isFinite(attack.x) && Number.isFinite(attack.y)) return { x: attack.x, y: attack.y };
+  const id = attack?.sourceId ?? d?.sourceId;
+  const body = id != null ? run?.combat?.enemies?.get(id) : null;
+  if (body) return { x: body.x, y: body.y };
+  if (Number.isFinite(d?.x) && Number.isFinite(d?.y) && (d.x || d.y)) return { x: d.x, y: d.y };
+  return null;
+}
+/** CHUNK 2: is the attacker outside the drawn field? Uses the renderer's own
+ *  last view, which is the space the player is actually looking at. */
+function hitIsOffScreen() {
+  if (!hitSource) return false;
+  const view = renderer?.viewSnapshot?.();
+  if (!view) return false;
+  return hitSource.x < view.x || hitSource.x > view.x + view.w || hitSource.y < view.y || hitSource.y > view.y + view.h;
+}
+/** Bearing from the cube to the attacker, or NaN when there is no attacker. */
+function hitAngleFromPlayer() {
+  if (!hitSource || !run?.world?.player?.position) return NaN;
+  const p = run.world.player.position;
+  return Math.atan2(hitSource.y - p.y, hitSource.x - p.x);
+}
+function paintReticle(now) {
+  const el = $('reticle');
+  if (!el) return;
+  // Touch has no hover cursor; the ring is a mouse/keyboard instrument.
+  const show = !!run && reticleArmed && lastDevice !== 'touch' && !!pointerPos &&
+    ['ready', 'playing'].includes(run.state.phase) && !dialog.open && !document.hidden;
+  if (!show) { el.hidden = true; return; }
+  el.hidden = false;
+  const aim = input.aim;
+  const view = reticleFor({
+    pointer: pointerPos,
+    power: aim?.power || 0,
+    charging: !!aim?.power,
+    cuts: run.state.edge,
+    refuseAge: refuseTicks,
+    tick: run.world.clock,
+    motion: opts.motion,
+  });
+  if (!view) { el.hidden = true; return; }
+  el.style.left = `${view.x}px`;
+  el.style.top = `${view.y}px`;
+  el.dataset.charging = String(view.charging);
+  el.dataset.warn = String(view.warn);
+  el.dataset.refused = String(view.refused);
+  const ring = el.querySelector('.reticle-ring');
+  if (ring) ring.setAttribute('r', view.r.toFixed(1));
+  const ticks = el.querySelector('.reticle-tick');
+  if (ticks) ticks.setAttribute('transform', `rotate(${(view.spin * 57.2958).toFixed(1)} 22 22)`);
+  const dot = el.querySelector('.reticle-dot');
+  if (dot) dot.setAttribute('r', view.dot.toFixed(1));
+  // Hand the same numbers to the canvas painter so the HTML ring and the
+  // canvas effects can never disagree about where the aim is. The canvas
+  // reticle is deliberately not drawn twice: the DOM ring IS the reticle.
+  return view;
 }
 function updateHUD() {
   if (!run) return;
@@ -851,13 +990,52 @@ function updateHUD() {
   const status = s.narrative ? null : combatStatus(s);
   $('combat-status').hidden = !status;
   if(status){setText('combat-status-title',status.title);setText('combat-status-detail',status.detail);}
-  if($('hull').children.length !== (s.hpMax || 3)) $('hull').replaceChildren(...Array.from({length:s.hpMax || 3},()=>document.createElement('i')));
-  Array.from($('hull').children).forEach((n, i) => n.classList.toggle('empty', i >= meters.hp));
-  setText('health-value', `${meters.hp}/${s.hpMax}`);
-  $('hull').closest('.hull').toggleAttribute('data-critical',meters.hp === 1);
+  // ── CHUNK 1: THE HULL, UNDER THE SCORE ────────────────────────────────
+  // One 24px block per point, under the only big number on the screen. The
+  // block that breaks cracks once (`.broke`), so losing health has a moment
+  // instead of a silent style change.
+  {
+    const seg = healthSegments(meters.hp, s.hpMax || 3, lastHpOnly);
+    const bar = $('health-bar');
+    if (bar && bar.children.length !== seg.max)
+      bar.replaceChildren(...Array.from({ length: seg.max }, () => document.createElement('i')));
+    if (bar) {
+      Array.from(bar.children).forEach((n, i) => n.classList.toggle('empty', i >= seg.now));
+      if (seg.brokeAt >= 0) {
+        const block = bar.children[seg.brokeAt];
+        if (block) { block.classList.remove('broke'); void block.offsetWidth; block.classList.add('broke'); }
+      }
+      bar.setAttribute('aria-label', `Health: ${seg.now} of ${seg.max} remaining. The run ends at zero health.`);
+    }
+    setText('health-value', `${seg.now}/${seg.max}`);
+    const block = $('hull-block');
+    block?.toggleAttribute('data-critical', seg.critical);
+    game.dataset.critical = String(seg.critical && !s.opening);
+    lastHpOnly = seg.now;
+  }
+  // The corner line is now a four-word footnote under a bar that already
+  // cracked; it never repeats the word HEALTH (the bar IS health).
+  // CHUNK 1: the four-word starter hint retires on the first kill, not on a
+  // timer, and never during practice (the practice ground has its own lesson).
+  {
+    const hint = $('start-hint');
+    if (hint) {
+      const show = hintVisible(s.kills, s.elapsed) && s.phase === 'playing' && !s.opening && !learningGround && !activeCutscene;
+      hint.hidden = !show;
+      hint.classList.toggle('on', show);
+    }
+    // CHUNK 2: the colour law, taught on the same ticker lane until the player
+    // has cut three things. Never during practice (the practice ground teaches
+    // its own lesson), never during a cutscene, never over a live fight.
+    const law = $('law-hint');
+    if (law) {
+      const show = lawHintVisible(s.kills, s.elapsed) && s.phase === 'playing' && !s.opening && !learningGround && !activeCutscene;
+      law.hidden = !show;
+      law.classList.toggle('on', show);
+    }
+  }
   $('last-damage').hidden = !s.lastDamage || !!s.opening;
-  if(s.lastDamage) setText('last-damage-cause', healthDamageLabel(s.lastDamage.cause));
-  $('hull').setAttribute('aria-label', `Health: ${meters.hp} of ${s.hpMax} remaining. The run ends at zero health.`);
+  if(s.lastDamage) setText('last-damage-cause', damageBearing(`${dmgLabel(s.lastDamage.cause)} HIT`, hitAt >= 0 ? hitBearing : ''));
   // EDGE. The pip count and the recharge timer both matter: three pips tell
   // you whether you can cut, the timer tells you whether to bother lining one
   // up. Without the second, an empty meter is indistinguishable from a broken
@@ -883,18 +1061,34 @@ function updateHUD() {
   const focusMeter = $('focus-meter');
   focusMeter.toggleAttribute('data-empty', meters.focusEmpty);
   focusMeter.toggleAttribute('data-live', meters.focusLive);
+  const ventCooling=s.equipment?.body==='notched'&&s.focusRecoveryActive&&!s.held&&s.focus<1&&s.phase==='playing';
+  focusMeter.toggleAttribute('data-cooling',ventCooling);
+  focusMeter.querySelector('small').textContent=ventCooling?'Vent cooling':'Focus';
+  const abilityText=s.phase==='playing'?reactiveShellReadout(s.shellAbility):'';
+  $('shell-ability').hidden=!abilityText;if(abilityText)setText('shell-ability',abilityText);
+  const tailText=s.phase==='playing'?tailToolkitReadout(s.tailAbility):'';
+  $('tail-ability').hidden=!tailText;if(tailText)setText('tail-ability',tailText);
+  const springReady=s.equipment?.body==='segmented'&&s.shellSpring&&s.phase==='playing';
+  $('shell-reserve').hidden=!springReady;
+  if(springReady)setText('shell-reserve',`SPRING +${s.shellSpring.amount.toFixed(1)} / NEXT CUT`);
   // Reactive HUD. Each of these is a one-frame attribute flip that a CSS
   // animation hooks, so the feedback costs no timers and cannot queue up
   // behind itself if the player is hit twice inside one animation.
   // `lastHp`/`lastScore`/`lastChain` live outside this function so a paused or
   // hidden tab resuming does not fire a false "you were hit".
+  // CHUNK 1: the shake moved to the per-segment crack above (`#health-bar i`
+  // `.broke`), which is a sharper read than a whole row wobbling: the block
+  // that actually broke is the one that moves. The one-frame `data-hit` flip
+  // stays as a hook for anything that wants the moment without the motion.
   if (lastHp !== null && s.hp < lastHp) {
-    const row = $('hull').closest('.hull');
-    row.removeAttribute('data-hit');
-    void row.offsetWidth; // force the animation to restart
-    row.setAttribute('data-hit', '');
-    clearTimeout(hitTimer);
-    hitTimer = setTimeout(() => row.removeAttribute('data-hit'), 420);
+    const row = $('hull-block');
+    if (row) {
+      row.removeAttribute('data-hit');
+      void row.offsetWidth;
+      row.setAttribute('data-hit', '');
+      clearTimeout(hitTimer);
+      hitTimer = setTimeout(() => row.removeAttribute('data-hit'), 420);
+    }
   }
   if (lastScore !== null && s.score > lastScore) {
     const scoreEl = $('score');
@@ -913,6 +1107,7 @@ function updateHUD() {
     flareTimer = setTimeout(() => chainEl.removeAttribute('data-flare'), 240);
   }
   lastHp = s.hp;
+  lastHpOnly = meters.hp;
   lastScore = s.score;
   lastChain = s.chain;
   // CHUNK 6A: the SECTOR/WAVE readout is a 1.4s chip on transition, then
@@ -1030,9 +1225,11 @@ function updateHUD() {
   }
   $('drive').hidden = !!s.opening || s.drive <= 0;
   // Overdrive's fill is a ::after driven by `--v`, so the bar and every other
-  // continuous meter share one transform. Clamped: 175 is the bank it is
-  // filled from, and a stale 190 would draw past the end of its own track.
-  $('drive').style.setProperty('--v', Math.min(1, Math.max(0, s.drive / 175)).toFixed(3));
+  // continuous meter share one transform. Clamped: OVERDRIVE.ticks is the
+  // bank it is filled from, and a stale larger value would draw past the end
+  // of its own track. (CHUNK 3: this divisor used to be the literal 175 in two
+  // files; the constant is now the only one.)
+  $('drive').style.setProperty('--v', Math.min(1, Math.max(0, s.drive / OVERDRIVE.ticks)).toFixed(3));
   // The chain bar is a share of the window THIS chain was given, not of a
   // constant: the window shrinks as the chain grows (run.js: chainWindow), so
   // a fixed divisor drew a full bar when only a third of the window remained.
@@ -1057,6 +1254,13 @@ function restoreField() {
 }
 function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   if(customize?.isOpen||controlPractice?.isOpen||teaching?.isOpen) return;
+  delete game.dataset.frameFault;
+  // CHUNK 7: a new run starts with a clean diagnostic slate, and says so.
+  // Old failures belong to the old run; getting back to a quiet frame loop is
+  // how a player confirms a crash is behind them.
+  if (frameFailures) console.info('[SPLATR] frame errors from the previous run: ' + frameFailures);
+  frameFailures = 0;
+  frameErrors.clear();
   input.reset();
   poki.setPlaying(false);
   if(tutorial)tutorial.dispose();else run?.dispose();tutorial=null;
@@ -1066,14 +1270,22 @@ function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   $('dev-refill').textContent='Refill health / Edge / focus';
   combatTrace = devMode ? createCombatTrace(4096) : null;
   if(learn){tutorial=createVisualTutorial(seed,(type,data)=>renderer.event(type,type==='cut'?{...data,points:0}:data,opts.motion));run=tutorial.run;}
-  else run = createRun(seed, event, {waveMode:true,continuous:true,catalogRewards:false,lockdownIntro:lockdown,viewport:renderer.questView(),equipment:customize?.snapshot(),combatTrace,fracturePct:fractureMirror});
+  // CHUNK 4: the 40-card catalogue used to be unreachable here, because
+  // `catalogRewards` gates the REST CHOOSER and the chooser is removed from
+  // continuous play (by the earlier decision recorded in waves.js — flipping it
+  // parks the run in `phase:'choose'` with no picker). `postRewards` is the
+  // separate path: one auto-picked card per clear, no UI, no stop. Both flags
+  // exist because one means "ask the player" and the other means "give it to
+  // them". See src/post.js.
+  else run = createRun(seed, event, {waveMode:true,continuous:true,catalogRewards:false,postRewards:true,lockdownIntro:lockdown,viewport:renderer.questView(),equipment:customize?.snapshot(),combatTrace,fracturePct:fractureMirror});
   // QA/debug handle: ?debug in the URL or riot.debug=1 in localStorage exposes
   // the live run to automated playtests. Never set for an ordinary player.
   if (new URLSearchParams(location.search).has('debug') || storage.get('debug', '0') === '1') window.__riot = run;
   renderer.setFieldScale?.(0.9);
   renderer.field(run.world.player.position);run.setView(renderer.questView());
   game.dataset.world=run.state.equipment.world;
-  if(!learn)questUI.start();
+  shopWallet.begin(run);
+  rewardUI.tick(run);
   const hybrid=activeHybrid(run.state.equipment)||activeSparks(run.state.equipment)[0];
   $('hybrid-title').textContent=hybrid?.title || '';
   $('hybrid-title').hidden=!hybrid;
@@ -1087,7 +1299,7 @@ function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   // A fresh run must not react to the previous run's hull, score or chain --
   // and must not inherit the previous run's FORM, or the readout would open
   // already showing the last run's identity.
-  lastHp = lastScore = lastChain = null;
+  lastHp = lastScore = lastChain = lastHpOnly = null;
   lastSectorKey = null;
   sectorChipUntil = 0;
   lastFormSig = '';
@@ -1119,18 +1331,21 @@ function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   if (!activeCutscene) say(learn?'Practice: slice the targets, bank the wall, dodge and cut, then break the Crown.':'New run.');
 }
 function home() {
-  questUI?.closePeek();
   renderer.setFieldScale?.(1);
   input.reset();
   if(tutorial)tutorial.dispose();else run?.dispose();
   run = null;tutorial=null;
   combatTrace = null;
-  learningGround=false;game.dataset.learning='false';questUI?.refresh();
+  learningGround=false;game.dataset.learning='false';
   restoreField();
   hud.hidden = true;
   $('rack-skip').hidden=true;$('tutorial-objective').hidden=true;
   $('title-screen').hidden = false;
   game.dataset.screen = 'title';
+  $('reticle').hidden = true;
+  $('start-hint').hidden = true;
+  $('damage-rim').classList.remove('on');
+  game.removeAttribute('data-critical');
   setText('title-best', score(best));
   // CHUNK 2: returning to the menu repaints the persistent meter too.
   setFractureUI(fractureMirror);
@@ -1153,7 +1368,6 @@ function manual(){
  });
 }
 function open(next) {
-  questUI?.closePeek();
   input.cancel();
   clock.reset();
   poki.setPlaying(false);
@@ -1168,6 +1382,44 @@ function open(next) {
   if (next === 'manual') manual();
   if (next === 'options') syncSettings();
   if (next === 'pause') {
+    // CHUNK 7: the pause is honest about who asked for it.
+    const why = $('pause-why');
+    if (why) {
+      const automatic = pauseCause !== 'paused';
+      const cause = String(pauseCause).toUpperCase();
+      // A dropped tab is nobody's mistake: say what happened, in the words a
+      // player needs to get back in.
+      if (!automatic) why.textContent = 'PAUSED';
+      else if (pauseCause === 'tab hidden') why.textContent = 'PAUSED — THE TAB LOST FOCUS';
+      else if (pauseCause === 'window lost focus') why.textContent = 'PAUSED — THE WINDOW LOST FOCUS';
+      else why.textContent = `PAUSED — ${cause}`;
+      why.dataset.auto = String(automatic);
+      /* §3.2 of the chunk-7 plan: A DELIBERATE PAUSE IS A BEAT, AN INTERRUPTION
+         IS A DISMISSAL. When the game took the run away from the player, the
+         screen offers the two things that answer "what happened": get back in,
+         or end it. Everything else — the field manual, options, contracts, the
+         shop — is a decision for a pause the player CHOSE. It is also a real
+         exploit fix: alt-tabbing into the pause screen used to be a free
+         shopping trip in the middle of a wave. */
+      const panel = $('pause-page');
+      if (panel) panel.dataset.intrusion = String(automatic);
+      for (const id of ['pause-manual', 'pause-options', 'pause-practice', 'pause-shop']) {
+        const node = $(id);
+        if (node) node.hidden = automatic;
+      }
+      // The screen is not "auto-pausing at random": it says what took you out
+      // and what puts you back in.
+      const back = $('pause-back');
+      if (back) back.hidden = !automatic;
+      // The fault line only exists when there is a fault to report.
+      const fault = $('pause-fault');
+      if (fault) fault.hidden = game.dataset.frameFault !== 'true';
+      // §3.4: the fault line is a receipt, not a shrug. The report button only
+      // exists when there is a report worth copying.
+      const copy = $('dev-fault');
+      if (copy) copy.hidden = !(frameFailures > 0);
+
+    }
     $('skip-room').hidden = !run.state.opening || !!run.state.opening.finishing;
     setText(
       'pause-info',
@@ -1209,6 +1461,36 @@ $('retry-btn').onclick = () => start({learningGround:false});
 $('home-btn').onclick = home;
 $('resume-btn').onclick = restoreField;
 $('dev-refill').hidden = $('dev-trace').hidden = !devMode;
+/* §3.4 of the chunk-7 plan: THE FAULT LINE BECOMES A REPORT.
+   Chunk 7 made a repeating frame error visible; visible is not fixable. This
+   copies the seed, the run state, the error table and the last few `[SPLATR]`
+   console lines in one press — and it is shown whenever a frame error has
+   happened, not only in dev mode, because the player who hit the bug is the
+   person who can report it. */
+const consoleRing = captureConsole(createConsoleRing(CONSOLE_LINES));
+function copyFrameReport() {
+  return frameReport({
+    seed,
+    page,
+    run,
+    failures: frameFailures,
+    errors: [...frameErrors.entries()],
+    consoleLines: consoleRing.lines(),
+    url: location.href,
+  });
+}
+$('dev-fault').onclick = async () => {
+  const report = copyFrameReport();
+  try {
+    await navigator.clipboard.writeText(report);
+    say('Frame-error report copied.');
+  } catch {
+    // A refused clipboard is a permission, not a failure: print it so it can
+    // still be selected by hand.
+    console.info(report);
+    say('Report printed to the console.');
+  }
+};
 $('dev-refill').onclick = () => { if (devMode && refillForTesting(run)) { updateHUD(); say('Health, Edge and focus refilled.'); $('dev-refill').textContent='Refilled health / Edge / focus'; } };
 $('dev-trace').onclick = () => {
   if (!devMode || !combatTrace) return;
@@ -1223,7 +1505,7 @@ $('skip-room').onclick = () => {
   }
 };
 $('pause-btn').onclick = () => {
-  if (active()) open('pause');
+  if (active()) { pauseCause = 'paused'; open('pause'); }
 };
 $('manual-btn').onclick = $('pause-manual').onclick = () => open('manual');
 $('options-btn').onclick = $('pause-options').onclick = () => open('options');
@@ -1241,7 +1523,6 @@ window.addEventListener('keydown', (e) => {
     void fullscreen();
     return;
   }
-  if (questUI.vault) return;
   if (!e.repeat && k === ' ' && ((!run && !page) || page === 'result')) { e.preventDefault(); start(); return; }
   if (page || !run) {
     if (page === 'manual' && ['arrowleft', 'arrowright'].includes(k)) {
@@ -1273,48 +1554,162 @@ window.addEventListener('keydown', (e) => {
   }
   if ((k === 'escape' || k === 'p') && active() && !e.repeat && !learningGround) {
     e.preventDefault();
+    pauseCause = 'paused';
     open('pause');
   }
 });
-function suspend() {
-  if (run && !learningGround && !questUI.vault && ['playing', 'ready'].includes(run.state.phase) && !dialog.open) open('pause');
+/**
+ * CHUNK 7: A PAUSE MUST SAY WHY IT HAPPENED.
+ *
+ * `blur` and `visibilitychange` can fire from things the player did not do — a
+ * notification stealing focus, an OS dialog, a devtools focus grab, the pointer
+ * heading for a second monitor. Each one yanked the player out of a run with no
+ * explanation, which reads as the game pausing itself.
+ *
+ * The pause now carries its cause, and the pause screen prints it.
+ */
+function suspend(why = 'focus') {
+  const eligible = run && !learningGround && ['playing', 'ready'].includes(run.state.phase) && !dialog.open;
+  if (eligible) {
+    pauseCause = why;
+    open('pause');
+  }
   input.cancel();
   clock.reset();
   portal();
 }
-window.addEventListener('blur', suspend);
+/**
+ * CHUNK 8 (§3.5 of the chunk-7 plan): A GLANCE IS NOT AN INTERRUPTION.
+ *
+ * `blur` fires for a click on a second monitor, a notification, a devtools
+ * focus grab, a native fullscreen prompt — most of which the player comes
+ * straight back from. Pausing instantly made every one of those cost a run's
+ * rhythm, which is the "auto-pausing" complaint at its most annoying.
+ *
+ * So: wait a beat. If focus returns inside it, the player never sees a pause.
+ * If it does not, the pause is real and still says why. The tab-hidden handler
+ * is not debounced — a hidden tab is not ambiguous.
+ */
+const BLUR_GRACE_MS = 400;
+let blurTimer = 0;
+window.addEventListener('blur', () => {
+  clearTimeout(blurTimer);
+  blurTimer = setTimeout(() => suspend('window lost focus'), BLUR_GRACE_MS);
+});
+window.addEventListener('focus', () => {
+  // Came back inside the grace window: no pause ever happened, so restore the
+  // clock and repaint. If a pause DID happen, the menu is up and this is inert.
+  if (blurTimer) {
+    clearTimeout(blurTimer);
+    blurTimer = 0;
+    clock.reset();
+    dirty = true;
+    if (!raf && !document.hidden) raf = requestAnimationFrame(frame);
+  }
+});
 document.addEventListener('visibilitychange', () => {
+  if(disposedGame)return;
   if (document.hidden) {
-    suspend();
+    clearTimeout(blurTimer);
+    blurTimer = 0;
+    audio.setSuspended('hidden',true);
+    suspend('tab hidden');
     cancelAnimationFrame(raf);
     raf = 0;
   } else {
+    // §3.3: the first frame after a hidden tab carries a huge `now` delta. The
+    // clock caps its debt, but the RENDER path also reads `now` for animation
+    // phases, so the clamp happens once here as well — otherwise the first
+    // frame back can jump a whole animation cycle (the "cube teleported" bug).
+    audio.setSuspended('hidden',false);
     clock.reset();
     dirty = true;
+    lastFrameAt = 0;
     if (!raf) raf = requestAnimationFrame(frame);
   }
 });
-function frame(now) {
-  waveUI?.update();
+/**
+ * CHUNK 7: THE FRAME LOOP COULD DIE, AND A DEAD LOOP LOOKS LIKE A FREEZE.
+ *
+ * The reschedule is the LAST line of this function and nothing in it was
+ * guarded, so any exception anywhere inside — a HUD update, a render, an art
+ * helper — killed the loop permanently: no more rAF, no more ticks, the canvas
+ * frozen on its last painted frame. The game was still "running", the pause key
+ * still worked, and Resuming repainted once (the `else if (redraw)` branch)
+ * before dying again on the next frame. From the outside that is exactly
+ * "the scene hangs, and it auto-pauses".
+ *
+ * A crash is not a legitimate way to lose a run, so:
+ *   · the UI update moved INSIDE the guard (it used to run before `raf = 0`,
+ *     so a throw there left `raf` non-zero and made the visibility handler's
+ *     `if (!raf)` recovery skip forever);
+ *   · the body is wrapped and the reschedule lives in `finally`, so one bad
+ *     frame costs one frame instead of the run;
+ *   · failures are REPORTED once each — a silent catch would turn the original
+ *     bug into a mystery.
+ */
+let frameFailures = 0;
+const frameErrors = new Map();
+// Every guard sits on ONE lane: 2 failures of the same kind is noise, 45 a
+// second is a broken build. Two reports per kind, then a banner, then silence.
+function reportFrameError(where, error) {
+  frameFailures++;
+  const key = where + ' :: ' + (error?.message || error);
+  const seen = frameErrors.get(key) || 0;
+  frameErrors.set(key, seen + 1);
+  if (seen === 0) console.error('[SPLATR] frame error in ' + where, error);
+  else if (seen === 20) console.error('[SPLATR] frame error in ' + where + ' recurs (21 so far)');
+  if (frameFailures === 45) {
+    try { say('Frame errors are repeating — see console'); } catch {}
+    game.dataset.frameFault = 'true';
+  }
+  if (typeof window !== 'undefined') window.__splatrFrameErrors = [...frameErrors.entries()];
+}
+function safe(fn, where) {
+  try { return fn(); } catch (error) { reportFrameError(where, error); return undefined; }
+}
+
+/* §3.3 of the chunk-7 plan: CLAMP THE FIRST DELTA AFTER A RESUME.
+   A backgrounded tab stops the loop (`document.hidden`), so the first frame
+   back carries one enormous gap. The clock already caps its own debt, but every
+   animation phase in this shell reads `now` directly, so a 40-second gap can
+   jump a whole cycle in one frame — the "the cube teleported while I was in
+   another window" artefact. One clamp here covers all of them. */
+let lastFrameAt = 0;
+const MAX_FRAME_GAP_MS = 64;
+function frame(realNow) {
+  if(disposedGame)return;
+  const now = lastFrameAt && realNow - lastFrameAt > MAX_FRAME_GAP_MS
+    ? lastFrameAt + MAX_FRAME_GAP_MS
+    : realNow;
+  lastFrameAt = now;
   raf = 0;
-  if (document.hidden) return;
+  try {
+    if (document.hidden) return;
+    safe(() => waveUI?.update(), 'waveUI.update');
+    safeStep(now);
+  } finally {
+    // ALWAYS reschedule: a frame that throws must not end the animation.
+    if (!document.hidden && !disposedGame) raf = requestAnimationFrame(frame);
+  }
+}
+function safeStep(now) {
   const redraw = dirty || renderer.revision !== lastRevision;
   if (!run) {
     if (redraw || (!page && opts.motion)) renderer.title(opts.motion ? now * 0.023 : 0);
-  } else if (!dialog.open && !questUI.vault && !controlPractice?.isOpen && !teaching?.isOpen) {
+  } else if (!dialog.open && !controlPractice?.isOpen && !teaching?.isOpen) {
     const a = clock.frame(now, () => {
-      if (dialog.open || questUI.vault || waveUI?.open || run.state.wave?.phase==='choose') return;
+      if (dialog.open || waveUI?.open || run.state.wave?.phase==='choose') return;
       // A refused shot gets one more chance before the tick consumes the frame.
       // Retried here rather than on the input event because the reason the shot
       // was refused is almost always a GAME state (recovery, hitstop) that only
       // changes on a tick.
-      if (run.state.questReveal > 0) { run.state.questReveal--; if (run.state.questReveal % 2) return; }
       input.retry();
       run.setAim(input.aim);
       run.tick(); // owns the panic ray, grace and every other tick rule
       tickCutscene(); // CHUNK 6A: advances the cold open / mid-wave / sector / SHATTER cuts
       if(learningGround&&tutorial){tutorial.tick(input.engaged);const objective=tutorialObjective(tutorial.visual,run.combat.enemies,lastDevice),label=$('tutorial-objective');label.hidden=!objective;const speech=objective?tutorialAnnouncement(tutorial.visual,objective,lastDevice):'',objectiveKey=objective+'|'+speech;if(objectiveKey!==lastRiftObjective){if(!objective)lastTutorialHint=null;lastRiftObjective=objectiveKey;setText('tutorial-objective-text',objective);const room=TUTORIAL_LINES[Math.min(Math.max(tutorial.visual.stage|0,0),3)];if(room&&label.dataset.room!==room.title){label.dataset.room=room.title;}if(speech)say(speech);}const whyNow=objective?tutorialWhy(tutorial.visual,run.combat.enemies):'';if(whyNow!==lastTutorialWhy){lastTutorialWhy=whyNow;const why=$('tutorial-objective-why');if(why)why.textContent=whyNow;}const hint=tutorial.visual.guide?.kind;if(!objective&&hint&&hint!==lastTutorialHint){lastTutorialHint=hint;say(tutorialHintSpeech[hint]);}if(tutorial.finished){queueMicrotask(()=>{if(learningGround&&tutorial?.finished)finishTutorial();});}}
-      else questUI.tick();
+      rewardUI.tick(run);
       audio.focus(run.state.phase === 'playing' && run.state.held && run.world.slow);
       audio.flush();
       // CHUNK 2: the ground keeps score. Tier 1 knocks every 8s of run time,
@@ -1343,6 +1738,12 @@ function frame(now) {
       //
       // Both switches now feed it, because both mean the same thing to a player
       // with motion sensitivity: stop the movement.
+      // ── CHUNK 1: THE THREE VIEW-TIME REACTIONS ────────────────────────
+      // Ticks, not milliseconds: the game's own clock, so a paused tab can
+      // never advance a shake or a hint.
+      if (refuseTicks >= 0 && ++refuseTicks > 26) refuseTicks = -1;
+      if (hitAt >= 0 && ++hitAt > HIT_RIM_TICKS) { hitAt = -1; hitSource = null; hitCause = null; hitBearing = ''; }
+      paintReticle(now);
       renderer.tick(run, opts.motion && opts.shake !== 'off');
       if (receiptTicks && !--receiptTicks) $('imprint').hidden = true;
       if (noticeTicks && !--noticeTicks) $('callout').hidden = true;
@@ -1352,6 +1753,27 @@ function frame(now) {
         lastBeat = beat;
       }
     });
+    // The screen-space damage reaction is read by the painter on this frame,
+    // so it is pushed immediately before the draw, never a frame late.
+    const feedback = hitAt >= 0
+      ? damageFeedback({ age: hitAt, player: run.world.player.position, source: hitSource, cause: hitCause })
+      : null;
+    $('damage-rim')?.classList.toggle('on', !!feedback?.live && opts.motion);
+    // CHUNK 2: which bodies the blade in the player's hand would reach on THIS
+    // frame. The geometry is the run's own published sweep when a blade is out,
+    // so the green brackets cannot promise a cut the hit test would refuse.
+    const slices = run.state.blade > 0 && !feedback?.live
+      ? sliceStates({
+          player: run.world.player.position,
+          enemies: run.combat.enemies.values(),
+          state: run.state,
+          // `state.sweep` is refreshed by the run on every tick a blade is out,
+          // with exactly the multipliers it swept with. The fallback only runs
+          // on the first frame of a blade, before that tick has published.
+          geometry: run.state.sweep || run.primaryGeometry(),
+        })
+      : [];
+    renderer.setAimFeedback?.({ hit: feedback, slices });
     renderer.draw(run, a, input.aim, opts.motion,lastDevice);
     if (now >= nextHUD) {
       updateHUD();
@@ -1360,22 +1782,33 @@ function frame(now) {
   } else if (redraw) renderer.draw(run, 1, null, opts.motion,lastDevice);
   dirty = false;
   lastRevision = renderer.revision;
-  raf = requestAnimationFrame(frame);
 }
 function finishTutorial(){const first=storage.get('tutorialCompleted','0')!=='1';storage.set('tutorialCompleted',1);start({learningGround:false,lockdown:first});}
 $('rack-skip').onclick=()=>{if(learningGround)finishTutorial();};
-// CHUNK 5: the "Learn" door in the quest board now opens THE LEARNING
-// GROUND instead of force-starting the course; the two safe-practice dialogs
-// it used to reference are real, wired and rendered below.
-questUI = createQuestUI({unlimited:devMode,startTutorial:()=>{home();open('manual');},practice:()=>controlPractice?.open(),teaching:()=>teaching?.open(),getRun:()=>run, storage, audio, motion:()=>opts.motion && opts.shake !== 'off', resetInput:()=>input.reset(), home,
-  resume:(playing)=>{clock.reset();dirty=true;if(playing)canvas.focus({preventScroll:true});portal();}, view:()=>renderer.questView()});
-customize = createCustomize({storage,unlimited:devMode,wallet:()=>questUI.wallet(),ownedParts:()=>questUI.ownedParts(),purchase:(id,cost)=>questUI.purchasePart(id,cost),resetInput:()=>input.reset(),motion:()=>opts.motion,snap:()=>audio.menu()});
+shopWallet = createShopWallet(storage, {unlimited:devMode});
+rewardUI = createRoundRewardUI({wallet:shopWallet});
+customize = createCustomize({storage,unlimited:devMode,wallet:()=>shopWallet.wallet(),ownedParts:()=>shopWallet.ownedParts(),purchase:(id,cost)=>shopWallet.purchase(id,cost),resetInput:()=>input.reset(),motion:()=>opts.motion,snap:()=>audio.menu()});
 controlPractice = createControlPracticeUI({resetInput:()=>input.reset(),motion:()=>opts.motion&&opts.shake!=='off',onOpen:()=>{input.reset();poki.setPlaying(false);},onClose:()=>{input.reset();}});
 teaching = createTeachingUI({resetInput:()=>input.reset(),motion:()=>opts.motion&&opts.shake!=='off',onOpen:()=>{input.reset();poki.setPlaying(false);},onClose:()=>{input.reset();},openControl:()=>controlPractice?.open()});
+$('manual-teaching').onclick=()=>{home();teaching.open();};
+$('manual-drill').onclick=()=>{home();controlPractice.open();};
 const customButton=document.createElement('button');customButton.id='customize-btn';customButton.className='choice quiet';customButton.textContent='Shop';customButton.onclick=()=>customize.open();$('main-nav').append(customButton);
 waveUI=createWaveUI({getRun:()=>run,resetInput:()=>input.reset(),motion:()=>opts.motion});
 installIconSprite();
-for(const [id,name]of Object.entries({'start-btn':'play','manual-btn':'guide','options-btn':'settings','quests-btn':'learn','customize-btn':'shop','resume-btn':'play','pause-practice':'practice','pause-manual':'guide','pause-options':'settings','retry-btn':'retry','home-btn':'back','end-btn':'back'}))prependIcon($(id),name);
+for(const [id,name]of Object.entries({'start-btn':'play','manual-btn':'guide','options-btn':'settings','customize-btn':'shop','resume-btn':'play','pause-practice':'practice','pause-manual':'guide','pause-options':'settings','retry-btn':'retry','home-btn':'back','end-btn':'back'}))prependIcon($(id),name);
+renderer.onGraphicsContext(state=>{
+  const lost=state==='lost';audio.setSuspended('graphics',lost);
+  if(lost)suspend('graphics context lost');
+  clock.reset();lastFrameAt=0;dirty=true;
+});
+function disposeGame(){
+  if(disposedGame)return;disposedGame=true;cancelAnimationFrame(raf);raf=0;clearTimeout(blurTimer);
+  for(const timer of [hitTimer,kickTimer,flareTimer,fractureGainTimer,fractureSurgeTimer])clearTimeout(timer);
+  input.dispose();if(tutorial)tutorial.dispose();else run?.dispose();
+  customize?.dispose();controlPractice?.dispose();teaching?.dispose();waveUI?.dispose();rewardUI?.dispose();renderer.dispose();audio.dispose();
+}
+window.addEventListener('pagehide',e=>{audio.setSuspended('page',true);if(!e.persisted)disposeGame();});
+window.addEventListener('pageshow',e=>{if(e.persisted){audio.setSuspended('page',false);clock.reset();lastFrameAt=0;dirty=true;}});
 game.dataset.dev = String(devMode);
 $('dev-badge').hidden = $('dev-panel-badge').hidden = !devMode;
 syncSettings();
@@ -1389,4 +1822,11 @@ renderer.title(0);
 game.removeAttribute('inert');
 $('boot').remove();
 poki.loadingFinished();
-if (!document.hidden) raf = requestAnimationFrame(frame);
+if (!document.hidden && !disposedGame) raf = requestAnimationFrame(frame);
+
+// Shareable free item preview: validates catalogue IDs, never equips or grants.
+const requestedShopItem=new URLSearchParams(location.search).get('shopItem');
+const requestedAssembly=new URLSearchParams(location.search).get('assembly')==='1';
+const requestedCoreView=new URLSearchParams(location.search).get('coreView');
+if(requestedCoreView&&ITEMS.some(item=>item.slot==='core'&&item.id===requestedCoreView))customize.open(requestedCoreView,{mechanism:true});
+else if(requestedShopItem||requestedAssembly)customize.open(requestedShopItem,{assembly:requestedAssembly});

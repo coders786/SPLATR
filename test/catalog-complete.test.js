@@ -71,7 +71,7 @@ test('Anchor boosts one eligible floor kick fifteen percent without repeating fl
  for(const tail of ['ribbon','anchor']){const r=fixture({tail});r.state.floorIgnore=0;Matter.Body.setVelocity(r.world.player,{x:0,y:-12});r.world.floorKick={vy:-12};r.tick();velocities.push(r.world.player.velocity.y);r.state.stop=1;r.world.floorKick={vy:-12};r.tick();assert.equal(r.state.floorKicks,1);r.dispose();}
  assert.ok(Math.abs(velocities[1]/velocities[0]-1.15)<1e-9);
 });
-test('every Eye, Slash and World remains stat-neutral',()=>{
+test('Eye, Slash and World perks preserve health, dash speed and primary armor',()=>{
  const baseline=equipmentRules({});
- for(const item of ITEMS.filter(x=>['eyes','slash','world'].includes(x.slot)))assert.deepEqual(equipmentRules({[item.slot]:item.id}),baseline,item.id);
+ for(const item of ITEMS.filter(x=>['eyes','slash','world'].includes(x.slot))){const r=equipmentRules({[item.slot]:item.id});for(const field of ['healthMax','dashSpeed','armorDamage','cutWidth'])assert.equal(r[field],baseline[field],item.id+': '+field);}
 });

@@ -23,6 +23,6 @@ test('construction changes face pixels and survives all eye combinations',()=>{
  const faces=bodies.map(body=>pixels(body,0).face);assert.equal(new Set(faces).size,10);
  for(const body of bodies)for(const eyes of ['ninja','smug','blaze','visor','hypno','glitch','sniper'])pixels(body,1,eyes);
 });
-test('cosmetic profiles still do not grant new equipment rules',()=>{
- for(const body of ['chamfer','notched','segmented'])assert.deepEqual(equipmentRules({body}),equipmentRules({body:'paper'}));
+test('shape profiles grant bounded perks without changing hull or armor',()=>{
+ for(const body of ['chamfer','notched','segmented']){const r=equipmentRules({body});assert.equal(r.healthMax,3);assert.equal(r.armorDamage,1);assert.equal(r.dashSpeed,1);assert.notDeepEqual(r,equipmentRules({body:'paper'}));}
 });

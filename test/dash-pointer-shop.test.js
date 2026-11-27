@@ -13,7 +13,7 @@ test('old saves migrate to adaptive dash and reticle, purchases and presets roun
   const equip=normalizeEquipment({...receipt.state.equipped,[item.slot]:id},receipt.state.owned);
   const reloaded=loadEquipment(JSON.stringify({...receipt.state,equipped:equip,presets:[equip]}));
   assert.equal(reloaded.equipped[item.slot],id);assert.equal(reloaded.presets[0][item.slot],id);
-  assert.deepEqual(equipmentRules(equip),equipmentRules(old.equipped));
+  assert.notDeepEqual(equipmentRules(equip),equipmentRules(old.equipped),'purchased part has a real gameplay perk');
  }
 });
 test('explicit dash selection overrides sword and equipment; adaptive preserves existing identity',()=>{
