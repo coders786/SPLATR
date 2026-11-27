@@ -15,7 +15,7 @@ test('harmony is deterministic, CORE-owned and world-lit without changing equipm
 test('three immutable functional shape profiles stay inside the original body bounds',()=>{
  assert.equal(SHAPE_MODIFIERS.length,3);
  for(const p of SHAPE_MODIFIERS){assert.ok(Object.isFrozen(p.outline));for(const point of p.outline){assert.ok(Object.isFrozen(point));assert.ok(point.every(n=>n>=-1&&n<=1));}
-  const item=ITEMS.find(x=>x.id===p.id);assert.equal(item.slot,'body');assert.match(item.detail,/ticks|FOCUS/i);
+  const item=ITEMS.find(x=>x.id===p.id);assert.equal(item.slot,'body');assert.match(item.detail,({chamfer:/primary armor shove component by 20%/,notched:/FOCUS recovery is 12%/,segmented:/20% of actual forward momentum/})[p.id]);
   assert.notDeepEqual(equipmentRules({body:p.id}),equipmentRules({body:'paper'}));
   assert.equal(equipmentRules({body:p.id}).healthMax,3);
  }

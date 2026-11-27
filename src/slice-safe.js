@@ -36,14 +36,14 @@
  *
  * @param {{reach?:number,width?:number,closeWidth?:number}} opts
  */
-export function sweepGeometry({ reach = 1, width = 1, closeWidth = 1 } = {}) {
+export function sweepGeometry({ reach = 1, width = 1, closeWidth = 1, closeRadius = 100 * closeWidth } = {}) {
   const PLAYER_HALF = 23; // PLAYER_SIZE / 2 — kept local: this file stays pure.
   const r = PLAYER_HALF;
   return Object.freeze({
     span: 3.6 * r * reach,
     halfWidth: r * 0.95 * reach * width,
     /** The short radial tolerance around the cube (the "brush past" rule). */
-    closeRadius: 100 * closeWidth,
+    closeRadius,
     closeWidth,
   });
 }

@@ -1,0 +1,4826 @@
+{
+  "core/coverage": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 1,
+            "hp": 3,
+            "edge": 2,
+            "focus": 1,
+            "score": 300,
+            "chain": 3,
+            "chainTime": 77,
+            "kills": 1,
+            "shots": 0,
+            "blade": 6,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": -1
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            },
+            {
+              "id": "excluded",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": -500,
+              "y": -350
+            },
+            {
+              "id": "plate",
+              "hp": 5,
+              "lastSlash": 0,
+              "x": -490,
+              "y": -350
+            },
+            {
+              "id": "boundary",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": -575,
+              "y": -350
+            },
+            {
+              "id": "outside",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": -576,
+              "y": -350
+            }
+          ],
+          "echoes": [
+            {
+              "x": -500,
+              "y": -350,
+              "ticks": 29,
+              "hits": [
+                "fang",
+                "plate"
+              ],
+              "sourceId": "excluded",
+              "upgradeEcho": false
+            }
+          ],
+          "bursts": 1
+        }
+      ],
+      "final": {
+        "state": {
+          "phase": "playing",
+          "elapsed": 2,
+          "hp": 3,
+          "edge": 2,
+          "focus": 1,
+          "score": 300,
+          "chain": 3,
+          "chainTime": 76,
+          "kills": 1,
+          "shots": 0,
+          "blade": 5,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "lastSlashEchoShot": -1
+        },
+        "wavePhase": "combat",
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": 700,
+            "y": -900
+          },
+          {
+            "id": "excluded",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": -500,
+            "y": -350
+          },
+          {
+            "id": "plate",
+            "hp": 5,
+            "lastSlash": 0,
+            "x": -490,
+            "y": -350
+          },
+          {
+            "id": "boundary",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": -575,
+            "y": -350
+          },
+          {
+            "id": "outside",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": -576,
+            "y": -350
+          }
+        ],
+        "echoes": [
+          {
+            "x": -500,
+            "y": -350,
+            "ticks": 28,
+            "hits": [
+              "fang",
+              "plate"
+            ],
+            "sourceId": "excluded",
+            "upgradeEcho": false
+          }
+        ],
+        "bursts": 1
+      },
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "fang",
+          "x": -500,
+          "y": -350,
+          "angle": 0.6107259643892086,
+          "r": 33,
+          "kind": "fang",
+          "cut": -0.65,
+          "hpBefore": 1,
+          "upgrade": "ghostlash",
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 300,
+          "points": 300,
+          "chain": 3,
+          "speed": 0,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "armor",
+          "entityId": "plate",
+          "x": -490,
+          "y": -350,
+          "r": 41,
+          "cut": -0.65,
+          "hp": 5,
+          "hpBefore": 6,
+          "kind": "bastion",
+          "speed": 0,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "upgrade": "ghostlash",
+          "armorRemoved": 1,
+          "secondary": true
+        },
+        {
+          "type": "storyMoment",
+          "id": "hold-the-wave",
+          "chip": "LET IT PASS.",
+          "mechanic": "pulse",
+          "lesson": "Dodge the expanding rim; the space behind it is safe.",
+          "consequence": "The Watcher holds the wave so the Cutter can pass.",
+          "chapter": "seal",
+          "emotion": "friendship",
+          "wave": 1,
+          "targetId": "wave/1/1",
+          "targetX": 179.98116269670427,
+          "targetY": -259.5315527519677,
+          "targetR": 32,
+          "age": 0,
+          "number": 1
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "fang",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 7,
+          "entityId": "plate",
+          "kind": "bastion",
+          "targetHp": 6,
+          "fromShear": true,
+          "sequence": 1
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "core-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "core-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "fang",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "core-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-2",
+        "parentEventId": null,
+        "targetKey": "run-1/target-2",
+        "targetId": "plate",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 6,
+        "targetHpAfter": 5,
+        "scope": "target-only",
+        "sequence": 2
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 3
+      }
+    ]
+  },
+  "core/rejected-once": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 1,
+            "hp": 3,
+            "edge": 1,
+            "focus": 0.254,
+            "score": 0,
+            "chain": 2,
+            "chainTime": 99,
+            "kills": 0,
+            "shots": 0,
+            "blade": 0,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": -1
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            },
+            {
+              "id": "already-hit",
+              "hp": 1,
+              "lastSlash": 0,
+              "x": -500,
+              "y": -350
+            }
+          ],
+          "echoes": [
+            {
+              "x": -500,
+              "y": -350,
+              "ticks": 29,
+              "hits": [
+                "already-hit"
+              ],
+              "sourceId": "excluded",
+              "upgradeEcho": false
+            }
+          ],
+          "bursts": 0
+        }
+      ],
+      "final": {
+        "state": {
+          "phase": "playing",
+          "elapsed": 2,
+          "hp": 3,
+          "edge": 0,
+          "focus": 0.258,
+          "score": 0,
+          "chain": 2,
+          "chainTime": 98,
+          "kills": 0,
+          "shots": 1,
+          "blade": 23.57142857142857,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "lastSlashEchoShot": -1
+        },
+        "wavePhase": "combat",
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 24,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": 700,
+            "y": -900
+          },
+          {
+            "id": "already-hit",
+            "hp": 1,
+            "lastSlash": 0,
+            "x": -500,
+            "y": -350
+          }
+        ],
+        "echoes": [
+          {
+            "x": -500,
+            "y": -350,
+            "ticks": 28,
+            "hits": [
+              "already-hit"
+            ],
+            "sourceId": "excluded",
+            "upgradeEcho": false
+          }
+        ],
+        "bursts": 0
+      },
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "storyMoment",
+          "id": "hold-the-wave",
+          "chip": "LET IT PASS.",
+          "mechanic": "pulse",
+          "lesson": "Dodge the expanding rim; the space behind it is safe.",
+          "consequence": "The Watcher holds the wave so the Cutter can pass.",
+          "chapter": "seal",
+          "emotion": "friendship",
+          "wave": 1,
+          "targetId": "wave/1/1",
+          "targetX": 179.98116269670427,
+          "targetY": -259.5315527519677,
+          "targetR": 32,
+          "age": 0,
+          "number": 1
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "tier",
+          "id": "cruise",
+          "label": "CRUISE",
+          "multiplier": 2,
+          "speed": 24
+        }
+      ],
+      "legacyTrace": []
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "core-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "core-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "already-hit",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": false,
+        "outcome": "shot-duplicate",
+        "targetHpBefore": 1,
+        "targetHpAfter": 1,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 2
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 3
+      }
+    ]
+  },
+  "core/overlap": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 1,
+            "hp": 3,
+            "edge": 1,
+            "focus": 0.254,
+            "score": 0,
+            "chain": 2,
+            "chainTime": 99,
+            "kills": 0,
+            "shots": 0,
+            "blade": 0,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": -1
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            },
+            {
+              "id": "plate",
+              "hp": 5,
+              "lastSlash": 0,
+              "x": -500,
+              "y": -350
+            }
+          ],
+          "echoes": [
+            {
+              "x": -500,
+              "y": -350,
+              "ticks": 29,
+              "hits": [
+                "plate"
+              ],
+              "sourceId": "excluded",
+              "upgradeEcho": false
+            },
+            {
+              "x": -500,
+              "y": -350,
+              "ticks": 29,
+              "hits": [
+                "plate"
+              ],
+              "sourceId": "excluded",
+              "upgradeEcho": false
+            }
+          ],
+          "bursts": 0
+        }
+      ],
+      "final": {
+        "state": {
+          "phase": "playing",
+          "elapsed": 2,
+          "hp": 3,
+          "edge": 0,
+          "focus": 0.258,
+          "score": 0,
+          "chain": 2,
+          "chainTime": 98,
+          "kills": 0,
+          "shots": 1,
+          "blade": 23.57142857142857,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "lastSlashEchoShot": -1
+        },
+        "wavePhase": "combat",
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 24,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": 700,
+            "y": -900
+          },
+          {
+            "id": "plate",
+            "hp": 5,
+            "lastSlash": 0,
+            "x": -500,
+            "y": -350
+          }
+        ],
+        "echoes": [
+          {
+            "x": -500,
+            "y": -350,
+            "ticks": 28,
+            "hits": [
+              "plate"
+            ],
+            "sourceId": "excluded",
+            "upgradeEcho": false
+          },
+          {
+            "x": -500,
+            "y": -350,
+            "ticks": 28,
+            "hits": [
+              "plate"
+            ],
+            "sourceId": "excluded",
+            "upgradeEcho": false
+          }
+        ],
+        "bursts": 0
+      },
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "armor",
+          "entityId": "plate",
+          "x": -500,
+          "y": -350,
+          "r": 41,
+          "cut": -0.65,
+          "hp": 5,
+          "hpBefore": 6,
+          "kind": "bastion",
+          "speed": 0,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "upgrade": "ghostlash",
+          "armorRemoved": 1,
+          "secondary": true
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "tier",
+          "id": "cruise",
+          "label": "CRUISE",
+          "multiplier": 2,
+          "speed": 24
+        },
+        {
+          "type": "storyMoment",
+          "id": "hold-the-wave",
+          "chip": "LET IT PASS.",
+          "mechanic": "pulse",
+          "lesson": "Dodge the expanding rim; the space behind it is safe.",
+          "consequence": "The Watcher holds the wave so the Cutter can pass.",
+          "chapter": "seal",
+          "emotion": "friendship",
+          "wave": 1,
+          "targetId": "wave/1/1",
+          "targetX": 179.98116269670427,
+          "targetY": -259.5315527519677,
+          "targetR": 32,
+          "age": 0,
+          "number": 1
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "plate",
+          "kind": "bastion",
+          "targetHp": 6,
+          "fromShear": true,
+          "sequence": 0
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "core-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "core-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "plate",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 6,
+        "targetHpAfter": 5,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "core-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 2
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "core-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-2",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "plate",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": false,
+        "outcome": "shot-duplicate",
+        "targetHpBefore": 5,
+        "targetHpAfter": 5,
+        "scope": "target-only",
+        "sequence": 3
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-3",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 4
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 5
+      }
+    ]
+  },
+  "core/expiry": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 1,
+            "hp": 3,
+            "edge": 1,
+            "focus": 0.254,
+            "score": 0,
+            "chain": 2,
+            "chainTime": 99.5,
+            "kills": 0,
+            "shots": 0,
+            "blade": 0,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": -1
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            }
+          ],
+          "echoes": [
+            {
+              "x": -500,
+              "y": -350,
+              "ticks": 0.25,
+              "hits": [],
+              "sourceId": "excluded",
+              "upgradeEcho": false
+            }
+          ],
+          "bursts": 0
+        },
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 2,
+            "hp": 3,
+            "edge": 2,
+            "focus": 1,
+            "score": 300,
+            "chain": 3,
+            "chainTime": 77.5,
+            "kills": 1,
+            "shots": 0,
+            "blade": 6.5,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": -1
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            }
+          ],
+          "echoes": [],
+          "bursts": 1
+        }
+      ],
+      "final": {
+        "state": {
+          "phase": "playing",
+          "elapsed": 3,
+          "hp": 3,
+          "edge": 2,
+          "focus": 1,
+          "score": 300,
+          "chain": 3,
+          "chainTime": 77,
+          "kills": 1,
+          "shots": 0,
+          "blade": 6,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "lastSlashEchoShot": -1
+        },
+        "wavePhase": "combat",
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": 700,
+            "y": -900
+          },
+          {
+            "id": "too-late",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": -500,
+            "y": -350
+          }
+        ],
+        "echoes": [],
+        "bursts": 1
+      },
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "storyMoment",
+          "id": "hold-the-wave",
+          "chip": "LET IT PASS.",
+          "mechanic": "pulse",
+          "lesson": "Dodge the expanding rim; the space behind it is safe.",
+          "consequence": "The Watcher holds the wave so the Cutter can pass.",
+          "chapter": "seal",
+          "emotion": "friendship",
+          "wave": 1,
+          "targetId": "wave/1/1",
+          "targetX": 179.98116269670427,
+          "targetY": -259.5315527519677,
+          "targetR": 32,
+          "age": 0,
+          "number": 1
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "terminal",
+          "x": -500,
+          "y": -350,
+          "angle": 0.6107259643892086,
+          "r": 33,
+          "kind": "fang",
+          "cut": -0.65,
+          "hpBefore": 1,
+          "upgrade": "ghostlash",
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 300,
+          "points": 300,
+          "chain": 3,
+          "speed": 0,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "cut-contact",
+          "tick": 2,
+          "worldClock": 0,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "terminal",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 0
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "core-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 2,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "core-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "terminal",
+        "targetKind": "fang",
+        "tick": 2,
+        "worldClock": 0,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 2
+      }
+    ]
+  },
+  "core/reused-id": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 1,
+            "hp": 3,
+            "edge": 2,
+            "focus": 1,
+            "score": 300,
+            "chain": 3,
+            "chainTime": 77,
+            "kills": 1,
+            "shots": 0,
+            "blade": 6,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": -1
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            }
+          ],
+          "echoes": [
+            {
+              "x": -500,
+              "y": -350,
+              "ticks": 29,
+              "hits": [
+                "reused"
+              ],
+              "sourceId": "excluded",
+              "upgradeEcho": false
+            }
+          ],
+          "bursts": 1
+        }
+      ],
+      "final": {
+        "state": {
+          "phase": "playing",
+          "elapsed": 2,
+          "hp": 3,
+          "edge": 1,
+          "focus": 1,
+          "score": 300,
+          "chain": 3,
+          "chainTime": 76,
+          "kills": 1,
+          "shots": 1,
+          "blade": 23.57142857142857,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "lastSlashEchoShot": -1
+        },
+        "wavePhase": "combat",
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 24,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": 700,
+            "y": -900
+          },
+          {
+            "id": "reused",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": -500,
+            "y": -350
+          }
+        ],
+        "echoes": [
+          {
+            "x": -500,
+            "y": -350,
+            "ticks": 28,
+            "hits": [
+              "reused"
+            ],
+            "sourceId": "excluded",
+            "upgradeEcho": false
+          }
+        ],
+        "bursts": 1
+      },
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "reused",
+          "x": -500,
+          "y": -350,
+          "angle": 0.6107259643892086,
+          "r": 33,
+          "kind": "fang",
+          "cut": -0.65,
+          "hpBefore": 1,
+          "upgrade": "ghostlash",
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 300,
+          "points": 300,
+          "chain": 3,
+          "speed": 0,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "tier",
+          "id": "cruise",
+          "label": "CRUISE",
+          "multiplier": 2,
+          "speed": 24
+        },
+        {
+          "type": "storyMoment",
+          "id": "hold-the-wave",
+          "chip": "LET IT PASS.",
+          "mechanic": "pulse",
+          "lesson": "Dodge the expanding rim; the space behind it is safe.",
+          "consequence": "The Watcher holds the wave so the Cutter can pass.",
+          "chapter": "seal",
+          "emotion": "friendship",
+          "wave": 1,
+          "targetId": "wave/1/1",
+          "targetX": 179.98116269670427,
+          "targetY": -259.5315527519677,
+          "targetR": 32,
+          "age": 0,
+          "number": 1
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "reused",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 0
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "core-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "core-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "reused",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 2
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 3
+      }
+    ]
+  },
+  "upgrade/coverage": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 1,
+            "hp": 3,
+            "edge": 2,
+            "focus": 1,
+            "score": 300,
+            "chain": 3,
+            "chainTime": 77,
+            "kills": 1,
+            "shots": 0,
+            "blade": 6,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": -1
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            },
+            {
+              "id": "excluded",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": -500,
+              "y": -350
+            },
+            {
+              "id": "plate",
+              "hp": 5,
+              "lastSlash": 0,
+              "x": -490,
+              "y": -350
+            },
+            {
+              "id": "boundary",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": -575,
+              "y": -350
+            },
+            {
+              "id": "outside",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": -576,
+              "y": -350
+            }
+          ],
+          "echoes": [
+            {
+              "x": -500,
+              "y": -350,
+              "ticks": 29,
+              "hits": [
+                "fang",
+                "plate"
+              ],
+              "sourceId": "excluded",
+              "upgradeEcho": true
+            }
+          ],
+          "bursts": 1
+        }
+      ],
+      "final": {
+        "state": {
+          "phase": "playing",
+          "elapsed": 2,
+          "hp": 3,
+          "edge": 2,
+          "focus": 1,
+          "score": 300,
+          "chain": 3,
+          "chainTime": 76,
+          "kills": 1,
+          "shots": 0,
+          "blade": 5,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "lastSlashEchoShot": -1
+        },
+        "wavePhase": "combat",
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": 700,
+            "y": -900
+          },
+          {
+            "id": "excluded",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": -500,
+            "y": -350
+          },
+          {
+            "id": "plate",
+            "hp": 5,
+            "lastSlash": 0,
+            "x": -490,
+            "y": -350
+          },
+          {
+            "id": "boundary",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": -575,
+            "y": -350
+          },
+          {
+            "id": "outside",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": -576,
+            "y": -350
+          }
+        ],
+        "echoes": [
+          {
+            "x": -500,
+            "y": -350,
+            "ticks": 28,
+            "hits": [
+              "fang",
+              "plate"
+            ],
+            "sourceId": "excluded",
+            "upgradeEcho": true
+          }
+        ],
+        "bursts": 1
+      },
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "fang",
+          "x": -500,
+          "y": -350,
+          "angle": 0.6107259643892086,
+          "r": 33,
+          "kind": "fang",
+          "cut": -0.65,
+          "hpBefore": 1,
+          "upgrade": "ghostlash",
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 300,
+          "points": 300,
+          "chain": 3,
+          "speed": 0,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "armor",
+          "entityId": "plate",
+          "x": -490,
+          "y": -350,
+          "r": 41,
+          "cut": -0.65,
+          "hp": 5,
+          "hpBefore": 6,
+          "kind": "bastion",
+          "speed": 0,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "upgrade": "ghostlash",
+          "armorRemoved": 1,
+          "secondary": true
+        },
+        {
+          "type": "storyMoment",
+          "id": "hold-the-wave",
+          "chip": "LET IT PASS.",
+          "mechanic": "pulse",
+          "lesson": "Dodge the expanding rim; the space behind it is safe.",
+          "consequence": "The Watcher holds the wave so the Cutter can pass.",
+          "chapter": "seal",
+          "emotion": "friendship",
+          "wave": 1,
+          "targetId": "wave/1/1",
+          "targetX": 179.98116269670427,
+          "targetY": -259.5315527519677,
+          "targetR": 32,
+          "age": 0,
+          "number": 1
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "fang",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 7,
+          "entityId": "plate",
+          "kind": "bastion",
+          "targetHp": 6,
+          "fromShear": true,
+          "sequence": 1
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "fang",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-2",
+        "parentEventId": null,
+        "targetKey": "run-1/target-2",
+        "targetId": "plate",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 6,
+        "targetHpAfter": 5,
+        "scope": "target-only",
+        "sequence": 2
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 3
+      }
+    ]
+  },
+  "upgrade/rejected-once": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 1,
+            "hp": 3,
+            "edge": 1,
+            "focus": 0.254,
+            "score": 0,
+            "chain": 2,
+            "chainTime": 99,
+            "kills": 0,
+            "shots": 0,
+            "blade": 0,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": -1
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            },
+            {
+              "id": "already-hit",
+              "hp": 1,
+              "lastSlash": 0,
+              "x": -500,
+              "y": -350
+            }
+          ],
+          "echoes": [
+            {
+              "x": -500,
+              "y": -350,
+              "ticks": 29,
+              "hits": [
+                "already-hit"
+              ],
+              "sourceId": "excluded",
+              "upgradeEcho": true
+            }
+          ],
+          "bursts": 0
+        }
+      ],
+      "final": {
+        "state": {
+          "phase": "playing",
+          "elapsed": 2,
+          "hp": 3,
+          "edge": 0,
+          "focus": 0.258,
+          "score": 0,
+          "chain": 2,
+          "chainTime": 98,
+          "kills": 0,
+          "shots": 1,
+          "blade": 23.57142857142857,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "lastSlashEchoShot": -1
+        },
+        "wavePhase": "combat",
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 24,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": 700,
+            "y": -900
+          },
+          {
+            "id": "already-hit",
+            "hp": 1,
+            "lastSlash": 0,
+            "x": -500,
+            "y": -350
+          }
+        ],
+        "echoes": [
+          {
+            "x": -500,
+            "y": -350,
+            "ticks": 28,
+            "hits": [
+              "already-hit"
+            ],
+            "sourceId": "excluded",
+            "upgradeEcho": true
+          }
+        ],
+        "bursts": 0
+      },
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "storyMoment",
+          "id": "hold-the-wave",
+          "chip": "LET IT PASS.",
+          "mechanic": "pulse",
+          "lesson": "Dodge the expanding rim; the space behind it is safe.",
+          "consequence": "The Watcher holds the wave so the Cutter can pass.",
+          "chapter": "seal",
+          "emotion": "friendship",
+          "wave": 1,
+          "targetId": "wave/1/1",
+          "targetX": 179.98116269670427,
+          "targetY": -259.5315527519677,
+          "targetR": 32,
+          "age": 0,
+          "number": 1
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "tier",
+          "id": "cruise",
+          "label": "CRUISE",
+          "multiplier": 2,
+          "speed": 24
+        }
+      ],
+      "legacyTrace": []
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "already-hit",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": false,
+        "outcome": "shot-duplicate",
+        "targetHpBefore": 1,
+        "targetHpAfter": 1,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 2
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 3
+      }
+    ]
+  },
+  "upgrade/overlap": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 1,
+            "hp": 3,
+            "edge": 1,
+            "focus": 0.254,
+            "score": 0,
+            "chain": 2,
+            "chainTime": 99,
+            "kills": 0,
+            "shots": 0,
+            "blade": 0,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": -1
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            },
+            {
+              "id": "plate",
+              "hp": 5,
+              "lastSlash": 0,
+              "x": -500,
+              "y": -350
+            }
+          ],
+          "echoes": [
+            {
+              "x": -500,
+              "y": -350,
+              "ticks": 29,
+              "hits": [
+                "plate"
+              ],
+              "sourceId": "excluded",
+              "upgradeEcho": true
+            },
+            {
+              "x": -500,
+              "y": -350,
+              "ticks": 29,
+              "hits": [
+                "plate"
+              ],
+              "sourceId": "excluded",
+              "upgradeEcho": true
+            }
+          ],
+          "bursts": 0
+        }
+      ],
+      "final": {
+        "state": {
+          "phase": "playing",
+          "elapsed": 2,
+          "hp": 3,
+          "edge": 0,
+          "focus": 0.258,
+          "score": 0,
+          "chain": 2,
+          "chainTime": 98,
+          "kills": 0,
+          "shots": 1,
+          "blade": 23.57142857142857,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "lastSlashEchoShot": -1
+        },
+        "wavePhase": "combat",
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 24,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": 700,
+            "y": -900
+          },
+          {
+            "id": "plate",
+            "hp": 5,
+            "lastSlash": 0,
+            "x": -500,
+            "y": -350
+          }
+        ],
+        "echoes": [
+          {
+            "x": -500,
+            "y": -350,
+            "ticks": 28,
+            "hits": [
+              "plate"
+            ],
+            "sourceId": "excluded",
+            "upgradeEcho": true
+          },
+          {
+            "x": -500,
+            "y": -350,
+            "ticks": 28,
+            "hits": [
+              "plate"
+            ],
+            "sourceId": "excluded",
+            "upgradeEcho": true
+          }
+        ],
+        "bursts": 0
+      },
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "armor",
+          "entityId": "plate",
+          "x": -500,
+          "y": -350,
+          "r": 41,
+          "cut": -0.65,
+          "hp": 5,
+          "hpBefore": 6,
+          "kind": "bastion",
+          "speed": 0,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "upgrade": "ghostlash",
+          "armorRemoved": 1,
+          "secondary": true
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "tier",
+          "id": "cruise",
+          "label": "CRUISE",
+          "multiplier": 2,
+          "speed": 24
+        },
+        {
+          "type": "storyMoment",
+          "id": "hold-the-wave",
+          "chip": "LET IT PASS.",
+          "mechanic": "pulse",
+          "lesson": "Dodge the expanding rim; the space behind it is safe.",
+          "consequence": "The Watcher holds the wave so the Cutter can pass.",
+          "chapter": "seal",
+          "emotion": "friendship",
+          "wave": 1,
+          "targetId": "wave/1/1",
+          "targetX": 179.98116269670427,
+          "targetY": -259.5315527519677,
+          "targetR": 32,
+          "age": 0,
+          "number": 1
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "plate",
+          "kind": "bastion",
+          "targetHp": 6,
+          "fromShear": true,
+          "sequence": 0
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "plate",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 6,
+        "targetHpAfter": 5,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 2
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-2",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "plate",
+        "targetKind": "bastion",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": false,
+        "outcome": "shot-duplicate",
+        "targetHpBefore": 5,
+        "targetHpAfter": 5,
+        "scope": "target-only",
+        "sequence": 3
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-3",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 4
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 5
+      }
+    ]
+  },
+  "upgrade/expiry": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 1,
+            "hp": 3,
+            "edge": 1,
+            "focus": 0.254,
+            "score": 0,
+            "chain": 2,
+            "chainTime": 99.5,
+            "kills": 0,
+            "shots": 0,
+            "blade": 0,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": -1
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            }
+          ],
+          "echoes": [
+            {
+              "x": -500,
+              "y": -350,
+              "ticks": 0.25,
+              "hits": [],
+              "sourceId": "excluded",
+              "upgradeEcho": true
+            }
+          ],
+          "bursts": 0
+        },
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 2,
+            "hp": 3,
+            "edge": 2,
+            "focus": 1,
+            "score": 300,
+            "chain": 3,
+            "chainTime": 77.5,
+            "kills": 1,
+            "shots": 0,
+            "blade": 6.5,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": -1
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            }
+          ],
+          "echoes": [],
+          "bursts": 1
+        }
+      ],
+      "final": {
+        "state": {
+          "phase": "playing",
+          "elapsed": 3,
+          "hp": 3,
+          "edge": 2,
+          "focus": 1,
+          "score": 300,
+          "chain": 3,
+          "chainTime": 77,
+          "kills": 1,
+          "shots": 0,
+          "blade": 6,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "lastSlashEchoShot": -1
+        },
+        "wavePhase": "combat",
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": 700,
+            "y": -900
+          },
+          {
+            "id": "too-late",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": -500,
+            "y": -350
+          }
+        ],
+        "echoes": [],
+        "bursts": 1
+      },
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "storyMoment",
+          "id": "hold-the-wave",
+          "chip": "LET IT PASS.",
+          "mechanic": "pulse",
+          "lesson": "Dodge the expanding rim; the space behind it is safe.",
+          "consequence": "The Watcher holds the wave so the Cutter can pass.",
+          "chapter": "seal",
+          "emotion": "friendship",
+          "wave": 1,
+          "targetId": "wave/1/1",
+          "targetX": 179.98116269670427,
+          "targetY": -259.5315527519677,
+          "targetR": 32,
+          "age": 0,
+          "number": 1
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "terminal",
+          "x": -500,
+          "y": -350,
+          "angle": 0.6107259643892086,
+          "r": 33,
+          "kind": "fang",
+          "cut": -0.65,
+          "hpBefore": 1,
+          "upgrade": "ghostlash",
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 300,
+          "points": 300,
+          "chain": 3,
+          "speed": 0,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "cut-contact",
+          "tick": 2,
+          "worldClock": 0,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "terminal",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 0
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 2,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "terminal",
+        "targetKind": "fang",
+        "tick": 2,
+        "worldClock": 0,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 2
+      }
+    ]
+  },
+  "upgrade/reused-id": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 1,
+            "hp": 3,
+            "edge": 2,
+            "focus": 1,
+            "score": 300,
+            "chain": 3,
+            "chainTime": 77,
+            "kills": 1,
+            "shots": 0,
+            "blade": 6,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": -1
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            }
+          ],
+          "echoes": [
+            {
+              "x": -500,
+              "y": -350,
+              "ticks": 29,
+              "hits": [
+                "reused"
+              ],
+              "sourceId": "excluded",
+              "upgradeEcho": true
+            }
+          ],
+          "bursts": 1
+        }
+      ],
+      "final": {
+        "state": {
+          "phase": "playing",
+          "elapsed": 2,
+          "hp": 3,
+          "edge": 1,
+          "focus": 1,
+          "score": 300,
+          "chain": 3,
+          "chainTime": 76,
+          "kills": 1,
+          "shots": 1,
+          "blade": 23.57142857142857,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "lastSlashEchoShot": -1
+        },
+        "wavePhase": "combat",
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 24,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": 700,
+            "y": -900
+          },
+          {
+            "id": "reused",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": -500,
+            "y": -350
+          }
+        ],
+        "echoes": [
+          {
+            "x": -500,
+            "y": -350,
+            "ticks": 28,
+            "hits": [
+              "reused"
+            ],
+            "sourceId": "excluded",
+            "upgradeEcho": true
+          }
+        ],
+        "bursts": 1
+      },
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "reused",
+          "x": -500,
+          "y": -350,
+          "angle": 0.6107259643892086,
+          "r": 33,
+          "kind": "fang",
+          "cut": -0.65,
+          "hpBefore": 1,
+          "upgrade": "ghostlash",
+          "armorRemoved": 0,
+          "secondary": true,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": true,
+          "strokePoints": 300,
+          "points": 300,
+          "chain": 3,
+          "speed": 0,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "tier",
+          "id": "cruise",
+          "label": "CRUISE",
+          "multiplier": 2,
+          "speed": 24
+        },
+        {
+          "type": "storyMoment",
+          "id": "hold-the-wave",
+          "chip": "LET IT PASS.",
+          "mechanic": "pulse",
+          "lesson": "Dodge the expanding rim; the space behind it is safe.",
+          "consequence": "The Watcher holds the wave so the Cutter can pass.",
+          "chapter": "seal",
+          "emotion": "friendship",
+          "wave": 1,
+          "targetId": "wave/1/1",
+          "targetX": 179.98116269670427,
+          "targetY": -259.5315527519677,
+          "targetR": 32,
+          "age": 0,
+          "number": 1
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 0,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "reused",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": true,
+          "sequence": 0
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 0,
+        "parentSourceId": null,
+        "originKnown": false,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "reused",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 0,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 1
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 2
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 3
+      }
+    ]
+  },
+  "real-birth-late-shot": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 1,
+            "hp": 3,
+            "edge": 1,
+            "focus": 1,
+            "score": 300,
+            "chain": 3,
+            "chainTime": 77,
+            "kills": 1,
+            "shots": 3,
+            "blade": 30.57142857142857,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": 3
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 24,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            }
+          ],
+          "echoes": [
+            {
+              "x": -415,
+              "y": -100,
+              "ticks": 29,
+              "hits": [],
+              "sourceId": "direct-0",
+              "upgradeEcho": false
+            },
+            {
+              "x": -422,
+              "y": -100,
+              "ticks": 29,
+              "hits": [],
+              "sourceId": "direct-0",
+              "upgradeEcho": true
+            }
+          ],
+          "bursts": 1
+        }
+      ],
+      "final": {
+        "state": {
+          "phase": "playing",
+          "elapsed": 2,
+          "hp": 3,
+          "edge": 0,
+          "focus": 1,
+          "score": 300,
+          "chain": 3,
+          "chainTime": 76,
+          "kills": 1,
+          "shots": 4,
+          "blade": 0,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "lastSlashEchoShot": 3
+        },
+        "wavePhase": "combat",
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": -24,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": 700,
+            "y": -900
+          },
+          {
+            "id": "late-plate",
+            "hp": 7,
+            "lastSlash": 4,
+            "x": -415,
+            "y": -100
+          }
+        ],
+        "echoes": [
+          {
+            "x": -415,
+            "y": -100,
+            "ticks": 28,
+            "hits": [
+              "late-plate"
+            ],
+            "sourceId": "direct-0",
+            "upgradeEcho": false
+          },
+          {
+            "x": -422,
+            "y": -100,
+            "ticks": 28,
+            "hits": [
+              "late-plate"
+            ],
+            "sourceId": "direct-0",
+            "upgradeEcho": true
+          }
+        ],
+        "bursts": 1
+      },
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "tier",
+          "id": "cruise",
+          "label": "CRUISE",
+          "multiplier": 2,
+          "speed": 24
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "upgradeEcho",
+          "x": -350,
+          "y": -100,
+          "id": "ghostlash"
+        },
+        {
+          "type": "cut",
+          "entityId": "direct-0",
+          "x": -275,
+          "y": -100,
+          "angle": 0.348771003583907,
+          "r": 33,
+          "kind": "fang",
+          "cut": 0,
+          "hpBefore": 1,
+          "upgrade": "ghostlash",
+          "armorRemoved": 0,
+          "secondary": false,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": false,
+          "strokePoints": 300,
+          "points": 300,
+          "chain": 3,
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 3.141592653589793,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "armor",
+          "entityId": "late-plate",
+          "x": -415,
+          "y": -100,
+          "r": 41,
+          "cut": 3.141592653589793,
+          "hp": 7,
+          "hpBefore": 8,
+          "kind": "bastion",
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "upgrade": "ghostlash",
+          "armorRemoved": 1,
+          "secondary": true
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "contact-batch",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 3,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "attacking": true,
+          "entities": "direct-0",
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 3,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "direct-0",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": false,
+          "sequence": 1
+        },
+        {
+          "type": "cut-contact",
+          "tick": 2,
+          "worldClock": 0,
+          "shotId": 4,
+          "hp": 3,
+          "blade": 0,
+          "entityId": "late-plate",
+          "kind": "bastion",
+          "targetHp": 8,
+          "fromShear": true,
+          "sequence": 2
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 3,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 0,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "core-echo",
+        "sourceShotId": 3,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 1
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-3",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 3,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 2
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 3,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "direct-0",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 3,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 3
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-4",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 4,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 4
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "core-echo",
+        "sourceShotId": 3,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "eventId": "run-1/contact-2",
+        "parentEventId": null,
+        "targetKey": "run-1/target-2",
+        "targetId": "late-plate",
+        "targetKind": "bastion",
+        "tick": 2,
+        "worldClock": 0,
+        "shotId": 4,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "armor",
+        "targetHpBefore": 8,
+        "targetHpAfter": 7,
+        "scope": "target-only",
+        "sequence": 5
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-3",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 3,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "eventId": "run-1/contact-3",
+        "parentEventId": null,
+        "targetKey": "run-1/target-2",
+        "targetId": "late-plate",
+        "targetKind": "bastion",
+        "tick": 2,
+        "worldClock": 0,
+        "shotId": 4,
+        "fromShear": true,
+        "secondary": true,
+        "swordSource": false,
+        "accepted": false,
+        "outcome": "shot-duplicate",
+        "targetHpBefore": 7,
+        "targetHpAfter": 7,
+        "scope": "target-only",
+        "sequence": 6
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 7
+      }
+    ]
+  },
+  "real-cap": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 1,
+            "hp": 3,
+            "edge": 1,
+            "focus": 1,
+            "score": 300,
+            "chain": 3,
+            "chainTime": 77,
+            "kills": 1,
+            "shots": 3,
+            "blade": 30.57142857142857,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": 3
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 24,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            }
+          ],
+          "echoes": [
+            {
+              "x": -415,
+              "y": -100,
+              "ticks": 29,
+              "hits": [],
+              "sourceId": "direct-0",
+              "upgradeEcho": false
+            },
+            {
+              "x": -422,
+              "y": -100,
+              "ticks": 29,
+              "hits": [],
+              "sourceId": "direct-0",
+              "upgradeEcho": true
+            }
+          ],
+          "bursts": 1
+        },
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 2,
+            "hp": 3,
+            "edge": 1,
+            "focus": 1,
+            "score": 600,
+            "chain": 3,
+            "chainTime": 77,
+            "kills": 2,
+            "shots": 6,
+            "blade": 30.57142857142857,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": 6
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 24,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            }
+          ],
+          "echoes": [
+            {
+              "x": -422,
+              "y": -100,
+              "ticks": 28,
+              "hits": [],
+              "sourceId": "direct-0",
+              "upgradeEcho": true
+            },
+            {
+              "x": -415,
+              "y": -100,
+              "ticks": 29,
+              "hits": [],
+              "sourceId": "direct-1",
+              "upgradeEcho": false
+            },
+            {
+              "x": -422,
+              "y": -100,
+              "ticks": 29,
+              "hits": [],
+              "sourceId": "direct-1",
+              "upgradeEcho": true
+            }
+          ],
+          "bursts": 2
+        },
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 3,
+            "hp": 3,
+            "edge": 1,
+            "focus": 1,
+            "score": 900,
+            "chain": 3,
+            "chainTime": 77,
+            "kills": 3,
+            "shots": 9,
+            "blade": 30.57142857142857,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": 9
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 24,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            }
+          ],
+          "echoes": [
+            {
+              "x": -422,
+              "y": -100,
+              "ticks": 28,
+              "hits": [],
+              "sourceId": "direct-1",
+              "upgradeEcho": true
+            },
+            {
+              "x": -415,
+              "y": -100,
+              "ticks": 29,
+              "hits": [],
+              "sourceId": "direct-2",
+              "upgradeEcho": false
+            },
+            {
+              "x": -422,
+              "y": -100,
+              "ticks": 29,
+              "hits": [],
+              "sourceId": "direct-2",
+              "upgradeEcho": true
+            }
+          ],
+          "bursts": 3
+        },
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 4,
+            "hp": 3,
+            "edge": 1,
+            "focus": 1,
+            "score": 1200,
+            "chain": 3,
+            "chainTime": 77,
+            "kills": 4,
+            "shots": 12,
+            "blade": 30.57142857142857,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": 12
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 24,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            }
+          ],
+          "echoes": [
+            {
+              "x": -422,
+              "y": -100,
+              "ticks": 28,
+              "hits": [],
+              "sourceId": "direct-2",
+              "upgradeEcho": true
+            },
+            {
+              "x": -415,
+              "y": -100,
+              "ticks": 29,
+              "hits": [],
+              "sourceId": "direct-3",
+              "upgradeEcho": false
+            },
+            {
+              "x": -422,
+              "y": -100,
+              "ticks": 29,
+              "hits": [],
+              "sourceId": "direct-3",
+              "upgradeEcho": true
+            }
+          ],
+          "bursts": 4
+        }
+      ],
+      "final": {
+        "state": {
+          "phase": "playing",
+          "elapsed": 4,
+          "hp": 3,
+          "edge": 1,
+          "focus": 1,
+          "score": 1200,
+          "chain": 3,
+          "chainTime": 77,
+          "kills": 4,
+          "shots": 12,
+          "blade": 30.57142857142857,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "lastSlashEchoShot": 12
+        },
+        "wavePhase": "combat",
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 24,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": 700,
+            "y": -900
+          }
+        ],
+        "echoes": [
+          {
+            "x": -422,
+            "y": -100,
+            "ticks": 28,
+            "hits": [],
+            "sourceId": "direct-2",
+            "upgradeEcho": true
+          },
+          {
+            "x": -415,
+            "y": -100,
+            "ticks": 29,
+            "hits": [],
+            "sourceId": "direct-3",
+            "upgradeEcho": false
+          },
+          {
+            "x": -422,
+            "y": -100,
+            "ticks": 29,
+            "hits": [],
+            "sourceId": "direct-3",
+            "upgradeEcho": true
+          }
+        ],
+        "bursts": 4
+      },
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "tier",
+          "id": "cruise",
+          "label": "CRUISE",
+          "multiplier": 2,
+          "speed": 24
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "upgradeEcho",
+          "x": -350,
+          "y": -100,
+          "id": "ghostlash"
+        },
+        {
+          "type": "cut",
+          "entityId": "direct-0",
+          "x": -275,
+          "y": -100,
+          "angle": 0.348771003583907,
+          "r": 33,
+          "kind": "fang",
+          "cut": 0,
+          "hpBefore": 1,
+          "upgrade": "ghostlash",
+          "armorRemoved": 0,
+          "secondary": false,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": false,
+          "strokePoints": 300,
+          "points": 300,
+          "chain": 3,
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.8,
+          "gained": 0.8,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "upgradeEcho",
+          "x": -350,
+          "y": -100,
+          "id": "ghostlash"
+        },
+        {
+          "type": "cut",
+          "entityId": "direct-1",
+          "x": -275,
+          "y": -100,
+          "angle": 0.348771003583907,
+          "r": 33,
+          "kind": "fang",
+          "cut": 0,
+          "hpBefore": 1,
+          "upgrade": "ghostlash",
+          "armorRemoved": 0,
+          "secondary": false,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": false,
+          "strokePoints": 300,
+          "points": 300,
+          "chain": 3,
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "fractureGain",
+          "pct": 1.2000000000000002,
+          "gained": 1.2000000000000002,
+          "delta": 0.40000000000000013,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "upgradeEcho",
+          "x": -350,
+          "y": -100,
+          "id": "ghostlash"
+        },
+        {
+          "type": "cut",
+          "entityId": "direct-2",
+          "x": -275,
+          "y": -100,
+          "angle": 0.348771003583907,
+          "r": 33,
+          "kind": "fang",
+          "cut": 0,
+          "hpBefore": 1,
+          "upgrade": "ghostlash",
+          "armorRemoved": 0,
+          "secondary": false,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": false,
+          "strokePoints": 300,
+          "points": 300,
+          "chain": 3,
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "fractureGain",
+          "pct": 1.6,
+          "gained": 1.6,
+          "delta": 0.3999999999999999,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "upgradeEcho",
+          "x": -350,
+          "y": -100,
+          "id": "ghostlash"
+        },
+        {
+          "type": "cut",
+          "entityId": "direct-3",
+          "x": -275,
+          "y": -100,
+          "angle": 0.348771003583907,
+          "r": 33,
+          "kind": "fang",
+          "cut": 0,
+          "hpBefore": 1,
+          "upgrade": "ghostlash",
+          "armorRemoved": 0,
+          "secondary": false,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": false,
+          "strokePoints": 300,
+          "points": 300,
+          "chain": 3,
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "contact-batch",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 3,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "attacking": true,
+          "entities": "direct-0",
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 3,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "direct-0",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": false,
+          "sequence": 1
+        },
+        {
+          "type": "contact-batch",
+          "tick": 2,
+          "worldClock": 0,
+          "shotId": 6,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "attacking": true,
+          "entities": "direct-1",
+          "sequence": 2
+        },
+        {
+          "type": "cut-contact",
+          "tick": 2,
+          "worldClock": 0,
+          "shotId": 6,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "direct-1",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": false,
+          "sequence": 3
+        },
+        {
+          "type": "contact-batch",
+          "tick": 3,
+          "worldClock": 0,
+          "shotId": 9,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "attacking": true,
+          "entities": "direct-2",
+          "sequence": 4
+        },
+        {
+          "type": "cut-contact",
+          "tick": 3,
+          "worldClock": 0,
+          "shotId": 9,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "direct-2",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": false,
+          "sequence": 5
+        },
+        {
+          "type": "contact-batch",
+          "tick": 4,
+          "worldClock": 0,
+          "shotId": 12,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "attacking": true,
+          "entities": "direct-3",
+          "sequence": 6
+        },
+        {
+          "type": "cut-contact",
+          "tick": 4,
+          "worldClock": 0,
+          "shotId": 12,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "direct-3",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": false,
+          "sequence": 7
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 3,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 0,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "core-echo",
+        "sourceShotId": 3,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 1
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-3",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 3,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 2
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 3,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "direct-0",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 3,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 3
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-4",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 6,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 4
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-5",
+        "sourceKind": "core-echo",
+        "sourceShotId": 6,
+        "parentSourceId": "run-1/source-4",
+        "originKnown": true,
+        "tick": 2,
+        "worldClock": 0,
+        "sequence": 5
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-6",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 6,
+        "parentSourceId": "run-1/source-4",
+        "originKnown": true,
+        "tick": 2,
+        "worldClock": 0,
+        "sequence": 6
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-4",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 6,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-2",
+        "parentEventId": null,
+        "targetKey": "run-1/target-2",
+        "targetId": "direct-1",
+        "targetKind": "fang",
+        "tick": 2,
+        "worldClock": 0,
+        "shotId": 6,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 7
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-7",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 9,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 2,
+        "worldClock": 0,
+        "sequence": 8
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-8",
+        "sourceKind": "core-echo",
+        "sourceShotId": 9,
+        "parentSourceId": "run-1/source-7",
+        "originKnown": true,
+        "tick": 3,
+        "worldClock": 0,
+        "sequence": 9
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-9",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 9,
+        "parentSourceId": "run-1/source-7",
+        "originKnown": true,
+        "tick": 3,
+        "worldClock": 0,
+        "sequence": 10
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-7",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 9,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-3",
+        "parentEventId": null,
+        "targetKey": "run-1/target-3",
+        "targetId": "direct-2",
+        "targetKind": "fang",
+        "tick": 3,
+        "worldClock": 0,
+        "shotId": 9,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 11
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-10",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 12,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 3,
+        "worldClock": 0,
+        "sequence": 12
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-11",
+        "sourceKind": "core-echo",
+        "sourceShotId": 12,
+        "parentSourceId": "run-1/source-10",
+        "originKnown": true,
+        "tick": 4,
+        "worldClock": 0,
+        "sequence": 13
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-12",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 12,
+        "parentSourceId": "run-1/source-10",
+        "originKnown": true,
+        "tick": 4,
+        "worldClock": 0,
+        "sequence": 14
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-10",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 12,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-4",
+        "parentEventId": null,
+        "targetKey": "run-1/target-4",
+        "targetId": "direct-3",
+        "targetKind": "fang",
+        "tick": 4,
+        "worldClock": 0,
+        "shotId": 12,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 15
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 16
+      }
+    ]
+  },
+  "real-cadence": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 1,
+            "hp": 3,
+            "edge": 1,
+            "focus": 1,
+            "score": 300,
+            "chain": 3,
+            "chainTime": 77,
+            "kills": 1,
+            "shots": 1,
+            "blade": 30.57142857142857,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": -1
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 24,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            }
+          ],
+          "echoes": [
+            {
+              "x": -415,
+              "y": -100,
+              "ticks": 29,
+              "hits": [],
+              "sourceId": "cadence-0",
+              "upgradeEcho": false
+            }
+          ],
+          "bursts": 1
+        },
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 2,
+            "hp": 3,
+            "edge": 1,
+            "focus": 1,
+            "score": 600,
+            "chain": 3,
+            "chainTime": 77,
+            "kills": 2,
+            "shots": 3,
+            "blade": 30.57142857142857,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": 3
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 24,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            }
+          ],
+          "echoes": [
+            {
+              "x": -415,
+              "y": -100,
+              "ticks": 28,
+              "hits": [],
+              "sourceId": "cadence-0",
+              "upgradeEcho": false
+            },
+            {
+              "x": -415,
+              "y": -100,
+              "ticks": 29,
+              "hits": [],
+              "sourceId": "cadence-1",
+              "upgradeEcho": false
+            },
+            {
+              "x": -422,
+              "y": -100,
+              "ticks": 29,
+              "hits": [],
+              "sourceId": "cadence-1",
+              "upgradeEcho": true
+            }
+          ],
+          "bursts": 2
+        },
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 3,
+            "hp": 3,
+            "edge": 2,
+            "focus": 1,
+            "score": 1200,
+            "chain": 3,
+            "chainTime": 77,
+            "kills": 3,
+            "shots": 3,
+            "blade": 36.57142857142857,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": 3
+          },
+          "wavePhase": "combat",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 24,
+              "y": 0
+            }
+          },
+          "enemies": [
+            {
+              "id": "sentinel",
+              "hp": 1,
+              "lastSlash": -1,
+              "x": 700,
+              "y": -900
+            }
+          ],
+          "echoes": [
+            {
+              "x": -415,
+              "y": -100,
+              "ticks": 28,
+              "hits": [],
+              "sourceId": "cadence-1",
+              "upgradeEcho": false
+            },
+            {
+              "x": -422,
+              "y": -100,
+              "ticks": 28,
+              "hits": [],
+              "sourceId": "cadence-1",
+              "upgradeEcho": true
+            },
+            {
+              "x": -415,
+              "y": -100,
+              "ticks": 29,
+              "hits": [],
+              "sourceId": "cadence-2",
+              "upgradeEcho": false
+            }
+          ],
+          "bursts": 3
+        }
+      ],
+      "final": {
+        "state": {
+          "phase": "playing",
+          "elapsed": 3,
+          "hp": 3,
+          "edge": 2,
+          "focus": 1,
+          "score": 1200,
+          "chain": 3,
+          "chainTime": 77,
+          "kills": 3,
+          "shots": 3,
+          "blade": 36.57142857142857,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "lastSlashEchoShot": 3
+        },
+        "wavePhase": "combat",
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 24,
+            "y": 0
+          }
+        },
+        "enemies": [
+          {
+            "id": "sentinel",
+            "hp": 1,
+            "lastSlash": -1,
+            "x": 700,
+            "y": -900
+          }
+        ],
+        "echoes": [
+          {
+            "x": -415,
+            "y": -100,
+            "ticks": 28,
+            "hits": [],
+            "sourceId": "cadence-1",
+            "upgradeEcho": false
+          },
+          {
+            "x": -422,
+            "y": -100,
+            "ticks": 28,
+            "hits": [],
+            "sourceId": "cadence-1",
+            "upgradeEcho": true
+          },
+          {
+            "x": -415,
+            "y": -100,
+            "ticks": 29,
+            "hits": [],
+            "sourceId": "cadence-2",
+            "upgradeEcho": false
+          }
+        ],
+        "bursts": 3
+      },
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "tier",
+          "id": "cruise",
+          "label": "CRUISE",
+          "multiplier": 2,
+          "speed": 24
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.4,
+          "gained": 0.4,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "cadence-0",
+          "x": -275,
+          "y": -100,
+          "angle": 0.348771003583907,
+          "r": 33,
+          "kind": "fang",
+          "cut": 0,
+          "hpBefore": 1,
+          "upgrade": "ghostlash",
+          "armorRemoved": 0,
+          "secondary": false,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": false,
+          "strokePoints": 300,
+          "points": 300,
+          "chain": 3,
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -100,
+          "angle": 0,
+          "power": 0.5714285714285714
+        },
+        {
+          "type": "fractureGain",
+          "pct": 0.8,
+          "gained": 0.8,
+          "delta": 0.4,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "upgradeEcho",
+          "x": -350,
+          "y": -100,
+          "id": "ghostlash"
+        },
+        {
+          "type": "cut",
+          "entityId": "cadence-1",
+          "x": -275,
+          "y": -100,
+          "angle": 0.348771003583907,
+          "r": 33,
+          "kind": "fang",
+          "cut": 0,
+          "hpBefore": 1,
+          "upgrade": "ghostlash",
+          "armorRemoved": 0,
+          "secondary": false,
+          "small": false,
+          "paper": false,
+          "release": false,
+          "fromShear": false,
+          "strokePoints": 300,
+          "points": 300,
+          "chain": 3,
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "fractureGain",
+          "pct": 1.2000000000000002,
+          "gained": 1.2000000000000002,
+          "delta": 0.40000000000000013,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "cut",
+          "entityId": "cadence-2",
+          "x": -275,
+          "y": -100,
+          "angle": 0.348771003583907,
+          "r": 33,
+          "kind": "fang",
+          "cut": 0,
+          "hpBefore": 1,
+          "upgrade": "ghostlash",
+          "armorRemoved": 0,
+          "secondary": false,
+          "small": false,
+          "paper": false,
+          "release": true,
+          "fromShear": false,
+          "strokePoints": 600,
+          "points": 600,
+          "chain": 3,
+          "speed": 24,
+          "paceTarget": 25.2,
+          "paceQualified": false,
+          "momentumEarned": false
+        },
+        {
+          "type": "shear",
+          "x": -275,
+          "y": -100,
+          "angle": 0
+        }
+      ],
+      "legacyTrace": [
+        {
+          "type": "contact-batch",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "attacking": true,
+          "entities": "cadence-0",
+          "sequence": 0
+        },
+        {
+          "type": "cut-contact",
+          "tick": 1,
+          "worldClock": 0,
+          "shotId": 1,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "cadence-0",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": false,
+          "sequence": 1
+        },
+        {
+          "type": "contact-batch",
+          "tick": 2,
+          "worldClock": 0,
+          "shotId": 3,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "attacking": true,
+          "entities": "cadence-1",
+          "sequence": 2
+        },
+        {
+          "type": "cut-contact",
+          "tick": 2,
+          "worldClock": 0,
+          "shotId": 3,
+          "hp": 3,
+          "blade": 24.57142857142857,
+          "entityId": "cadence-1",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": false,
+          "sequence": 3
+        },
+        {
+          "type": "contact-batch",
+          "tick": 3,
+          "worldClock": 0,
+          "shotId": 3,
+          "hp": 3,
+          "blade": 30.57142857142857,
+          "attacking": true,
+          "entities": "cadence-2",
+          "sequence": 4
+        },
+        {
+          "type": "cut-contact",
+          "tick": 3,
+          "worldClock": 0,
+          "shotId": 3,
+          "hp": 3,
+          "blade": 30.57142857142857,
+          "entityId": "cadence-2",
+          "kind": "fang",
+          "targetHp": 1,
+          "fromShear": false,
+          "sequence": 5
+        }
+      ]
+    },
+    "sources": [
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 0,
+        "worldClock": 0,
+        "sequence": 0
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-2",
+        "sourceKind": "core-echo",
+        "sourceShotId": 1,
+        "parentSourceId": "run-1/source-1",
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 1
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-1",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 1,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-1",
+        "parentEventId": null,
+        "targetKey": "run-1/target-1",
+        "targetId": "cadence-0",
+        "targetKind": "fang",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 2
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-3",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 3,
+        "parentSourceId": null,
+        "originKnown": true,
+        "tick": 1,
+        "worldClock": 0,
+        "sequence": 3
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-4",
+        "sourceKind": "core-echo",
+        "sourceShotId": 3,
+        "parentSourceId": "run-1/source-3",
+        "originKnown": true,
+        "tick": 2,
+        "worldClock": 0,
+        "sequence": 4
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-5",
+        "sourceKind": "upgrade-echo",
+        "sourceShotId": 3,
+        "parentSourceId": "run-1/source-3",
+        "originKnown": true,
+        "tick": 2,
+        "worldClock": 0,
+        "sequence": 5
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-3",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 3,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-2",
+        "parentEventId": null,
+        "targetKey": "run-1/target-2",
+        "targetId": "cadence-1",
+        "targetKind": "fang",
+        "tick": 2,
+        "worldClock": 0,
+        "shotId": 3,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 6
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-6",
+        "sourceKind": "core-echo",
+        "sourceShotId": 3,
+        "parentSourceId": "run-1/source-3",
+        "originKnown": true,
+        "tick": 3,
+        "worldClock": 0,
+        "sequence": 7
+      },
+      {
+        "type": "source-created",
+        "runId": "run-1",
+        "sourceId": "run-1/source-7",
+        "sourceKind": "legacy-shear",
+        "sourceShotId": 3,
+        "parentSourceId": "run-1/source-3",
+        "originKnown": true,
+        "tick": 3,
+        "worldClock": 0,
+        "sequence": 8
+      },
+      {
+        "type": "cut-result",
+        "runId": "run-1",
+        "sourceId": "run-1/source-3",
+        "sourceKind": "primary-blade",
+        "sourceShotId": 3,
+        "parentSourceId": null,
+        "originKnown": true,
+        "eventId": "run-1/contact-3",
+        "parentEventId": null,
+        "targetKey": "run-1/target-3",
+        "targetId": "cadence-2",
+        "targetKind": "fang",
+        "tick": 3,
+        "worldClock": 0,
+        "shotId": 3,
+        "fromShear": false,
+        "secondary": false,
+        "swordSource": false,
+        "accepted": true,
+        "outcome": "kill",
+        "targetHpBefore": 1,
+        "targetHpAfter": 0,
+        "scope": "target-only",
+        "sequence": 9
+      },
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 10
+      }
+    ]
+  },
+  "wave-cleanup": {
+    "snapshot": {
+      "checkpoints": [
+        {
+          "state": {
+            "phase": "playing",
+            "elapsed": 1,
+            "hp": 3,
+            "edge": 3,
+            "focus": 1,
+            "score": 0,
+            "chain": 0,
+            "chainTime": 0,
+            "kills": 0,
+            "shots": 0,
+            "blade": 0,
+            "drive": 0,
+            "swordCharge": 0,
+            "swordContacts": 0,
+            "lastSlashEchoShot": -1
+          },
+          "wavePhase": "return",
+          "world": {
+            "clock": 0,
+            "position": {
+              "x": -350,
+              "y": -100
+            },
+            "velocity": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "enemies": [],
+          "echoes": [],
+          "bursts": 0
+        }
+      ],
+      "final": {
+        "state": {
+          "phase": "playing",
+          "elapsed": 1,
+          "hp": 3,
+          "edge": 3,
+          "focus": 1,
+          "score": 0,
+          "chain": 0,
+          "chainTime": 0,
+          "kills": 0,
+          "shots": 0,
+          "blade": 0,
+          "drive": 0,
+          "swordCharge": 0,
+          "swordContacts": 0,
+          "lastSlashEchoShot": -1
+        },
+        "wavePhase": "choose",
+        "world": {
+          "clock": 0,
+          "position": {
+            "x": -350,
+            "y": -100
+          },
+          "velocity": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "enemies": [],
+        "echoes": [],
+        "bursts": 0
+      },
+      "events": [
+        {
+          "type": "waveStart",
+          "number": 1,
+          "total": 12
+        },
+        {
+          "type": "fractureGain",
+          "pct": 2.5,
+          "gained": 2.5,
+          "delta": 2.5,
+          "tier": 0,
+          "sky": 0
+        },
+        {
+          "type": "waveClear",
+          "number": 1,
+          "shattered": false,
+          "waveMult": 1
+        }
+      ],
+      "legacyTrace": []
+    },
+    "sources": [
+      {
+        "type": "source-trace-ended",
+        "runId": "run-1",
+        "sequence": 0
+      }
+    ]
+  }
+}

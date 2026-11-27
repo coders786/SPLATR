@@ -1,3 +1,5 @@
+import {tailToolkitReadout} from './tail-toolkit.js';
+import {reactiveShellReadout} from './needle-phase.js';
 import {installIconSprite,prependIcon} from './ui-icons.js';
 import {isDevMode,modeURL,createProfileStorage,refillForTesting} from './dev-mode.js';
 import {createCombatTrace} from './combat-trace.js';
@@ -9,7 +11,7 @@ import {createTrainingHub} from './training-hub.js';
 import {healthDamageLabel,healthDeathMessage} from './health-ui.js';
 import {healthSegments,damageFeedback,dmgLabel,bearingWord,SAFE_BLINK_TICKS,HIT_RIM_TICKS} from './damage-feedback.js';
 // CHUNK 2: the live "safe to slice" set, measured against the blade's own sweep.
-import {sliceStates,sweepGeometry} from './slice-safe.js';
+import {sliceStates} from './slice-safe.js';
 import {lawHintVisible} from './color-law.js';
 import {reticleFor} from './pointer-reticle.js';
 import {OVERDRIVE} from './flow.js';
@@ -20,6 +22,7 @@ import {createWaveUI} from './wave-ui.js';
 import './lab.css';
 import { activeHybrid, activeSparks } from './hybrids.js';
 import { createCustomize } from './customize.js';
+import { ITEMS } from './equipment.js';
 import { overlapsHUD } from './radar.js';
 import { createShopWallet } from './shop-wallet.js';
 import { createRoundRewardUI } from './round-reward-ui.js';
@@ -517,6 +520,12 @@ function event(type, d) {
     case 'shear':
       buzz(17);
       say('Throughcut.');
+      break;
+    case 'needlePhase':
+      audio.strike('parry');
+      break;
+    case 'shellReturn':
+      audio.strike('spring');
       break;
     case 'armor':
       audio.strike('armor');
@@ -1052,6 +1061,16 @@ function updateHUD() {
   const focusMeter = $('focus-meter');
   focusMeter.toggleAttribute('data-empty', meters.focusEmpty);
   focusMeter.toggleAttribute('data-live', meters.focusLive);
+  const ventCooling=s.equipment?.body==='notched'&&s.focusRecoveryActive&&!s.held&&s.focus<1&&s.phase==='playing';
+  focusMeter.toggleAttribute('data-cooling',ventCooling);
+  focusMeter.querySelector('small').textContent=ventCooling?'Vent cooling':'Focus';
+  const abilityText=s.phase==='playing'?reactiveShellReadout(s.shellAbility):'';
+  $('shell-ability').hidden=!abilityText;if(abilityText)setText('shell-ability',abilityText);
+  const tailText=s.phase==='playing'?tailToolkitReadout(s.tailAbility):'';
+  $('tail-ability').hidden=!tailText;if(tailText)setText('tail-ability',tailText);
+  const springReady=s.equipment?.body==='segmented'&&s.shellSpring&&s.phase==='playing';
+  $('shell-reserve').hidden=!springReady;
+  if(springReady)setText('shell-reserve',`SPRING +${s.shellSpring.amount.toFixed(1)} / NEXT CUT`);
   // Reactive HUD. Each of these is a one-frame attribute flip that a CSS
   // animation hooks, so the feedback costs no timers and cannot queue up
   // behind itself if the player is hit twice inside one animation.
@@ -1751,10 +1770,7 @@ function safeStep(now) {
           // `state.sweep` is refreshed by the run on every tick a blade is out,
           // with exactly the multipliers it swept with. The fallback only runs
           // on the first frame of a blade, before that tick has published.
-          geometry: run.state.sweep || sweepGeometry({
-            reach: (run.state.reach || 1) * (run.state.sword?.reach || 1),
-            width: run.state.sword?.width || 1,
-          }),
+          geometry: run.state.sweep || run.primaryGeometry(),
         })
       : [];
     renderer.setAimFeedback?.({ hit: feedback, slices });
@@ -1807,3 +1823,10 @@ game.removeAttribute('inert');
 $('boot').remove();
 poki.loadingFinished();
 if (!document.hidden && !disposedGame) raf = requestAnimationFrame(frame);
+
+// Shareable free item preview: validates catalogue IDs, never equips or grants.
+const requestedShopItem=new URLSearchParams(location.search).get('shopItem');
+const requestedAssembly=new URLSearchParams(location.search).get('assembly')==='1';
+const requestedCoreView=new URLSearchParams(location.search).get('coreView');
+if(requestedCoreView&&ITEMS.some(item=>item.slot==='core'&&item.id===requestedCoreView))customize.open(requestedCoreView,{mechanism:true});
+else if(requestedShopItem||requestedAssembly)customize.open(requestedShopItem,{assembly:requestedAssembly});

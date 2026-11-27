@@ -1,3 +1,4 @@
+import {coldTiming} from './frost-control.js';
 import {safeSpawn,inViewport} from './spawn-space.js';
 import Matter from 'matter-js';
 import { TYPES, TAU } from './shapes.js';
@@ -408,6 +409,7 @@ export function createCombat(world, tell = () => {}, onBoss = null) {
     }
   }
   function move(dt, difficulty) {
+    if(!(dt>0)||!Number.isFinite(dt))return;
     const player=world.player,p=player.position,m=Math.min(1.38,1+(difficulty-1)*.055);
     cadence=difficulty<=2?76:54; beat=Math.max(0,beat-dt);
     // Count an attack once across its tell, active projectile(s) and recovery.
@@ -422,7 +424,10 @@ export function createCombat(world, tell = () => {}, onBoss = null) {
       e.py = e.y;
       e.pa = e.angle;
       e.flash = Math.max(0, e.flash - dt);
-      e.age += dt;
+      const cold=coldTiming(e,world.clock,dt),aiDt=cold.ai,motionDt=cold.motion;
+      e.age += aiDt;
+      // Fully frozen Fangs preserve their mode, tell, rush, cooldown and pose.
+      if(aiDt===0){e.vx=e.vy=0;continue;}
       // CHUNK 6B: the pinned Monolith never MOVES — but it acts. Its timers
       // tick in the same place every other enemy's AI ticks. The training
       // room spawns the same slab with home:'wave', and it stays a quiet
@@ -454,23 +459,23 @@ export function createCombat(world, tell = () => {}, onBoss = null) {
         continue;
       }
       const k = e.kind;
-      e.cool -= dt;
+      e.cool -= aiDt;
       if (e.mode === 'rush') {
         // A lunge is a straight line and does not know about rails. Held to the
         // table here so a Fang cannot finish its rush on the far side of a wall
         // -- it commits, hits the boundary and stops there, which also reads
         // correctly: the rail is solid for everything on the table.
         const er0 = e.r || 0;
-        e.x = clamp(e.x + Math.cos(e.aim) * (e.lungeSpeed||10.8) * dt, ARENA.x + er0, ARENA.x + ARENA.w - er0);
-        e.y = clamp(e.y + Math.sin(e.aim) * (e.lungeSpeed||10.8) * dt, ARENA.y + er0, ARENA.y + ARENA.h - er0);
-        if ((e.clock -= dt) <= 0) {
+        e.x = clamp(e.x + Math.cos(e.aim) * (e.lungeSpeed||10.8) * motionDt, ARENA.x + er0, ARENA.x + ARENA.w - er0);
+        e.y = clamp(e.y + Math.sin(e.aim) * (e.lungeSpeed||10.8) * motionDt, ARENA.y + er0, ARENA.y + ARENA.h - er0);
+        if ((e.clock -= aiDt) <= 0) {
           e.mode = 'idle';
           e.cool = 92;
         }
       } else if (e.mode === 'recover') {
-        if((e.clock-=dt)<=0){e.mode='idle';e.attackZone=null;}
+        if((e.clock-=aiDt)<=0){e.mode='idle';e.attackZone=null;}
       } else if (e.mode === 'tell') {
-        if ((e.clock -= dt) <= 0) {
+        if ((e.clock -= aiDt) <= 0) {
           e.mode = 'idle';
           e.cool = (130 + (e.phase || 0) * 7) / m;
           if (k === 'fang') {
@@ -553,8 +558,10 @@ export function createCombat(world, tell = () => {}, onBoss = null) {
           vx += nx * force;
           vy += ny * force;
         }
-        e.x+=vx*dt;e.y+=vy*dt;
+        e.x+=vx*motionDt;e.y+=vy*motionDt;
         if (
+          // Hypno gates NEW initiation only. Locomotion, tells and rushes above continue.
+          !(e.hypnoUntil > world.clock) &&
           e.cool <= 0 &&
           dist < (e.wakeAt ?? (k === 'fang' ? 10.8*m*24+e.r+PLAYER_SIZE*.5-20 : k === 'pulse' ? 410 : k === 'fork' ? 260 : k === 'bastion' ? 290 : k === 'well' ? 230 : 820)) &&
           ['fang', 'pulse', 'prism', 'fork', 'bastion', 'rift', 'well', 'crown'].includes(k) &&
@@ -568,7 +575,7 @@ export function createCombat(world, tell = () => {}, onBoss = null) {
         const target = e.mode === 'idle' ? Math.atan2(ny, nx) : e.aim;
         e.angle +=
           Math.atan2(Math.sin(target - e.angle), Math.cos(target - e.angle)) *
-          Math.min(1, dt * 0.26);
+          Math.min(1, aiDt * 0.26);
       } else if (k === 'bastion' && e.mode === 'tell') {
         const target=e.aim-Math.PI/2;
         e.angle+=Math.atan2(Math.sin(target-e.angle),Math.cos(target-e.angle))*Math.min(1,dt*.24);
@@ -608,7 +615,7 @@ export function createCombat(world, tell = () => {}, onBoss = null) {
       Body.setAngle(e.body, e.angle);
     }
   }
-  function attacks(dt, onHit, {freezeZones=false}={}) {
+  function attacks(dt, onHit, {freezeZones=false,filterPlayerHit=null}={}) {
     for (let i = hazards.length - 1; i >= 0; i--) {
       const h = hazards[i];
       if(freezeZones&&h.kind==='zone')continue;
@@ -631,7 +638,11 @@ export function createCombat(world, tell = () => {}, onBoss = null) {
         hazards.splice(i, 1);
         continue;
       }
-      if (hazardHits(h, world.player.position, world.player.plugin.previous)) {
+      const touching=hazardHits(h,world.player.position,world.player.plugin.previous);
+      // Optional narrow pair admission BEFORE spending/removing the hazard.
+      // A phased needle keeps moving, rendering and expiring normally.
+      if(filterPlayerHit&&filterPlayerHit(h,touching)===false)continue;
+      if (touching) {
         if (!h.spent) {
           h.spent = true;
           onHit(h);
@@ -692,13 +703,13 @@ export function createCombat(world, tell = () => {}, onBoss = null) {
    *  sweep. Chaos is only fun while it still answers to the player's input; a
    *  blade that swings itself is a cutscene.
    */
-  function sweepBlade(angle, reach = 1, width = 1, closeWidth = 1) {
+  function sweepBlade(angle, reach = 1, width = 1, closeWidth = 1, closeRadius = 100 * closeWidth) {
     const p = world.player.position;
     // CHUNK 2: the blade's ray is defined ONCE, in `sliceGeometry`, so the
     // green "you can cut this" marker and the real hit test cannot drift apart.
     // `span` and `halfWidth` are the same numbers the marker brackets are
     // measured from.
-    const geo = sweepGeometry({ reach, width, closeWidth }),
+    const geo = sweepGeometry({ reach, width, closeWidth, closeRadius }),
       span = geo.span,
       candidates = [];
     for (const e of enemies.values())

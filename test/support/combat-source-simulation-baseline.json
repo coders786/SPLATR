@@ -1,0 +1,454 @@
+{
+  "ticks": 360,
+  "provenance": "Captured from saved pre-chunk6 run.js, not from the completed source boundary.",
+  "cases": [
+    {
+      "id": "standard",
+      "seed": 19,
+      "equipment": {},
+      "gameplayHash": "047cfd9c028e28d23b9f25f2f38125d11f347fc67a8ba6e9d32c472c5926407e",
+      "sourceHash": "6f6070c2915cc5b3bfe7c146e50fab1a5a555d2e16a200838c343a1e775bff9b"
+    },
+    {
+      "id": "standard",
+      "seed": 77,
+      "equipment": {},
+      "gameplayHash": "16c25a41ce01fd4078374e685d737699225a16f3c759fa9b6f613ed31f768c93",
+      "sourceHash": "a72f799e927a63194986ef43a4abd280764fbcc0a151f909f80d4cd71e105fc6"
+    },
+    {
+      "id": "wyrm",
+      "seed": 19,
+      "equipment": {
+        "head": "viper",
+        "body": "prism",
+        "slash": "laser"
+      },
+      "gameplayHash": "74e17d272369d898213df065e0e2b5aa83bf58481f02b7fba2051f6428fe7414",
+      "sourceHash": "9e0700298a22b8751ea524ce1b6f54ddd3ab24a60ee504baac7833665566fa0e"
+    },
+    {
+      "id": "wyrm",
+      "seed": 77,
+      "equipment": {
+        "head": "viper",
+        "body": "prism",
+        "slash": "laser"
+      },
+      "gameplayHash": "8f88b35341c22ac4f55253e33318e338226322e3c585310c5b299d0c9578b9aa",
+      "sourceHash": "0fb0b828776239dbd321010cf027cfb1ef966e8a4f4a62719dc35cd1fe0a0f86"
+    },
+    {
+      "id": "ronin",
+      "seed": 19,
+      "equipment": {
+        "head": "samurai",
+        "body": "paper",
+        "slash": "katana",
+        "world": "manga"
+      },
+      "gameplayHash": "eb8edd14b8243feff2214d151eb9336dc749866319532209937b48c87a300a7f",
+      "sourceHash": "a271a7d060991c68b364cb7d3b7abb6a6f9d595039c9da77c2afb7b88cb5ab75"
+    },
+    {
+      "id": "ronin",
+      "seed": 77,
+      "equipment": {
+        "head": "samurai",
+        "body": "paper",
+        "slash": "katana",
+        "world": "manga"
+      },
+      "gameplayHash": "ebf0e7546d178ee2843675130438fbb17c5e4b85f6168d2260add2acfac50b9b",
+      "sourceHash": "1af439294681d3b02b30fa13e60642349a97198d43ae2f1c4409f53a088bf52a"
+    },
+    {
+      "id": "king",
+      "seed": 19,
+      "equipment": {
+        "head": "crown",
+        "core": "grav",
+        "tail": "anchor"
+      },
+      "gameplayHash": "c9ce97e2789d7cd1008c9f2c70a3d588cc99780aa203e8ab8bc62eb74e1012ae",
+      "sourceHash": "fce6472afc39db42be978ad7a5298fb7c80574ab9a383f878c54761b64573ebe"
+    },
+    {
+      "id": "king",
+      "seed": 77,
+      "equipment": {
+        "head": "crown",
+        "core": "grav",
+        "tail": "anchor"
+      },
+      "gameplayHash": "18834bd0c3b688a4adc089a2df16cdd3048a5f6bc34aea98b967ea82f211bd9c",
+      "sourceHash": "212392a91d57e35c98e6658ec68ec6f20bd0917fd44020d9afc2fad38c43be66"
+    },
+    {
+      "id": "phantom",
+      "seed": 19,
+      "equipment": {
+        "eyes": "visor",
+        "body": "hologram",
+        "tail": "ghost"
+      },
+      "gameplayHash": "704ed0a333f01a2ad8f812cf69ba57f45c5af3456552684d0077afa83d711351",
+      "sourceHash": "db5cba1fe02af1651f5bfb45f7194606ddf99a502b6b70ba6b6bc19d153b6edf"
+    },
+    {
+      "id": "phantom",
+      "seed": 77,
+      "equipment": {
+        "eyes": "visor",
+        "body": "hologram",
+        "tail": "ghost"
+      },
+      "gameplayHash": "dfb86030cff98fd56e5bcad3fe652b787d6026464d07b0f06e620a3e3ec5b440",
+      "sourceHash": "ec58fb21b2362094ddcfafa6dd55cead64d8a6fe6736de1a0845e38d7b454387"
+    },
+    {
+      "id": "reaper",
+      "seed": 19,
+      "equipment": {
+        "head": "oni",
+        "body": "iron",
+        "tail": "viper-tails"
+      },
+      "gameplayHash": "00468e110d1f51cfb5dd159b83fbff7e9c06fa773605967e03f0d462b40be986",
+      "sourceHash": "6f6070c2915cc5b3bfe7c146e50fab1a5a555d2e16a200838c343a1e775bff9b"
+    },
+    {
+      "id": "reaper",
+      "seed": 77,
+      "equipment": {
+        "head": "oni",
+        "body": "iron",
+        "tail": "viper-tails"
+      },
+      "gameplayHash": "d9230c94b599b4434eec9b74081a0c382b306713c8c13fd48cd0ef8e58c810ef",
+      "sourceHash": "a72f799e927a63194986ef43a4abd280764fbcc0a151f909f80d4cd71e105fc6"
+    },
+    {
+      "id": "eater",
+      "seed": 19,
+      "equipment": {
+        "eyes": "hypno",
+        "core": "grav",
+        "tail": "wings"
+      },
+      "gameplayHash": "daa8ffdc88edcf865e6943f0e1f53be2c7a79f2394a1eaa027aa586fa0e513f7",
+      "sourceHash": "4222d079955595ff1c40bbf584c7826ef19a0cb0cdf7ddb42fa1cd9636469d28"
+    },
+    {
+      "id": "eater",
+      "seed": 77,
+      "equipment": {
+        "eyes": "hypno",
+        "core": "grav",
+        "tail": "wings"
+      },
+      "gameplayHash": "514d94509fab40ff843d27045d15ec9982a0fe763d320c0dde3b17fbec117ff0",
+      "sourceHash": "7e62e18d588003c27abe3a255d53f23573fba3a413f4252cc08d64e7995bac12"
+    },
+    {
+      "id": "sun",
+      "seed": 19,
+      "equipment": {
+        "head": "halo",
+        "body": "gold",
+        "slash": "confetti"
+      },
+      "gameplayHash": "95a3de410812f66eba0a6f8b8383903a553087f1a3876e5d6b49c4c2e5249b2f",
+      "sourceHash": "0d0a1112c3577e457ee9459ea395bbd3ebb5305ed1d178bf9789af9f0980e0ec"
+    },
+    {
+      "id": "sun",
+      "seed": 77,
+      "equipment": {
+        "head": "halo",
+        "body": "gold",
+        "slash": "confetti"
+      },
+      "gameplayHash": "6f467e095db2e46aeaa5ef937da38f01533094977d67dafcd34a82eee4005772",
+      "sourceHash": "a72f799e927a63194986ef43a4abd280764fbcc0a151f909f80d4cd71e105fc6"
+    },
+    {
+      "id": "glacier",
+      "seed": 19,
+      "equipment": {
+        "body": "chamfer",
+        "core": "time",
+        "head": "halo",
+        "slash": "laser"
+      },
+      "gameplayHash": "c57b9b04d30f5bec27b342b9ae0e5366328273b5390dddd837badb57f2a79029",
+      "sourceHash": "2b805a0d8d6d45ebebe7575fbab09a34a589719503181b9c59f5ba74918769bf"
+    },
+    {
+      "id": "glacier",
+      "seed": 77,
+      "equipment": {
+        "body": "chamfer",
+        "core": "time",
+        "head": "halo",
+        "slash": "laser"
+      },
+      "gameplayHash": "ce322e4caa600cf578b350b462fbcf969ea0f2226f304ae001d91eb2e72377db",
+      "sourceHash": "a72f799e927a63194986ef43a4abd280764fbcc0a151f909f80d4cd71e105fc6"
+    },
+    {
+      "id": "briar",
+      "seed": 19,
+      "equipment": {
+        "body": "notched",
+        "eyes": "hypno",
+        "tail": "spectrum"
+      },
+      "gameplayHash": "c3186bfa879a86a21e97d1cbb5f90fd7eac315f0f138dcb9b8e20785b057e7a5",
+      "sourceHash": "07919cb701ebb349e7b4af0fca662417a2eba6392f84bb61730572d5cd050e75"
+    },
+    {
+      "id": "briar",
+      "seed": 77,
+      "equipment": {
+        "body": "notched",
+        "eyes": "hypno",
+        "tail": "spectrum"
+      },
+      "gameplayHash": "fb244fb6221d490c04bb48c8823b9d7585541ef850706483a21fca965cc31965",
+      "sourceHash": "15cf9a37a8c4e518645e32db215c00c4d0011ccc8fb04ce13f8d835bfab9687e"
+    },
+    {
+      "id": "sentinel",
+      "seed": 19,
+      "equipment": {
+        "body": "segmented",
+        "core": "magnet",
+        "head": "coil"
+      },
+      "gameplayHash": "91a59bb9f52754498d10a10808a6b627cbd870c7b7b9af57ea2691b18311b58e",
+      "sourceHash": "0d0a1112c3577e457ee9459ea395bbd3ebb5305ed1d178bf9789af9f0980e0ec"
+    },
+    {
+      "id": "sentinel",
+      "seed": 77,
+      "equipment": {
+        "body": "segmented",
+        "core": "magnet",
+        "head": "coil"
+      },
+      "gameplayHash": "dd3968f3a6e7181ff81e78350326847faef6f4119736553a9b946c08265e7085",
+      "sourceHash": "a72f799e927a63194986ef43a4abd280764fbcc0a151f909f80d4cd71e105fc6"
+    },
+    {
+      "id": "arcade",
+      "seed": 19,
+      "equipment": {
+        "core": "echo",
+        "slash": "pixel",
+        "eyes": "visor",
+        "world": "synth"
+      },
+      "gameplayHash": "1f681af6132fbe14dc6721526d08292174a0ccfe50d51cdd9d76b0fb8d73487c",
+      "sourceHash": "de3a2fef48a0a9c2d7d1faff0600a9a0f03cdeeedd59f92581e36a929a2cd257"
+    },
+    {
+      "id": "arcade",
+      "seed": 77,
+      "equipment": {
+        "core": "echo",
+        "slash": "pixel",
+        "eyes": "visor",
+        "world": "synth"
+      },
+      "gameplayHash": "aa271c7aa03e6f65190172766ca5a40c911f0a08fb7c5ef14e9259c54f3fab7f",
+      "sourceHash": "75763e25dc7ed1c79184ec9b51cc1de8c27d062a06dfd85320b56ef4388625ca"
+    },
+    {
+      "id": "storm",
+      "seed": 19,
+      "equipment": {
+        "head": "coil",
+        "body": "chamfer",
+        "core": "echo",
+        "slash": "laser"
+      },
+      "gameplayHash": "c0bfdb2874d31f993d2132791326fa9e5ded8fe7e00175076108f201508bbde4",
+      "sourceHash": "80209473a600b7dbfb90f8252a6e364c82f6d655e9467a707df99112a625ca0d"
+    },
+    {
+      "id": "storm",
+      "seed": 77,
+      "equipment": {
+        "head": "coil",
+        "body": "chamfer",
+        "core": "echo",
+        "slash": "laser"
+      },
+      "gameplayHash": "320c4ab7953f768601d40224c8834d9c66f68efac99c6a29d061b4541bfc5f72",
+      "sourceHash": "188b99409b2821133fcdae43fa9c37bcf8842bdc8c0adde18d099cd05f849f23"
+    },
+    {
+      "id": "forge",
+      "seed": 19,
+      "equipment": {
+        "head": "crown",
+        "body": "lava",
+        "core": "riot",
+        "tail": "anchor"
+      },
+      "gameplayHash": "800aad6695f1c02fef9b96824bccfb3ce0cb6429d4fb989d152b828ad9d8159d",
+      "sourceHash": "da03276f1f266b74acd55323d261464c0f172ef1d5a59b185922903d7180126c"
+    },
+    {
+      "id": "forge",
+      "seed": 77,
+      "equipment": {
+        "head": "crown",
+        "body": "lava",
+        "core": "riot",
+        "tail": "anchor"
+      },
+      "gameplayHash": "abe3c098d349bc624e73196e2f36f5cb8b4fde2b1a48cb76da15856f1e2708d4",
+      "sourceHash": "83052f2cfbacb6584cdae222f9bb6ee58b04d55d875618e05ecf2039b0e46d3d"
+    },
+    {
+      "id": "wraith",
+      "seed": 19,
+      "equipment": {
+        "head": "neko",
+        "body": "hologram",
+        "core": "time",
+        "tail": "ghost"
+      },
+      "gameplayHash": "acd9a0a25ec9e8c7211b642ba7de9d8103fde216ba6c389865a00960620199a8",
+      "sourceHash": "db5cba1fe02af1651f5bfb45f7194606ddf99a502b6b70ba6b6bc19d153b6edf"
+    },
+    {
+      "id": "wraith",
+      "seed": 77,
+      "equipment": {
+        "head": "neko",
+        "body": "hologram",
+        "core": "time",
+        "tail": "ghost"
+      },
+      "gameplayHash": "67954c8113615d1cca94b3c25feea13f70835d32610490c0de93b9ca44b35037",
+      "sourceHash": "ec58fb21b2362094ddcfafa6dd55cead64d8a6fe6736de1a0845e38d7b454387"
+    },
+    {
+      "id": "bulwark",
+      "seed": 19,
+      "equipment": {
+        "head": "beacon",
+        "body": "iron",
+        "core": "magnet",
+        "tail": "wings"
+      },
+      "gameplayHash": "4b8544fe54ed71c4e98c4e68b3cac937fdf7c4d443e1c6ddf491aa6e8a2578e4",
+      "sourceHash": "6f6070c2915cc5b3bfe7c146e50fab1a5a555d2e16a200838c343a1e775bff9b"
+    },
+    {
+      "id": "bulwark",
+      "seed": 77,
+      "equipment": {
+        "head": "beacon",
+        "body": "iron",
+        "core": "magnet",
+        "tail": "wings"
+      },
+      "gameplayHash": "d94c1364a31c51c81e99d5b16e60b5ca09c3745394049172dd704a6a5610d748",
+      "sourceHash": "a72f799e927a63194986ef43a4abd280764fbcc0a151f909f80d4cd71e105fc6"
+    },
+    {
+      "id": "razoredge",
+      "seed": 19,
+      "equipment": {
+        "head": "samurai",
+        "body": "notched",
+        "core": "glass",
+        "slash": "katana"
+      },
+      "gameplayHash": "4b91df0ff66ecc652cb72a760389904ce2650673d511c538817c128b78eae2b0",
+      "sourceHash": "2f3c72d94e5457d627e744c02f198ee32ae27ef440398ddf511329266ecf575d"
+    },
+    {
+      "id": "razoredge",
+      "seed": 77,
+      "equipment": {
+        "head": "samurai",
+        "body": "notched",
+        "core": "glass",
+        "slash": "katana"
+      },
+      "gameplayHash": "1f2daac2b54216eccafd6922e6fae1ecf2a92c99c895a5410e83837e755f6b73",
+      "sourceHash": "1700b2124c052fa4a946c47d96a70b4d311b821e920ad22f5171b0a092b7076c"
+    },
+    {
+      "id": "orbit",
+      "seed": 19,
+      "equipment": {
+        "head": "halo",
+        "body": "prism",
+        "core": "grav",
+        "tail": "spectrum"
+      },
+      "gameplayHash": "426f97d35461396fe31402fb26240db6b64f4abd2ba35eabe83a2dcb73079fb7",
+      "sourceHash": "4222d079955595ff1c40bbf584c7826ef19a0cb0cdf7ddb42fa1cd9636469d28"
+    },
+    {
+      "id": "orbit",
+      "seed": 77,
+      "equipment": {
+        "head": "halo",
+        "body": "prism",
+        "core": "grav",
+        "tail": "spectrum"
+      },
+      "gameplayHash": "8b61709d41f428db017881f89bd7f79b4d8020293275e8167609f52f9dbb5e07",
+      "sourceHash": "7e62e18d588003c27abe3a255d53f23573fba3a413f4252cc08d64e7995bac12"
+    },
+    {
+      "id": "mixed-coil-prism-anchor",
+      "seed": 19,
+      "equipment": {
+        "head": "coil",
+        "body": "prism",
+        "tail": "anchor"
+      },
+      "gameplayHash": "047cfd9c028e28d23b9f25f2f38125d11f347fc67a8ba6e9d32c472c5926407e",
+      "sourceHash": "6f6070c2915cc5b3bfe7c146e50fab1a5a555d2e16a200838c343a1e775bff9b"
+    },
+    {
+      "id": "mixed-coil-prism-anchor",
+      "seed": 77,
+      "equipment": {
+        "head": "coil",
+        "body": "prism",
+        "tail": "anchor"
+      },
+      "gameplayHash": "16c25a41ce01fd4078374e685d737699225a16f3c759fa9b6f613ed31f768c93",
+      "sourceHash": "a72f799e927a63194986ef43a4abd280764fbcc0a151f909f80d4cd71e105fc6"
+    },
+    {
+      "id": "mixed-echo-ghost",
+      "seed": 19,
+      "equipment": {
+        "core": "echo",
+        "tail": "ghost"
+      },
+      "gameplayHash": "829b8e042710806838b342f7274b461773c1c241566d6234b95befb5ac15cff2",
+      "sourceHash": "86e4155aa7405eea56ee3ffeb329abbaf06e54f3fe45269bc679d3757397fb3c"
+    },
+    {
+      "id": "mixed-echo-ghost",
+      "seed": 77,
+      "equipment": {
+        "core": "echo",
+        "tail": "ghost"
+      },
+      "gameplayHash": "ed5948cd2abffd4820604f027765a848e5d56f321399fbc02b7ffbcba0d0988f",
+      "sourceHash": "282fa06dcf917cb52afda6dd75f3846e8484f14847b7c31f9164c6a3a206c945"
+    }
+  ]
+}

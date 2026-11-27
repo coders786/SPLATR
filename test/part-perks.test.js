@@ -14,16 +14,18 @@ test('every part has a gameplay receipt; perks belong to real catalogue entries'
 });
 test('stacked perks have explicit hard limits and conditional score is not always on',()=>{
  const p=resolvePartPerks({a:'neko',b:'lava',c:'comic',d:'spectrum',e:'dash-echo'});assert.equal(p.chainGrace,36);
- const f=resolvePartPerks({a:'hypno',b:'hologram',c:'dash-ice',d:'pointer-cross'});assert.equal(f.focusDrain,.7);
+ const f=resolvePartPerks({a:'hypno',b:'hologram',c:'dash-ice',d:'pointer-cross'});assert.equal(f.focusDrain,.92,'Hypno and Frost no longer discount aim; only Pointer remains');
+ assert.equal(resolvePartPerks({a:'visor',b:'visor',c:'visor',d:'visor'}).focusDrain,.7,'shared hard cap retained');
  const r=resolvePartPerks({a:'glitch',b:'synth',c:'dash-water',d:'pointer-orbit'});assert.equal(r.focusRegen,1.4);
  const s=resolvePartPerks({a:'gold',b:'foundry',c:'dash-void',d:'confetti'}).scorePerks;
  assert.equal(perkScoreMultiplier(s,{kind:'fang'}),1.1);assert.equal(perkScoreMultiplier(s,{kind:'crown',kills:2}),1.25);
  assert.equal(perkScoreMultiplier(resolvePartPerks({a:'sniper'}).scorePerks,{power:.5}),1);
- assert.equal(perkScoreMultiplier(resolvePartPerks({a:'sniper'}).scorePerks,{power:1}),1.1);
+ assert.equal(perkScoreMultiplier(resolvePartPerks({a:'sniper'}).scorePerks,{power:1}),1);
 });
 test('new blade perks compose with Ghost without altering speed, health or armor',()=>{
  const base=equipmentRules({}),r=equipmentRules({tail:'ghost',slash:'katana',dash:'dash-fire',pointer:'pointer-diamond',body:'chamfer'});
- assert.equal(r.bladeExtra,12);assert.equal(r.healthMax,base.healthMax);assert.equal(r.dashSpeed,base.dashSpeed);assert.equal(r.armorDamage,base.armorDamage);
+ // Chamfer no longer contributes the old +1 tick; the other parts still do.
+ assert.equal(r.bladeExtra,9);assert.equal(r.healthMax,base.healthMax);assert.equal(r.dashSpeed,base.dashSpeed);assert.equal(r.armorDamage,base.armorDamage);
  const a=createRun(19,()=>{},{staged:false}),b=createRun(19,()=>{},{staged:false,equipment:{slash:'katana'}});
  try{a.dash({x:30,y:-10,power:1});b.dash({x:30,y:-10,power:1});assert.equal(b.state.blade-a.state.blade,2);assert.ok(b.state.equipmentFx.bursts.some(b=>b.style==='perk-blade'));}finally{a.dispose();b.dispose();}
 });

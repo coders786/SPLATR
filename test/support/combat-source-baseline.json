@@ -1,0 +1,1884 @@
+{
+  "primary-armor": {
+    "state": {
+      "phase": "playing",
+      "hp": 3,
+      "hpMax": 3,
+      "edge": 2,
+      "edgeMax": 3,
+      "focus": 1,
+      "score": 0,
+      "chain": 0,
+      "chainTime": 0,
+      "kills": 0,
+      "shots": 1,
+      "blade": 22.57142857142857,
+      "drive": 0,
+      "swordCharge": 0,
+      "swordContacts": 0,
+      "kineticStage": 1,
+      "throughcuts": 0,
+      "floorKicks": 0
+    },
+    "world": {
+      "clock": 0,
+      "position": {
+        "x": -350,
+        "y": -100
+      },
+      "velocity": {
+        "x": 17,
+        "y": 0
+      }
+    },
+    "enemies": [
+      {
+        "id": "primary-victim",
+        "hp": 1,
+        "x": -275,
+        "y": -100,
+        "mode": "idle"
+      },
+      {
+        "id": "sentinel",
+        "hp": 1,
+        "x": 700,
+        "y": -900,
+        "mode": "idle"
+      }
+    ],
+    "fx": {
+      "needles": 0,
+      "echoes": 0,
+      "swords": 0
+    },
+    "events": [
+      {
+        "type": "waveStart",
+        "number": 1,
+        "total": 12
+      },
+      {
+        "type": "dash",
+        "x": -350,
+        "y": -100,
+        "angle": 0,
+        "power": 0.5714285714285714
+      },
+      {
+        "type": "tier",
+        "id": "cruise",
+        "label": "CRUISE",
+        "multiplier": 2,
+        "speed": 24
+      },
+      {
+        "type": "armor",
+        "entityId": "primary-victim",
+        "x": -275,
+        "y": -100,
+        "r": 41,
+        "cut": 0,
+        "hp": 1,
+        "hpBefore": 2,
+        "kind": "bastion",
+        "speed": 24,
+        "paceTarget": 25.2,
+        "paceQualified": false,
+        "armorRemoved": 1,
+        "secondary": false
+      },
+      {
+        "type": "storyMoment",
+        "id": "hold-the-wave",
+        "chip": "LET IT PASS.",
+        "mechanic": "pulse",
+        "lesson": "Dodge the expanding rim; the space behind it is safe.",
+        "consequence": "The Watcher holds the wave so the Cutter can pass.",
+        "chapter": "seal",
+        "emotion": "friendship",
+        "wave": 1,
+        "targetId": "wave/1/1",
+        "targetX": 179.98116269670427,
+        "targetY": -259.5315527519677,
+        "targetR": 32,
+        "age": 0,
+        "number": 1
+      }
+    ],
+    "legacyTrace": [
+      {
+        "type": "contact-batch",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 24.57142857142857,
+        "attacking": true,
+        "entities": "primary-victim",
+        "sequence": 0
+      },
+      {
+        "type": "cut-contact",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 24.57142857142857,
+        "entityId": "primary-victim",
+        "kind": "bastion",
+        "targetHp": 2,
+        "fromShear": false,
+        "sequence": 1
+      },
+      {
+        "type": "contact-batch",
+        "tick": 2,
+        "worldClock": 0,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 23.57142857142857,
+        "attacking": true,
+        "entities": "primary-victim",
+        "sequence": 2
+      }
+    ]
+  },
+  "primary-kill": {
+    "state": {
+      "phase": "playing",
+      "hp": 3,
+      "hpMax": 3,
+      "edge": 3,
+      "edgeMax": 3,
+      "focus": 1,
+      "score": 100,
+      "chain": 1,
+      "chainTime": 89,
+      "kills": 1,
+      "shots": 1,
+      "blade": 30.57142857142857,
+      "drive": 0,
+      "swordCharge": 0,
+      "swordContacts": 0,
+      "kineticStage": 1,
+      "throughcuts": 0,
+      "floorKicks": 0
+    },
+    "world": {
+      "clock": 0,
+      "position": {
+        "x": -350,
+        "y": -100
+      },
+      "velocity": {
+        "x": 24,
+        "y": 0
+      }
+    },
+    "enemies": [
+      {
+        "id": "sentinel",
+        "hp": 1,
+        "x": 700,
+        "y": -900,
+        "mode": "idle"
+      }
+    ],
+    "fx": {
+      "needles": 0,
+      "echoes": 0,
+      "swords": 0
+    },
+    "events": [
+      {
+        "type": "waveStart",
+        "number": 1,
+        "total": 12
+      },
+      {
+        "type": "dash",
+        "x": -350,
+        "y": -100,
+        "angle": 0,
+        "power": 0.5714285714285714
+      },
+      {
+        "type": "tier",
+        "id": "cruise",
+        "label": "CRUISE",
+        "multiplier": 2,
+        "speed": 24
+      },
+      {
+        "type": "fractureGain",
+        "pct": 0.4,
+        "gained": 0.4,
+        "delta": 0.4,
+        "tier": 0,
+        "sky": 0
+      },
+      {
+        "type": "cut",
+        "entityId": "primary-victim",
+        "x": -275,
+        "y": -100,
+        "angle": 0.348771003583907,
+        "r": 33,
+        "kind": "fang",
+        "cut": 0,
+        "hpBefore": 1,
+        "armorRemoved": 0,
+        "secondary": false,
+        "small": false,
+        "paper": false,
+        "release": false,
+        "fromShear": false,
+        "strokePoints": 100,
+        "points": 100,
+        "chain": 1,
+        "speed": 24,
+        "paceTarget": 25.2,
+        "paceQualified": false,
+        "momentumEarned": false
+      }
+    ],
+    "legacyTrace": [
+      {
+        "type": "contact-batch",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 24.57142857142857,
+        "attacking": true,
+        "entities": "primary-victim",
+        "sequence": 0
+      },
+      {
+        "type": "cut-contact",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 24.57142857142857,
+        "entityId": "primary-victim",
+        "kind": "fang",
+        "targetHp": 1,
+        "fromShear": false,
+        "sequence": 1
+      }
+    ]
+  },
+  "coil": {
+    "state": {
+      "phase": "playing",
+      "hp": 3,
+      "hpMax": 3,
+      "edge": 3,
+      "edgeMax": 3,
+      "focus": 1,
+      "score": 100,
+      "chain": 1,
+      "chainTime": 89,
+      "kills": 1,
+      "shots": 1,
+      "blade": 30.57142857142857,
+      "drive": 0,
+      "swordCharge": 0,
+      "swordContacts": 0,
+      "kineticStage": 1,
+      "throughcuts": 0,
+      "floorKicks": 0
+    },
+    "world": {
+      "clock": 0,
+      "position": {
+        "x": -350,
+        "y": -100
+      },
+      "velocity": {
+        "x": 17,
+        "y": 0
+      }
+    },
+    "enemies": [
+      {
+        "id": "primary-victim",
+        "hp": 1,
+        "x": -275,
+        "y": -100,
+        "mode": "idle"
+      },
+      {
+        "id": "sentinel",
+        "hp": 1,
+        "x": 700,
+        "y": -900,
+        "mode": "idle"
+      }
+    ],
+    "fx": {
+      "needles": 0,
+      "echoes": 0,
+      "swords": 0
+    },
+    "events": [
+      {
+        "type": "waveStart",
+        "number": 1,
+        "total": 12
+      },
+      {
+        "type": "dash",
+        "x": -350,
+        "y": -100,
+        "angle": 0,
+        "power": 0.5714285714285714
+      },
+      {
+        "type": "tier",
+        "id": "cruise",
+        "label": "CRUISE",
+        "multiplier": 2,
+        "speed": 24
+      },
+      {
+        "type": "fractureGain",
+        "pct": 0.4,
+        "gained": 0.4,
+        "delta": 0.4,
+        "tier": 0,
+        "sky": 0
+      },
+      {
+        "type": "cut",
+        "entityId": "relay-victim",
+        "x": -180,
+        "y": -100,
+        "angle": 0.507098504392337,
+        "r": 33,
+        "kind": "fang",
+        "cut": 0,
+        "hpBefore": 1,
+        "armorRemoved": 0,
+        "secondary": true,
+        "small": false,
+        "paper": false,
+        "release": false,
+        "fromShear": true,
+        "strokePoints": 100,
+        "points": 100,
+        "chain": 1,
+        "speed": 24,
+        "paceTarget": 25.2,
+        "paceQualified": false,
+        "momentumEarned": false
+      },
+      {
+        "type": "armor",
+        "entityId": "primary-victim",
+        "x": -275,
+        "y": -100,
+        "r": 41,
+        "cut": 0,
+        "hp": 1,
+        "hpBefore": 2,
+        "kind": "bastion",
+        "speed": 24,
+        "paceTarget": 25.2,
+        "paceQualified": false,
+        "armorRemoved": 1,
+        "secondary": false
+      }
+    ],
+    "legacyTrace": [
+      {
+        "type": "contact-batch",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 24.57142857142857,
+        "attacking": true,
+        "entities": "primary-victim",
+        "sequence": 0
+      },
+      {
+        "type": "cut-contact",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 24.57142857142857,
+        "entityId": "primary-victim",
+        "kind": "bastion",
+        "targetHp": 2,
+        "fromShear": false,
+        "sequence": 1
+      },
+      {
+        "type": "cut-contact",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 24.57142857142857,
+        "entityId": "relay-victim",
+        "kind": "fang",
+        "targetHp": 1,
+        "fromShear": true,
+        "sequence": 2
+      }
+    ]
+  },
+  "core-echo": {
+    "state": {
+      "phase": "playing",
+      "hp": 3,
+      "hpMax": 3,
+      "edge": 3,
+      "edgeMax": 3,
+      "focus": 1,
+      "score": 700,
+      "chain": 4,
+      "chainTime": 71,
+      "kills": 2,
+      "shots": 1,
+      "blade": 37,
+      "drive": 0,
+      "swordCharge": 0,
+      "swordContacts": 0,
+      "kineticStage": 1,
+      "throughcuts": 0,
+      "floorKicks": 0
+    },
+    "world": {
+      "clock": 0,
+      "position": {
+        "x": -350,
+        "y": -100
+      },
+      "velocity": {
+        "x": 24,
+        "y": 0
+      }
+    },
+    "enemies": [
+      {
+        "id": "sentinel",
+        "hp": 1,
+        "x": 700,
+        "y": -900,
+        "mode": "idle"
+      }
+    ],
+    "fx": {
+      "needles": 0,
+      "echoes": 1,
+      "swords": 0
+    },
+    "events": [
+      {
+        "type": "waveStart",
+        "number": 1,
+        "total": 12
+      },
+      {
+        "type": "dash",
+        "x": -350,
+        "y": -100,
+        "angle": 0,
+        "power": 0.5714285714285714
+      },
+      {
+        "type": "tier",
+        "id": "cruise",
+        "label": "CRUISE",
+        "multiplier": 2,
+        "speed": 24
+      },
+      {
+        "type": "fractureGain",
+        "pct": 0.4,
+        "gained": 0.4,
+        "delta": 0.4,
+        "tier": 0,
+        "sky": 0
+      },
+      {
+        "type": "cut",
+        "entityId": "primary-victim",
+        "x": -275,
+        "y": -100,
+        "angle": 0.348771003583907,
+        "r": 33,
+        "kind": "fang",
+        "cut": 0,
+        "hpBefore": 1,
+        "armorRemoved": 0,
+        "secondary": false,
+        "small": false,
+        "paper": false,
+        "release": false,
+        "fromShear": false,
+        "strokePoints": 300,
+        "points": 300,
+        "chain": 3,
+        "speed": 24,
+        "paceTarget": 25.2,
+        "paceQualified": false,
+        "momentumEarned": false
+      },
+      {
+        "type": "fractureGain",
+        "pct": 0.8,
+        "gained": 0.8,
+        "delta": 0.4,
+        "tier": 0,
+        "sky": 0
+      },
+      {
+        "type": "cut",
+        "entityId": "echo-victim",
+        "x": -465,
+        "y": -100,
+        "angle": 0.21182754748141747,
+        "r": 33,
+        "kind": "fang",
+        "cut": 0,
+        "hpBefore": 1,
+        "armorRemoved": 0,
+        "secondary": true,
+        "small": false,
+        "paper": false,
+        "release": false,
+        "fromShear": true,
+        "strokePoints": 400,
+        "points": 400,
+        "chain": 4,
+        "speed": 24,
+        "paceTarget": 25.2,
+        "paceQualified": false,
+        "momentumEarned": false
+      }
+    ],
+    "legacyTrace": [
+      {
+        "type": "contact-batch",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 24.57142857142857,
+        "attacking": true,
+        "entities": "primary-victim",
+        "sequence": 0
+      },
+      {
+        "type": "cut-contact",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 24.57142857142857,
+        "entityId": "primary-victim",
+        "kind": "fang",
+        "targetHp": 1,
+        "fromShear": false,
+        "sequence": 1
+      },
+      {
+        "type": "cut-contact",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 31.57142857142857,
+        "entityId": "echo-victim",
+        "kind": "fang",
+        "targetHp": 1,
+        "fromShear": true,
+        "sequence": 2
+      }
+    ]
+  },
+  "upgrade-echo": {
+    "state": {
+      "phase": "playing",
+      "hp": 3,
+      "hpMax": 3,
+      "edge": 3,
+      "edgeMax": 3,
+      "focus": 1,
+      "score": 300,
+      "chain": 2,
+      "chainTime": 83,
+      "kills": 2,
+      "shots": 3,
+      "blade": 37,
+      "drive": 0,
+      "swordCharge": 0,
+      "swordContacts": 0,
+      "kineticStage": 1,
+      "throughcuts": 0,
+      "floorKicks": 0
+    },
+    "world": {
+      "clock": 0,
+      "position": {
+        "x": -350,
+        "y": -100
+      },
+      "velocity": {
+        "x": 24,
+        "y": 0
+      }
+    },
+    "enemies": [
+      {
+        "id": "sentinel",
+        "hp": 1,
+        "x": 700,
+        "y": -900,
+        "mode": "idle"
+      }
+    ],
+    "fx": {
+      "needles": 0,
+      "echoes": 1,
+      "swords": 0
+    },
+    "events": [
+      {
+        "type": "waveStart",
+        "number": 1,
+        "total": 12
+      },
+      {
+        "type": "dash",
+        "x": -350,
+        "y": -100,
+        "angle": 0,
+        "power": 0.5714285714285714
+      },
+      {
+        "type": "tier",
+        "id": "cruise",
+        "label": "CRUISE",
+        "multiplier": 2,
+        "speed": 24
+      },
+      {
+        "type": "fractureGain",
+        "pct": 0.4,
+        "gained": 0.4,
+        "delta": 0.4,
+        "tier": 0,
+        "sky": 0
+      },
+      {
+        "type": "upgradeEcho",
+        "x": -350,
+        "y": -100,
+        "id": "ghostlash"
+      },
+      {
+        "type": "cut",
+        "entityId": "primary-victim",
+        "x": -275,
+        "y": -100,
+        "angle": 0.348771003583907,
+        "r": 33,
+        "kind": "fang",
+        "cut": 0,
+        "hpBefore": 1,
+        "upgrade": "ghostlash",
+        "armorRemoved": 0,
+        "secondary": false,
+        "small": false,
+        "paper": false,
+        "release": false,
+        "fromShear": false,
+        "strokePoints": 100,
+        "points": 100,
+        "chain": 1,
+        "speed": 24,
+        "paceTarget": 25.2,
+        "paceQualified": false,
+        "momentumEarned": false
+      },
+      {
+        "type": "fractureGain",
+        "pct": 0.8,
+        "gained": 0.8,
+        "delta": 0.4,
+        "tier": 0,
+        "sky": 0
+      },
+      {
+        "type": "cut",
+        "entityId": "echo-victim",
+        "x": -465,
+        "y": -100,
+        "angle": 0.21182754748141747,
+        "r": 33,
+        "kind": "fang",
+        "cut": 0,
+        "hpBefore": 1,
+        "upgrade": "ghostlash",
+        "armorRemoved": 0,
+        "secondary": true,
+        "small": false,
+        "paper": false,
+        "release": false,
+        "fromShear": true,
+        "strokePoints": 200,
+        "points": 200,
+        "chain": 2,
+        "speed": 24,
+        "paceTarget": 25.2,
+        "paceQualified": false,
+        "momentumEarned": false
+      }
+    ],
+    "legacyTrace": [
+      {
+        "type": "contact-batch",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 3,
+        "hp": 3,
+        "blade": 24.57142857142857,
+        "attacking": true,
+        "entities": "primary-victim",
+        "sequence": 0
+      },
+      {
+        "type": "cut-contact",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 3,
+        "hp": 3,
+        "blade": 24.57142857142857,
+        "entityId": "primary-victim",
+        "kind": "fang",
+        "targetHp": 1,
+        "fromShear": false,
+        "sequence": 1
+      },
+      {
+        "type": "cut-contact",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 3,
+        "hp": 3,
+        "blade": 31.57142857142857,
+        "entityId": "echo-victim",
+        "kind": "fang",
+        "targetHp": 1,
+        "fromShear": true,
+        "sequence": 2
+      }
+    ]
+  },
+  "sword-echo": {
+    "state": {
+      "phase": "playing",
+      "hp": 3,
+      "hpMax": 3,
+      "edge": 2,
+      "edgeMax": 3,
+      "focus": 1,
+      "score": 0,
+      "chain": 0,
+      "chainTime": 0,
+      "kills": 0,
+      "shots": 1,
+      "blade": 0,
+      "drive": 0,
+      "swordCharge": 0,
+      "swordContacts": 0,
+      "kineticStage": 1,
+      "throughcuts": 0,
+      "floorKicks": 0
+    },
+    "world": {
+      "clock": 45.5,
+      "position": {
+        "x": 415.9827843581179,
+        "y": 71.36259888929416
+      },
+      "velocity": {
+        "x": 15.572114975519526,
+        "y": 7.269692891180171
+      }
+    },
+    "enemies": [
+      {
+        "id": "armored",
+        "hp": 6,
+        "x": -175,
+        "y": -100,
+        "mode": "idle"
+      },
+      {
+        "id": "sentinel",
+        "hp": 1,
+        "x": 700,
+        "y": -900,
+        "mode": "idle"
+      }
+    ],
+    "fx": {
+      "needles": 0,
+      "echoes": 0,
+      "swords": 0
+    },
+    "events": [
+      {
+        "type": "waveStart",
+        "number": 1,
+        "total": 12
+      },
+      {
+        "type": "dash",
+        "x": -350,
+        "y": -100,
+        "angle": 0,
+        "power": 0.5714285714285714
+      },
+      {
+        "type": "tier",
+        "id": "cruise",
+        "label": "CRUISE",
+        "multiplier": 2,
+        "speed": 24
+      },
+      {
+        "type": "storyMoment",
+        "id": "hold-the-wave",
+        "chip": "LET IT PASS.",
+        "mechanic": "pulse",
+        "lesson": "Dodge the expanding rim; the space behind it is safe.",
+        "consequence": "The Watcher holds the wave so the Cutter can pass.",
+        "chapter": "seal",
+        "emotion": "friendship",
+        "wave": 1,
+        "targetId": "wave/1/1",
+        "targetX": 179.98116269670427,
+        "targetY": -259.5315527519677,
+        "targetR": 32,
+        "age": 0,
+        "number": 1
+      },
+      {
+        "type": "armor",
+        "entityId": "armored",
+        "x": -175,
+        "y": -100,
+        "r": 41,
+        "cut": 0.04684071291597131,
+        "hp": 7,
+        "hpBefore": 8,
+        "kind": "bastion",
+        "speed": 24.02635271946208,
+        "paceTarget": 25.2,
+        "paceQualified": false,
+        "armorRemoved": 1,
+        "secondary": false
+      },
+      {
+        "type": "armor",
+        "entityId": "armored",
+        "x": -175,
+        "y": -100,
+        "r": 41,
+        "cut": 0.3754484765692208,
+        "hp": 6,
+        "hpBefore": 7,
+        "kind": "bastion",
+        "speed": 18.281078009733324,
+        "paceTarget": 25.2,
+        "paceQualified": false,
+        "armorRemoved": 1,
+        "secondary": true
+      },
+      {
+        "type": "swordHit",
+        "x": -175,
+        "y": -100,
+        "kind": "echo"
+      }
+    ],
+    "legacyTrace": [
+      {
+        "type": "contact-batch",
+        "tick": 3,
+        "worldClock": 3,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 26.57142857142857,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 0
+      },
+      {
+        "type": "cut-contact",
+        "tick": 3,
+        "worldClock": 3,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 26.57142857142857,
+        "entityId": "armored",
+        "kind": "bastion",
+        "targetHp": 8,
+        "fromShear": false,
+        "sequence": 1
+      },
+      {
+        "type": "contact-batch",
+        "tick": 4,
+        "worldClock": 3.7,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 25.57142857142857,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 2
+      },
+      {
+        "type": "contact-batch",
+        "tick": 5,
+        "worldClock": 4.421428571428572,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 24.87142857142857,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 3
+      },
+      {
+        "type": "contact-batch",
+        "tick": 6,
+        "worldClock": 5.164285714285715,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 24.15,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 4
+      },
+      {
+        "type": "contact-batch",
+        "tick": 7,
+        "worldClock": 5.928571428571429,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 23.407142857142855,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 5
+      },
+      {
+        "type": "contact-batch",
+        "tick": 8,
+        "worldClock": 6.714285714285714,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 22.64285714285714,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 6
+      },
+      {
+        "type": "contact-batch",
+        "tick": 9,
+        "worldClock": 7.521428571428571,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 21.857142857142854,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 7
+      },
+      {
+        "type": "contact-batch",
+        "tick": 10,
+        "worldClock": 8.35,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 21.049999999999997,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 8
+      },
+      {
+        "type": "contact-batch",
+        "tick": 11,
+        "worldClock": 9.2,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 20.221428571428568,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 9
+      },
+      {
+        "type": "contact-batch",
+        "tick": 12,
+        "worldClock": 10.071428571428571,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 19.371428571428567,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 10
+      },
+      {
+        "type": "contact-batch",
+        "tick": 13,
+        "worldClock": 10.964285714285714,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 18.499999999999996,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 11
+      },
+      {
+        "type": "contact-batch",
+        "tick": 14,
+        "worldClock": 11.878571428571428,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 17.607142857142854,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 12
+      },
+      {
+        "type": "contact-batch",
+        "tick": 15,
+        "worldClock": 12.814285714285713,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 16.69285714285714,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 13
+      },
+      {
+        "type": "cut-contact",
+        "tick": 21,
+        "worldClock": 18.75,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 10.82142857142857,
+        "entityId": "armored",
+        "kind": "bastion",
+        "targetHp": 7,
+        "fromShear": true,
+        "sequence": 14
+      }
+    ]
+  },
+  "sword-pulse": {
+    "state": {
+      "phase": "playing",
+      "hp": 3,
+      "hpMax": 3,
+      "edge": 2,
+      "edgeMax": 3,
+      "focus": 1,
+      "score": 0,
+      "chain": 0,
+      "chainTime": 0,
+      "kills": 0,
+      "shots": 1,
+      "blade": 0,
+      "drive": 0,
+      "swordCharge": 1,
+      "swordContacts": 1,
+      "kineticStage": 1,
+      "throughcuts": 0,
+      "floorKicks": 0
+    },
+    "world": {
+      "clock": 46.91428571428571,
+      "position": {
+        "x": 441.9573023452427,
+        "y": 81.68669204139246
+      },
+      "velocity": {
+        "x": 15.708373576018403,
+        "y": 7.780833507315833
+      }
+    },
+    "enemies": [
+      {
+        "id": "armored",
+        "hp": 6,
+        "x": -175,
+        "y": -100,
+        "mode": "idle"
+      },
+      {
+        "id": "sentinel",
+        "hp": 1,
+        "x": 700,
+        "y": -900,
+        "mode": "idle"
+      }
+    ],
+    "fx": {
+      "needles": 0,
+      "echoes": 0,
+      "swords": 0
+    },
+    "events": [
+      {
+        "type": "waveStart",
+        "number": 1,
+        "total": 12
+      },
+      {
+        "type": "swordPulse",
+        "x": -350,
+        "y": -100
+      },
+      {
+        "type": "dash",
+        "x": -350,
+        "y": -100,
+        "angle": 0,
+        "power": 0.5714285714285714
+      },
+      {
+        "type": "tier",
+        "id": "cruise",
+        "label": "CRUISE",
+        "multiplier": 2,
+        "speed": 24
+      },
+      {
+        "type": "armor",
+        "entityId": "armored",
+        "x": -175,
+        "y": -100,
+        "r": 41,
+        "cut": 0.015623728620477386,
+        "hp": 7,
+        "hpBefore": 8,
+        "kind": "bastion",
+        "speed": 24.002929508707947,
+        "paceTarget": 25.2,
+        "paceQualified": false,
+        "armorRemoved": 1,
+        "secondary": true
+      },
+      {
+        "type": "swordHit",
+        "x": -175,
+        "y": -100,
+        "kind": "pulse"
+      },
+      {
+        "type": "storyMoment",
+        "id": "hold-the-wave",
+        "chip": "LET IT PASS.",
+        "mechanic": "pulse",
+        "lesson": "Dodge the expanding rim; the space behind it is safe.",
+        "consequence": "The Watcher holds the wave so the Cutter can pass.",
+        "chapter": "seal",
+        "emotion": "friendship",
+        "wave": 1,
+        "targetId": "wave/1/1",
+        "targetX": 179.98116269670427,
+        "targetY": -259.5315527519677,
+        "targetR": 32,
+        "age": 0,
+        "number": 1
+      },
+      {
+        "type": "armor",
+        "entityId": "armored",
+        "x": -175,
+        "y": -100,
+        "r": 41,
+        "cut": 0.04940173618235442,
+        "hp": 6,
+        "hpBefore": 7,
+        "kind": "bastion",
+        "speed": 24.02931618901128,
+        "paceTarget": 25.2,
+        "paceQualified": false,
+        "armorRemoved": 1,
+        "secondary": false
+      }
+    ],
+    "legacyTrace": [
+      {
+        "type": "cut-contact",
+        "tick": 1,
+        "worldClock": 1,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 26.57142857142857,
+        "entityId": "armored",
+        "kind": "bastion",
+        "targetHp": 8,
+        "fromShear": true,
+        "sequence": 0
+      },
+      {
+        "type": "contact-batch",
+        "tick": 4,
+        "worldClock": 3.164285714285714,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 24.15,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 1
+      },
+      {
+        "type": "cut-contact",
+        "tick": 4,
+        "worldClock": 3.164285714285714,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 24.15,
+        "entityId": "armored",
+        "kind": "bastion",
+        "targetHp": 7,
+        "fromShear": false,
+        "sequence": 2
+      },
+      {
+        "type": "contact-batch",
+        "tick": 5,
+        "worldClock": 3.864285714285714,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 23.407142857142855,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 3
+      },
+      {
+        "type": "contact-batch",
+        "tick": 6,
+        "worldClock": 4.585714285714285,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 22.707142857142856,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 4
+      },
+      {
+        "type": "contact-batch",
+        "tick": 7,
+        "worldClock": 5.328571428571428,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 21.985714285714284,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 5
+      },
+      {
+        "type": "contact-batch",
+        "tick": 8,
+        "worldClock": 6.0928571428571425,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 21.24285714285714,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 6
+      },
+      {
+        "type": "contact-batch",
+        "tick": 9,
+        "worldClock": 6.878571428571428,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 20.478571428571428,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 7
+      },
+      {
+        "type": "contact-batch",
+        "tick": 10,
+        "worldClock": 7.685714285714285,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 19.692857142857143,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 8
+      },
+      {
+        "type": "contact-batch",
+        "tick": 11,
+        "worldClock": 8.514285714285714,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 18.885714285714286,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 9
+      },
+      {
+        "type": "contact-batch",
+        "tick": 12,
+        "worldClock": 9.364285714285714,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 18.057142857142857,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 10
+      },
+      {
+        "type": "contact-batch",
+        "tick": 13,
+        "worldClock": 10.235714285714286,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 17.207142857142856,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 11
+      },
+      {
+        "type": "contact-batch",
+        "tick": 14,
+        "worldClock": 11.128571428571428,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 16.335714285714285,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 12
+      },
+      {
+        "type": "contact-batch",
+        "tick": 15,
+        "worldClock": 12.042857142857143,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 15.442857142857143,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 13
+      },
+      {
+        "type": "contact-batch",
+        "tick": 16,
+        "worldClock": 12.978571428571428,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 14.528571428571428,
+        "attacking": true,
+        "entities": "armored",
+        "sequence": 14
+      }
+    ]
+  },
+  "prism": {
+    "state": {
+      "phase": "playing",
+      "hp": 3,
+      "hpMax": 3,
+      "edge": 3,
+      "edgeMax": 3,
+      "focus": 1,
+      "score": 100,
+      "chain": 0,
+      "chainTime": 0,
+      "kills": 1,
+      "shots": 0,
+      "blade": 12,
+      "drive": 0,
+      "swordCharge": 0,
+      "swordContacts": 0,
+      "kineticStage": 1,
+      "throughcuts": 0,
+      "floorKicks": 0
+    },
+    "world": {
+      "clock": 0,
+      "position": {
+        "x": -350,
+        "y": -100
+      },
+      "velocity": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "enemies": [
+      {
+        "id": "sentinel",
+        "hp": 1,
+        "x": 700,
+        "y": -900,
+        "mode": "idle"
+      }
+    ],
+    "fx": {
+      "needles": 1,
+      "echoes": 0,
+      "swords": 0
+    },
+    "events": [
+      {
+        "type": "waveStart",
+        "number": 1,
+        "total": 12
+      },
+      {
+        "type": "bank",
+        "x": -350,
+        "y": -100,
+        "nx": 1,
+        "ny": 0,
+        "speed": 0,
+        "arrivalSpeed": 0,
+        "after": 0,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      {
+        "type": "storyMoment",
+        "id": "hold-the-wave",
+        "chip": "LET IT PASS.",
+        "mechanic": "pulse",
+        "lesson": "Dodge the expanding rim; the space behind it is safe.",
+        "consequence": "The Watcher holds the wave so the Cutter can pass.",
+        "chapter": "seal",
+        "emotion": "friendship",
+        "wave": 1,
+        "targetId": "wave/1/1",
+        "targetX": 179.98116269670427,
+        "targetY": -259.5315527519677,
+        "targetR": 32,
+        "age": 0,
+        "number": 1
+      },
+      {
+        "type": "fractureGain",
+        "pct": 0.4,
+        "gained": 0.4,
+        "delta": 0.4,
+        "tier": 0,
+        "sky": 0
+      },
+      {
+        "type": "cut",
+        "entityId": "needle-victim",
+        "x": -390,
+        "y": -280,
+        "angle": 0.6226707887570673,
+        "r": 33,
+        "kind": "fang",
+        "cut": 0,
+        "hpBefore": 1,
+        "armorRemoved": 0,
+        "secondary": true,
+        "small": false,
+        "paper": false,
+        "release": false,
+        "fromShear": true,
+        "strokePoints": 100,
+        "points": 100,
+        "chain": 1,
+        "speed": 0,
+        "paceTarget": 25.2,
+        "paceQualified": false,
+        "momentumEarned": false
+      },
+      {
+        "type": "chainBroken"
+      },
+      {
+        "type": "bank",
+        "x": -350,
+        "y": -100,
+        "nx": 1,
+        "ny": 0,
+        "speed": 0,
+        "arrivalSpeed": 0,
+        "after": 0,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 2,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      }
+    ],
+    "legacyTrace": [
+      {
+        "type": "cut-contact",
+        "tick": 17,
+        "worldClock": 0,
+        "shotId": 0,
+        "hp": 3,
+        "blade": 0,
+        "entityId": "needle-victim",
+        "kind": "fang",
+        "targetHp": 1,
+        "fromShear": true,
+        "sequence": 0
+      }
+    ]
+  },
+  "anchor": {
+    "state": {
+      "phase": "playing",
+      "hp": 3,
+      "hpMax": 3,
+      "edge": 3,
+      "edgeMax": 3,
+      "focus": 1,
+      "score": 100,
+      "chain": 1,
+      "chainTime": 89,
+      "kills": 1,
+      "shots": 0,
+      "blade": 6,
+      "drive": 0,
+      "swordCharge": 0,
+      "swordContacts": 0,
+      "kineticStage": 1,
+      "throughcuts": 0,
+      "floorKicks": 1
+    },
+    "world": {
+      "clock": 0,
+      "position": {
+        "x": -350,
+        "y": -100
+      },
+      "velocity": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "enemies": [
+      {
+        "id": "sentinel",
+        "hp": 1,
+        "x": 700,
+        "y": -900,
+        "mode": "idle"
+      }
+    ],
+    "fx": {
+      "needles": 0,
+      "echoes": 0,
+      "swords": 0
+    },
+    "events": [
+      {
+        "type": "waveStart",
+        "number": 1,
+        "total": 12
+      },
+      {
+        "type": "fractureGain",
+        "pct": 0.4,
+        "gained": 0.4,
+        "delta": 0.4,
+        "tier": 0,
+        "sky": 0
+      },
+      {
+        "type": "cut",
+        "entityId": "floor-victim",
+        "x": -230,
+        "y": -100,
+        "angle": 0.41012734054149097,
+        "r": 33,
+        "kind": "fang",
+        "cut": -0.65,
+        "hpBefore": 1,
+        "armorRemoved": 0,
+        "secondary": true,
+        "small": false,
+        "paper": false,
+        "release": false,
+        "fromShear": true,
+        "strokePoints": 100,
+        "points": 100,
+        "chain": 1,
+        "speed": 0,
+        "paceTarget": 25.2,
+        "paceQualified": false,
+        "momentumEarned": false
+      },
+      {
+        "type": "floorKick",
+        "vy": -22,
+        "edge": 3
+      }
+    ],
+    "legacyTrace": [
+      {
+        "type": "cut-contact",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 0,
+        "hp": 3,
+        "blade": 0,
+        "entityId": "floor-victim",
+        "kind": "fang",
+        "targetHp": 1,
+        "fromShear": true,
+        "sequence": 0
+      }
+    ]
+  },
+  "shear": {
+    "state": {
+      "phase": "playing",
+      "hp": 3,
+      "hpMax": 3,
+      "edge": 3,
+      "edgeMax": 3,
+      "focus": 1,
+      "score": 900,
+      "chain": 3,
+      "chainTime": 77,
+      "kills": 3,
+      "shots": 1,
+      "blade": 37,
+      "drive": 0,
+      "swordCharge": 0,
+      "swordContacts": 0,
+      "kineticStage": 1,
+      "throughcuts": 1,
+      "floorKicks": 0
+    },
+    "world": {
+      "clock": 0,
+      "position": {
+        "x": -350,
+        "y": -100
+      },
+      "velocity": {
+        "x": 24,
+        "y": 0
+      }
+    },
+    "enemies": [
+      {
+        "id": "sentinel",
+        "hp": 1,
+        "x": 700,
+        "y": -900,
+        "mode": "idle"
+      }
+    ],
+    "fx": {
+      "needles": 0,
+      "echoes": 0,
+      "swords": 0
+    },
+    "events": [
+      {
+        "type": "waveStart",
+        "number": 1,
+        "total": 12
+      },
+      {
+        "type": "dash",
+        "x": -350,
+        "y": -100,
+        "angle": 0,
+        "power": 0.5714285714285714
+      },
+      {
+        "type": "tier",
+        "id": "cruise",
+        "label": "CRUISE",
+        "multiplier": 2,
+        "speed": 24
+      },
+      {
+        "type": "fractureGain",
+        "pct": 0.4,
+        "gained": 0.4,
+        "delta": 0.4,
+        "tier": 0,
+        "sky": 0
+      },
+      {
+        "type": "cut",
+        "entityId": "primary-victim",
+        "x": -275,
+        "y": -100,
+        "angle": 0.348771003583907,
+        "r": 33,
+        "kind": "fang",
+        "cut": 0,
+        "hpBefore": 1,
+        "armorRemoved": 0,
+        "secondary": false,
+        "small": false,
+        "paper": false,
+        "release": false,
+        "fromShear": false,
+        "strokePoints": 100,
+        "points": 100,
+        "chain": 1,
+        "speed": 24,
+        "paceTarget": 25.2,
+        "paceQualified": false,
+        "momentumEarned": false
+      },
+      {
+        "type": "fractureGain",
+        "pct": 0.8,
+        "gained": 0.8,
+        "delta": 0.4,
+        "tier": 0,
+        "sky": 0
+      },
+      {
+        "type": "cut",
+        "entityId": "second-direct",
+        "x": -230,
+        "y": -100,
+        "angle": 0.41012734054149097,
+        "r": 33,
+        "kind": "fang",
+        "cut": 0,
+        "hpBefore": 1,
+        "armorRemoved": 0,
+        "secondary": false,
+        "small": false,
+        "paper": false,
+        "release": true,
+        "fromShear": false,
+        "strokePoints": 500,
+        "points": 500,
+        "chain": 2,
+        "speed": 24,
+        "paceTarget": 25.2,
+        "paceQualified": false,
+        "momentumEarned": false
+      },
+      {
+        "type": "shear",
+        "x": -230,
+        "y": -100,
+        "angle": 0
+      },
+      {
+        "type": "fractureGain",
+        "pct": 1.2000000000000002,
+        "gained": 1.2000000000000002,
+        "delta": 0.40000000000000013,
+        "tier": 0,
+        "sky": 0
+      },
+      {
+        "type": "cut",
+        "entityId": "shear-victim",
+        "x": -30,
+        "y": -100,
+        "angle": 1.2793395323170296,
+        "r": 33,
+        "kind": "fang",
+        "cut": 0,
+        "hpBefore": 1,
+        "armorRemoved": 0,
+        "secondary": true,
+        "small": false,
+        "paper": false,
+        "release": false,
+        "fromShear": true,
+        "strokePoints": 300,
+        "points": 300,
+        "chain": 3,
+        "speed": 24,
+        "paceTarget": 25.2,
+        "paceQualified": false,
+        "momentumEarned": false
+      }
+    ],
+    "legacyTrace": [
+      {
+        "type": "contact-batch",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 24.57142857142857,
+        "attacking": true,
+        "entities": "primary-victim",
+        "sequence": 0
+      },
+      {
+        "type": "cut-contact",
+        "tick": 1,
+        "worldClock": 0,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 24.57142857142857,
+        "entityId": "primary-victim",
+        "kind": "fang",
+        "targetHp": 1,
+        "fromShear": false,
+        "sequence": 1
+      },
+      {
+        "type": "contact-batch",
+        "tick": 2,
+        "worldClock": 0,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 30.57142857142857,
+        "attacking": true,
+        "entities": "second-direct",
+        "sequence": 2
+      },
+      {
+        "type": "cut-contact",
+        "tick": 2,
+        "worldClock": 0,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 30.57142857142857,
+        "entityId": "second-direct",
+        "kind": "fang",
+        "targetHp": 1,
+        "fromShear": false,
+        "sequence": 3
+      },
+      {
+        "type": "cut-contact",
+        "tick": 2,
+        "worldClock": 0,
+        "shotId": 1,
+        "hp": 3,
+        "blade": 37.57142857142857,
+        "entityId": "shear-victim",
+        "kind": "fang",
+        "targetHp": 1,
+        "fromShear": true,
+        "sequence": 4
+      }
+    ]
+  }
+}

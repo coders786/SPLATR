@@ -1,4 +1,13 @@
+import {createVoidWell} from './void-well.js';
+import {createFrostControl,coldTiming} from './frost-control.js';
+import {createEmberBurn} from './ember-burn.js';
+import {precisionShot,primaryGeometry,legacyPrimaryBase,commitPrecision} from './primary-contact.js';
+import {createHypnoHold,blazeEntryGrant} from './eye-toolkit.js';
+import {viperRetention,createSpectrumSequence} from './tail-toolkit.js';
+import {createNeedlePhase} from './needle-phase.js';
 import { perkScoreMultiplier } from './part-perks.js';
+import {recoverFocus} from './focus-recovery.js';
+import {ARMOR_SHELL,armorShellRecoil,storeArmorLoss,activeArmorSpring,returnArmorSpring} from './armor-shell.js';
 import {contactVisual} from './contact-visual.js';
 import {launchSurge,bankBreakthrough,BREAKTHROUGH} from './breakthrough.js';
 import {createKillLedger,recordEnemyReward} from './kill-rewards.js';
@@ -13,7 +22,8 @@ import {createContinuousDirector} from './continuous-sectors.js';
 // main.js). 5s is the doc's ask and the HUD reads the same constant.
 import {OVERDRIVE} from './flow.js';
 import { MOVEMENT, flightEnvelope } from './movement-model.js';
-import { EQUIPMENT_LIMITS, nearestEquipmentTarget, aimPull, horizontalCutWidth } from './equipment-combat.js';
+import { EQUIPMENT_LIMITS, nearestEquipmentTarget, aimPull } from './equipment-combat.js';
+import {combatSourceContext,swordContactKind} from './combat-source-context.js';
 import { normalizeEquipment, equipmentRules } from './equipment.js';
 import Matter from 'matter-js';
 import {inViewport} from './spawn-space.js';
@@ -380,7 +390,7 @@ export function upgradeHas(state, id) {
 export function createRun(
   seed,
   emit = () => {},
-  { warmup = false, staged = warmup, viewport = null, combatTrace = null, equipment = null, waveMode = false, controlPractice = false, continuous = false, lockdownIntro = false, arena = null, fracturePct = 0, catalogRewards = false, postRewards = false } = {},
+  { warmup = false, staged = warmup, viewport = null, combatTrace = null, combatSourceTrace = null, equipment = null, waveMode = false, controlPractice = false, continuous = false, lockdownIntro = false, arena = null, fracturePct = 0, catalogRewards = false, postRewards = false } = {},
 ) {
   // Stream the normal neighbourhood, but keep its other bodies off the
   // Hold the rest of the stream until the first live Fang is cut (or the
@@ -388,8 +398,16 @@ export function createRun(
   // crosses empty sky. That is not a phantom hit: no score, freeze or refund.
   // Handcrafted courses (the visual tutorial) pin their authored bounds;
   // everything else gets the wave arena (grown in CHUNK 1) or the open world.
+  // Optional, local-only observer. No recorder or weak maps in ordinary runs.
+  const sourceObserver = combatSourceTrace ? combatSourceTrace.startRun() : null;
   const ARENA=arena||(waveMode?(continuous?{...WAVE_ARENA}:WAVE_ARENA):DEFAULT_ARENA);
   const loadout = normalizeEquipment(equipment), rules = equipmentRules(loadout), edgeMax = rules.edgeMax;
+  const voidWell=createVoidWell();
+  const frostControl=createFrostControl();
+  const emberBurn=createEmberBurn();
+  const needlePhase=createNeedlePhase();
+  const spectrumSequence=createSpectrumSequence();let tailAction=null;
+  const hypnoHold=createHypnoHold();let blazeAt=-Infinity;
   let wingsUsed = false, focusRecovery = 0, needleCooldown = 0, bumpGuard = rules.bumpGuard, aimAngle = null;
   let cutThisTick = false;
   let cutBatchHits = 0;
@@ -606,6 +624,14 @@ export function createRun(
     sword:swordProfile(loadout),
     swordFx:[],
     swordCharge:0,
+    focusRecoveryActive:false,
+    focusRecoveryAge:-1,
+    focusRecoveryAmount:0,
+    shellAbility:null,tailAbility:null,eyeAbility:null,
+    shellImpact:null,
+    shellSpring:null,
+    shellSpringShot:-1,
+    shellRelease:null,
     swordContacts:0,
     waveShield:0,
     // CHUNK 6C: owned run-length rewards. `waveBuff` remains the compatibility
@@ -661,6 +687,9 @@ export function createRun(
      * effects may read live velocity for magnitude, never for this direction. */
     launchAngle: null,
     stroke: null,
+    precisionShot: null,
+    precisionReceipt: null,
+    inkCutScale: 1,
     bestStroke: null,
     throughcuts: 0,
     // ── HYPER ──────────────────────────────────────────────────────────────
@@ -821,6 +850,38 @@ export function createRun(
   function disturbRoom(kind,data){
     if(s.dimension&&['combat','breach','monolith'].includes(s.wave?.phase)&&s.phase==='playing'&&!s.opening&&!s.tutorialActive)s.dimension=disturbDimension(s.dimension,kind,data);
   }
+  function syncShellAbility(){
+    if(s.phase!=='playing'||s.opening||s.visualTutorial||s.tutorialActive){s.shellAbility=null;return;}
+    if(rules.needlePhase){if(s.teachingArena){s.shellAbility=null;return;}s.shellAbility=needlePhase.view(world.clock);s.shellAbility.window&&=s.invul<=0;}
+    else if(rules.bumpGuard){const age=s.elapsed-(s.lastDefense?.kind==='iron'?s.lastDefense.tick:-Infinity);
+      s.shellAbility={kind:'iron',ready:bumpGuard,spent:!bumpGuard,remaining:0,window:false,flash:age>=0&&age<7?1-age/7:0};
+    }else if(rules.wallNeedles)s.shellAbility={kind:'prism',ready:needleCooldown<=0,remaining:needleCooldown,spent:false,window:false,flash:needleCooldown>38?(needleCooldown-38)/7:0};
+    else s.shellAbility=null;
+  }
+  function syncTailAbility(){
+    if(s.phase!=='playing'||s.opening||s.visualTutorial||s.tutorialActive){s.tailAbility=null;return;}
+    if(!(s.chainTime>0))spectrumSequence.breakChain();
+    const age=tailAction?world.clock-tailAction.at:Infinity,duration=loadout.tail==='thrusters'?5:7,flash=age>=0&&age<duration?1-age/duration:0;
+    s.tailAbility=rules.spectrumSequence?{...spectrumSequence.view(world.clock)}:{kind:loadout.tail,ready:rules.wallRecharge?!wingsUsed:true,active:loadout.tail==='ghost'&&s.blade>0,flash,retained:tailAction?.retained||0};
+    if(!rules.spectrumSequence&&tailAction&&flash>0)s.tailAbility.action=tailAction.kind;
+  }
+  function eyeActive(){return s.phase==='playing'&&!s.opening&&!s.visualTutorial&&!s.tutorialActive&&!s.teachingArena;}
+  function eyeAiming(){return s.held&&!s.depleted&&s.focus>.01&&!s.inputLock&&s.stun<=0;}
+  function syncEyeAbility(){
+    if(!eyeActive()){hypnoHold.release();s.eyeAbility=null;return;}
+    const usable=eyeAiming();
+    if(!usable)hypnoHold.release();
+    s.eyeAbility=rules.hypnoDaze?{...hypnoHold.view(world.clock),active:usable}:{kind:loadout.eyes,active:usable,flash:Math.max(0,1-(world.clock-blazeAt)/7)};
+  }
+  function clearEyes(){hypnoHold.reset();blazeAt=-Infinity;s.eyeAbility=null;}
+  function clearTailAbility(){spectrumSequence.reset();tailAction=null;s.tailAbility=null;}
+  function clearNeedlePhase(){needlePhase.reset();s.shellAbility=null;}
+  function clearArmorShell() {
+    s.shellImpact=null;s.shellSpring=null;s.shellSpringShot=-1;s.shellRelease=null;
+  }
+  function clearFocusRecovery() {
+    s.focusRecoveryActive=false;s.focusRecoveryAge=-1;s.focusRecoveryAmount=0;
+  }
   function focus(on) {
     const wasHeld = s.held;
     // CHUNK 6A: no inputs while the world is being told.
@@ -840,7 +901,10 @@ export function createRun(
       // CHUNK 6B: a slam staggers flight — no mid-air control while it lasts.
       s.stun <= 0;
     s.isAiming = s.held;
-    if (!s.opening && ((!wasHeld && s.held && rules.focusDrain < 1) || (wasHeld && !s.held && rules.focusRegen > 1))) equipmentBurst(world.player.position,'perk-focus');
+    if(!s.held)hypnoHold.release();
+    syncEyeAbility();
+    if(wasHeld!==s.held)clearFocusRecovery();
+    if (!s.opening && ((!wasHeld && s.held && rules.focusDrain < 1) || (wasHeld && !s.held && rules.focusRegen > 1 && loadout.body!=='notched'))) equipmentBurst(world.player.position,'perk-focus');
     if (!on) s.depleted = false;
     setBulletTime(world, s.held && !s.depleted && s.focus > 0.01, !on);
   }
@@ -910,7 +974,7 @@ export function createRun(
         cos = (pv.x * v.x + pv.y * v.y) / (speedBeforeLaunch * vlen);
       angleDiff = Math.acos(Math.min(1, Math.max(-1, cos)));
     }
-    const retention = steerRetention(speedBeforeLaunch, angleDiff, s.hyper);
+    const normalRetention=steerRetention(speedBeforeLaunch,angleDiff,s.hyper),retention=viperRetention(normalRetention,{speed:speedBeforeLaunch,hyper:s.hyper,enabled:rules.viperRetention});
     // Do not drop a quick escape release before settled-deck recovery matures.
     // Only a genuine upward launch from a stationary supported deck qualifies.
     const deckEscape=s.wave?.phase==='combat'&&s.edge<=0&&world.grounded&&world.geometry.length>0&&speedBeforeLaunch<1&&v?.y<0;
@@ -937,6 +1001,11 @@ export function createRun(
     }
     if (!eligible || pipShort || !launch(world, v, { storedSpeed: speedBeforeLaunch, retention, maxCeiling: MAX_PINBALL_SPEED }))
       return false;
+    if(rules.viperRetention&&retention>normalRetention){
+      const ordinary=Math.min(Math.max(Math.min(Math.hypot(v.x,v.y),MAX_SPEED),speedBeforeLaunch*normalRetention),MAX_PINBALL_SPEED);
+      const gain=Math.max(0,Math.hypot(world.player.velocity.x,world.player.velocity.y)-ordinary);
+      if(gain>1e-8)tailAction={kind:'retention',at:world.clock,retained:gain};
+    }
     // The launch may have preserved bank/hyper speed far above the ordinary
     // 42px/tick limit. Ratchet the running ceiling to whatever the launch
     // actually produced (bounded by MAX_PINBALL_SPEED) so the substep cap in
@@ -953,22 +1022,38 @@ export function createRun(
       world.playerCeiling=Math.max(world.playerCeiling,MAX_SPEED*s.dashSpeed);
       setPlayerVelocity(world,vel.x*s.dashSpeed,vel.y*s.dashSpeed);
     }
+    // Only an accepted launch spends the reserve; canceled/refused/buffered
+    // input cannot spend it. Add to the solved launch, never its input vector.
+    if(loadout.body==='segmented' && s.shellSpring) {
+      const returned=returnArmorSpring(world.player.velocity,s.shellSpring,s.elapsed,Math.min(world.playerCeiling||MAX_SPEED,MAX_PINBALL_SPEED));
+      s.shellSpring=null;
+      if(returned.amount>0){
+        setPlayerVelocity(world,returned.x,returned.y);
+        s.shellRelease={amount:returned.amount,age:0,angle:Math.atan2(v.y,v.x)};
+        emit('shellReturn',{amount:returned.amount,x:world.player.position.x,y:world.player.position.y});
+      }
+    }
     s.phase = 'playing';
+    clearFocusRecovery();
     if(s.breakthrough&&['combat','breach','monolith'].includes(s.wave?.phase)){
       const surge=launchSurge(s.breakthrough);s.breakthrough=surge.state;
       if(surge.boost){if(!s.hyper){const vv=world.player.velocity,sp=Math.hypot(vv.x,vv.y),next=Math.min(BREAKTHROUGH.ceiling,sp*BREAKTHROUGH.surgeFactor);world.playerCeiling=Math.max(world.playerCeiling,next);if(sp>0)setPlayerVelocity(world,vv.x*next/sp,vv.y*next/sp);}emit('hyperSurge',{...world.player.position});}
     }
     const sword=effectiveSword(s.sword,upgradeBuff());
+    const launchSource=sourceObserver?.primary(s.shots+1,s.elapsed,world.clock,true);
     if(!s.opening&&(!s.wave||s.wave.phase==='combat')){
-      if(sword.family==='echo')s.swordFx.push(swordAttack(sword,world.player.position,Math.atan2(v.y,v.x),s.shots+1));
-      if(sword.family==='pulse'&&s.swordCharge>=sword.chargeMax){s.swordFx.push(swordAttack(sword,world.player.position,Math.atan2(v.y,v.x),s.shots+1));s.swordCharge=0;emit('swordPulse',{...world.player.position});}
+      if(sword.family==='echo')s.swordFx.push(trackCombatSource(swordAttack(sword,world.player.position,Math.atan2(v.y,v.x),s.shots+1),'sword-echo',s.shots+1,launchSource?.sourceId));
+      if(sword.family==='pulse'&&s.swordCharge>=sword.chargeMax){s.swordFx.push(trackCombatSource(swordAttack(sword,world.player.position,Math.atan2(v.y,v.x),s.shots+1),'sword-pulse',s.shots+1,launchSource?.sourceId));s.swordCharge=0;emit('swordPulse',{...world.player.position});}
       if(s.swordFx.length>3)s.swordFx.splice(0,s.swordFx.length-3);
     }
     s.launchGrace = MOVEMENT.launchGrace;
     s.caught = false;
     s.held = s.depleted = false;
+    hypnoHold.release();
     s.isAiming = false;
     s.shots++;
+    if(rules.needlePhase&&!s.opening&&!s.visualTutorial&&!s.tutorialActive&&!s.teachingArena)needlePhase.launch(world.clock);
+    syncShellAbility();syncTailAbility();syncEyeAbility();
     s.sinceDash = true;
     s.breath = 0;
     s.breathMax = 0;
@@ -1019,6 +1104,13 @@ export function createRun(
     s.stroke = beginStroke(world.player.position, s.slashAngle, s.shots);
     s.stroke.equipment = loadout;
     s.stroke.power = Math.min(1, Math.hypot(v.x,v.y) / MAX_SPEED);
+    if(rules.emberBurn)emberBurn.launch(s.shots);
+    if(rules.frostControl)frostControl.launch(s.shots);
+    if(rules.voidWell)voidWell.launch(s.shots);
+    s.precisionShot = precisionShot(loadout.eyes,s.stroke.power,s.shots);
+    s.precisionReceipt = null;
+    s.inkCutScale = rules.inkWidth;
+    s.sweep = null;
     if (!s.opening && rules.perkBlade > 0) equipmentBurst(world.player.position,'perk-blade');
     if(loadout.slash==='laser') {
       const p=world.player.position,a=s.slashAngle;
@@ -1150,6 +1242,9 @@ export function createRun(
     s.cause = cause;
     s.fatal = { ...world.player.position, name: cause };
     s.phase = 'dying';
+    clearArmorShell();
+    clearFocusRecovery();
+    clearNeedlePhase();clearTailAbility();clearEyes();emberBurn.clear();frostControl.clear();voidWell.clear();s.voidWell=null;
     focus(false);
     s.death = 27;
     s.hp = 0;
@@ -1169,6 +1264,11 @@ export function createRun(
   function traceCombat(type,details={}) {
     combatTrace?.record({type,tick:s.elapsed,worldClock:world.clock,shotId:s.shots,hp:s.hp,blade:s.blade,...details});
   }
+  // Tag by weak identity: no diagnostic fields on gameplay source objects.
+  function trackCombatSource(object,kind,shotId=s.shots,parentSourceId=null) {
+    sourceObserver?.tag(object,kind,shotId,s.elapsed,world.clock,parentSourceId);
+    return object;
+  }
   function equipmentBurst(at,style,from=null) {
     const fx=s.equipmentFx.bursts;
     fx.push({x:at.x,y:at.y,style,ticks:30,from:from?{x:from.x,y:from.y}:null});
@@ -1181,13 +1281,15 @@ export function createRun(
     for(const needle of fx.projectiles) {
       needle.x+=needle.vx*dt;needle.y+=needle.vy*dt;needle.ticks-=dt;
       const target=nearestEquipmentTarget(combat.enemies.values(),needle,28,null,true);
-      if(target){cut(target,true,true);needle.ticks=0;}
+      if(target){cut(target,'prism-needle',needle);needle.ticks=0;}
     }
     fx.projectiles=fx.projectiles.filter(p=>p.ticks>0);
     for(const echo of fx.echoes) {
       echo.ticks-=dt;
       for(const enemy of [...combat.enemies.values()]) if(enemy.id!==echo.sourceId&&!echo.hits.has(enemy.id)&&Math.hypot(enemy.x-echo.x,enemy.y-echo.y)<75) {
-        echo.hits.add(enemy.id);cut(enemy,true,true);
+        // Preserve mark-before-resolution, including rejected contacts. The
+        // legacy echo.sourceId above excludes a target, not an attack identity.
+        echo.hits.add(enemy.id);cut(enemy,echo.upgradeEcho?'upgrade-echo':'core-echo',echo);
       }
     }
     fx.echoes=fx.echoes.filter(e=>e.ticks>0);
@@ -1211,7 +1313,7 @@ export function createRun(
       s.firstHitUpgradeWave=waveKey;s.invul=45;s.lastDefense={kind:'upgrade',id:'ironnerve',tick:s.elapsed};equipmentBurst(p,'guard');emit('upgradeBlock',{...p,id:'ironnerve',cause});return false;
     }
     if(bumpGuard && cause==='Fang' && attack?.kind==='fang-rush') {
-      bumpGuard=false;s.guardSpent=true;s.lastDefense={kind:'iron',tick:s.elapsed};
+      bumpGuard=false;s.guardSpent=true;s.lastDefense={kind:'iron',tick:s.elapsed};syncShellAbility();
       const v=world.player.velocity;
       if(source){
         const p=world.player.position,dx=p.x-source.x,dy=p.y-source.y,d=Math.hypot(dx,dy),nx=d>.001?dx/d:Math.cos(source.aim||0),ny=d>.001?dy/d:Math.sin(source.aim||0);
@@ -1237,7 +1339,7 @@ export function createRun(
     // and never by swallowing simulation ticks -- see `hitPace`.
     s.hitAge = 0;
     s.chain = s.chainTime = s.drive = s.blade = s.parry = s.breath = s.hyperChain = 0;
-    s.chainMax = CHAIN_TIME;
+    s.chainMax = CHAIN_TIME;spectrumSequence.breakChain();syncTailAbility();
     s.panic = null;
     s.panicTicks = s.panicWarm = 0;
     s.edge = Math.max(1, s.edge);
@@ -1246,18 +1348,46 @@ export function createRun(
     else emit('hurt', { ...world.player.position, cause,contact,attack });
     return true;
   }
-  function cut(e, fromShear = false, secondary = false, swordSource = null) {
-    if(!combat.enemies.has(e.id))return;
+  function cut(e, kind, sourceObject = null, source = null) {
+    // All gameplay callers name their route. No diagnostic identity or missing
+    // boolean can silently turn a delayed/recursive contact into a primary.
+    const context=combatSourceContext(kind);
+    const {fromShear,secondary}=context;
+    const swordSource=context.swordSource==='attack'?sourceObject:null;
+    if(context.swordSource==='attack'&&(!swordSource||typeof swordSource!=='object'))
+      throw new TypeError('Sword contact requires its attack object');
+    // Legacy routes keep their resolver; bounded scheduled units share an
+    // explicit resource-isolated authority, never primary bookkeeping.
+    if (!sourceObserver) return ['ember-burn','void-collapse'].includes(kind)?resolveScheduledUnit(e,sourceObject,null,kind):resolveCut(e,fromShear,secondary,swordSource);
+    const origin = source || (sourceObject
+      ? sourceObserver.get(sourceObject,kind,s.shots,s.elapsed,world.clock)
+      : kind==='primary-blade'
+        ? sourceObserver.primary(s.shots,s.elapsed,world.clock)
+        : sourceObserver.create(kind,s.shots,s.elapsed,world.clock,null,false));
+    const observation=sourceObserver.begin(origin,e,s.elapsed,world.clock,s.shots,fromShear,secondary,swordSource);
+    let failed=true;
+    try {
+      const result=['ember-burn','void-collapse'].includes(kind)?resolveScheduledUnit(e,sourceObject,observation,kind):resolveCut(e,fromShear,secondary,swordSource,observation);
+      failed=false;
+      return result;
+    } finally {
+      sourceObserver.finish(observation,e.hp,combat.enemies.has(e.id),failed);
+    }
+  }
+  function resolveCut(e, fromShear = false, secondary = false, swordSource = null, observation = null) {
+    if(!combat.enemies.has(e.id)){if(observation)observation.rejection='target-absent';return;}
     // The isolated Rift remains intact until its real warning is escaped.
     // The Fang appears only afterward, when the player can cut both targets.
     if(s.visualTutorial?.stage===2&&!s.visualTutorial.dodged&&e.id==='tutorial/rift'){
+      if(observation)observation.rejection='tutorial-protected';
       // Contact with the protected Rift during its warning may be incidental
       // to an escape; do not turn the suggested dodge into a failed bump.
       if(e.mode!=='tell'&&e.tutorialBlockShot!==s.shots){e.tutorialBlockShot=s.shots;hurt('Practice',e);}
       return;
     }
     const contact=contactVisual(world.player,e,s.slashAngle||0);
-    if (!swordSource && e.lastSlash === s.shots) return;
+    if (!swordSource && e.lastSlash === s.shots) {if(observation)observation.rejection='shot-duplicate';return;}
+    if (observation) observation.accepted=true;
     if(!swordSource)e.lastSlash = s.shots;
     cutThisTick = true;
     if(!secondary&&!fromShear&&!s.opening&&s.sword.family==='pulse'&&(!s.wave||s.wave.phase==='combat')){
@@ -1327,7 +1457,9 @@ export function createRun(
     // wards do not get a vote. Spending the cut drains the charge to ×1.
     const kin = s.arenaMode === 'SHATTERED' ? Math.min(4, Math.max(1, s.kineticStage | 0)) : 1;
     if (s.kineticStage !== 1) { s.kineticStage = 1; s.kineticBounces = 0; }
-    const kineticBase = secondary ? 1 : s.drive > 0 ? 3 : (!fromShear && ['crown','bastion'].includes(e.kind) ? rules.armorDamage+effectiveSword(s.sword,upgradeBuff()).armor : fromShear ? SHEAR.damage : 1);
+    const kineticBase = legacyPrimaryBase({secondary,drive:s.drive>0,fromShear,kind:e.kind,armorDamage:rules.armorDamage,swordArmor:effectiveSword(s.sword,upgradeBuff()).armor,shearDamage:SHEAR.damage});
+    const precision = !s.opening && !s.teachingArena ? commitPrecision(s.precisionShot,{primary:!secondary&&!fromShear,kind:e.kind}) : null;
+    if(precision){s.precisionReceipt=precision;emit('precisionPuncture',{entityId:e.id,...precision});}
     // ── CHUNK 4: THE MONOLITH ──────────────────────────────────────────
     //
     // Five plates, two health each, and only one key: a cut banked to
@@ -1344,10 +1476,24 @@ export function createRun(
     if (e.kind === 'monolith') {
       const overcharge = kin >= 4 ? (mods.monolithDamage || 1) : 1;
       e.hp -= (kin >= 4 ? 2 : 1) * overcharge * secondTarget + lensBonus;
-    } else e.hp -= Math.max(1, Math.floor((kin >= 4 ? e.hp + 1 : kineticBase * kin) * execute * secondTarget));
+    } else e.hp -= Math.max(1, Math.floor((kin >= 4 ? e.hp + 1 : kineticBase * kin) * execute * secondTarget)) + (precision?.total||0);
+    if(rules.voidWell&&!secondary&&!fromShear&&emberActive()){
+      const field=voidWell.contact(e,{primary:true,now:world.clock,enemies:combat.enemies.values(),geometry:world.geometry,
+        makeSource:shot=>sourceObserver?.create('void-collapse',shot,s.elapsed,world.clock,observation?.source.sourceId)});
+      if(field)emit('voidOpen',{entityId:e.id,x:field.x,y:field.y,shot:field.sourceShot,targets:field.targets.map(t=>t.id)});
+    }
+    if(rules.frostControl&&!secondary&&!fromShear&&emberActive()){
+      const accepted=frostControl.contact(e,{primary:true,now:world.clock,enemies:combat.enemies.values(),geometry:world.geometry});
+      if(accepted.length)emit('frostContact',{entityId:e.id,x:e.x,y:e.y,shot:s.shots,targets:accepted.map(t=>({id:t.id,kind:t.frostCold.kind,until:t.frostCold.until}))});
+    }
+    if(rules.emberBurn&&!secondary&&!fromShear&&emberActive()){
+      const accepted=emberBurn.ignite(e,{primary:true,now:world.clock,enemies:combat.enemies.values(),geometry:world.geometry,
+        makeSource:(_target,shot)=>sourceObserver?.create('ember-burn',shot,s.elapsed,world.clock,observation?.source.sourceId)});
+      if(accepted.length)emit('emberIgnite',{entityId:e.id,targets:accepted.map(t=>t.id),x:e.x,y:e.y});
+    }
     if(!secondary && rules.coil && !s.opening) {
       const victim=nearestEquipmentTarget(combat.enemies.values(),e,160,e.id);
-      if(victim){equipmentBurst(victim,'spark',e);cut(victim,true,true);}
+      if(victim){equipmentBurst(victim,'spark',e);cut(victim,'coil-relay',null,sourceObserver?.create('coil-relay',s.shots,s.elapsed,world.clock,observation?.source.sourceId));}
     }
     e.flash = 16;
     s.swingStart = world.clock;
@@ -1372,25 +1518,19 @@ export function createRun(
       //    follow-through cannot punish the player for the bounce.
       // The shove runs BACK along the cut: the blade came in along the slash
       // direction, so the cube is turned away from the plate.
-      const a = s.slashAngle,
-        pv = world.player.velocity;
-      const nx = pv.x - Math.cos(a) * ARMOR_PUSH,
-        ny = pv.y - Math.sin(a) * ARMOR_PUSH;
-      // ── THE CEILING IS THE LIVE ONE, NOT `MAX_SPEED` ────────────────────
-      //
-      // This clamped to MAX_SPEED (42) and took hyper away the first time the
-      // cube bounced off a plate at hyper speed: 42 is the bound for an ordinary
-      // run, and hyper exists precisely to raise it. Two tests caught it -- the
-      // cube "fell under the normal limit" and hyper ended, and the blade lapsed
-      // with it.
-      //
-      // `world.playerCeiling` is the running limit the physics already enforces,
-      // so the shove can never be the thing that slows the cube below what the
-      // game has granted it.
-      const ceil = world.playerCeiling || MAX_SPEED,
-        mag = Math.hypot(nx, ny) || 1,
-        k = Math.min(1, ceil / mag);
-      if(!secondary)setPlayerVelocity(world, nx * k, ny * k);
+      const a = s.slashAngle, pv = world.player.velocity;
+      const shellEligible=!s.opening&&!secondary&&!fromShear;
+      const chamfer=shellEligible&&rules.armorRecoilScale<1;
+      const before={x:pv.x,y:pv.y};
+      const outgoing=armorShellRecoil(before,a,ARMOR_PUSH,world.playerCeiling||MAX_SPEED,chamfer);
+      if(!secondary)setPlayerVelocity(world,outgoing.x,outgoing.y);
+      if(chamfer&&Math.hypot(before.x,before.y)>0)s.shellImpact={angle:a,age:0};
+      if(shellEligible&&rules.armorSpring&&s.shellSpringShot!==s.shots){
+        // First eligible armor shove per shot, never a secondary echo, shear,
+        // kill or repeated overlap. An existing charge is never refreshed.
+        s.shellSpringShot=s.shots;
+        if(!activeArmorSpring(s.shellSpring,s.elapsed))s.shellSpring=storeArmorLoss(before,world.player.velocity,s.elapsed,a);
+      }
       s.cutGrace = Math.max(s.cutGrace, ARMOR_GRACE);
       s.cutGraceFrom = e.id;
       e.fault = s.slashAngle - e.angle;
@@ -1398,9 +1538,7 @@ export function createRun(
       return;
     }
     if(!s.opening && !e.paper && e.kind==='crown' && s.hp===1) emit('challenge',{id:'oni'});
-    combat.remove(e);
-    stream.mark(e);
-    s.kills++;
+    removeDefeatedEnemy(e);
     // CHUNK 6C: SLASHBACK returns a measured 0.35s of the Hyper budget on a
     // real cut, never on a miss or a secondary visual echo.
     if(s.hyper&&upgradeMods().hyperRefund>0)s.hyperAge=Math.max(0,(s.hyperAge||0)-upgradeMods().hyperRefund);
@@ -1420,7 +1558,8 @@ export function createRun(
     // STREAK, not to the run: measuring against the run-wide dash counter meant
     // the gate closed permanently after launch 14 of a 128-dash run, so the
     // feature was unreachable for the other 90% of play.
-    if (!(s.chainTime > 0)) s.chainFrom = s.shots;
+    const continuedChain=s.chainTime>0;
+    if (!continuedChain) s.chainFrom = s.shots;
     s.chain = s.chainTime > 0 ? s.chain + 1 : 1;
     s.maxChain = Math.max(s.maxChain, s.chain);
     s.chainTime = chainWindow(s.chain) + (s.opening ? 0 : rules.chainGrace);
@@ -1430,13 +1569,14 @@ export function createRun(
     // 36-tick window would show as a third-full bar). State carries it so the
     // meter always means "fraction of THIS chain's window remaining".
     s.chainMax = s.chainTime;
+    let freshDrive=false;
     if (s.chain % rules.overdriveKills === 0) {
       const fresh = s.drive <= 0;
       s.drive = OVERDRIVE.ticks;
       // Recorded at the grant, not after the first tick of drain, so "reached
       // Overdrive" means the full bank was actually awarded.
       if (s.drive > s.overdriveBest) s.overdriveBest = s.drive;
-      if (fresh) emit('drive', {});
+      if (fresh) {freshDrive=true;emit('drive', {});}
     }
     // CHUNK 1: +1 per cleared wave, additive with the chain ladder and capped
     // at its ceiling (+8). Entering Overdrive still doubles the whole thing.
@@ -1480,13 +1620,13 @@ export function createRun(
       const mods=upgradeMods();
       if(rules.echo && s.chain%3===0) {
         const p=world.player.position;
-        s.equipmentFx.echoes.push({x:p.x-Math.cos(s.slashAngle)*65,y:p.y-Math.sin(s.slashAngle)*65,ticks:30,hits:new Set(),sourceId:e.id});
+        s.equipmentFx.echoes.push(trackCombatSource({x:p.x-Math.cos(s.slashAngle)*65,y:p.y-Math.sin(s.slashAngle)*65,ticks:30,hits:new Set(),sourceId:e.id},'core-echo',s.shots,observation?.source.sourceId));
         if(s.equipmentFx.echoes.length>EQUIPMENT_LIMITS.echoes)s.equipmentFx.echoes.shift();
       }
       if(mods.slashEchoEvery>0&&s.shots>0&&s.shots%mods.slashEchoEvery===0&&s.lastSlashEchoShot!==s.shots) {
         const p=world.player.position;
         s.lastSlashEchoShot=s.shots;
-        s.equipmentFx.echoes.push({x:p.x-Math.cos(s.slashAngle)*72,y:p.y-Math.sin(s.slashAngle)*72,ticks:30,hits:new Set(),sourceId:e.id,upgradeEcho:true});
+        s.equipmentFx.echoes.push(trackCombatSource({x:p.x-Math.cos(s.slashAngle)*72,y:p.y-Math.sin(s.slashAngle)*72,ticks:30,hits:new Set(),sourceId:e.id,upgradeEcho:true},'upgrade-echo',s.shots,observation?.source.sourceId));
         if(s.equipmentFx.echoes.length>EQUIPMENT_LIMITS.echoes)s.equipmentFx.echoes.shift();
         emit('upgradeEcho',{x:p.x,y:p.y,id:'ghostlash'});
       }
@@ -1505,8 +1645,16 @@ export function createRun(
     }
     // CHUNK 4: the Monolith pays like any field kill — the ledger gate is
     // 'combat' plus the boss's own phase ('monolith'), never the breach.
-    if(s.killLedger&&['combat','monolith'].includes(s.wave?.phase)&&!s.opening&&!s.tutorialActive)s.killLedger=recordEnemyReward(s.killLedger,{kind:e.kind,small:!!e.small,paper:!!e.paper,points,creditMultiplier:upgradeMods().credits});
+    recordDefeatCredits(e,points);
     s.edge = Math.min(edgeMax, s.edge + 1);
+    // Ignition is consumed at entry, AFTER the ordinary kill refund. No queue.
+    const ignition=blazeEntryGrant({fresh:freshDrive,active:rules.blazeEntry&&eyeActive(),edge:s.edge,max:edgeMax});
+    if(ignition){s.edge+=ignition;blazeAt=world.clock;s.edgeReturn=14;emit('blazeRefill',{x:world.player.position.x,y:world.player.position.y,edge:s.edge});}
+    if(rules.spectrumSequence){
+      const grant=spectrumSequence.kill(e,{now:world.clock,continued:continuedChain,primary:!secondary&&!fromShear,active:!s.opening&&!s.visualTutorial&&!s.tutorialActive&&!s.teachingArena,edge:s.edge,max:edgeMax});
+      if(grant){s.edge=Math.min(edgeMax,s.edge+grant);s.edgeReturn=14;emit('spectrumRefill',{x:world.player.position.x,y:world.player.position.y,edge:s.edge});}
+      syncTailAbility();
+    }
     s.focus = 1;
     s.blade = Math.min(38, s.blade + 7);
     const impact = impactFor(e.kind, e.small, release, e.paper);
@@ -1556,14 +1704,39 @@ export function createRun(
       emit('shear', ledger.shear);
       // Snapshot the victims before spawning children. A wave never spawns a
       // second wave or hits a surviving plate twice on the same launch.
-      for (const victim of combat.forwardHits(e, end, SHEAR.width)) cut(victim, true);
+      const shearSource=sourceObserver?.create('legacy-shear',s.shots,s.elapsed,world.clock,observation?.source.sourceId);
+      for (const victim of combat.forwardHits(e, end, SHEAR.width)) cut(victim,'legacy-shear',null,shearSource);
     }
-    if (e.kind === 'fork') combat.kids(e);
-    if (e.kind === 'crown' && s.hp < s.hpMax) {
-      s.hp++;
-      emit('repair', { hp: s.hp, hpMax: s.hpMax });
-    }
+    defeatAftermath(e);
   }
+  function removeDefeatedEnemy(e){combat.remove(e);stream.mark(e);s.kills++;}
+  function recordDefeatCredits(e,points){
+    if(s.killLedger&&['combat','monolith'].includes(s.wave?.phase)&&!s.opening&&!s.tutorialActive)s.killLedger=recordEnemyReward(s.killLedger,{kind:e.kind,small:!!e.small,paper:!!e.paper,points,creditMultiplier:upgradeMods().credits});
+  }
+  function defeatAftermath(e){
+    if(e.kind==='fork')combat.kids(e);
+    if(e.kind==='crown'&&s.hp<s.hpMax){s.hp++;emit('repair',{hp:s.hp,hpMax:s.hpMax});}
+  }
+  function frostThaw(e,status){emit('frostThaw',{entityId:e.id,x:e.x,y:e.y,kind:status.kind,at:status.thawedAt,immuneUntil:status.immunityUntil,shot:status.shot});}
+  function emberActive(){return s.phase==='playing'&&!s.opening&&!s.practice&&!s.visualTutorial&&!s.tutorialActive&&!s.teachingArena&&(!s.wave||s.wave.phase==='combat'&&s.wave.entry<=0);}
+  /** New scheduled-secondary admission: exact unit, no primary contact/kill
+   * counters, refunds, weapon charge, recursive proc, kinetic or upgrade scaling. */
+  function resolveScheduledUnit(e,unit,observation=null,kind='ember-burn'){
+    if(!unit||unit.target!==e||!emberActive()||combat.enemies.get(e.id)!==e||e.hp<=0){if(observation)observation.rejection=kind==='ember-burn'?'burn-inactive':'collapse-inactive';return;}
+    if(observation)observation.accepted=true;
+    const hpBefore=e.hp;e.hp=Math.max(0,e.hp-1);
+    emit(kind==='ember-burn'?'emberHit':'voidHit',{entityId:e.id,x:e.x,y:e.y,hp:e.hp,index:unit.index,sourceShot:unit.shot});
+    if(e.hp>0)return;
+    removeDefeatedEnemy(e);
+    const mult=Math.max(1,Math.min(8,s.chain))*(s.drive>0?2:1)+Math.min(8,s.waveMult||0),
+      points=Math.floor((e.small?45:TYPES[e.kind].points)*mult*rules.scoreMultiplier*upgradeMods().score*(s.hp===1?rules.lastHullBonus:1));
+    s.score+=points;recordDefeatCredits(e,points);defeatAftermath(e);
+    emit('cut',{entityId:e.id,x:e.x,y:e.y,angle:e.angle,r:e.r,kind:e.kind,cut:e.fault||0,hpBefore,
+      contact:null,equipment:{...s.equipment},sword:s.sword,armorRemoved:['bastion','crown'].includes(e.kind)?hpBefore:0,
+      secondary:true,sourceKind:kind,fault:e.fault,small:!!e.small,paper:false,impact:impactFor(e.kind,e.small,false,false),
+      release:false,fromShear:true,throughcut:false,strokePoints:0,strokeKills:0,points,chain:s.chain,speed:0,paceQualified:false,momentumEarned:false});
+  }
+
   /** Record one contact: where, which way, how hard. `depth` is the closing
    *  speed along the normal; IMPACT turns that into a bend and a ring. */
   function noteImpact(x, y, nx, ny, depth, source='surface') {
@@ -1665,6 +1838,8 @@ export function createRun(
     s.launchGrace = 0;
     s.score = 0;
     s.bestStroke = s.stroke = s.bladeLedger = null;
+    s.precisionShot = s.precisionReceipt = s.sweep = null;
+    s.inkCutScale = 1;
     s.shots = s.kills = s.throughcuts = 0;
     s.moved = s.movedAvg = 0;
     s.moveHist.fill(0);s.moveHistAt=0;
@@ -1750,6 +1925,9 @@ export function createRun(
     // Let the player actually see the first live opponent before the tide
     // starts.
     s.phase = 'ready';
+    clearArmorShell();
+    clearFocusRecovery();
+    clearNeedlePhase();clearTailAbility();clearEyes();emberBurn.clear();frostControl.clear();voidWell.clear();s.voidWell=null;
     if(!waveMode)stream.sync(SPAWN, s.line - origin.y);
     emit('field', { cleared });
     return true;
@@ -1757,7 +1935,7 @@ export function createRun(
   function tick() {
     cutThisTick = false;
     cutBatchHits = 0;
-    try { return tickCore(); } finally { cutThisTick = false; }
+    try { return tickCore(); } finally { cutThisTick = false; syncShellAbility();syncTailAbility();syncEyeAbility(); }
   }
   function tickCore() {
     if(waveDirector && s.wave.phase==='choose'){freezePoses();return;}
@@ -1771,6 +1949,9 @@ export function createRun(
       return;
     }
     s.elapsed++;
+    if(s.shellSpring&&!activeArmorSpring(s.shellSpring,s.elapsed))s.shellSpring=null;
+    if(s.shellImpact&&++s.shellImpact.age>=ARMOR_SHELL.glanceTicks)s.shellImpact=null;
+    if(s.shellRelease&&++s.shellRelease.age>=ARMOR_SHELL.releaseTicks)s.shellRelease=null;
     // CHUNK 2: the damage window is measured in the game's own ticks, so a
     // backgrounded tab can never spend it. It outlives the hitstop on purpose:
     // the stop is `s.stop`, the window is this.
@@ -1906,13 +2087,19 @@ export function createRun(
       recharge(1);
       return;
     }
+    const focusBeforeRecovery=s.focus,wasRecovering=s.focusRecoveryActive;
     if (s.held && !s.depleted) {
       s.focus = Math.max(0, s.focus - (s.opening ? 1 : rules.focusDrain) / 165);
       if (s.focus < 0.0001) {
         s.depleted = true;
         setBulletTime(world, false);
       }
-    } else if (!s.held) s.focus = Math.min(1, s.focus + (focusRecovery > 0 ? 2 : 1) * (s.opening ? 1 : rules.focusRegen) / 250);
+    } else if (!s.held) s.focus = recoverFocus(s.focus,(focusRecovery > 0 ? 2 : 1) * (s.opening ? 1 : rules.focusRegen));
+    // Read-only presentation view of this authority's actual passive grant.
+    // No input/animation callback can grant an extra step or reopen at full.
+    s.focusRecoveryAmount=Math.max(0,s.focus-focusBeforeRecovery);
+    s.focusRecoveryActive=!s.opening&&!s.held&&s.focus<1&&s.focusRecoveryAmount>0;
+    s.focusRecoveryAge=s.focusRecoveryActive?(wasRecovering?Math.min(8,s.focusRecoveryAge+1):0):-1;
     // One beat to choose the next line. A new launch is always immediate.
     if (world.clock >= glideAt) {
       glideAt = Infinity;
@@ -2013,10 +2200,24 @@ export function createRun(
           world.floorIgnore = s.floorIgnore;
           // CHUNK 6B: the landlord acts during his own phase — the field is
           // swept, the fight is his. (Breach stays frozen on purpose.)
-          if(!s.wave||(['combat','monolith'].includes(s.wave.phase)&&s.wave.entry<=0))combat.move(dt, s.band);
+          const combatActive=!s.wave||(['combat','monolith'].includes(s.wave.phase)&&s.wave.entry<=0);
+          // Hold counts fixed input updates; effect and immunity use world time.
+          if(rules.hypnoDaze){
+            const target=hypnoHold.step({held:eyeAiming(),active:eyeActive()&&combatActive,dt:1,now:world.clock,origin:world.player.position,enemies:combat.enemies.values(),geometry:world.geometry});
+            if(target)emit('hypnoDaze',{entityId:target.id,x:target.x,y:target.y,until:target.hypnoUntil});
+          }
+          if(rules.frostControl){if(emberActive())frostControl.advance(world.clock,combat.enemies,frostThaw);else frostControl.clear();}
+          if(combatActive)combat.move(dt, s.band);
           if(rules.gravityPull && s.held) for(const enemy of combat.enemies.values()) {
-            const point=aimPull(enemy,world.player.position,aimAngle ?? s.slashAngle,dt);
+            if(rules.voidWell&&emberActive()&&voidWell.owns(enemy,world.clock,world.geometry))continue;
+            const point=aimPull(enemy,world.player.position,aimAngle ?? s.slashAngle,coldTiming(enemy,world.clock,dt).motion);
             if(point){enemy.x=point.x;enemy.y=point.y;Matter.Body.setPosition(enemy.body,point);}
+          }
+          if(rules.voidWell){
+            if(emberActive())voidWell.move(world.clock,dt,combat.enemies,{geometry:world.geometry,arena:world.arena,
+              motionScale:(e,now,span)=>coldTiming(e,now,span).scale,
+              commit:(e,p)=>{e.x=p.x;e.y=p.y;Matter.Body.setPosition(e.body,p);}});
+            else voidWell.clear();
           }
         },
         pace,
@@ -2188,20 +2389,22 @@ export function createRun(
           const v=world.player.velocity;setPlayerVelocity(world,v.x,v.y*rules.floorBoost);
         }
         if(rules.floorWave) {
+          tailAction={kind:'floor',at:world.clock};
           const p=world.player.position;equipmentBurst(p,'floor');
-          for(const enemy of [...combat.enemies.values()])if(enemy.kind==='fang'&&Math.hypot(enemy.x-p.x,enemy.y-p.y)<=170)cut(enemy,true,true);
+          const floorSource=sourceObserver?.create('anchor-floor',s.shots,s.elapsed,world.clock);
+          for(const enemy of [...combat.enemies.values()])if(enemy.kind==='fang'&&Math.hypot(enemy.x-p.x,enemy.y-p.y)<=170)cut(enemy,'anchor-floor',null,floorSource);
         }
         emit('floorKick', { vy: kick.vy, edge: s.edge });
       }
     }
     if (hitSurface && hitSurface !== lastContact && s.phase === 'playing') {
       if(rules.wallRecharge && !wingsUsed && hitSurface.surface === 'rail' && Math.abs(hitSurface.nx) > .5) {
-        s.edge = Math.min(edgeMax,s.edge+1); wingsUsed = true; s.edgeReturn = 14;
+        const granted=s.edge<edgeMax;s.edge = Math.min(edgeMax,s.edge+1); wingsUsed = true; s.edgeReturn = 14;if(granted)tailAction={kind:'refill',at:world.clock};
       }
       if(rules.wallNeedles && needleCooldown<=0 && hitSurface.surface==='rail' && Math.abs(hitSurface.nx)>.5) {
         needleCooldown=45;
         const p=world.player.position;
-        for(const dx of [-1,1])s.equipmentFx.projectiles.push({x:p.x,y:p.y,vx:dx*2,vy:-9,ticks:45});
+        for(const dx of [-1,1])s.equipmentFx.projectiles.push(trackCombatSource({x:p.x,y:p.y,vx:dx*2,vy:-9,ticks:45},'prism-needle'));
         s.equipmentFx.projectiles=s.equipmentFx.projectiles.slice(-EQUIPMENT_LIMITS.projectiles);
       }
       lastContact = hitSurface;
@@ -2448,7 +2651,7 @@ export function createRun(
       }
       if(earned && rules.reboundBoost!==1) {
         const v=world.player.velocity,sp=Math.hypot(v.x,v.y),cap=world.playerCeiling||MAX_SPEED;
-        const k=Math.min(rules.reboundBoost,cap/Math.max(1,sp));if(k>1)setPlayerVelocity(world,v.x*k,v.y*k);
+        const k=Math.min(rules.reboundBoost,cap/Math.max(1,sp));if(k>1){setPlayerVelocity(world,v.x*k,v.y*k);tailAction={kind:'jet',at:world.clock};}
       }
       emit('bank', {
         x: hitSurface.x,
@@ -2550,7 +2753,9 @@ export function createRun(
       // CHUNK 2: keep the geometry this swing actually used, so the green
       // "safe to slice" marker is measured against the real blade rather than
       // re-guessing its reach from the HUD.
-      s.sweep = combat.sweepBlade(s.slashAngle, s.reach*drawn.reach, horizontalCutWidth(s.slashAngle,rules)*s.sword.width*upgradeMods().width, rules.closeWidth) || s.sweep;
+      const geo=primaryGeometry({angle:s.slashAngle,rules,sword:{...drawn,width:s.sword.width},reach:s.reach,width:upgradeMods().width,shot:s.precisionShot});
+      s.inkCutScale = geo.composition.far.entries[2].applied;
+      s.sweep = combat.sweepBlade(s.slashAngle,geo.reach,geo.width,geo.closeWidth,geo.closeRadius) || geo.geometry;
     }
     // Resolve this step's contact batch using one attack eligibility snapshot.
     // A presentation/refund from an earlier contact cannot change whether a
@@ -2569,7 +2774,7 @@ export function createRun(
       // swallowing that would turn a reward into a lockout. Measured with the
       // grace applied to both branches: the "second cut scores once" test lost
       // its second cut entirely.
-      if (attackingThisStep) cut(e);
+      if (attackingThisStep) cut(e,'primary-blade');
       else if ((s.cutImmunity.get(e.id)||0)>0 || (s.cutGrace > 0 && e.id === s.cutGraceFrom)) {if(combat.rushContacts.has(e))s.lastDefense={kind:'cut-grace',tick:s.elapsed};continue;}
       else if(combat.rushContacts.has(e)) hurt('Fang',e,Object.freeze({kind:'fang-rush',angle:e.aim,sourceId:e.id}));
       else s.safeContact = {kind:e.kind,tick:s.elapsed};
@@ -2577,8 +2782,16 @@ export function createRun(
     combat.contacts.clear();combat.rushContacts.clear();
     if(!stopped&&(!s.wave||s.wave.phase==='combat'))s.swordFx=advanceSwordAttacks(s.swordFx,dt,
       a=>combat.forwardHits({x:a.x,y:a.y},{x:a.tx,y:a.ty},a.width),
-      (enemy,a)=>{cut(enemy,true,true,a);emit('swordHit',{x:enemy.x,y:enemy.y,kind:a.kind});});
+      (enemy,a)=>{cut(enemy,swordContactKind(a),a);emit('swordHit',{x:enemy.x,y:enemy.y,kind:a.kind});});
     tickEquipment(dt);
+    if(rules.voidWell){
+      if(emberActive()){
+        if(voidWell.finish(world.clock,combat.enemies,(e,unit)=>cut(e,'void-collapse',unit,unit.source),world.geometry))emit('voidCollapse',voidWell.view(world.clock));
+      }else voidWell.clear();
+      s.voidWell=voidWell.view(world.clock);
+    }
+    if(rules.frostControl){if(emberActive())frostControl.advance(world.clock,combat.enemies,frostThaw);else frostControl.clear();}
+    if(rules.emberBurn){if(emberActive())emberBurn.step(world.clock,combat.enemies,(e,unit)=>cut(e,'ember-burn',unit,unit.source));else emberBurn.clear();}
     combat.attacks(dt, (h) => {
       const facing = h.kind === 'needle' && Math.cos(s.slashAngle - h.angle) < -0.2;
       // CHUNK 6B: the slam concussion — not damage. A live blade or parry
@@ -2599,7 +2812,12 @@ export function createRun(
       if (s.blade <= 0 || !(facing || s.parry > 0))
         hurt(cause, h, Object.freeze({kind,sourceId:h.sourceId,attackId:h.attackId,angle:h.kind==='needle'||h.source==='bastion'?h.angle:Math.atan2(world.player.position.y-h.y,world.player.position.x-h.x)}));
       else {s.lastDefense={kind:'parry',tick:s.elapsed};emit('parry', { x: h.x, y: h.y, angle: h.angle||0 });}
-    },{freezeZones:stopped});
+    },{freezeZones:stopped,filterPlayerHit:rules.needlePhase?(h,touching)=>{
+      const result=needlePhase.filter(h,touching,{active:s.phase==='playing'&&!s.opening&&!s.visualTutorial&&!s.tutorialActive&&!s.teachingArena&&s.invul<=0,
+        now:world.clock,previousTime:world.previousClock,player:world.player.position,previous:world.player.plugin.previous,radius:PLAYER_SIZE*.44+5});
+      if(result===2){s.lastDefense={kind:'phase',tick:s.elapsed};syncShellAbility();emit('needlePhase',{x:world.player.position.x,y:world.player.position.y,angle:h.angle||0});}
+      return result===0;
+    }:null});
     combat.linkAttacks(waveDirector?waveDirector.cells:stream.live, s.wave?.entry>0?0:dt, (link) => {
       if (s.parry <= 0) hurt('Prism link',link.a,Object.freeze({kind:'prism-link',angle:Math.atan2(link.b.y-link.a.y,link.b.x-link.a.x)}));
       else s.lastDefense={kind:'parry',tick:s.elapsed};
@@ -2704,7 +2922,7 @@ export function createRun(
     hyperStep();
     const p = world.player.position;
     s.peak = Math.max(s.peak, origin.y - p.y);
-    if(waveDirector){s.dimension=stepDimensionField(s.dimension,{dt,active:!stopped&&s.phase==='playing'&&['combat','breach','monolith'].includes(s.wave.phase)&&!s.opening&&!s.tutorialActive,x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,distance:s.moved});if(!s.visualTutorial)waveDirector.tick(dt);if(s.wave.phase!=='combat'){s.swordFx.length=0;s.swordCharge=0;s.equipmentFx={projectiles:[],echoes:[],bursts:[]};s.drive=0;}return;}
+    if(waveDirector){s.dimension=stepDimensionField(s.dimension,{dt,active:!stopped&&s.phase==='playing'&&['combat','breach','monolith'].includes(s.wave.phase)&&!s.opening&&!s.tutorialActive,x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,distance:s.moved});if(!s.visualTutorial)waveDirector.tick(dt);if(s.wave.phase!=='combat'){emberBurn.clear();frostControl.clear();voidWell.clear();s.voidWell=null;s.swordFx.length=0;s.swordCharge=0;s.equipmentFx={projectiles:[],echoes:[],bursts:[]};s.drive=0;}return;}
     s.oldLine = s.line;
     s.line = Math.min(s.line - dt * (0.38 + Math.min(6, s.band) * 0.07), origin.y - s.peak + 1180);
     // The cut-room safety net is gone with the Redline.
@@ -2822,6 +3040,9 @@ export function createRun(
     if (!['ready', 'playing'].includes(s.phase)) return;
     s.phase = 'over';
     s.cause = 'Retired';
+    clearArmorShell();
+    clearFocusRecovery();
+    clearNeedlePhase();clearTailAbility();clearEyes();emberBurn.clear();frostControl.clear();voidWell.clear();s.voidWell=null;
     focus(false);
     emit('over', {});
   }
@@ -2866,6 +3087,10 @@ export function createRun(
       if (Number.isFinite(w) && w > 0) world.viewW = w;
       return world.viewH;
     },
+    voidStatus:()=>voidWell.view(world.clock),
+    frostStatus:()=>frostControl.view(),
+    emberStatus:()=>emberBurn.view(),
+    primaryGeometry(){return primaryGeometry({angle:s.slashAngle||0,rules,sword:{...effectiveSword(s.sword,upgradeBuff()),width:s.sword.width},reach:s.reach||1,width:upgradeMods().width,shot:s.precisionShot}).geometry;},
     setAim(v){aimAngle=v && Number.isFinite(v.x) && Number.isFinite(v.y) && Math.hypot(v.x,v.y)>.01 ? Math.atan2(v.y,v.x) : null;},
     tick,
     dash,
@@ -2904,6 +3129,10 @@ export function createRun(
     setPracticeLinks:links=>waveDirector?.setPracticeLinks(links)||false,
     skipBreach:()=>waveDirector?.skipBreach()||false,
     dispose() {
+      clearArmorShell();
+      clearFocusRecovery();
+      clearNeedlePhase();clearTailAbility();clearEyes();emberBurn.clear();frostControl.clear();voidWell.clear();s.voidWell=null;
+      sourceObserver?.dispose();
       waveDirector?.dispose();s.swordFx.length=0;s.swordCharge=0;
       combat.dispose();
       destroyPhysics(world);

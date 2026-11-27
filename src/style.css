@@ -2418,7 +2418,7 @@ body:has(#panel[open]) #hud {
 .story-chip.on{opacity:1;transition:opacity .22s ease}
 .story-chip[hidden]{display:none}
 @media(prefers-reduced-motion:reduce){.story-chip{transition:none}}
-@media(max-width:600px){.story-chip{font-size:14px;top:64%}}
+@media(max-width:600px){.story-chip{font-size:14px;top:auto}}
 
 /* CHUNK 6A: SECTOR/WAVE readout — a 1.4s flash on transition, then gone. */
 .sector-chip{position:absolute;bottom:var(--foot);left:var(--gutter);z-index:6;pointer-events:none;user-select:none;font:700 10px 'Space Mono',monospace;letter-spacing:.24em;color:#ddff89;background:#0e0d16cc;border-left:3px solid var(--hot);padding:4px 10px 4px 9px;opacity:0;transition:opacity .45s ease}
@@ -2992,3 +2992,18 @@ body:has(#panel[open]) #hud {
 }
 /* Single optional WebGL resolve; HUD and native input remain on their own layers. */
 .uber-postfx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none}
+/* Notched vents mirror actual passive recovery; no looping flash or particles. */
+#focus-meter[data-cooling] > small{color:#c9f6b4}
+#focus-meter[data-cooling] #focus b{background:#b9f09a}
+#focus-meter #shell-reserve{color:#b9ead7;background:#162623e8;padding:5px 6px;border-left:2px solid #b9ead7;font-size:9px;letter-spacing:.04em}
+#focus-meter #shell-reserve[hidden]{display:none}
+
+/* One compact receipt for the equipped reactive shell, not a second meter. */
+#shell-ability{display:block;color:#b7e6da;font:700 8px/1.35 monospace;letter-spacing:.03em;margin-top:5px;white-space:nowrap}
+#shell-ability[hidden]{display:none}
+@media(max-width:420px){#shell-ability{font-size:7px}}
+
+/* One factual tail receipt, only where an actual resource/retention state exists. */
+#tail-ability{display:block;color:#c8c4aa;font:700 8px/1.35 monospace;letter-spacing:.02em;margin-top:3px;white-space:nowrap}
+#tail-ability[hidden]{display:none}
+@media(max-width:420px){#tail-ability{font-size:7px}}

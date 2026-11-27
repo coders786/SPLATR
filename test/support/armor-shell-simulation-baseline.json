@@ -1,0 +1,88 @@
+{
+  "reason": "Chunk8 intentional C24/C26 perk replacements only. Original40-case fixture is retained unchanged; these6 shell builds lose the former blade/chain bonuses and gain real armor recoil/store-return.",
+  "ticks": 360,
+  "cases": [
+    {
+      "id": "glacier",
+      "seed": 19,
+      "equipment": {
+        "body": "chamfer",
+        "core": "time",
+        "head": "halo",
+        "slash": "laser"
+      },
+      "originalGameplayHash": "c57b9b04d30f5bec27b342b9ae0e5366328273b5390dddd837badb57f2a79029",
+      "originalSourceHash": "2b805a0d8d6d45ebebe7575fbab09a34a589719503181b9c59f5ba74918769bf",
+      "gameplayHash": "c91725a15543c762d036c7800ea74ec19cac85606661e394a7c1e0f4dfab3c4e",
+      "sourceHash": "2b805a0d8d6d45ebebe7575fbab09a34a589719503181b9c59f5ba74918769bf"
+    },
+    {
+      "id": "glacier",
+      "seed": 77,
+      "equipment": {
+        "body": "chamfer",
+        "core": "time",
+        "head": "halo",
+        "slash": "laser"
+      },
+      "originalGameplayHash": "ce322e4caa600cf578b350b462fbcf969ea0f2226f304ae001d91eb2e72377db",
+      "originalSourceHash": "a72f799e927a63194986ef43a4abd280764fbcc0a151f909f80d4cd71e105fc6",
+      "gameplayHash": "d851794d613adfdc50ad49d0beb83ef08d14865fc6336c0637cafafe9ef8aad0",
+      "sourceHash": "a72f799e927a63194986ef43a4abd280764fbcc0a151f909f80d4cd71e105fc6"
+    },
+    {
+      "id": "sentinel",
+      "seed": 19,
+      "equipment": {
+        "body": "segmented",
+        "core": "magnet",
+        "head": "coil"
+      },
+      "originalGameplayHash": "91a59bb9f52754498d10a10808a6b627cbd870c7b7b9af57ea2691b18311b58e",
+      "originalSourceHash": "0d0a1112c3577e457ee9459ea395bbd3ebb5305ed1d178bf9789af9f0980e0ec",
+      "gameplayHash": "91b3dc360ca5aa0c8567119c8e9e87f914f5850335d23b68147d32f9b3ad0d5a",
+      "sourceHash": "0d0a1112c3577e457ee9459ea395bbd3ebb5305ed1d178bf9789af9f0980e0ec"
+    },
+    {
+      "id": "sentinel",
+      "seed": 77,
+      "equipment": {
+        "body": "segmented",
+        "core": "magnet",
+        "head": "coil"
+      },
+      "originalGameplayHash": "dd3968f3a6e7181ff81e78350326847faef6f4119736553a9b946c08265e7085",
+      "originalSourceHash": "a72f799e927a63194986ef43a4abd280764fbcc0a151f909f80d4cd71e105fc6",
+      "gameplayHash": "16c25a41ce01fd4078374e685d737699225a16f3c759fa9b6f613ed31f768c93",
+      "sourceHash": "a72f799e927a63194986ef43a4abd280764fbcc0a151f909f80d4cd71e105fc6"
+    },
+    {
+      "id": "storm",
+      "seed": 19,
+      "equipment": {
+        "head": "coil",
+        "body": "chamfer",
+        "core": "echo",
+        "slash": "laser"
+      },
+      "originalGameplayHash": "c0bfdb2874d31f993d2132791326fa9e5ded8fe7e00175076108f201508bbde4",
+      "originalSourceHash": "80209473a600b7dbfb90f8252a6e364c82f6d655e9467a707df99112a625ca0d",
+      "gameplayHash": "4c6ac5cfc0ff139ec8c40bb5aa50f065a425bac1885034d80b4b5c35177cb5fc",
+      "sourceHash": "80209473a600b7dbfb90f8252a6e364c82f6d655e9467a707df99112a625ca0d"
+    },
+    {
+      "id": "storm",
+      "seed": 77,
+      "equipment": {
+        "head": "coil",
+        "body": "chamfer",
+        "core": "echo",
+        "slash": "laser"
+      },
+      "originalGameplayHash": "320c4ab7953f768601d40224c8834d9c66f68efac99c6a29d061b4541bfc5f72",
+      "originalSourceHash": "188b99409b2821133fcdae43fa9c37bcf8842bdc8c0adde18d099cd05f849f23",
+      "gameplayHash": "12dd112a7a5af425fdc158d1f6fcf1669033102052e243e27feb930bd90403d9",
+      "sourceHash": "188b99409b2821133fcdae43fa9c37bcf8842bdc8c0adde18d099cd05f849f23"
+    }
+  ]
+}

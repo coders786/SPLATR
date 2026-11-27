@@ -95,6 +95,7 @@ export function createAudio({ muteKey = 'splatr.muted' } = {}) {
     'stock',
     'parry',
     'armor',
+    'spring',
     'drive',
     'plate',
     'crown',
@@ -134,6 +135,10 @@ export function createAudio({ muteKey = 'splatr.muted' } = {}) {
         rush(0.062, 4200, 0.12);
         tone(163, 62, 0.075, 'triangle', 0.085);
         tone(note * 1.08, note, 0.09, 'triangle', 0.042, 0.016);
+        break;
+      case 'spring':
+        tone(330, 650, 0.055, 'triangle', 0.045);
+        tone(180, 120, 0.045, 'square', 0.025, 0.035);
         break;
       case 'armor':
         tone(705, 142, 0.085, 'square', 0.037);
