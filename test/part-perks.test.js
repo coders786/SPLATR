@@ -8,18 +8,18 @@ import {PART_PERKS,resolvePartPerks,perkScoreMultiplier} from '../src/part-perks
 import {createRun} from '../src/run.js';
 import {drawPartPerkPulse,drawPartPerkDemo} from '../src/art/splatr-art-engine.js';
 
-test('every part has a gameplay receipt; perks belong to real catalogue entries',()=>{
- for(const it of ITEMS){const read=powerReadout(it);assert.equal(read.cosmetic,false,it.id);assert.doesNotMatch(read.title,/STYLE ONLY/);assert.ok(read.detail);}
- for(const id of Object.keys(PART_PERKS)){const it=ITEMS.find(i=>i.id===id);assert.ok(it,id);assert.ok(it.price>0);assert.ok(it.detail.includes(PART_PERKS[id].detail),id);}
+test('every part has an honest receipt; active perks belong to real gear',()=>{
+ for(const it of ITEMS){const read=powerReadout(it);assert.equal(read.cosmetic,['eyes','dash','world'].includes(it.slot),it.id);assert.doesNotMatch(read.title,/STYLE ONLY/);assert.ok(read.detail);}
+ for(const id of Object.keys(PART_PERKS)){const it=ITEMS.find(i=>i.id===id);assert.ok(it,id);assert.ok(it.price>0);if(!['eyes','dash','world'].includes(it.slot))assert.ok(it.detail.includes(PART_PERKS[id].detail),id);}
 });
 test('stacked perks have explicit hard limits and conditional score is not always on',()=>{
  const p=resolvePartPerks({a:'neko',b:'lava',c:'comic',d:'spectrum',e:'dash-echo'});assert.equal(p.chainGrace,36);
  assert.equal(resolvePartPerks({a:'dash-echo'}).chainGrace,0,'Echo replaces, rather than stacks, the old combo grace');
  const f=resolvePartPerks({a:'hypno',b:'hologram',c:'dash-ice',d:'pointer-cross'});assert.equal(f.focusDrain,.92,'Hypno and Frost no longer discount aim; only Pointer remains');
- assert.equal(resolvePartPerks({a:'visor',b:'visor',c:'visor',d:'visor'}).focusDrain,.7,'shared hard cap retained');
- const r=resolvePartPerks({a:'glitch',b:'synth',c:'dash-water',d:'pointer-orbit'});assert.equal(r.focusRegen,1.4);
+ assert.equal(resolvePartPerks({a:'visor',b:'visor',c:'visor',d:'visor'}).focusDrain,1,'cosmetic IDs never grant focus');
+ const r=resolvePartPerks({a:'glitch',b:'synth',c:'dash-water',d:'pointer-orbit'});assert.equal(r.focusRegen,1.1);
  const s=resolvePartPerks({a:'gold',b:'foundry',c:'dash-void',d:'confetti'}).scorePerks;
- assert.equal(perkScoreMultiplier(s,{kind:'fang'}),1.1);assert.equal(perkScoreMultiplier(s,{kind:'crown',kills:2}),1.25);
+ assert.equal(perkScoreMultiplier(s,{kind:'fang'}),1.1);assert.equal(perkScoreMultiplier(s,{kind:'crown',kills:2}),1.22);
  assert.equal(perkScoreMultiplier(resolvePartPerks({a:'sniper'}).scorePerks,{power:.5}),1);
  assert.equal(perkScoreMultiplier(resolvePartPerks({a:'sniper'}).scorePerks,{power:1}),1);
 });
@@ -30,14 +30,13 @@ test('new blade perks compose with Ghost without altering speed, health or armor
  const a=createRun(19,()=>{},{staged:false}),b=createRun(19,()=>{},{staged:false,equipment:{slash:'katana'}});
  try{a.dash({x:30,y:-10,power:1});b.dash({x:30,y:-10,power:1});assert.equal(b.state.blade-a.state.blade,2);assert.ok(b.state.equipmentFx.bursts.some(b=>b.style==='perk-blade'));}finally{a.dispose();b.dispose();}
 });
-test('focus efficiency and recovery actually alter the live resource, not only shop copy',()=>{
+test('cosmetic eyes do not alter the live focus resource',()=>{
  const run=(equipment)=>createRun(77,()=>{},{staged:false,equipment});const a=run({}),b=run({eyes:'visor'}),c=run({eyes:'glitch'});
  try{
   for(const r of [a,b,c]){r.state.phase='playing';Matter.Body.setPosition(r.world.player,{x:0,y:-1000});r.world.grounded=false;r.state.focus=.5;r.focus(true);r.tick();}
-  assert.ok(b.state.focus>a.state.focus,'visor spends less focus');
-  assert.ok(b.state.equipmentFx.bursts.some(b=>b.style==='perk-focus'));
+  assert.equal(b.state.focus,a.state.focus,'visor cannot change focus cost');
   for(const r of [a,c]){r.focus(false);r.state.focus=.5;r.tick();}
-  assert.ok(c.state.focus>a.state.focus,'glitch recovers faster');
+  assert.equal(c.state.focus,a.state.focus,'glitch cannot change focus recovery');
  }finally{for(const r of [a,b,c])r.dispose();}
 });
 function cutOnce(equipment){

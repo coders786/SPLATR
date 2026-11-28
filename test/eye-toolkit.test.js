@@ -19,7 +19,7 @@ function fixture(eye='hypno',more={}){
  r.combat.add({id:'sentinel',kind:'fang',x:700,y:-900,pinned:true,delay:999999});return {r,events};
 }
 function cut(r){assert.equal(r.dash({x:24,y:0,power:24/42}),true);const p=r.world.player.position,e=r.combat.add({id:'victim-'+r.state.shots,kind:'fang',x:p.x+30,y:p.y,pinned:true,delay:999999});r.combat.contacts.add(e);r.state.stop=1;r.tick();assert.equal(r.combat.enemies.has(e.id),false);}
-test('atomic contracts: Blaze loses Drive score; Hypno loses aim discount; Sniper independently migrated to puncture',()=>{
+test.skip('[retired cosmetic power] atomic contracts: Blaze loses Drive score; Hypno loses aim discount; Sniper independently migrated to puncture',()=>{
  const b=equipmentRules({eyes:'blaze'}),h=equipmentRules({eyes:'hypno'});
  assert.equal(b.blazeEntry,true);assert.equal(h.hypnoDaze,true);assert.equal(h.focusDrain,1);assert.deepEqual(b.scorePerks,[]);
  assert.equal(equipmentRules({eyes:'visor'}).focusDrain,.9);assert.equal(equipmentRules({eyes:'glitch'}).focusRegen,1.12);assert.equal(equipmentRules({eyes:'smug'}).chainGrace,12);
@@ -30,7 +30,7 @@ test('Blaze pure entry grant respects full/current Riot cap, inactive and refres
  for(const max of [2,3]){assert.equal(blazeEntryGrant({fresh:true,active:true,edge:0,max}),1);assert.equal(blazeEntryGrant({fresh:true,active:true,edge:max,max}),0);}
  assert.equal(blazeEntryGrant({fresh:false,active:true}),0);assert.equal(blazeEntryGrant({fresh:true,active:false}),0);
 });
-test('real Blaze entry grants once AFTER ordinary refund, uses Riot cap, does not add duration',()=>{
+test.skip('[retired cosmetic power] real Blaze entry grants once AFTER ordinary refund, uses Riot cap, does not add duration',()=>{
  for(const core of ['standard','riot']){
   const {r,events}=fixture('blaze',{core});try{
    r.state.chain=equipmentRules({core}).overdriveKills-1;r.state.chainTime=100;r.state.edge=1;cut(r);
@@ -74,7 +74,7 @@ test('Hypno immunity is90 world ticks per target object/generation and reset rem
 test('tap release, depleted/inactive focus and zero dt cannot accumulate hidden Hypno charge',()=>{
  const h=createHypnoHold(),opt={active:true,held:true,dt:17,enemies:[fang()]};h.step(opt);h.step({...opt,held:false});assert.equal(h.view().age,0);assert.equal(h.step({...opt,dt:1}),null);h.step({...opt,active:false});assert.equal(h.view().age,0);h.step({...opt,dt:0});assert.equal(h.view().age,0);
 });
-test('real run accepts Hypno on18th usable aim update, shares Time world clock and costs baseline focus',()=>{
+test.skip('[retired cosmetic power] real run accepts Hypno on18th usable aim update, shares Time world clock and costs baseline focus',()=>{
  for(const core of ['standard','time']){
   const {r,events}=fixture('hypno',{core});try{
    const e=r.combat.add({id:'local',kind:'fang',x:-240,y:-400,delay:999999});r.focus(true);
@@ -100,9 +100,9 @@ test('seven face rigs are distinct; their local active condition changes pixels,
   assert.notDeepEqual(image(id),image(id,pose),id);
  }
 });
-test('read-only seven-eye illustrations are reduced-motion pixel stable; renderer preserves state and input',()=>{
+test('cosmetic eye illustrations are reduced-motion pixel stable and preserve state and input',()=>{
  for(const eye of eyes){
-  const eq=normalizeEquipment({eyes:eye.id}),draw=t=>{const cv=createCanvas(640,400),c=cv.getContext('2d');c.globalAlpha=.8;c.translate(2,3);const matrix=c.getTransform(),study=shopStudy(eye,t,false,eq),before=JSON.stringify(study);drawShopItemStudy(c,640,400,{equipment:eq,study});assert.deepEqual(c.getTransform(),matrix);near(c.globalAlpha,.8);assert.equal(JSON.stringify(study),before);assert.equal(study.eye.illustration,true);return cv.toBuffer('image/png');};assert.deepEqual(draw(0),draw(4500),eye.id);
+  const eq=normalizeEquipment({eyes:eye.id}),draw=t=>{const cv=createCanvas(640,400),c=cv.getContext('2d');c.globalAlpha=.8;c.translate(2,3);const matrix=c.getTransform(),study=shopStudy(eye,t,false,eq),before=JSON.stringify(study);drawShopItemStudy(c,640,400,{equipment:eq,study});assert.deepEqual(c.getTransform(),matrix);near(c.globalAlpha,.8);assert.equal(JSON.stringify(study),before);assert.equal(study.eye,undefined);assert.equal(study.family,'cosmetic');return cv.toBuffer('image/png');};assert.deepEqual(draw(0),draw(4500),eye.id);
   assert.equal(eyeToolkitStudy(eye.id,0).beat,0);assert.equal(eyeToolkitStudy(eye.id,1500).beat,1);assert.equal(eyeToolkitStudy(eye.id,3000).beat,2);
  }
 });
@@ -110,7 +110,7 @@ test('save schema, prices and ownership contract are unchanged for all eyes',()=
  assert.deepEqual(eyes.map(e=>[e.id,e.price]),[['ninja',0],['visor',200],['blaze',150],['glitch',250],['smug',150],['hypno',300],['sniper',250]]);
  const raw=JSON.stringify({version:1,owned:eyes.map(e=>e.id),equipped:{eyes:'hypno'},presets:[{eyes:'blaze'},null,{eyes:'sniper'}],discovered:[]}),saved=loadEquipment(raw);assert.equal(saved.version,1);assert.equal(saved.equipped.eyes,'hypno');assert.equal(saved.presets[0].eyes,'blaze');assert.equal(saved.presets[2].eyes,'sniper');
 });
-test('real Hypno hold cannot advance through input lock, stun, depletion, hitstop or teaching arena',()=>{
+test.skip('[retired cosmetic power] real Hypno hold cannot advance through input lock, stun, depletion, hitstop or teaching arena',()=>{
  for(const guard of ['inputLock','stun','depleted','teachingArena']){
   const {r,events}=fixture();try{
    r.combat.add({id:'local',kind:'fang',x:-240,y:-400,delay:999999});r.focus(true);r.state[guard]=guard==='stun'?100:true;

@@ -14,6 +14,8 @@ export function mousePull(session){
  const travel=Math.max(MOUSE_AIM.minTravel,Math.min(MOUSE_AIM.maxTravel,Number(session.travel)||120));
  if(!Number.isFinite(distance)||distance<=MOUSE_AIM.deadZone)return null;
  const t=Math.min(1,(distance-MOUSE_AIM.deadZone)/(travel-MOUSE_AIM.deadZone));
- const power=t*(2-t),speed=MOUSE_AIM.maxSpeed*power;
+ // Keep the response continuous at the dead zone but make a short,
+ // intentional pull strong enough to move the cube, not vanish to friction.
+ const power=Math.sqrt(t),speed=MOUSE_AIM.maxSpeed*power;
  return {x:dx/distance*speed,y:dy/distance*speed,power};
 }

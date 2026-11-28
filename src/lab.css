@@ -846,3 +846,19 @@ dialog.shape-lab[data-clarity=true]{background:linear-gradient(145deg,#182330,#0
 .shape-lab[data-clarity=true][data-airy=true] .preview-decision{background:#20363f!important;border-color:#45605f!important}
 .shape-lab[data-clarity=true][data-airy=true] .preview-decision-copy strong{color:#e1e9d5}
 .shape-lab[data-clarity=true][data-airy=true] .preview-purchase:disabled{background:#233d42!important;color:#acc1b7!important;border-color:#45605f!important}
+/* Keep the garage focused on choosing and testing a part. Legacy build
+   libraries remain in saved data but are not an extra storefront destination. */
+.shape-lab .shop-destinations,
+.shape-lab .custom-recipes,
+.shape-lab .custom-hybrid,
+.shape-lab .preview-tools,
+.shape-lab .card-trying { display:none!important; }
+/* Two named arcade tabs. Slot buttons scroll instead of shrinking to illegible icons. */
+.shape-lab .custom-shop>nav.shop-groups{grid-template-columns:repeat(2,minmax(0,1fr))}
+.shape-lab[data-clarity=true] .shop-groups .shop-group{font-size:12px;gap:7px}
+.shape-lab .custom-shop>nav.shop-slots{overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;overscroll-behavior-x:contain}
+.shape-lab[data-clarity=true] .custom-shop>nav.shop-slots>button{flex:0 0 auto;min-width:76px;padding:5px 8px;font-size:10px!important;gap:4px}
+@media(max-width:700px){.shape-lab[data-clarity=true] .shop-groups .shop-group{font-size:10px}.shape-lab[data-clarity=true] .custom-shop>nav.shop-slots>button{min-width:68px;font-size:9px!important}}
+
+/* Keep the sandbox limitation visible, including on short screens. */
+@media(max-height:540px){.shape-lab .custom-note{display:block}}

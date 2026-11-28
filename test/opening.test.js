@@ -5,7 +5,7 @@ import { createRun, DRIVE_REACH } from '../src/run.js';
 import { makeCell, openingFacing } from '../src/levels.js';
 import { createCamera, toScreen } from '../src/camera.js';
 import { impactFor } from '../src/stroke.js';
-import { sceneFor } from '../src/storyboard.js';
+import { guideSceneFor } from '../src/guideboard.js';
 
 const tick = (g, n) => {
   while (n-- > 0) g.tick();
@@ -305,7 +305,7 @@ test('the long blade reaches a real sensor that the normal blade misses; a sheet
 
 test('the proof strip follows what was actually hit, stays out of committed swings, and never appears on a field-only run',t=>{
   const {g,s}=room();t.after(()=>g.dispose());
-  const scene=()=>sceneFor(s,g.nearest(),g.world.player.velocity.y>0,s.line-g.world.player.position.y);
+  const scene=()=>guideSceneFor(s,g.nearest(),g.world.player.velocity.y>0,s.line-g.world.player.position.y);
   assert.equal(scene(),'tap');tick(g,500);assert.equal(s.shots,0);assert.equal(scene(),'tap');
   // Three racks show cards; the FOURTH press is the transition out of the room,
   // and `lane` was never a room card -- it only appeared because the field was
@@ -324,8 +324,8 @@ test('the proof strip follows what was actually hit, stays out of committed swin
   assert.equal(scene(),null,'no card leaks out of the room');
   tick(g,500);assert.equal(scene(),null,'and none appears later either');
   const plain=createRun(42,()=>{},{staged:true});t.after(()=>plain.dispose());
-  assert.equal(sceneFor(plain.state,plain.nearest(),false,10),null);
-  const skip=room().g;t.after(()=>skip.dispose());assert.ok(skip.skipOpening());assert.equal(sceneFor(skip.state,skip.nearest(),false,10),null);
+  assert.equal(guideSceneFor(plain.state,plain.nearest(),false,10),null);
+  const skip=room().g;t.after(()=>skip.dispose());assert.ok(skip.skipOpening());assert.equal(guideSceneFor(skip.state,skip.nearest(),false,10),null);
 });
 
 test('a run from the bench keeps going through every species and into the normal endless formations', (t) => {

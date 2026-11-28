@@ -55,7 +55,7 @@ try{
   await page.evaluate(()=>qaFrames(80));
   await page.keyboard.down('Shift');await page.evaluate(()=>qaFrames(15));
   const held=await page.evaluate(()=>({held:__riot.state.held,focus:__riot.state.focus,phase:__riot.state.phase,open:!!__riot.state.opening}));
-  assert.equal(held.open,false);assert.equal(held.held,true,JSON.stringify({held,extra:await page.evaluate(()=>({screen:document.querySelector('#game').dataset.screen,grounded:__riot.world.grounded,stun:__riot.state.stun,lock:__riot.state.inputLock,cut:__riot.state.cutscene,elapsed:__riot.state.elapsed,wave:__riot.state.wave.phase,clock:__riot.world.clock,errors:window.__splatrFrameErrors}))}));assert.ok(held.focus<1);
+  assert.equal(held.open,false);assert.equal(held.held,true,JSON.stringify({held,extra:await page.evaluate(()=>({screen:document.querySelector('#game').dataset.screen,grounded:__riot.world.grounded,stun:__riot.state.stun,lock:__riot.state.inputLock,elapsed:__riot.state.elapsed,wave:__riot.state.wave.phase,clock:__riot.world.clock,errors:window.__splatrFrameErrors}))}));assert.ok(held.focus<1);
   assert.equal(await page.$eval('#focus-meter',n=>n.hasAttribute('data-cooling')),false);
   await page.keyboard.up('Shift');await page.evaluate(()=>qaFrames(5));
   const cooling=await page.evaluate(()=>({active:__riot.state.focusRecoveryActive,focus:__riot.state.focus,amount:__riot.state.focusRecoveryAmount}));

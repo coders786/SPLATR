@@ -117,7 +117,7 @@ Each equipment fragment uses its own existing authored construction silhouette. 
 | ghostlash | upgrade / upgrade | GHOST LASH | phase | 2.5s | Owned-card action marks; actual acquisition echo |
 | crowncinders | upgrade / upgrade | CROWN OF CINDERS | rise | 2.5s | Owned-card action marks; actual acquisition echo |
 | landlordskey | upgrade / upgrade | LANDLORD'S KEY | drop | 2.5s | Owned-card action marks; actual acquisition echo |
-| wheelofwatcher | upgrade / upgrade | WHEEL OF THE WATCHER | orbit | 2.5s | Owned-card action marks; actual acquisition echo |
+| wheelofwatcher | upgrade / upgrade | WHEEL OF FORTUNE | orbit | 2.5s | Owned-card action marks; actual acquisition echo |
 | theending | upgrade / upgrade | THE ENDING | inward | 2.5s | Owned-card action marks; actual acquisition echo |
 | fang | enemy / enemy | fang | burst | 3.0s | Body-local material; confirmed cut / armor debris |
 | pulse | enemy / enemy | pulse | orbit | 3.0s | Body-local material; confirmed cut / armor debris |

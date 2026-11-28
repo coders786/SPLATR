@@ -41,7 +41,7 @@
  *   AXIS   volume  cumulative forever; nothing is wasted
  *          peak    best value this run reached
  *          streak  consecutive actions without a break
- *          moment  a boolean state you got to (Hyper, a flawless seal)
+ *          moment  a boolean state you got to (Hyper, a flawless clear)
  *
  *   METRIC a key in `DEED_METRICS`, which mirrors counters src/run.js actually
  *          emits. A deed cannot ask for something the game does not observe —
@@ -69,7 +69,7 @@ export const LANES = Object.freeze([
   Object.freeze({ id: 'MOTION', tag: '/// MOTION', accent: '#00f0ff', belief: 'You are not standing on ground. You are spending it.', teaches: 'Launches, banks, ceilings, and never landing.' }),
   Object.freeze({ id: 'RHYTHM', tag: '/// RHYTHM', accent: '#dfff00', belief: 'Pace held is power banked.', teaches: 'Keeping speed and chain alive between kills.' }),
   Object.freeze({ id: 'HUNT', tag: '/// HUNT', accent: '#ff9f1c', belief: 'Every shape has one job. Take that job away.', teaches: 'Which enemy dies first, and why order is the weapon.' }),
-  Object.freeze({ id: 'DEPTH', tag: '/// DEPTH', accent: '#b388ff', belief: 'The field gets worse. You get better.', teaches: 'Distance, seals, and what the stack throws at you.' }),
+  Object.freeze({ id: 'DEPTH', tag: '/// DEPTH', accent: '#b388ff', belief: 'The field gets worse. You get better.', teaches: 'Distance, wave clears, and what the field throws at you.' }),
 ]);
 
 export const LANE_BY_ID = Object.freeze(Object.fromEntries(LANES.map((l) => [l.id, l])));
@@ -187,15 +187,15 @@ export const DEED_METRICS = Object.freeze({
   speciesPair: 'Species pairs completed this run (see deed).',
   /* DEPTH */
   sector: 'Highest sector reached this run.',
-  seals: 'Sectors sealed this run.',
-  sealsTotal: 'Sectors sealed across every run.',
-  flawless: 'Sectors sealed without a hit this run.',
+  seals: 'Waves cleared this run.',
+  sealsTotal: 'Waves cleared across every run.',
+  flawless: 'Waves cleared without a hit this run.',
   sectorsEntered: 'Sectors entered this run.',
   deepRuns3: 'Runs that reached sector 3.',
   deepRuns4: 'Runs that reached sector 4.',
   monolithSector: 'Reached a sector containing a monolith (see deed).',
   runClean: 'Highest sector reached WITH NO HITS TAKEN this run (0 if hit).',
-  apex: 'Eight flawless seals and sector 7 in one run (see deed).',
+  apex: 'Reach sector 7 with flawless waves (see deed).',
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -240,9 +240,9 @@ export const DEEDS = Object.freeze([
     'Strip five plates off bastions.',
     'A plate is a two-step plan inside a one-second window: survive the approach, break the guard, then kill. Bastions exist to teach that a single perfect strike is sometimes not enough.',
     'Armour stops being a barrier and becomes a checklist.'),
-  d('cut-seam', 'CUT', 0, 'THE FIRST SEAM', 'seals', 1,
-    'Break a sector seal.',
-    'Three anchors, then the seam — the game’s first real objective, and its first lesson in order, taught without printing the word. The seam is immune until its anchors fall, so the sector has a grammar you must read before you can finish it.',
+  d('cut-seam', 'CUT', 0, 'FIRST CLEAR', 'seals', 1,
+    'Clear an arcade wave.',
+    'Every enemy must fall before the next wave begins. Learn to read the entire field, choose safe attack lanes and finish each target before moving on.',
     'You understand what closing a sector actually requires.'),
   /* ═══ CUT · 10 skills ═══ */
   d('cut-shear', 'CUT', 1, 'SHEAR LINE', 'throughcuts', 4,
@@ -526,8 +526,8 @@ export const DEEDS = Object.freeze([
     'A bastion has a plate: one hit to strip it, another to kill it, both inside a window where it is not attacking. The first enemy that demands a two-step plan.',
     'Armoured targets become routine rather than hazard.'),
   d('hunt-mulch', 'HUNT', 0, 'MULCH', 'monoliths', 1,
-    'Fell the monolith guarding a seam.',
-    'Halfway through the stack the field stops asking you to survive and starts asking you to commit: a monolith does not chase, it waits behind a plate, and the seam will not open while it stands. Beating one is the first time the game asks for patience instead of speed.',
+    'Defeat the Monolith.',
+    'The Monolith holds its ground behind heavy plates. Patient cuts and well-timed banks let you break its defenses without running into its attacks.',
     'You learn to slow down inside a fast game, on purpose.'),
   d('hunt-splitter', 'HUNT', 0, 'SPLIT DECISION', 'heirKill', 2,
     'Cut two fork halves.',
@@ -612,17 +612,17 @@ export const DEEDS = Object.freeze([
     'Reach sector 2.',
     'Sector one is a warm-up you cannot fail out of. Sector two is the first field built against a player who already knows the verbs, and it is where most runs actually begin.',
     'The stack stops being a corridor and starts being a climb.'),
-  d('depth-seal2', 'DEPTH', 0, 'SEAL TWO', 'seals', 2,
-    'Seal two sectors in one run.',
-    'Two complete anchor-and-seam cycles in one life teaches the run structure: a sector is a job, not a stretch of corridor.',
+  d('depth-seal2', 'DEPTH', 0, 'WAVE TWO', 'seals', 2,
+    'Clear two sectors in one run.',
+    'Two complete waves in one life show that your movement and attacks can hold up against changing enemy formations rather than just one lucky opening.',
     'You understand the loop well enough to plan a run around it.'),
   d('depth-notouch', 'DEPTH', 0, 'NOT A SCRATCH', 'sectorsEntered', 5,
     'Enter five sectors in one run.',
     'A distance deed with no brilliance in it: just not dying, five times, which is its own skill. It is also the point where the board can start assuming you can survive a long field.',
     'You have a survivable baseline to build a run on.'),
   d('depth-sweep', 'DEPTH', 0, 'CLEAN RUN', 'seals', 3,
-    'Seal three sectors in one run.',
-    'Three seals is a run with a shape to it. Most runs end inside the first two, which means three requires a strategy that survives contact with a changing field.',
+    'Clear three sectors in one run.',
+    'Three clears is a run with a shape to it. Most runs end inside the first two, which means three requires a strategy that survives contact with a changing field.',
     'Your runs have a middle and an end, not just a start.'),
   d('depth-into', 'DEPTH', 0, 'INTO THE STACK', 'monolithSector', 1,
     'Reach a sector with a monolith in it.',
@@ -637,21 +637,21 @@ export const DEEDS = Object.freeze([
     'A clean climb is a different deed from a deep one: every sector you clear untouched tightens what the field is allowed to do to you. It is also the honest test of whether you are reading the telegraphs or just out-running them.',
     'You learn that survival is a plan, not a streak of luck.'),
   d('depth-monolithfield', 'DEPTH', 0, 'MONOLITH FIELD', 'monoliths', 1,
-    'Fell the monolith that guards a seam.',
-    'The seam stays shut while a monolith stands in it, and a monolith does not chase: it waits behind a plate and slams where you were. Felling one is the first time the stack asks for patience rather than speed, and the door it opens is the way deeper.',
+    'Defeat the Monolith.',
+    'The Monolith waits behind heavy plates and attacks where you were. Learn its timing, find a clear approach and defeat it to continue the arcade run.',
     'You learn that the way forward is sometimes a fight you start.'),
   /* ═══ DEPTH · 10 skills ═══ */
   d('depth-sector3', 'DEPTH', 1, 'SECTOR THREE', 'sector', 3,
     'Reach sector 3.',
     'Sector three combines problems: mixed species, tighter spacing, and a pace target that outruns a cautious player. Reaching it means you have an answer to more than one kind of pressure.',
     'You have a strategy, not a habit.'),
-  d('depth-seal4', 'DEPTH', 1, 'SEAL FOUR', 'seals', 4,
-    'Seal four sectors in one run.',
-    'Four seals is a long run in a game that punishes standing still: it needs you to keep pace through a sector made of the things that hurt you most.',
+  d('depth-seal4', 'DEPTH', 1, 'WAVE FOUR', 'seals', 4,
+    'Clear four sectors in one run.',
+    'Four clears is a long run in a game that punishes standing still: it needs you to keep pace through a sector made of the things that hurt you most.',
     'You can carry a run past where it used to end.'),
   d('depth-flawless2', 'DEPTH', 1, 'THREE CLEAN', 'flawless', 3,
-    'Seal three sectors without taking a hit.',
-    'Three flawless seals in one run makes the reading skill permanent: at this point you can name what killed you before, which means those deaths are now avoidable.',
+    'Clear three sectors without taking a hit.',
+    'Three flawless clears in one run makes the reading skill permanent: at this point you can name what killed you before, which means those deaths are now avoidable.',
     'The difficulty curve bends in your favour.'),
   d('depth-sector5', 'DEPTH', 1, 'SECTOR FIVE', 'sector', 5,
     'Reach sector 5.',
@@ -662,36 +662,36 @@ export const DEEDS = Object.freeze([
     'Five sectors untouched is where damage avoidance stops being a reflex and becomes a route: you are choosing which crowds to enter, not just how to leave them.',
     'You start planning around the fights you can skip.'),
   d('depth-untouched', 'DEPTH', 1, 'UNTOUCHED', 'flawless', 2,
-    'Seal two sectors without taking a hit.',
-    'Two flawless seals is a stronger claim than one: it means the reading habit held across two different enemy mixes, not just a lucky sector.',
+    'Clear two sectors without taking a hit.',
+    'Two flawless clears is a stronger claim than one: it means the reading habit held across two different enemy mixes, not just a lucky sector.',
     'Your survival stops depending on the sector.'),
   d('depth-deepruns', 'DEPTH', 1, 'DEEP HABIT', 'deepRuns4', 8,
     'Reach sector 4 on eight separate runs.',
     'Eight runs to sector 4 proves depth is a strategy rather than a streak. A player with this can lose three in a row and not care, because the fourth goes far.',
     'Your worst runs stop being short.'),
-  d('depth-fiftyseals', 'DEPTH', 1, 'FIFTY SEALS', 'sealsTotal', 50,
-    'Reach 50 lifetime seals.',
-    'Fifty seals is an honest record of time spent in the loop, and the volume at which the board can start asking for performance instead of survival.',
+  d('depth-fiftyseals', 'DEPTH', 1, 'FIFTY WAVES', 'sealsTotal', 50,
+    'Reach 50 lifetime clears.',
+    'Fifty clears is an honest record of time spent in the loop, and the volume at which the board can start asking for performance instead of survival.',
     'Harder depth deeds become fair to deal.'),
   d('depth-hundredhits', 'DEPTH', 1, 'ONE HUNDRED', 'sector', 4,
     'Reach sector 4.',
     'Sector four is where a clean player and a lucky player stop looking the same: the field has enough density that avoiding damage has to be a plan rather than a reflex.',
     'You can read a crowded sector before entering it.'),
   d('depth-cleanstack', 'DEPTH', 1, 'CLEAN STACK', 'flawless', 4,
-    'Seal four sectors without taking a hit.',
-    'Four flawless seals means the telegraph language is fluent: you are reacting to wind-ups before they resolve, in a sector designed to catch exactly that habit slipping.',
+    'Clear four sectors without taking a hit.',
+    'Four flawless clears means the telegraph language is fluent: you are reacting to wind-ups before they resolve, in a sector designed to catch exactly that habit slipping.',
     'Hits become something that happens to other players.'),
   /* ═══ DEPTH · 6 performances ═══ */
   d('depth-sector7', 'DEPTH', 2, 'SECTOR SEVEN', 'sector', 7,
     'Reach sector 7.',
     'Sector seven is beyond what most players ever see. Every system in the game is running against a player who has survived long enough that the field has stopped holding back.',
     'You have played the whole game.'),
-  d('depth-seal8', 'DEPTH', 2, 'SEAL EIGHT', 'seals', 6,
-    'Seal six sectors in one run.',
-    'Six seals in one life is a run with no wasted stretches: six complete cycles under a rising pace target. Very few runs contain this.',
+  d('depth-seal8', 'DEPTH', 2, 'WAVE SIX', 'seals', 6,
+    'Clear six sectors in one run.',
+    'Six clears in one life is a run with no wasted stretches: six complete cycles under a rising pace target. Very few runs contain this.',
     'You can hold a run together for as long as it asks.'),
   d('depth-flawless5', 'DEPTH', 2, 'FIVE CLEAN', 'flawless', 5,
-    'Seal five sectors without taking a hit.',
+    'Clear five sectors without taking a hit.',
     'The survival system’s apex: every telegraph read correctly for the length of a full session’s play, inside one life. Five sectors is long enough that no single lucky sector can account for it.',
     'Nothing in the early stack can touch you.'),
   d('depth-untouchable', 'DEPTH', 2, 'UNTOUCHABLE', 'runClean', 7,
@@ -699,11 +699,11 @@ export const DEEDS = Object.freeze([
     'Seven sectors without a scratch is the survival system’s closed book: at that depth the field is dense, the pace target is high, and every telegraph has a follow-up. Doing it clean means you read all of it.',
     'Hits become something that used to happen to you.'),
   d('depth-longroad', 'DEPTH', 2, 'THE LONG ROAD', 'sealsTotal', 150,
-    'Reach 150 lifetime seals.',
+    'Reach 150 lifetime clears.',
     'The book’s long record. It cannot be rushed, bought or shortcut — it is the number a player is quietly proud of when they read their own ledger.',
     'The ladder is complete, and the ledger is yours.'),
   d('depth-apex', 'DEPTH', 2, 'THE APEX', 'apex', 1,
-    'Reach sector 7 with five flawless seals in the same run.',
+    'Reach sector 7 with five flawless clears in the same run.',
     'The hardest deed in the book: survival skill, depth skill and the stamina to hold both for the length of a full climb, at once.',
     'You have done the thing the game is for.'),
 ]);
@@ -813,7 +813,7 @@ export function deedLabel(deed, metrics = {}) {
 
    A book of 120 deeds is worthless if a brand-new profile is dealt THE APEX —
    and it was, before this existed. The first board asked a first-time player to
-   reach sector 7 with five flawless seals. That is not difficulty; that is the
+   reach sector 7 with five flawless clears. That is not difficulty; that is the
    game introducing itself with an impossible sentence.
 
    The ladder is deliberately shallow and legible:
@@ -876,7 +876,7 @@ export function dealDeeds({ seed = 1, board = 0, open = [], recent = [], avoid =
 
   // THE FIRST BOARD IS A WARM-UP. Before anything has been finished, only
   // tier-0 deeds are fair to ask — otherwise a brand-new player is handed
-  // "reach sector 7 with five flawless seals" as their opening quest, which is
+  // "reach sector 7 with five flawless clears" as their opening quest, which is
   // exactly what happened before this rule existed.
   const warmed = Math.max(0, Number(progress.done) || 0) > 0;
 

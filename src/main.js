@@ -8,7 +8,6 @@ import {createVisualTutorial,tutorialObjective,tutorialAnnouncement,tutorialWhy,
 import {createControlPracticeUI} from './control-practice-ui.js';
 import {createTeachingUI} from './teaching-ui.js';
 import {createTrainingHub} from './training-hub.js';
-import {createOpeningGuide,openingGuide} from './opening-guide.js';
 import {healthDamageLabel,healthDeathMessage} from './health-ui.js';
 import {healthSegments,damageFeedback,dmgLabel,bearingWord,SAFE_BLINK_TICKS,HIT_RIM_TICKS} from './damage-feedback.js';
 // CHUNK 2: the live "safe to slice" set, measured against the blade's own sweep.
@@ -23,13 +22,15 @@ import {createWaveUI} from './wave-ui.js';
 import './lab.css';
 import { activeHybrid, activeSparks } from './hybrids.js';
 import { createCustomize } from './customize.js';
-import { ITEMS } from './equipment.js';
+import { ITEMS, DEFAULT_EQUIPMENT } from './equipment.js';
+import { shopAbility } from './shop-language.js';
 import { overlapsHUD } from './radar.js';
 import { createShopWallet } from './shop-wallet.js';
 import { createRoundRewardUI } from './round-reward-ui.js';
 import { createRun, CHAIN_TIME, HYPER } from './run.js';
 import { readForm, formLabel, GRADE_AT, GRADE_MARK, nextRank } from './form.js';
 import { createClock } from './clock.js';
+import { createResumeGrace } from './resume-grace.js';
 import { createRenderer } from './renderer.js';
 import { createInput, enableMenuTaps } from './input.js';
 import { createAudio } from './audio.js';
@@ -42,15 +43,13 @@ import { TIERS } from './motion.js';
 import { speedReadout, meterReadout, dialGeometry } from './motion.js';
 import { MAX_SPEED } from './physics.js';
 import { FRACTURE_TIERS, FRACTURE_KEY, clampPct, persistFracture, fractureTier } from './fracture.js';
-import { createCutscene, coldOpenOnce } from './cutscene.js';
-import { COLD_OPEN_BEATS, midWaveBeats, sectorBeats, SHATTER_BEATS, lockTicks } from './cinematics.js';
-import { LANDLORD_STORY, storyChipForWave } from './story-arc.js';
 // CHUNK 7: why the pause screen is open — printed on it, so an automatic
 // pause never looks like the game freezing.
+globalThis.__splatrBootMark?.('Initializing systems');
 let pauseCause = 'paused';
 let shopWallet, rewardUI, customize, waveUI, controlPractice, teaching;let learningGround=false,tutorial=null,lastTutorialHint=null,lastRiftObjective='',lastTutorialWhy='';
 const tutorialHintSpeech=Object.freeze({
- slice:'Pull away from the highlighted target, then release. Shift+click aims directly.',
+ slice:'Aim at the highlighted target and release. Slingshot controls are available in Options.',
  bank:'Aim at the glowing wall and launch into it.',
  approach:'Move closer to the Rift, then wait for its warning.',
  watch:'Wait for the Rift warning to cover you, then launch out of it.',
@@ -77,10 +76,6 @@ const setText = (id, txt) => {
   const el = $(id);
   if (el.textContent !== String(txt)) el.textContent = txt;
 };
-let tutorialSeenThisSession=false;
-// A first visit is consumed when the course opens, not when it is finished.
-// Retry and interrupted reloads must not force players back into the course.
-const needsTutorial=()=>!tutorialSeenThisSession&&storage.get('tutorialStarted','0')!=='1'&&storage.get('tutorialCompleted','0')!=='1'&&storage.get('started','0')!=='1'&&!(Number(storage.get('best',0))>0)&&!(Number(storage.get('rackClears',0))>0);
 const coarse=matchMedia('(pointer:coarse)');
 let mix=storage.get('fieldMix',storage.get('opening','auto')==='off'?'full':'gradual');
 if(mix!=='full')mix='gradual';
@@ -98,8 +93,10 @@ const pref = matchMedia('(prefers-reduced-motion: reduce)'),
     // Anyone who has asked for reduced motion starts at LOW rather than FULL.
     shake: storage.get('shake', pref.matches ? 'low' : 'full'),
     postfx: storage.get('postfx','auto'),
+    postfxStrength: storage.get('postfxStrength','balanced'),
     music: storage.get('music', '1') === '1',
     assist: storage.get('assist', '1') === '1',
+    aimMode: storage.get('aimMode', 'direct') === 'pull' ? 'pull' : 'direct',
   };
 // The picked speed is a real preference: it survives a reload and can be
 // changed between runs without touching a designer constant.
@@ -125,125 +122,13 @@ let run = null,
   noticePriority = 0,
   receiptTicks = 0,
   noticeTicks = 0;
+const resumeGrace = createResumeGrace();
+let pendingResumeShot = null;
 const active = () =>
   run && !teaching?.isOpen && !controlPractice?.isOpen && !waveUI?.open && !customize?.isOpen && !dialog.open && !document.hidden && ['ready', 'playing'].includes(run.state.phase) && !run.state.inputLock;
-// ── CHUNK 6A: THE CUTSCENE DRIVER ─────────────────────────────────────────
-// Pure time; the art lives in the engine keyed off s.cutscene. The shell
-// owns input lock, the freeze, and the chip.
-const firstWayGuide = createOpeningGuide(game);
-const coldOpenGate = coldOpenOnce();
-let activeCutscene = null,
-  cutsceneOnDone = null,
-  cutsceneOwnsStop = false;
-function launchCutscene(beats, { reducedMotion = !opts.motion, onDone = null, preserveInput = false } = {}) {
-  if (activeCutscene) return;
-  const cs = createCutscene({ beats, reducedMotion, onDone: () => endCutscene() });
-  activeCutscene = cs;
-  cutsceneOnDone = onDone;
-  const lockedTicks = lockTicks(beats, reducedMotion);
-  cutsceneOwnsStop = lockedTicks > 0;
-  if (run) {
-    // A mid-wave story pulse owns only its short reveal lock; the release beat
-    // hands control back before the afterimage clears. Locked cutscenes claim
-    // the stop window before their first tick so no frame slips through.
-    run.state.inputLock = cutsceneOwnsStop;
-    run.state.cutscene = null;
-    run.state.stop = cutsceneOwnsStop
-      ? Math.max(run.state.stop || 0, lockedTicks)
-      : run.state.stop || 0;
-  }
-  if (!preserveInput) input.reset();
-  dirty = true;
-}
-function tickCutscene() {
-  if (!activeCutscene) return;
-  const snap = activeCutscene.tick(1);
-  if (run) {
-    run.state.cutscene = {
-      beatId: snap.beatId,
-      beatIndex: snap.beatIndex,
-      t: snap.t,
-      elapsedTotal: snap.elapsedTotal,
-      totalTicks: snap.totalTicks,
-      lockInput: snap.lockInput,
-      reducedMotion: snap.reducedMotion,
-    };
-    // The beat table owns the handoff: locked shots hold the live run, while
-    // the final release shot lets the player move again before the visual
-    // sentence fully fades. `endCutscene` still clears this on skip/finish.
-    run.state.inputLock = !!snap.lockInput;
-  }
-  // The chip is DOM, owned here; the engine never writes text.
-  if (snap.chip && snap.t >= (snap.chip.at ?? 0)) {
-    const chip = $('story-chip');
-    if (chip && chip.textContent !== snap.chip.text) {
-      chip.textContent = snap.chip.text;
-      chip.hidden = false;
-      void chip.offsetWidth;
-      chip.classList.add('on');
-    }
-  } else hideStoryChip();
-  if (snap.phase !== 'playing') endCutscene();
-}
-function endCutscene() {
-  const onDone = cutsceneOnDone;
-  cutsceneOnDone = null;
-  activeCutscene = null;
-  hideStoryChip();
-  const ownsStop = cutsceneOwnsStop;
-  cutsceneOwnsStop = false;
-  if (run) {
-    // A skipped locked cutscene may end before its pre-applied stop expires.
-    // The mid-wave pulse owns only its short reveal window; release or skip
-    // clears that window without leaving the live run frozen.
-    if (ownsStop) run.state.stop = 0;
-    run.state.cutscene = null;
-    run.state.inputLock = false;
-    run.state.storyMoment = null;
-  }
-  onDone?.();
-}
-// Any key or tap after the 0.5s gate ends the cutscene. Capture runs before
-// the game's own input handlers, so the skip is never swallowed.
-window.addEventListener('keydown', (e) => {
-  if (!activeCutscene?.skippable) return;
-  e.preventDefault(); e.stopPropagation();
-  activeCutscene.skip();
-}, true);
-for (const type of ['pointerdown', 'touchstart'])
-  window.addEventListener(type, (e) => {
-    if (!activeCutscene?.skippable) return;
-    e.preventDefault(); e.stopPropagation();
-    activeCutscene.skip();
-  }, true);
 let lastSectorKey = null, sectorChipUntil = 0, lastFracturePaint = null, fractureGainTimer = 0, fractureSurgeTimer = 0, fractureHeartbeatArmed = false;
 const wallNow = () => globalThis.performance?.now?.() ?? Date.now();
 const say = (s) => setText('announcement', s);
-// ── CHUNK 6A: THE STORY CHIP ─────────────────────────────────────────────
-// One chip, ≤4 words, the only legible text allowed mid-play. Purely
-// decorative; fades via CSS.
-let storyChipTimer = 0;
-function showStoryChip(text) {
-  const chip = $('story-chip');
-  if (!chip) return;
-  chip.textContent = text;
-  chip.hidden = false;
-  // Force the transition to run from hidden → on.
-  void chip.offsetWidth;
-  chip.classList.add('on');
-  clearTimeout(storyChipTimer);
-  storyChipTimer = setTimeout(() => {
-    chip.classList.remove('on');
-    storyChipTimer = setTimeout(() => { chip.hidden = true; }, 750);
-  }, 1400);
-}
-function hideStoryChip() {
-  const chip = $('story-chip');
-  clearTimeout(storyChipTimer);
-  if (!chip) return;
-  chip.classList.remove('on');
-  chip.hidden = true;
-}
 function portal() {
   poki.setPlaying(!!active());
 }
@@ -270,7 +155,7 @@ function record() {
   setText('result-score', score(s.score));
   setText('result-kills', s.kills);
   setText('result-chain', `${s.maxChain} hit${s.maxChain === 1 ? '' : 's'}`);
-  setText('result-stage-label',s.wave&&!s.narrative?'Wave reached':'Sector');
+  setText('result-stage-label',s.wave&&!s.arcade?'Wave reached':'Sector');
   setText('result-sector', s.opening ? '—' : two(s.band));
   // ── CHUNK 1: BEST WAVE, ALONGSIDE THE SCORE ─────────────────────────────
   // A run that dies on Wave 03 still has to say so, and the number has to
@@ -412,34 +297,13 @@ function event(type, d) {
     case 'postPaid': audio.strike('drive');break;
     case 'sonicBank': audio.strike('parry');break;
     case 'breachContact': audio.seamHit();break;
-    case 'dimensionBreak': if(!run?.state.narrative)input?.reset();audio.shatter();break;
-    case 'storyMoment':
-      // Mid-wave story is a short gameplay cutscene: the opening image gets
-      // a real read window, then the release beat hands the live formation
-      // back before the emotional afterimage is gone.
-      if (run && d && !activeCutscene) {
-        launchCutscene(midWaveBeats(d.chip), { reducedMotion: !opts.motion });
-      }
-      break;
+    case 'dimensionBreak': if(!run?.state.arcade)input?.reset();audio.shatter();break;
     case 'sector':
       audio.zone();
-      // Continuous mode has a real room-to-room story beat. Legacy wave mode
-      // also emits `sector` for its counter, but it must not inherit a cinematic
-      // that belongs only to the Watcher/seal route.
-      if (run?.state.narrative && (d?.band | 0) > 1) {
-        input?.reset();
-        audio.seamHit();
-        launchCutscene(sectorBeats(storyChipForWave(d.band)), { reducedMotion: !opts.motion });
-      }
+
       break;
     case 'waveStart':
       audio.zone();
-      // Legacy finite waves do not have the continuous Watcher backdrop, so
-      // give their first five formations the same short story cadence. The
-      // encounter itself remains the picture; this is only the highlighted
-      // chapter name.
-      if (!run?.state.narrative && Number.isFinite(d?.number) && d.number <= 5)
-        showStoryChip(storyChipForWave(d.number));
       break;
     // CHUNK 2: every fracture the run causes lands in storage immediately,
     // so an interrupted session never loses the seam it tore.
@@ -464,8 +328,6 @@ function event(type, d) {
       setFractureUI(0);
       audio.shatter();
       buzz(70);
-      // CHUNK 6A: the tear is a 2.5s visual sentence, not a banner.
-      launchCutscene(SHATTER_BEATS, { reducedMotion: !opts.motion });
       break;
     case 'kineticOvercharge':
       // CHUNK 1: the old lethal-charge pill was a grey box in the far right
@@ -474,19 +336,15 @@ function event(type, d) {
       buzz(45);
       break;
     case 'monolithRise':
-      // CHUNK 4/6A: a torn arena does not breach. It manifests — silent but
-      // for the one chip the spec allows.
       audio.shatter();
       buzz(90);
-      showStoryChip(LANDLORD_STORY.chip);
       break;
     case 'monolithDown':
       audio.strike('drive');
       buzz(120);
-      showStoryChip(LANDLORD_STORY.finishChip);
       break;
-    case 'waveClear': input?.reset();if(!d.shattered){audio.waveClear();pop('CLEAR',60,3);}break;
-    case 'waveRest': input?.reset();break;
+    case 'waveClear': if(!d.continuous)input?.reset();if(!d.shattered){audio.waveClear();pop('CLEAR',60,3);}break;
+    case 'waveRest': if(!d.continuous)input?.reset();break;
     case 'swordReady': audio.strike('parry');pop('READY',55,1);break;
     case 'swordPulse': audio.strike('parry');break;
     case 'waveBlock': audio.strike('parry');pop('BLOCK',45,1);break;
@@ -571,9 +429,11 @@ function event(type, d) {
       buzz(38);
       portal();
       break;
+    case 'mineSpawn': if(d.first)pop('MINE · SLASH TO BAT',90,2); break;
+    case 'rushBlast': case 'linkHijack': case 'mineBat': case 'mineImpact': audio.strike('parry'); break;
     case 'drive':
       audio.strike('drive');
-      say('Overdrive.');
+      say('Rush.');
       break;
     case 'hyper': {
       // ── HYPER ────────────────────────────────────────────────────────────
@@ -641,6 +501,7 @@ const input = createInput(canvas, {
     pointerPos = { x: e.x, y: e.y };
   },
   assist: () => opts.assist,
+  aimMode: () => opts.aimMode,
   engage(device) {
     lastDevice = device;
     if(learningGround)tutorial?.interact();
@@ -662,6 +523,13 @@ const input = createInput(canvas, {
   commit(v) {
     // A magnetised release really is a touch wider along that corridor. Only
     // this launch; the next unassisted shot is ordinary reach again.
+    // Input remains live during the frozen resume cue. Defer the shot until
+    // the first simulation tick rather than losing a quick press and release.
+    if (resumeGrace.frozen) {
+      pendingResumeShot = { vector: {...v}, run, expires: null };
+      return true;
+    }
+    pendingResumeShot = null;
     const ok = run.dash(v);
     // CHUNK 1: a refused shot used to print `NO CUTS / RECHARGING` in the far
     // right corner, 900px from the cube that owns the charges. Nothing is
@@ -676,6 +544,9 @@ const input = createInput(canvas, {
   },
 });
 function syncSettings() {
+  $('aim-mode-opt').querySelector('b').textContent=opts.aimMode==='pull'?'Slingshot':'Direct';
+  setText('aim-mode-note',opts.aimMode==='pull'?'Pull away from the target and release. Longer pulls launch harder. Shift+click aims directly.':'Point toward your target and release to slash. Hold in flight to slow time.');
+  setText('start-hint',opts.aimMode==='pull'?'PULL BACK · RELEASE TO SLASH':'AIM AT A TARGET · RELEASE TO SLASH');
   for (const [id, on] of [
     ['audio-opt', audio.enabled],
     ['music-opt', opts.music],
@@ -690,6 +561,9 @@ function syncSettings() {
     opts.shake === 'off' ? 'Off' : opts.shake === 'low' ? 'Low' : 'Full';
   $('postfx-opt').querySelector('b').textContent=({auto:'Auto',on:'On',off:'Off'})[opts.postfx]||'Auto';
   renderer.setPostFXMode(opts.postfx);
+  $('postfx-strength-opt').querySelector('b').textContent=({soft:'Soft',balanced:'Balanced',vivid:'Vivid'})[opts.postfxStrength]||'Balanced';
+  $('postfx-strength-opt').disabled=opts.postfx==='off';
+  renderer.setPostFXIntensity(opts.postfxStrength);
   $('pace-opt').querySelector('b').textContent=speed().label;
   setText('pace-note','Changes automatic reaction windows, not launch direction or power.');
   $('dev-opt').querySelector('b').textContent=devMode?'On':'Off';
@@ -723,6 +597,8 @@ function syncSettings() {
   if (fullOk)
     $('full-opt').querySelector('b').textContent = document.fullscreenElement ? 'Exit' : 'Enter';
 }
+$('aim-mode-opt').onclick=()=>{input.cancel();opts.aimMode=opts.aimMode==='direct'?'pull':'direct';storage.set('aimMode',opts.aimMode);syncSettings();dirty=true;};
+$('postfx-strength-opt').onclick=()=>{const levels=['soft','balanced','vivid'];opts.postfxStrength=levels[(levels.indexOf(opts.postfxStrength)+1)%levels.length];storage.set('postfxStrength',opts.postfxStrength);syncSettings();dirty=true;};
 $('postfx-opt').onclick=()=>{const modes=['auto','on','off'];opts.postfx=modes[(modes.indexOf(opts.postfx)+1)%modes.length];storage.set('postfx',opts.postfx);syncSettings();dirty=true;};
 $('dev-opt').onclick = () => {
   if (run && !confirm('Switching mode ends this run. Continue?')) return;
@@ -939,7 +815,6 @@ function updateHUD() {
   if (!run) return;
   const s = run.state;
   $('rack-skip').hidden=!learningGround;
-  firstWayGuide.update(s,lastDevice);
   setText('score', score(s.score));
   hud.dataset.place = s.opening ? 'room' : 'field';
   $('chain').hidden = !!s.opening || s.chain < 2;
@@ -990,7 +865,7 @@ function updateHUD() {
   // Hull, Edge and Focus all come from one readout so they cannot disagree
   // about what is empty or how much is owed. See `meterReadout` in motion.js.
   const meters = meterReadout(s);
-  const status = s.narrative ? null : combatStatus(s);
+  const status = s.arcade ? null : combatStatus(s);
   $('combat-status').hidden = !status;
   if(status){setText('combat-status-title',status.title);setText('combat-status-detail',status.detail);}
   // ── CHUNK 1: THE HULL, UNDER THE SCORE ────────────────────────────────
@@ -1023,16 +898,16 @@ function updateHUD() {
   {
     const hint = $('start-hint');
     if (hint) {
-      const show = hintVisible(s.kills, s.elapsed) && s.phase === 'playing' && !s.opening && !learningGround && !activeCutscene;
+      const show = hintVisible(s.kills, s.elapsed) && s.phase === 'playing' && !s.opening && !learningGround;
       hint.hidden = !show;
       hint.classList.toggle('on', show);
     }
     // CHUNK 2: the colour law, taught on the same ticker lane until the player
     // has cut three things. Never during practice (the practice ground teaches
-    // its own lesson), never during a cutscene, never over a live fight.
+    // its own lesson), never over a live fight.
     const law = $('law-hint');
     if (law) {
-      const show = lawHintVisible(s.kills, s.elapsed) && s.phase === 'playing' && !s.opening && !learningGround && !activeCutscene;
+      const show = lawHintVisible(s.kills, s.elapsed) && s.phase === 'playing' && !s.opening && !learningGround;
       law.hidden = !show;
       law.classList.toggle('on', show);
     }
@@ -1117,19 +992,13 @@ function updateHUD() {
   // gone — the persistent readouts were §4 text. The #district wall of
   // adjectives is deleted outright.
   {
-    const sectorKey = s.narrative ? `SECTOR ${two(s.narrative.sector)}` : s.wave ? `WAVE ${two(s.wave.number)}` : s.opening ? 'CUTTING ROOM' : `SECTOR ${two(s.band)}`;
+    const sectorKey = s.wave ? `WAVE ${two(s.wave.number)}` : s.arcade ? `SECTOR ${two(s.arcade.sector)}` : s.opening ? 'CUTTING ROOM' : `SECTOR ${two(s.band)}`;
     if (sectorKey !== lastSectorKey) {
       lastSectorKey = sectorKey;
-      setText('sector', sectorKey);
+      setText('sector', s.wave?.brief?.name ? `${sectorKey} / ${s.wave.brief.name}` : sectorKey);
       const chip = $('sector');
       if (chip) {
-        if (s.narrative) {
-          // The chapter chip is the narrative line in continuous mode; do not
-          // stack a second "SECTOR 02" label under it.
-          chip.classList.remove('on');chip.hidden=true;sectorChipUntil=0;
-        } else {
-          chip.hidden = false; void chip.offsetWidth; chip.classList.add('on'); sectorChipUntil = wallNow() + 1400;
-        }
+        chip.hidden = false; void chip.offsetWidth; chip.classList.add('on'); sectorChipUntil = wallNow() + 1400;
       }
     }
     if (sectorChipUntil && wallNow() >= sectorChipUntil) {
@@ -1226,7 +1095,7 @@ function updateHUD() {
       momentumPips.children[i].classList.toggle('on', i < momentumCount);
     }
   }
-  $('drive').hidden = !!s.opening || s.drive <= 0;
+  $('drive').hidden = !!s.arcade || !!s.opening || s.drive <= 0;
   // Overdrive's fill is a ::after driven by `--v`, so the bar and every other
   // continuous meter share one transform. Clamped: OVERDRIVE.ticks is the
   // bank it is filled from, and a stale larger value would draw past the end
@@ -1241,10 +1110,19 @@ function updateHUD() {
     (s.chainMax ? Math.min(1, Math.max(0, s.chainTime / s.chainMax)) : 0).toFixed(3),
   );
   // Nonvisual equivalents only. The proof strip itself never draws words.
-  const desc={tap:'Tap a pennant, Shift+click it, or press Space to cut through the rack.',pull:'Pull back and release to launch the opposite way. Shift+click aims directly.',shell:'One plate over another. Cut the shell.',crack:'The first plate broke. Strike again.',rewind:'Returning to the launch point.',retry:'Try the marked shape again. Two tries left before this rack is conceded.',stock:'Wait for one cut to refill.',lane:'The triangle charges along its marked lane. Cut it or cross its path.',focus:'Hold a target in flight, or hold Shift to focus. Choose a new line and slash.',rise:'The marked floor is rising. Slash up.',net:'One net caught you. Your cuts are full. Launch up.'};
-  setText('story-alt',openingGuide(s,lastDevice)?.alt||desc[canvas.dataset.scene]||'');
+  const desc={tap:'Aim at a pennant and release, or press Space to cut through the rack.',pull:opts.aimMode==='pull'?'Pull away and release to launch.':'Aim toward the target and release to launch.',shell:'One plate over another. Cut the shell.',crack:'The first plate broke. Strike again.',rewind:'Returning to the launch point.',retry:'Try the marked shape again. Two tries left before this rack is conceded.',stock:'Wait for one cut to refill.',lane:'The triangle charges along its marked lane. Cut it or cross its path.',focus:'Hold a target in flight, or hold Shift to focus. Choose a new line and slash.',rise:'The marked floor is rising. Slash up.',net:'One net caught you. Your cuts are full. Launch up.'};
+  setText('scene-alt',desc[canvas.dataset.scene]||'');
 }
-function restoreField() {
+function restoreField({resume = true} = {}) {
+  const fromPause = page === 'pause' && !!run;
+  resumeGrace.cancel();
+  pendingResumeShot = null;
+  $('resume-cue').hidden = true;
+  if (resume && fromPause && ['ready','playing'].includes(run.state.phase)) {
+    resumeGrace.start(wallNow());
+    $('resume-cue').hidden = false;
+    say('Get ready. Resuming.');
+  }
   page = null;
   if (dialog.open) dialog.close();
   clock.reset();
@@ -1255,7 +1133,7 @@ function restoreField() {
   }
   portal();
 }
-function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
+function start({learningGround:learn=false}={}) {
   if(customize?.isOpen||controlPractice?.isOpen||teaching?.isOpen) return;
   delete game.dataset.frameFault;
   // CHUNK 7: a new run starts with a clean diagnostic slate, and says so.
@@ -1268,7 +1146,7 @@ function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   poki.setPlaying(false);
   if(tutorial)tutorial.dispose();else run?.dispose();tutorial=null;
   seed = freshSeed(seed);
-  const wasLearning=learningGround;learningGround=learn;lastTutorialHint=null;lastRiftObjective='';lastTutorialWhy='';$('tutorial-objective').hidden=true;game.dataset.learning=String(learn);game.dataset.tutorialReveal=String(wasLearning&&!learn);storage.set('started',1);if(learn){tutorialSeenThisSession=true;storage.set('tutorialStarted',1);}
+  const wasLearning=learningGround;learningGround=learn;lastTutorialHint=null;lastRiftObjective='';lastTutorialWhy='';$('tutorial-objective').hidden=true;game.dataset.learning=String(learn);game.dataset.tutorialReveal=String(wasLearning&&!learn);storage.set('started',1);if(learn)storage.set('tutorialStarted',1);
   renderer.reset(seed, false);
   $('dev-refill').textContent='Refill health / Edge / focus';
   combatTrace = devMode ? createCombatTrace(4096) : null;
@@ -1280,7 +1158,7 @@ function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   // separate path: one auto-picked card per clear, no UI, no stop. Both flags
   // exist because one means "ask the player" and the other means "give it to
   // them". See src/post.js.
-  else run = createRun(seed, event, {waveMode:true,continuous:true,catalogRewards:false,postRewards:true,lockdownIntro:lockdown,viewport:renderer.questView(),equipment:customize?.snapshot(),combatTrace,fracturePct:fractureMirror});
+  else run = createRun(seed, event, {waveMode:true,continuous:true,catalogRewards:false,postRewards:true,viewport:renderer.questView(),equipment:customize?.snapshot(),combatTrace,fracturePct:fractureMirror});
   // QA/debug handle: ?debug in the URL or riot.debug=1 in localStorage exposes
   // the live run to automated playtests. Never set for an ordinary player.
   if (new URLSearchParams(location.search).has('debug') || storage.get('debug', '0') === '1') window.__riot = run;
@@ -1289,9 +1167,10 @@ function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   game.dataset.world=run.state.equipment.world;
   shopWallet.begin(run);
   rewardUI.tick(run);
-  const hybrid=activeHybrid(run.state.equipment)||activeSparks(run.state.equipment)[0];
-  $('hybrid-title').textContent=hybrid?.title || '';
-  $('hybrid-title').hidden=!hybrid;
+  // Display the actual gear-derived combat build, not a visual-only fusion.
+  const combatBuild=run.state.sword;
+  $('hybrid-title').textContent=combatBuild?.build ? combatBuild.buildTitle : '';
+  $('hybrid-title').hidden=!combatBuild?.build;
   audio.unlock();
   audio.menu();
   lastBeat = -1;
@@ -1317,22 +1196,11 @@ function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   $('last-damage').hidden = true;
   $('title-screen').hidden = true;
   hud.hidden = false;
-  restoreField();
+  restoreField({resume:false});
   nextHUD = 0;
-  // CHUNK 6A: the cold open — first real run of the session. 2.4 seconds,
-  // skippable with any key after 0.5s, never again this session.
-  if (!learn && run.state.narrative?.intro) coldOpenGate.should(); // consume the retired movie for this session
-  if (!learn && !run.state.narrative?.intro && coldOpenGate.should())
-    launchCutscene(COLD_OPEN_BEATS, { reducedMotion: !opts.motion, onDone: () => {
-      hud.classList.add('hud-fade-in');
-      setTimeout(() => hud.classList.remove('hud-fade-in'), 740);
-      if (run?.state.narrative) showStoryChip(storyChipForWave(run.state.narrative.sector));
-    }});
   renderer.draw(run, 1, null, opts.motion,lastDevice);
   updateHUD();
-  // The cold open is the first sentence. Do not put the retired ambient
-  // announcement underneath it; practice still keeps its authored instruction.
-  if (!activeCutscene) say(learn?'Practice: slice the targets, bank the wall, dodge and cut, then break the Crown.':'New run.');
+  say(learn?'Practice: slice the targets, bank the wall, dodge and cut, then break the Crown.':'New run.');
 }
 function home() {
   renderer.setFieldScale?.(1);
@@ -1341,7 +1209,6 @@ function home() {
   run = null;tutorial=null;
   combatTrace = null;
   learningGround=false;game.dataset.learning='false';
-  firstWayGuide.update(null,lastDevice);
   restoreField();
   hud.hidden = true;
   $('rack-skip').hidden=true;$('tutorial-objective').hidden=true;
@@ -1373,6 +1240,9 @@ function manual(){
  });
 }
 function open(next) {
+  resumeGrace.cancel();
+  pendingResumeShot = null;
+  $('resume-cue').hidden = true;
   input.cancel();
   clock.reset();
   poki.setPlaying(false);
@@ -1382,11 +1252,26 @@ function open(next) {
   game.dataset.screen = next;
   setText(
     'panel-heading',
-    { pause: 'Paused', manual: 'Field manual', options: 'Options', result: 'Run ended' }[next],
+    { pause: 'Paused', manual: 'Training arena', options: 'Options', result: 'Run ended' }[next],
   );
   if (next === 'manual') manual();
   if (next === 'options') syncSettings();
   if (next === 'pause') {
+    const end = $('end-btn'); end.dataset.confirm = 'false'; end.textContent = 'End run'; prependIcon(end,'back');
+    const list = $('pause-build-list'); list.replaceChildren();
+    const equipment = run.state.equipment || {};
+    for (const slot of ['head','body','core','tail','slash','pointer','radar','trajectory']) {
+      const item = ITEMS.find(x => x.slot === slot && x.id === equipment[slot]);
+      if (!item || (slot !== 'core' && item.id === DEFAULT_EQUIPMENT[slot])) continue;
+      const li = document.createElement('li'), title = document.createElement('strong'), effect = document.createElement('span');
+      title.textContent = item.name; effect.textContent = shopAbility(item.id).effect;
+      li.append(title,effect); list.append(li);
+    }
+    if (run.state.sword?.build) {
+      const li = document.createElement('li'), title = document.createElement('strong'), effect = document.createElement('span');
+      title.textContent = run.state.sword.name; effect.textContent = `${run.state.sword.strength} ${run.state.sword.cost}`;
+      li.append(title,effect); list.append(li);
+    }
     // CHUNK 7: the pause is honest about who asked for it.
     const why = $('pause-why');
     if (why) {
@@ -1464,7 +1349,8 @@ document.querySelectorAll('.back').forEach((b) => (b.onclick = back));
 $('start-btn').onclick = () => start();
 $('retry-btn').onclick = () => start({learningGround:false});
 $('home-btn').onclick = home;
-$('resume-btn').onclick = restoreField;
+$('resume-btn').onclick = () => restoreField();
+$('pause-restart').onclick = () => start({learningGround:false});
 $('dev-refill').hidden = $('dev-trace').hidden = !devMode;
 /* §3.4 of the chunk-7 plan: THE FAULT LINE BECOMES A REPORT.
    Chunk 7 made a repeating frame error visible; visible is not fixable. This
@@ -1510,11 +1396,19 @@ $('skip-room').onclick = () => {
   }
 };
 $('pause-btn').onclick = () => {
-  if (active()) { pauseCause = 'paused'; open('pause'); }
+  if (active() || (resumeGrace.active && !dialog.open)) { pauseCause = 'paused'; open('pause'); }
 };
 $('manual-btn').onclick = $('pause-manual').onclick = () => open('manual');
 $('options-btn').onclick = $('pause-options').onclick = () => open('options');
-$('end-btn').onclick = () => learningGround?finishTutorial():run?.retire();
+$('end-btn').onclick = () => {
+  if (!learningGround && (run?.state.wave?.number || 0) > 2 && $('end-btn').dataset.confirm !== 'true') {
+    $('end-btn').dataset.confirm = 'true';
+    $('end-btn').textContent = 'Confirm end run';
+    say('Press Confirm end run to end this run.');
+    return;
+  }
+  learningGround ? finishTutorial() : run?.retire();
+};
 window.addEventListener('keydown', (e) => {
   if(customize?.isOpen||controlPractice?.isOpen||teaching?.isOpen) return;
   if (e.altKey || e.ctrlKey || e.metaKey) return;
@@ -1557,7 +1451,7 @@ window.addEventListener('keydown', (e) => {
     } else if (k === 'p' && page === 'pause' && !e.repeat) restoreField();
     return;
   }
-  if ((k === 'escape' || k === 'p') && active() && !e.repeat && !learningGround) {
+  if ((k === 'escape' || k === 'p') && (active() || resumeGrace.active) && !e.repeat && !learningGround) {
     e.preventDefault();
     pauseCause = 'paused';
     open('pause');
@@ -1703,17 +1597,34 @@ function safeStep(now) {
   if (!run) {
     if (redraw || (!page && opts.motion)) renderer.title(opts.motion ? now * 0.023 : 0);
   } else if (!dialog.open && !controlPractice?.isOpen && !teaching?.isOpen) {
+    const grace = resumeGrace.advance(wallNow());
+    const cue = $('resume-cue');
+    cue.hidden = grace.phase === 'none';
+    if (!cue.hidden) {
+      const view = renderer.questView(), p = run.world.player.position;
+      cue.style.left = `${(p.x - view.x) * view.scale}px`;
+      cue.style.top = `${(p.y - view.y) * view.scale}px`;
+      cue.style.setProperty('--resume-progress', String(grace.progress));
+      cue.dataset.phase = grace.phase;
+    }
     const a = clock.frame(now, () => {
       if (dialog.open || waveUI?.open || run.state.wave?.phase==='choose') return;
       // A refused shot gets one more chance before the tick consumes the frame.
       // Retried here rather than on the input event because the reason the shot
       // was refused is almost always a GAME state (recovery, hitstop) that only
       // changes on a tick.
+      if (pendingResumeShot) {
+        const pending = pendingResumeShot;
+        if (pending.run !== run || (pending.expires !== null && wallNow() > pending.expires)) pendingResumeShot = null;
+        else {
+          if (pending.expires === null) pending.expires = wallNow() + 120;
+          if (run.dash(pending.vector)) pendingResumeShot = null;
+        }
+      }
       input.retry();
       input.tick();
       run.setAim(input.aim);
       run.tick(); // owns the panic ray, grace and every other tick rule
-      tickCutscene(); // CHUNK 6A: advances the cold open / mid-wave / sector / SHATTER cuts
       if(learningGround&&tutorial){tutorial.tick(input.engaged);const objective=tutorialObjective(tutorial.visual,run.combat.enemies,lastDevice),label=$('tutorial-objective');label.hidden=!objective;const speech=objective?tutorialAnnouncement(tutorial.visual,objective,lastDevice):'',objectiveKey=objective+'|'+speech;if(objectiveKey!==lastRiftObjective){if(!objective)lastTutorialHint=null;lastRiftObjective=objectiveKey;setText('tutorial-objective-text',objective);const room=TUTORIAL_LINES[Math.min(Math.max(tutorial.visual.stage|0,0),3)];if(room&&label.dataset.room!==room.title){label.dataset.room=room.title;}if(speech)say(speech);}const whyNow=objective?tutorialWhy(tutorial.visual,run.combat.enemies):'';if(whyNow!==lastTutorialWhy){lastTutorialWhy=whyNow;const why=$('tutorial-objective-why');if(why)why.textContent=whyNow;}const hint=tutorial.visual.guide?.kind;if(!objective&&hint&&hint!==lastTutorialHint){lastTutorialHint=hint;say(tutorialHintSpeech[hint]);}if(tutorial.finished){queueMicrotask(()=>{if(learningGround&&tutorial?.finished)finishTutorial();});}}
       rewardUI.tick(run);
       audio.focus(run.state.phase === 'playing' && run.state.held && run.world.slow);
@@ -1758,7 +1669,7 @@ function safeStep(now) {
         audio.beat(beat, run.state.drive > 0, run.state.equipment?.world);
         lastBeat = beat;
       }
-    });
+    }, grace.scale);
     // The screen-space damage reaction is read by the painter on this frame,
     // so it is pushed immediately before the draw, never a frame late.
     const feedback = hitAt >= 0
@@ -1789,19 +1700,19 @@ function safeStep(now) {
   dirty = false;
   lastRevision = renderer.revision;
 }
-function finishTutorial(){const first=storage.get('tutorialCompleted','0')!=='1';storage.set('tutorialCompleted',1);start({learningGround:false,lockdown:first});}
+function finishTutorial(){storage.set('tutorialCompleted',1);start({learningGround:false});}
 $('rack-skip').onclick=()=>{if(learningGround)finishTutorial();};
 shopWallet = createShopWallet(storage, {unlimited:devMode});
 rewardUI = createRoundRewardUI({wallet:shopWallet});
-customize = createCustomize({storage,unlimited:devMode,wallet:()=>shopWallet.wallet(),ownedParts:()=>shopWallet.ownedParts(),purchase:(id,cost)=>shopWallet.purchase(id,cost),resetInput:()=>input.reset(),motion:()=>opts.motion,snap:()=>audio.menu()});
-controlPractice = createControlPracticeUI({resetInput:()=>input.reset(),motion:()=>opts.motion&&opts.shake!=='off',onOpen:()=>{input.reset();poki.setPlaying(false);},onClose:()=>{input.reset();}});
-teaching = createTeachingUI({resetInput:()=>input.reset(),motion:()=>opts.motion&&opts.shake!=='off',onOpen:()=>{input.reset();poki.setPlaying(false);},onClose:()=>{input.reset();},openControl:()=>controlPractice?.open()});
+customize = createCustomize({storage,unlimited:devMode,wallet:()=>shopWallet.wallet(),ownedParts:()=>shopWallet.ownedParts(),purchase:(id,cost)=>shopWallet.purchase(id,cost),aimMode:()=>opts.aimMode,resetInput:()=>input.reset(),motion:()=>opts.motion,snap:()=>audio.menu()});
+controlPractice = createControlPracticeUI({resetInput:()=>input.reset(),aimMode:()=>opts.aimMode,motion:()=>opts.motion&&opts.shake!=='off',onOpen:()=>{input.reset();poki.setPlaying(false);},onClose:()=>{input.reset();}});
+teaching = createTeachingUI({resetInput:()=>input.reset(),aimMode:()=>opts.aimMode,motion:()=>opts.motion&&opts.shake!=='off',onOpen:()=>{input.reset();poki.setPlaying(false);},onClose:()=>{input.reset();},openControl:()=>controlPractice?.open()});
 $('manual-teaching').onclick=()=>{home();teaching.open();};
 $('manual-drill').onclick=()=>{home();controlPractice.open();};
-const customButton=document.createElement('button');customButton.id='customize-btn';customButton.className='choice quiet';customButton.textContent='Shop';customButton.onclick=()=>customize.open();$('main-nav').append(customButton);
+const customButton=document.createElement('button');customButton.id='customize-btn';customButton.className='choice quiet';customButton.textContent='Garage';customButton.onclick=()=>customize.open();$('main-nav').append(customButton);
 waveUI=createWaveUI({getRun:()=>run,resetInput:()=>input.reset(),motion:()=>opts.motion});
 installIconSprite();
-for(const [id,name]of Object.entries({'start-btn':'play','manual-btn':'guide','options-btn':'settings','customize-btn':'shop','resume-btn':'play','pause-practice':'practice','pause-manual':'guide','pause-options':'settings','retry-btn':'retry','home-btn':'back','end-btn':'back'}))prependIcon($(id),name);
+for(const [id,name]of Object.entries({'start-btn':'play','manual-btn':'guide','options-btn':'settings','customize-btn':'shop','resume-btn':'play','pause-restart':'retry','pause-practice':'practice','pause-manual':'guide','pause-options':'settings','retry-btn':'retry','home-btn':'back','end-btn':'back'}))prependIcon($(id),name);
 renderer.onGraphicsContext(state=>{
   const lost=state==='lost';audio.setSuspended('graphics',lost);
   if(lost)suspend('graphics context lost');
@@ -1811,7 +1722,7 @@ function disposeGame(){
   if(disposedGame)return;disposedGame=true;cancelAnimationFrame(raf);raf=0;clearTimeout(blurTimer);
   for(const timer of [hitTimer,kickTimer,flareTimer,fractureGainTimer,fractureSurgeTimer])clearTimeout(timer);
   input.dispose();if(tutorial)tutorial.dispose();else run?.dispose();
-  firstWayGuide.dispose();customize?.dispose();controlPractice?.dispose();teaching?.dispose();waveUI?.dispose();rewardUI?.dispose();renderer.dispose();audio.dispose();
+  customize?.dispose();controlPractice?.dispose();teaching?.dispose();waveUI?.dispose();rewardUI?.dispose();renderer.dispose();audio.dispose();
 }
 window.addEventListener('pagehide',e=>{audio.setSuspended('page',true);if(!e.persisted)disposeGame();});
 window.addEventListener('pageshow',e=>{if(e.persisted){audio.setSuspended('page',false);clock.reset();lastFrameAt=0;dirty=true;}});
@@ -1824,6 +1735,7 @@ setText('title-best', score(best));
 // first run of the session.
 setFractureUI(fractureMirror);
 renderer.title(0);
+globalThis.__splatrBootMark?.('Arena ready');
 // Only reveal the menu once its artwork and action handlers are ready.
 game.removeAttribute('inert');
 $('boot').remove();

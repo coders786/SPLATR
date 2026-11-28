@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createCanvas} from '@napi-rs/canvas';
 import {ITEMS,loadEquipment,normalizeEquipment,buyEquipment,equipmentRules} from '../src/equipment.js';
 import {localRadar} from '../src/radar.js';
-import {sensorTier,trajectorySamples,drawSensorPreview,drawShopCardArt} from '../src/art/splatr-art-engine.js';
+import {sensorTier,trajectorySamples,drawSensorPreview,drawShopCardArt,peripheralRadar} from '../src/art/splatr-art-engine.js';
 import {predictAim} from '../src/aim.js';
 import {createRun} from '../src/run.js';
 import {placePlayer,stopPlayer} from '../src/physics.js';
@@ -68,17 +68,13 @@ test('real renderer draws trajectory for pointer aiming and oracle flight calcul
 });
 
 
-test('equipped radar displays actual hazards and live tells only at their tiers',()=>{
- const dom=installDom();try{
-  for(const level of [0,1,2,3]){
-   const {canvas,ctx}=createDisplay(1280,720),renderer=createRenderer(canvas),run=createRun(5,()=>{},{waveMode:true,controlPractice:true,equipment:{radar:level?`radar-${level}`:'radar-base'}});
-   try{
-    run.state.phase='playing';placePlayer(run.world,{x:0,y:-400});stopPlayer(run.world);for(const e of [...run.combat.enemies.values()])run.combat.remove(e);
-    const e=run.combat.add({id:'warn',kind:'fang',x:100,y:-500,pinned:true,wavePlaced:true});e.mode='tell';e.clock=30;e.span=66;
-    run.combat.hazards.push({kind:'needle',source:'prism',x:200,y:-500,px:200,py:-500,angle:0,life:50});renderer.field(run.world.player.position);renderer.draw(run,1,null,false);
-    assert.equal(ctx.__ops.some(o=>o.paint==='#ffb080'),level>=2,`hazard tier ${level}`);
-    assert.equal(ctx.__ops.some(o=>o.paint==='#ffb491'),level>=3,`live tell tier ${level}`);
-   }finally{run.dispose();renderer.dispose();}
-  }
- }finally{dom.uninstall();}
+test('equipped radar marks offscreen hazards and live tells only at their tiers',()=>{
+ const view={x:0,y:0,width:400,height:300,w:400,h:300,scale:1},player={x:200,y:150};
+ const enemies=new Map([['warn',{id:'warn',kind:'fang',x:500,y:100,mode:'tell'}]]);
+ const hazards=[{kind:'needle',x:500,y:120,attackId:'needle'}];
+ for(const level of [0,1,2,3]){
+  const items=peripheralRadar(view,player,{enemies,hazards},level?`radar-${level}`:'radar-base');
+  assert.equal(items.some(item=>item.kind==='hazard'),level>=2,`hazard tier ${level}`);
+  assert.equal(items.find(item=>item.id==='warn').active,level>=3,`live tell tier ${level}`);
+ }
 });

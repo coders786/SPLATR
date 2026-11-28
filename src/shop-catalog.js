@@ -1,8 +1,8 @@
+import {isCosmeticSlot} from './cosmetic-slots.js';
 import {dashStudy} from './dash-study.js';
 import {aimStudy} from './aim-study.js';
 import {abilityShowcase} from './ability-showcase.js';
 import {shopAbility} from './shop-language.js';
-import {eyeToolkitStudy} from './eye-toolkit.js';
 import {tailToolkitStudy} from './tail-toolkit.js';
 import {reactiveShellStudy} from './needle-phase.js';
 import {ITEMS} from './equipment.js';
@@ -11,10 +11,8 @@ import {PART_PERKS,resolvePartPerks} from './part-perks.js';
 import {focusRecoveryStudy} from './focus-recovery.js';
 import {armorShellStudy} from './armor-shell.js';
 export const SHOP_GROUPS=Object.freeze([
- {id:'cube',label:'CUBE',icon:'core',slots:['head','eyes','body','core','tail']},
- {id:'attack',label:'ATTACK',icon:'blade',slots:['slash','dash']},
- {id:'sensors',label:'AIM & SCAN',icon:'target',slots:['pointer','radar','trajectory']},
- {id:'world',label:'WORLD',icon:'world',slots:['world']},
+ {id:'gear',label:'GEAR & MODS',icon:'blade',slots:['head','body','core','tail','slash','pointer','radar','trajectory']},
+ {id:'style',label:'STYLE / SKINS',icon:'body',slots:['eyes','dash','world']},
 ].map(g=>Object.freeze({...g,slots:Object.freeze(g.slots)})));
 export const SLOT_LABELS=Object.freeze({head:'Head',eyes:'Eyes',body:'Shell',core:'Core',tail:'Tail',slash:'Blade FX',dash:'Dash FX',pointer:'Aim mark',radar:'Radar',trajectory:'Flight path',world:'Arena'});
 export const shopGroup=slot=>SHOP_GROUPS.find(g=>g.slots.includes(slot))||SHOP_GROUPS[0];
@@ -24,19 +22,19 @@ export function shopItems(slot,{owned=[],wallet=0,filter='all',query=''}={}){
 }
 export function classifyItem(item){
  const p=powerReadout(item),perk=PART_PERKS[item.id];
+ if(isCosmeticSlot(item.slot))return Object.freeze({family:'cosmetic',label:'STYLE',trigger:'VISUAL ONLY',benefit:'VISUAL ONLY'});
  const family=perk?.stat.startsWith('score:')?'score':perk?.stat==='blade'?'blade':(perk?.stat==='grace'||perk?.stat==='sequence')?'chain':perk?.stat==='focus'||perk?.stat==='recovery'?'focus':item.slot==='radar'||item.slot==='trajectory'?'sensor':item.price===0?'baseline':p.mode==='aim'?'focus':p.mode==='bounce'?'movement':p.mode==='hit'?'defense':'combat';
  return Object.freeze({family,label:({score:'SCORE',blade:'BLADE',chain:'CHAIN',focus:'FOCUS',sensor:'SENSOR',baseline:'STARTER',movement:'REBOUND',defense:'DEFENSE',combat:'COMBAT'})[family],trigger:p.trigger,benefit:p.short});
 }
 /** One readable demonstration, not eleven unrelated slots or a simulation claim. */
 export function shopStudy(item,elapsed=0,motion=true,equipment={}){
- const dash=dashStudy(item,elapsed,motion,equipment),aim=aimStudy(item,elapsed,motion,equipment),p=powerReadout(item,equipment),classification=classifyItem(item),t=motion?Math.max(0,elapsed)%3000:1900;
- return Object.freeze({id:item.id,slot:item.slot,perk:PART_PERKS[item.id]||null,family:classification.family,
+ const cosmetic=isCosmeticSlot(item.slot),dash=cosmetic?null:dashStudy(item,elapsed,motion,equipment),aim=cosmetic?null:aimStudy(item,elapsed,motion,equipment),p=powerReadout(item,equipment),classification=classifyItem(item),t=motion?Math.max(0,elapsed)%3000:1900;
+ return Object.freeze({id:item.id,slot:item.slot,perk:cosmetic?null:PART_PERKS[item.id]||null,family:classification.family,
   phase:t<500?'READY':t<1400?'TRIGGER':'RESULT',progress:motion?Math.min(1,Math.max(0,(t-500)/900)):1,
   trigger:p.trigger,benefit:p.chips.join(' · '),title:item.name,motion,showcaseHeadline:shopAbility(item.id).headline,
   ...(aim?{aim}:{}),
   ...(dash?{dash}:{}),
   ...(['head','core'].includes(item.slot)?{showcase:abilityShowcase(item,elapsed,motion,equipment)}:{}),
-  ...(item.slot==='eyes'?{eye:eyeToolkitStudy(item.id,elapsed,motion)}:{}),
   ...(item.slot==='tail'?{tail:tailToolkitStudy(item.id,elapsed,motion)}:{}),
   ...(['hologram','iron','prism'].includes(item.id)?{reactive:reactiveShellStudy(item.id,elapsed,motion)}:{}),
   ...(['chamfer','segmented'].includes(item.id)?{shell:armorShellStudy(item.id,elapsed,motion)}:{}),

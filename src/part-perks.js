@@ -1,3 +1,6 @@
+import {isCosmeticSlot} from './cosmetic-slots.js';
+import {ITEMS} from './art/splatr-art-engine.js';
+const cosmeticIds=new Set(ITEMS.filter(item=>isCosmeticSlot(item.slot)).map(item=>item.id));
 /** Authoritative perks for previously visual-only parts. No rendering or RNG.
  * Bonuses stack additively, with hard caps; no free hits or recursive procs. */
 const perk = (stat, value, title, chip, trigger, detail) => Object.freeze({stat,value,title,chip,trigger,detail});
@@ -28,7 +31,7 @@ export const BASE_PARTS = Object.freeze({
   'dash-auto':['ADAPTIVE DASH','FULL BASE SPEED'], 'pointer-reticle':['FIELD AIM','POWER READOUT'],
 });
 export function resolvePartPerks(equipment) {
-  const perks = Object.values(equipment).map(id => PART_PERKS[id]).filter(Boolean);
+  const perks = Object.entries(equipment).filter(([slot,id])=>!isCosmeticSlot(slot)&&!cosmeticIds.has(id)).map(([,id]) => PART_PERKS[id]).filter(Boolean);
   const sum = stat => perks.filter(p=>p.stat===stat).reduce((n,p)=>n+p.value,0);
   return Object.freeze({
     perkBlade: Math.min(8,sum('blade')),

@@ -34,7 +34,6 @@ try{
    r.combat.add({id:'world-fang',kind:'fang',x:p.x+v.w*.23,y:p.y-v.h*.18,pinned:true,delay:999999});r.combat.add({id:'world-prism',kind:'prism',x:p.x-v.w*.22,y:p.y-v.h*.25,pinned:true,delay:999999});
    s.stop=99999;return {world:s.equipment.world,hp:s.hp,arena:{...r.world.arena}};
   });assert.equal(actual.world,world.id);await page.evaluate(()=>qaFrames(8));
-  const chip=await page.$eval('#story-chip',n=>{const r=n.getBoundingClientRect();return {visible:!n.hidden,w:r.width,h:r.height};});if(chip.visible)assert.ok(chip.h<40&&chip.w<width,JSON.stringify(chip));
   await page.screenshot({path:`${out}/${world.id}-live-${width}x${height}${reduced?'-reduced':''}.png`});
   assert.deepEqual(errors,[]);assert.deepEqual(await page.evaluate(()=>window.__splatrFrameErrors||[]),[]);results.push({world:world.id,width,height,touch,reduced,bounds,actual,errors});await page.close();
  }

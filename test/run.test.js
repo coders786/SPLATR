@@ -116,7 +116,7 @@ test('the floor is an instant trampoline: one pip per touch, capped at three', (
   assert.equal(s.chain, 0, 'touching down costs the chain');
   g.dispose();
 });
-test('focus is spent in wall ticks instead of slow simulation time, and stays spent until released', () => {
+test('focus is spent in wall ticks but held aiming remains slow until released', () => {
   const g = createRun(2);
   for (const e of g.combat.enemies.values()) g.combat.remove(e);
   g.dash({ x: 10, y: -14, power: 0.55 });
@@ -124,8 +124,9 @@ test('focus is spent in wall ticks instead of slow simulation time, and stays sp
   advance(g, 173);
   assert.equal(g.state.focus, 0);
   assert.equal(g.state.depleted, true);
-  assert.equal(g.world.slow, false);
+  assert.equal(g.world.slow, true);
   g.focus(false);
+  assert.equal(g.world.slow, false);
   advance(g, 12);
   assert.ok(g.state.focus > 0);
   g.dispose();

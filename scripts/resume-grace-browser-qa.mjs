@@ -1,0 +1,16 @@
+import puppeteer from 'puppeteer-core';
+import assert from 'node:assert/strict';
+const url=new URL(process.env.PREVIEW_URL||'http://127.0.0.1:5173/');url.searchParams.set('debug','1');
+const browser=await puppeteer.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{channel:'chrome'}),args:JSON.parse(process.env.CHROME_ARGS||'[]')});
+try{for(const [width,height] of [[1100,700],[390,844]]){
+ const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.setViewport({width,height,hasTouch:width<600});await page.goto(url.href);await page.waitForSelector('#start-btn',{visible:true});await page.click('#start-btn');await page.waitForFunction(()=>window.__riot?.state.phase==='ready');
+ await page.mouse.move(width*.5,height*.55);await page.mouse.down();await page.mouse.move(width*.75,height*.4);await page.mouse.up();await page.waitForFunction(()=>window.__riot.state.phase==='playing');
+ await page.keyboard.press('Escape');await page.waitForSelector('#resume-btn',{visible:true});const before=await page.evaluate(()=>window.__riot.world.clock);await page.click('#resume-btn');
+ await page.waitForSelector('#resume-cue',{visible:true});await new Promise(r=>setTimeout(r,180));assert.equal(await page.evaluate(()=>window.__riot.world.clock),before,'world remains frozen during the cue');
+ assert.equal(await page.$eval('#resume-cue',e=>e.dataset.phase),'hold');await page.keyboard.press('Escape');await page.waitForSelector('#resume-btn',{visible:true});assert.equal(await page.$eval('#resume-cue',e=>e.hidden),true,'repause clears cue');
+ await page.evaluate(()=>{const s=window.__riot.state;s.invul=9999;s.edge=s.edgeMax;s.blade=0;s.stop=0;s.stun=0;});
+ const shots=await page.evaluate(()=>window.__riot.state.shots);await page.click('#resume-btn');await page.mouse.move(width*.48,height*.48);await page.mouse.down();await page.mouse.move(width*.7,height*.38);await page.mouse.up();assert.equal(await page.evaluate(()=>window.__riot.state.shots),shots,'shot is deferred during the frozen cue');
+ await page.waitForFunction(()=>document.querySelector('#resume-cue').dataset.phase==='ramp',{timeout:2000});await page.waitForFunction(()=>document.querySelector('#resume-cue').hidden,{timeout:2000});await page.waitForFunction(t=>window.__riot.world.clock>t,{},before);await page.waitForFunction(n=>window.__riot.state.shots>n,{},shots);
+ await page.evaluate(()=>{window.__riot.state.wave.number=3;});await page.keyboard.press('Escape');await page.waitForSelector('#end-btn',{visible:true});assert.match(await page.$eval('#pause-build-list',e=>e.textContent),/Standard Heart/);await page.click('#end-btn');assert.equal(await page.$eval('#end-btn',e=>e.dataset.confirm),'true');assert.equal(await page.$eval('#panel',e=>e.open),true);await page.keyboard.press('Escape');await page.waitForSelector('#resume-cue',{visible:true});await page.keyboard.press('Escape');await page.waitForSelector('#end-btn',{visible:true});assert.equal(await page.$eval('#end-btn',e=>e.dataset.confirm),'false','confirmation resets after leaving pause');assert.deepEqual(errors,[]);
+ console.log(`PASS ${width}x${height}: frozen cue, buffered shot, resume ramp and end confirmation`);await page.close();
+}}finally{await browser.close();}

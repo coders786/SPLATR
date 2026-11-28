@@ -103,7 +103,7 @@ test('CHUNK 6B: SEISMIC LASH — 0.9s telegraph, then exactly four arcs; the tel
   } finally { r.dispose(); }
 });
 
-test('CHUNK 6B: SEISMIC LASH debris costs 1 hull and is stopped by a live blade', () => {
+test('CHUNK 6B: SEISMIC LASH debris is harmless scenery', () => {
   const r = createRun(42, () => {}, { waveMode: true, fracturePct: 0 });
   try {
     const m = forceMonolith(r);
@@ -132,7 +132,7 @@ test('CHUNK 6B: SEISMIC LASH debris costs 1 hull and is stopped by a live blade'
       }
       r.tick();
     }
-    assert.equal(r.state.hp, hpBefore - 1, 'one hull per arc');
+    assert.equal(r.state.hp, hpBefore, 'debris never damages hull');
   } finally { r.dispose(); }
 });
 
@@ -252,15 +252,15 @@ test('CHUNK 6B: GRAVITY LENS — the plate-doubling window, +1 damage from anyth
     const m = forceMonolith(r);
     // Ordinary cut, no lens: one point.
     strikeMonolith(r, 1);
-    assert.equal(m.hp, 9, 'an ordinary cut chips exactly one point');
+    assert.equal(m.hp, 8, 'an ordinary cut breaks one plate');
     // Open the window and chip again: bonus damage.
     m.lensT = 60;
     strikeMonolith(r, 1);
-    assert.equal(m.hp, 7, 'the window doubles the ordinary chip');
+    assert.equal(m.hp, 5, 'the lens adds one damage');
     // And an OVERCHARGED plate goes from 2 to 3.
     m.lensT = 60;
     strikeMonolith(r, 4);
-    assert.equal(m.hp, 4, 'OVERCHARGED takes a plate plus the bonus');
+    assert.equal(m.hp, 1, 'OVERCHARGED deals three plus the lens bonus');
   } finally { r.dispose(); }
 });
 
@@ -294,10 +294,10 @@ test('CHUNK 6B: the boss bar projects plates — five cells, synced to hp/2', as
     // Another plate, same check.
     strikeMonolith(r, 4);
     ui.update();
-    assert.equal(bar.getAttribute('aria-valuenow'), '3');
-    assert.equal(bar.querySelectorAll('.bossbar-rail i.on').length, 3);
+    assert.equal(bar.getAttribute('aria-valuenow'), '2');
+    assert.equal(bar.querySelectorAll('.bossbar-rail i.on').length, 2);
     // Fell the slab; the bar hides.
-    strikeMonolith(r, 4); strikeMonolith(r, 4); strikeMonolith(r, 4);
+    strikeMonolith(r, 4); strikeMonolith(r, 4);
     ui.update();
     assert.equal(r.combat.enemies.get('monolith/core'), undefined, 'the landlord falls');
     assert.equal(bar.hidden, true, 'the bar goes down with him');
@@ -318,7 +318,7 @@ test('CHUNK 6B: when the landlord falls, everything he made falls with him', () 
     for (let i = 0; i < 120; i++) r.tick();
     assert.ok(r.combat.hazards.some(h => h.sourceId === m.id), 'his debris and ring are on the field');
     // Fell him with five banked OVERCHARGED cuts.
-    for (let i = 0; i < 5; i++) strikeMonolith(r, 4);
+    for (let i = 0; i < 4; i++) strikeMonolith(r, 4);
     assert.equal(r.combat.enemies.get('monolith/core'), undefined);
     assert.equal(r.combat.hazards.filter(h => h.sourceId === 'monolith/core').length, 0, 'nothing he made outlives him');
   } finally { r.dispose(); }

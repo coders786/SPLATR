@@ -25,7 +25,7 @@ test('Notched replaces the old aim discount with exactly12% passive recovery und
   assert.equal(PART_PERKS.notched.stat, 'recovery'); assert.equal(PART_PERKS.notched.value, 12);
   assert.equal(rule.focusDrain, 1); assert.equal(rule.focusRegen, 1.12);
   const stacked = equipmentRules({body: 'notched', eyes: 'glitch', world: 'synth', pointer: 'pointer-orbit', dash: 'dash-water'});
-  assert.equal(stacked.focusRegen, 1.4);
+  assert.equal(stacked.focusRegen, 1.22);
 });
 
 test('the real passive authority grants12% more; recovery never changes physics or EDGE', () => {
@@ -101,9 +101,9 @@ test('receipts report actual marginal contribution at the shared cap, never the 
   const plain = powerReadout('notched'); assert.equal(plain.title, 'VENT COOLING');
   assert.match(plain.chips[0], /\+12%/); assert.doesNotMatch(plain.detail, /8%|less FOCUS|efficiency/i);
   const almost = powerReadout('notched', {eyes: 'glitch', world: 'synth', pointer: 'pointer-orbit'});
-  assert.equal(almost.chips[0], 'RECOVERY +3%');
+  assert.equal(almost.chips[0], 'RECOVERY +12%');
   const capped = powerReadout('notched', {eyes: 'glitch', world: 'synth', pointer: 'pointer-orbit', dash: 'dash-water'});
-  assert.equal(capped.chips[0], 'RECOVERY +0%'); assert.equal(capped.chips[1], 'TOTAL +40% / CAP 40%');
+  assert.equal(capped.chips[0], 'RECOVERY +12%'); assert.equal(capped.chips[1], 'TOTAL +22% / CAP 40%');
 });
 
 const ventImage = (pose, body = 'notched') => {

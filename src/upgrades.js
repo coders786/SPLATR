@@ -227,7 +227,7 @@ export const UPGRADE_CATALOG = Object.freeze([
     gate: 'shatter', fields: { monolithDamage: 2 },
     comparisons: [comparison('MONOLITH DAMAGE', 1, 2, 1, 3, '×', 'monolith')],
   }),
-  card('wheelofwatcher', 'WHEEL OF THE WATCHER', 'DIMENSION', 'D', 'A lucky roll can roll twice.', {
+  card('wheelofwatcher', 'WHEEL OF FORTUNE', 'DIMENSION', 'D', 'A lucky roll can roll twice.', {
     gate: 'shatter', fields: { luckyTwice: true }, comparisons: [comparison('LUCKY ROLLS', 1, 2, 0, 3, '×', 'lucky')],
   }),
   card('theending', 'THE ENDING', 'DIMENSION', 'D', 'Final wave at full hull doubles the wave multiplier.', {

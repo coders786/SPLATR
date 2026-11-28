@@ -15,18 +15,17 @@ const q = (id, category, tier, label, goal, kind, target) =>
 const LESSONS = [
  ['SMASH','any','FIRST CUTS','Tap a triangle. Pull back for a stronger launch.',[2,3,4]],
  ['STYLE','power','COMMIT YOUR CUT','Pull farther back, then release through an enemy.',[1,2,3]],
- ['CLIMB','waveClear','CLEAR A WAVE','Cut every enemy. The glowing rest platform appears after the last one.',[1,1,1]],
+ ['CLIMB','waveClear','CLEAR A WAVE','Cut every enemy to start the next wave.',[1,1,1]],
  ['SMASH','cut','BREAK THE LINK','Cut either purple Prism to switch off its connecting beam.',[1,1,2],'prism'],
  ['STYLE','cleanBank','CLEAN BANK','Launch into a wall at pace. Aim inward before contact to steer your rebound.',[1,2,2]],
  // CHUNK 4: this lesson used to be 'USE THE REST' (kind `waveRest`), which the
  // shipped mode can never emit — the rest chooser was removed from continuous
  // play, so the row was uncompletable and one of nine tutorials was a dead end.
- // It is now the thing a clear actually means here: breaking the sector seal.
- // `waveClear` fires on every seal break and on the Monolith's fall.
- ['CLIMB','waveClear','BREAK THE SEAL','Cut all three anchors, then launch up through the open seam.',[1,1,1]],
+ // The arcade director emits waveClear when the wave and any boss are defeated.
+ ['CLIMB','waveClear','FINISH THE WAVE','Defeat every enemy in an arcade wave.',[1,1,1]],
  ['SMASH','any','PLAN YOUR LANE','Choose a clear path through enemies instead of releasing into a crowd.',[6,8,10]],
  ['STYLE','paceHeld','HOLD YOUR PACE','Stay above the speed target to charge Hyper. Brief dips allow recovery.',[1,1,1]],
- ['CLIMB','dimensionBreak','BREAK THROUGH','In a break wave, bank during Hyper, then launch through the ready breach.',[1,1,1]],
+ ['CLIMB','monolithDown','BEAT THE MONOLITH','Cut the Monolith until all its plates fall.',[1,1,1]],
 ];
 /**
  * CHUNK 5: what a lesson pays.
@@ -275,7 +274,7 @@ export function createTicket(ids, prize, profile) {
           if (row.kind === 'bounce' && bounce > 0)
             value = Math.max(value, row.start + bounceCuts + 1);
         }
-        if (row.lesson && ['waveClear','waveRest','cleanBank','paceHeld','dimensionBreak'].includes(row.kind) && type===row.kind) add=1;
+        if (row.lesson && ['waveClear','waveRest','cleanBank','paceHeld','dimensionBreak','monolithDown'].includes(row.kind) && type===row.kind) add=1;
         if (type === 'drive' && row.kind === 'drive') add = 1;
         if (type === 'sector' && row.kind === 'sector')
           value = Math.max(value, row.start + d.band);

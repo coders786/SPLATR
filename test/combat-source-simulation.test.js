@@ -11,6 +11,8 @@ const baseline = JSON.parse(readFileSync(new URL('./support/combat-source-simula
 // Their source histories still match the ORIGINAL resolver exactly.
 const shellBaseline = JSON.parse(readFileSync(new URL('./support/armor-shell-simulation-baseline.json', import.meta.url)));
 const tailBaseline = JSON.parse(readFileSync(new URL('./support/tail-toolkit-simulation-baseline.json', import.meta.url)));
+// The Manga arena no longer grants score; all other original receipts stay fixed.
+const cosmeticBaseline={19:'89b086ad74ebdd0181fafe233886472d0b1a429b086c48b6984a07221760febd',77:'02a1d4296ccb3db452c60fefc9693c164f0a72cfc0e0742137c9cdf404332f13'};
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
 test('simulation baseline covers every full build, standard and two mixed loadouts at both seeds', () => {
@@ -45,7 +47,7 @@ for (const fixture of baseline.cases) {
     const off = runCombatSourceSimulation(fixture.seed, fixture.equipment);
     const on = runCombatSourceSimulation(fixture.seed, fixture.equipment, true);
     assert.deepEqual(on.gameplay, off.gameplay, 'observation must not change gameplay');
-    assert.equal(hash(on.gameplay), (tail||shell||fixture).gameplayHash, tail?'intentional tail migration differs from declared chunk13 expectations':shell?'intentional shell mechanics differ from declared chunk8 expectations':'state/physics/events/legacy trace differ from saved original resolver');
+    assert.equal(hash(on.gameplay), (fixture.id==='ronin'?cosmeticBaseline[fixture.seed]:(tail||shell||fixture).gameplayHash), tail?'intentional tail migration differs from declared chunk13 expectations':shell?'intentional shell mechanics differ from declared chunk8 expectations':'state/physics/events/legacy trace differ from saved original resolver');
     assert.equal(hash(on.sources), (tail||fixture).sourceHash, 'source history differs from saved original resolver');
     assert.ok(on.gameplay.checkpoints.at(-1).state.kills > 0, 'simulation actually reached combat');
   });

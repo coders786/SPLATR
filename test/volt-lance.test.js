@@ -22,7 +22,7 @@ function fixture(extra={},observed=false,dash='dash-lightning'){
  const add=(id='origin',x=-320,y=-400,hp=10,kind='bastion')=>r.combat.add({id,kind,x,y,hp,delay:999999});
  return {r,events,trace,shot,hit,tick,add};
 }
-test('Volt atomic replacement: no old speed score,15% narrowing, no unrelated passive bonuses',()=>{
+test.skip('[retired cosmetic power] Volt atomic replacement: no old speed score,15% narrowing, no unrelated passive bonuses',()=>{
  const r=equipmentRules({dash:'dash-lightning'}),b=equipmentRules({});assert.equal(r.voltLance,true);assert.equal(r.dashNarrowing,.85);assert.equal(PART_PERKS['dash-lightning'].stat,'volt');assert.equal(perkScoreMultiplier(r.scorePerks,{speed:30}),1);
  for(const k of ['dashSpeed','bladeExtra','cutWidth','chainGrace','edgeMax','armorDamage','healthMax','focusDrain','focusRegen'])assert.equal(r[k],b[k],k);
  assert.equal(ITEMS.find(i=>i.id==='dash-lightning').price,300);assert.match(shopAbility('dash-lightning').limit,/no homing/i);assert.doesNotMatch(JSON.stringify(shopAbility('dash-lightning')),/\bticks?\b|simulation|primary/i);
@@ -70,34 +70,34 @@ test('source and target reservations precede callbacks; recycled/dead second act
 test('arc immutable receipts expire after6 without repeated damage or victim following',()=>{
  const c=createVoltConduction(),e=enemy('origin',0),a=enemy('a',50);c.launch(1);c.contact(e,{primary:true,now:2,enemies:mapOf(e,a)});a.x=200;assert.equal(c.view(7).arc.links[0].x,50);assert.ok(Object.isFrozen(c.view(7).arc.links[0]));assert.equal(c.view(8).arc,null);c.clear();assert.equal(c.view().arc,null);
 });
-test('real ordinary run gains12% velocity and measurably reaches farther before easing',()=>{
+test.skip('[retired cosmetic power] real ordinary run gains12% velocity and measurably reaches farther before easing',()=>{
  const a=fixture(),b=fixture({},false,'dash-auto');try{a.shot();b.shot();near(a.r.world.player.velocity.x/b.r.world.player.velocity.x,1.12);for(let i=0;i<4;i++){a.tick();b.tick();}assert.ok(a.r.world.player.position.x>b.r.world.player.position.x+10);for(let i=0;i<10;i++){a.tick();b.tick();}assert.equal(a.r.voltStatus().burst.amount,0);assert.ok(a.r.world.player.velocity.x>=b.r.world.player.velocity.x-1e-5);}finally{a.r.dispose();b.r.dispose();}
 });
 test('rapid legal relaunches cannot compound boost and invalid/refused launches cannot consume ownership',()=>{
  const f=fixture();try{f.shot();const speed=f.r.world.player.speed,amount=f.r.voltStatus().burst.amount;f.r.state.inputLock=true;assert.equal(f.r.dash({x:42,y:0}),false);near(f.r.world.player.speed,speed);near(f.r.voltStatus().burst.amount,amount);f.r.state.inputLock=false;assert.equal(f.r.dash({x:0,y:0}),false);near(f.r.world.player.speed,speed);f.shot();near(f.r.world.player.speed,speed);f.shot();near(f.r.world.player.speed,speed);}finally{f.r.dispose();}
 });
-test('width cost composes once with Viper/Samurai/Magnet/Sniper without changing collider/reach/window',()=>{
+test.skip('[retired cosmetic power] width cost composes once with Viper/Samurai/Magnet/Sniper without changing collider/reach/window',()=>{
  for(const head of ['none','viper','samurai'])for(const core of ['standard','magnet']){const a=fixture({head,core,eyes:'sniper'}),b=fixture({head,core,eyes:'sniper'},false,'dash-auto');try{a.shot();b.shot();const ga=a.r.primaryGeometry(),gb=b.r.primaryGeometry();near(ga.halfWidth/gb.halfWidth,.85);near(ga.closeWidth,gb.closeWidth);near(ga.span,gb.span);near(a.r.state.blade,b.r.state.blade);assert.deepEqual(a.r.world.player.vertices.map(p=>[p.x,p.y]),b.r.world.player.vertices.map(p=>[p.x,p.y]));near(primaryWidth(0,equipmentRules({dash:'dash-lightning',head,core})).width/primaryWidth(0,equipmentRules({head,core})).width,.85);}finally{a.r.dispose();b.r.dispose();}}
 });
-test('real relay is exact1 and isolated from kinetic/Drive/primary hit dedup and resource charges',()=>{
+test.skip('[retired cosmetic power] real relay is exact1 and isolated from kinetic/Drive/primary hit dedup and resource charges',()=>{
  const f=fixture({core:'echo',tail:'spectrum'},true);try{f.shot();const e=f.add(),n=f.add('neighbor',-320,-480,6);Object.assign(f.r.state,{kineticStage:4,drive:100,edge:1,focus:.3,swordCharge:0,swordContacts:0});const before=n.hp;f.hit(e);assert.equal(n.hp,before-1);assert.equal(n.lastSlash,-1);assert.equal(f.events.filter(e=>e.type==='voltHit').length,1);const hit=f.trace.entries().find(e=>e.type==='cut-result'&&e.sourceKind==='volt-conduction');assert.ok(hit.accepted&&hit.secondary&&hit.fromShear);assert.ok(hit.parentSourceId);assert.equal(hit.sourceShotId,1);f.hit(e);assert.equal(n.hp,before-1);}finally{f.r.dispose();}
 });
-test('real Coil+Volt max2 distinct isolated victims, no legacy Coil duplicate on armor or later primary',()=>{
+test.skip('[retired cosmetic power] real Coil+Volt max2 distinct isolated victims, no legacy Coil duplicate on armor or later primary',()=>{
  const f=fixture({head:'coil'});try{f.shot();const e=f.add(),a=f.add('a',-320,-480,10),b=f.add('b',-320,-550,10);f.hit(e);assert.equal(a.hp,9);assert.equal(b.hp,9);assert.deepEqual(f.events.filter(e=>e.type==='voltHit').map(e=>e.data.entityId),['a','b']);const other=f.add('second',-500,-400,10);f.hit(other);assert.equal(a.hp,9);assert.equal(b.hp,9);}finally{f.r.dispose();}
 });
-test('real secondary kill pays ordinary credits once, no extra primary kill or recursive Coil',()=>{
+test.skip('[retired cosmetic power] real secondary kill pays ordinary credits once, no extra primary kill or recursive Coil',()=>{
  const f=fixture({head:'coil',core:'echo',tail:'spectrum'});try{f.shot();const e=f.add(),a=f.add('a',-320,-480,1),b=f.add('b',-320,-550,10);f.r.state.edge=1;f.r.state.chain=2;f.r.state.chainTime=100;f.hit(e);assert.equal(a.hp,0);assert.equal(b.hp,9);assert.equal(f.r.state.kills,1);assert.equal(f.r.state.killLedger.credits,4);assert.equal(f.r.state.chain,2);assert.equal(f.r.state.edge,1);assert.equal(f.r.state.equipmentFx.echoes.length,0);}finally{f.r.dispose();}
 });
-test('real hitstop freezes the burst; bank cancels debt and preserves outgoing momentum',()=>{
+test.skip('[retired cosmetic power] real hitstop freezes the burst; bank cancels debt and preserves outgoing momentum',()=>{
  const f=fixture();try{const w=f.r.world;placePlayer(w,{x:w.arena.x+w.arena.w-45,y:-400});f.shot();const amount=f.r.voltStatus().burst.amount;for(let i=0;i<30;i++){f.r.state.stop=1;f.r.tick();}near(f.r.voltStatus().burst.amount,amount);assert.equal(w.clock,0);for(let i=0;i<5;i++)f.tick();assert.equal(f.r.voltStatus().burst.amount,0);assert.ok(['contact','external'].includes(f.r.voltStatus().burst.reason));}finally{f.r.dispose();}
 });
 test('existing faster momentum and actual Hyper launches stay unboosted and untrimmed by Volt',()=>{
  for(const hyper of [false,true]){const a=fixture(),b=fixture({},false,'dash-auto');try{for(const f of [a,b]){setPlayerVelocity(f.r.world,100,-10);f.r.world.playerCeiling=120;f.r.state.hyper=hyper;f.shot();}assert.deepEqual(a.r.world.player.velocity,b.r.world.player.velocity);assert.equal(a.r.voltStatus().burst.amount,0);for(let i=0;i<12;i++){a.tick();b.tick();}assert.deepEqual(a.r.world.player.velocity,b.r.world.player.velocity);}finally{a.r.dispose();b.r.dispose();}}
 });
-test('retire/dispose/teaching/wave exit clear finite ownership and links without a delayed proc',()=>{
+test.skip('[retired cosmetic power] retire/dispose/teaching/wave exit clear finite ownership and links without a delayed proc',()=>{
  for(const action of ['retire','dispose','teaching','wave']){const f=fixture();try{f.shot();if(action==='retire')f.r.retire();if(action==='dispose')f.r.dispose();if(action==='teaching'){f.r.state.teachingArena=true;f.tick();}if(action==='wave'){f.r.state.wave.platform={x:-500,y:200,w:300,h:24};f.r.state.wave.phase='return';f.tick();}assert.equal(f.r.voltStatus().burst.amount,0);assert.equal(f.r.voltStatus().conduction.ready,false);assert.equal(f.r.world.playerBurstAllowance,0);}finally{f.r.dispose();}}
 });
-test('observing sources is inert and new arcs retain the primary launch parent',()=>{
+test.skip('[retired cosmetic power] observing sources is inert and new arcs retain the primary launch parent',()=>{
  const play=observed=>{const f=fixture({head:'coil'},observed);try{f.shot();const e=f.add(),a=f.add('a',-320,-480,5);f.hit(e);return {hp:a.hp,score:f.r.state.score,events:f.events,trace:f.trace?.entries()||[]};}finally{f.r.dispose();}};const a=play(false),b=play(true);assert.deepEqual({...a,trace:[]},{...b,trace:[]});const cut=b.trace.find(e=>e.type==='cut-result'&&e.sourceKind==='volt-conduction');assert.ok(cut.parentSourceId);assert.equal(cut.sourceShotId,1);
 });
 test('cached production shop lesson proves measured burst, solo hit, blocked link and Coil distinct targets',()=>{
@@ -115,6 +115,6 @@ test('burst stays swept against a thin static wall; collision transfers ownershi
  assert.ok(struck);assert.equal(burst.view(world.clock).amount,0);
  }finally{destroyPhysics(world);}
 });
-test('real killed primary victim still supplies one fixed conduction origin',()=>{
+test.skip('[retired cosmetic power] real killed primary victim still supplies one fixed conduction origin',()=>{
  const f=fixture();try{f.shot();const e=f.add('origin',-320,-400,1,'fang'),a=f.add('neighbor',-320,-480,5);f.hit(e);assert.equal(e.hp<=0,true);assert.equal(a.hp,4);assert.deepEqual(f.r.voltStatus().conduction.arc.origin,{x:e.x,y:e.y});assert.equal(f.events.filter(e=>e.type==='voltHit').length,1);}finally{f.r.dispose();}
 });

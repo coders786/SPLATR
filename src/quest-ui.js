@@ -915,7 +915,7 @@ export function createQuestUI({
         const payout=el('div','round-payout');payout.setAttribute('role','status');
         payout.append(el('strong','',`+${pay.total}`),el('b','','CREDITS'),el('small','',unlimited ? 'WALLET · ∞ SANDBOX CREDITS' : `WALLET · ${profile.coins.toLocaleString()} CREDITS`));
         prependIcon(payout.querySelector('b'),'coin');
-        result.append(payout,el('p','reward-breakdown',`ROUND ${pay.base} · CUTS ${pay.cuts} · SCORE ${pay.score} · ${run.state.wave&&!run.state.narrative?'WAVES':'SECTORS'} ${pay.sectors}`));
+        result.append(payout,el('p','reward-breakdown',`ROUND ${pay.base} · CUTS ${pay.cuts} · SCORE ${pay.score} · ${run.state.wave&&!run.state.arcade?'WAVES':'SECTORS'} ${pay.sectors}`));
         if(run.state.killLedger){
           const breakdown=el('details','kill-breakdown');breakdown.append(el('summary','',`ENEMY REWARDS · ${run.state.killLedger.kills} KILLS`));
           const table=el('div','kill-table');for(const [kind,row]of Object.entries(run.state.killLedger.rows)){const line=el('p','');line.append(el('b','',`${ENEMY_NAMES[kind]||kind} ×${row.kills}`),el('span','',`${row.points} PTS · ${row.credits} CREDITS`));table.append(line);}breakdown.append(table);result.append(breakdown);

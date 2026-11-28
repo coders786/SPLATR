@@ -1,3 +1,5 @@
+import {isCosmeticSlot} from './cosmetic-slots.js';
+import {ITEMS} from './art/splatr-art-engine.js';
 /** Player-facing copy only. Never changes timing, damage or saved equipment. */
 export function secondsLabel(ticks){
  const n=Number(ticks)/60;
@@ -49,8 +51,8 @@ const entries={
  segmented:['Store the impact.','Save 20% of forward speed lost on your first armor shove, up to 4 speed.','Dash again within about 0.75s to use the stored boost.','The spring gives back lost speed once. It cannot launch you faster than the hit allowed.'],
  standard:['A balanced heart.','Start with 3 EDGE and 3 health.','Build around your favorite parts.','No hidden damage boost or signature attack.'],
  time:['Recover after a kill.','A kill doubles passive focus recovery for 2s.','Let go of aim after a kill to use the recovery.','The crystal helps focus return. It does not add a second layer of slow motion.'],
- riot:['Reach Overdrive sooner.','Enter Overdrive every 4 combo kills instead of 6.','Keep a clean run of kills going.','The reactor trades a faster buildup for only 2 maximum EDGE.'],
- glass:['Double the reward. One heart.','Earn double score, but your maximum health is 1.','Avoid every dangerous contact.','The fragile cartridge never gains extra health from repairs. Unlock by reaching Sector 05.'],
+ riot:['Reach Rush sooner.','Enter Rush every 4 combo kills instead of 6; sustained speed can also start Rush.','Keep a clean run of kills going.','The reactor trades a faster buildup for only 2 maximum EDGE.'],
+ glass:['Double the reward. One heart.','Earn double score, but your maximum health is 1.','Avoid every dangerous contact.','The fragile cartridge never gains extra health from repairs. Unlock by reaching Wave 5.'],
  grav:['Pull toward your aim.','While aiming, gently draw small nearby Fangs toward your aiming line.','Hold a useful angle with small Fangs within 220px.','The gravity chamber moves enemies slowly. It never steers your shot or pulls bosses.'],
  magnet:['Win the close pass.','Cuts within 100px are 20% wider.','Pass close to your target.','Width bonuses together stop at +35%. The magnet does not drag enemies across the arena.'],
  echo:['Leave a blade behind.','Every third direct combo kill leaves a ghost blade for 0.5s of game time.','Chain three direct kills near other Fangs.','The memory stays where it was created and cuts each nearby Fang once. It does not follow you.'],
@@ -80,10 +82,10 @@ const entries={
  'pointer-diamond':['A sharper-looking start.','Your dash can cut for about 0.02s longer in game time.','Use the diamond as your aiming origin.','The diamond does not become a projectile.'],
  'pointer-orbit':['Return to focus.','Focus recovers 10% faster when not aiming.','Release your pull to recover.','Orbiting marks are not an enemy-pulling field.'],
  'pointer-cross':['Spend less focus.','Aiming uses 8% less focus.','Hold your pull to line up the shot.','The crosshair does not lock on or add another slowdown.'],
- 'radar-base':['Read your surroundings.','Tracks nearby enemies and objectives.','Glance at the small map during play.','Only nearby contacts are shown.'],
- 'radar-1':['See farther around you.','Radar reaches 35% farther.','Use the map to find your next target.','It expands radar, not the camera or your attack range.'],
- 'radar-2':['Spot active danger.','Radar reaches 70% farther and shows active projectiles and danger zones.','Check the map before a crowded approach.','The map warns you; it does not block hazards.'],
- 'radar-3':['Read the whole approach.','Radar reaches 120% farther and adds active hazards, enemy attack warnings and your heading.','Look for incoming threats before committing.','Markers describe the current fight, not guaranteed future positions.'],
+ 'radar-base':['See nearby targets.','Marks nearby off-screen enemies with red edge arrows.','Follow the arrow to the target.','Only contacts within the basic radar range are shown.'],
+ 'radar-1':['See farther targets.','Edge arrows detect enemies 35% farther away.','Follow the arrows to targets.','It expands radar, not the camera or your attack range.'],
+ 'radar-2':['Spot distant hazards.','Edge arrows reach 70% farther and mark off-screen projectiles and danger zones.','Watch for the red hazard dot on an arrow.','Warnings do not block hazards.'],
+ 'radar-3':['See charging threats.','Edge arrows reach 120% farther and highlight enemy wind-ups, charges and active hazards.','Look for bright warning arrows before committing.','Markers describe the current fight, not guaranteed future positions.'],
  'trajectory-base':['See the start of your flight.','Shows a short predicted path while aiming.','Pull back to see where the shot begins.','The path stops at the first wall or solid surface.'],
  'trajectory-1':['Plan farther ahead.','Shows more of your predicted launch path.','Look along the line before releasing.','It does not predict rebounds or moving enemies.'],
  'trajectory-2':['Find the first impact.','Adds travel-time marks and a first-impact marker to a longer path.','Look for the marker at the end of the line.','It describes the current scene. Moving enemies can change the result.'],
@@ -95,7 +97,10 @@ const entries={
  synth:['Find your rhythm again.','Focus recovers 15% faster when you are not aiming.','Release aim between cuts.','The grid does not refill EDGE or change the arena floor.'],
  void:['Make the boss count.','Boss kills earn 15% more score.','Defeat the Landlord.','The broken orbital gate is scenery, not a gravity well.'],
 };
-export const SHOP_ABILITIES=Object.freeze(Object.fromEntries(Object.entries(entries).map(([id,[headline,effect,use,limit]])=>[id,Object.freeze({headline,effect,use,limit})])));
+export const SHOP_ABILITIES=Object.freeze(Object.fromEntries(Object.entries(entries).map(([id,[headline,effect,use,limit]])=>{
+ const item=ITEMS.find(x=>x.id===id);
+ return [id,Object.freeze(isCosmeticSlot(item?.slot)?{headline:`${item.name} appearance.`,effect:'Changes the look only. No gameplay modifiers.',use:'Equip it to use this look in your next run.',limit:'Does not change damage, movement, score, abilities or sword builds.'}:{headline,effect,use,limit})];
+})));
 export function shopAbility(id){const value=SHOP_ABILITIES[id];if(!Object.hasOwn(SHOP_ABILITIES,id))throw new RangeError('Unknown shop item');return value;}
 export function readablePower(raw,id){
  const copy=shopAbility(id);

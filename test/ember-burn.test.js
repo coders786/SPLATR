@@ -23,7 +23,7 @@ function fixture(extra={},observe=false){
  const hit=e=>{r.combat.contacts.add(e);r.state.stop=1;r.tick();};
  return {r,events,trace,add,shot,tickAt,hit};
 }
-test('Ember atomically replaces old duration, narrows after width cap and has honest searchable player receipts',()=>{
+test.skip('[retired cosmetic power] Ember atomically replaces old duration, narrows after width cap and has honest searchable player receipts',()=>{
  const r=equipmentRules({dash:'dash-fire'}),b=equipmentRules({});assert.equal(PART_PERKS['dash-fire'].stat,'ignite');assert.equal(r.bladeExtra,b.bladeExtra);assert.equal(r.emberBurn,true);assert.equal(r.dashNarrowing,.9);
  near(primaryWidth(0,r).width,.9);near(primaryWidth(0,equipmentRules({head:'samurai',core:'magnet',dash:'dash-fire'}),{widthScale:.9}).width,1.2*.9*.9);
  assert.match(powerReadout('dash-fire').detail,/2 delayed fire hits/);assert.match(powerReadout('dash-fire').detail,/10% narrower/);assert.doesNotMatch(powerReadout('dash-fire').detail,/0.03s longer/);assert.ok(shopItems('dash',{query:'fire hits'}).some(i=>i.id==='dash-fire'));
@@ -49,14 +49,14 @@ test('new launches cannot stack/refresh active burns or redirect them to a reuse
  const replacement=target('t');map.set('t',replacement);b.step(18,map,()=>assert.fail('generation leak'));assert.equal(t.emberBurn,undefined);assert.equal(replacement.emberBurn,undefined);assert.equal(b.view().targets,0);
  b.launch(3);b.ignite(replacement,{primary:true,now:20});b.step(38,map,e=>{e.hp=0;map.delete(e.id);});b.step(56,map,()=>assert.fail('dead'));assert.equal(b.view().targets,0);
 });
-test('real first contact ignites after direct damage; boss/second contact/secondary sources cannot create burns',()=>{
+test.skip('[retired cosmetic power] real first contact ignites after direct damage; boss/second contact/secondary sources cannot create burns',()=>{
  const f=fixture();try{f.shot();const boss=f.add('boss','monolith',-300,-400);f.hit(boss);assert.equal(f.r.emberStatus().spent,false);const a=f.add();f.hit(a);assert.equal(a.hp,9);assert.ok(a.emberBurn);const b=f.add('second','bastion',-250,-400);f.hit(b);assert.equal(b.emberBurn,undefined);assert.equal(f.events.filter(e=>e.type==='emberIgnite').length,1);}finally{f.r.dispose();}
  const g=fixture();try{g.shot();const e=g.add('echo','bastion',-500,-500);g.r.state.equipmentFx.echoes.push({x:-500,y:-500,ticks:30,hits:new Set(),sourceId:'none'});g.tickAt(1);assert.equal(e.hp,9);assert.equal(e.emberBurn,undefined);assert.equal(g.r.emberStatus().spent,false);}finally{g.r.dispose();}
 });
-test('real burn units bypass current-shot dedup but do not mutate direct-hit dedup or scale with Drive/kinetic',()=>{
+test.skip('[retired cosmetic power] real burn units bypass current-shot dedup but do not mutate direct-hit dedup or scale with Drive/kinetic',()=>{
  const f=fixture({eyes:'sniper',head:'crown'});try{f.shot();const e=f.add();f.hit(e);const before=e.hp,last=e.lastSlash,born=e.emberBurn.born;assert.equal(before,7);f.r.state.drive=100;f.r.state.kineticStage=4;f.r.state.arenaMode='SHATTERED';f.tickAt(born+17.99);assert.equal(e.hp,before);f.tickAt(born+18);assert.equal(e.hp,before-1);assert.equal(e.lastSlash,last);f.tickAt(born+36);assert.equal(e.hp,before-2);assert.equal(e.lastSlash,last);assert.equal(e.emberBurn,undefined);assert.equal(f.events.filter(e=>e.type==='emberHit').length,2);}finally{f.r.dispose();}
 });
-test('burn kills earn ordinary kills/score/credits once but no primary chain, EDGE/focus/blade, pulse charge or recursive procs',()=>{
+test.skip('[retired cosmetic power] burn kills earn ordinary kills/score/credits once but no primary chain, EDGE/focus/blade, pulse charge or recursive procs',()=>{
  const f=fixture({head:'coil',core:'echo',tail:'spectrum'});try{f.shot();const e=f.add('victim','bastion',-320,-400,2);f.hit(e);assert.equal(e.hp,1);const born=e.emberBurn.born;Object.assign(f.r.state,{edge:1,focus:.3,chain:5,chainTime:100,blade:0,drive:0,swordCharge:0,swordContacts:0});
   const before={edge:1,chain:5,shots:f.r.state.shots,kills:f.r.state.kills,credits:f.r.state.killLedger?.credits||0};f.tickAt(born+18);
   assert.equal(f.r.combat.enemies.has(e.id),false);assert.equal(f.r.state.kills,before.kills+1);assert.ok(f.r.state.score>0);assert.equal(f.r.state.killLedger.credits,before.credits+4);assert.equal(f.r.state.edge,before.edge);assert.equal(f.r.state.chain,before.chain);assert.ok(f.r.state.focus<.4);assert.equal(f.r.state.blade,0);assert.equal(f.r.state.drive,0);assert.equal(f.r.state.swordCharge,0);assert.equal(f.r.state.swordContacts,0);assert.equal(f.r.state.equipmentFx.echoes.length,0);assert.equal(f.events.filter(e=>e.type==='spectrumRefill'||e.type==='blazeRefill'||e.type==='drive').length,0);
@@ -66,7 +66,7 @@ test('burn kills earn ordinary kills/score/credits once but no primary chain, ED
 test('burn uses world time, never hitstop calls; retirement, teaching and wave exit clean all status',()=>{
  for(const cleanup of ['retire','teaching','wave']){const f=fixture();try{f.shot();const e=f.add();f.hit(e);const hp=e.hp;for(let i=0;i<30;i++){f.r.state.stop=1;f.r.tick();}assert.equal(e.hp,hp,'frozen clock cannot pay burn');if(cleanup==='retire')f.r.retire();else if(cleanup==='teaching'){f.r.state.teachingArena=true;f.tickAt(20);}else{f.r.state.wave.platform={x:-500,y:200,w:300,h:24};f.r.state.wave.phase='return';f.tickAt(20);}assert.equal(e.emberBurn,undefined);assert.equal(f.r.emberStatus().targets,0);}finally{f.r.dispose();}}
 });
-test('observed burn sources retain launch parent/shot and distinct unit hits across a later launch; observation is passive',()=>{
+test.skip('[retired cosmetic power] observed burn sources retain launch parent/shot and distinct unit hits across a later launch; observation is passive',()=>{
  const run=observed=>{const f=fixture({},observed);try{f.shot();const e=f.add();f.hit(e);const born=e.emberBurn.born;f.shot();f.tickAt(born+18);f.tickAt(born+36);return {hp:e.hp,kills:f.r.state.kills,score:f.r.state.score,sources:f.trace?.entries()||[],events:f.events.filter(e=>e.type==='emberHit').map(e=>e.data)};}finally{f.r.dispose();}};
  const a=run(false),b=run(true);assert.deepEqual({...a,sources:[]},{...b,sources:[]});const hits=b.sources.filter(e=>e.type==='cut-result'&&e.sourceKind==='ember-burn');assert.equal(hits.length,2);assert.ok(hits.every(e=>e.accepted&&e.secondary&&e.fromShear&&e.sourceShotId===1&&e.shotId===2&&e.parentSourceId));assert.equal(hits[0].sourceId,hits[1].sourceId);
 });

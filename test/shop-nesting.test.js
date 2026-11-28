@@ -6,10 +6,10 @@ import {SHOP_GROUPS,SLOT_LABELS,shopGroup,shopItems,classifyItem,shopStudy} from
 import {UI_ICONS} from '../src/ui-icons.js';
 import {createArtBake,drawShopItemStudy} from '../src/art/splatr-art-engine.js';
 
-test('four nested families partition every slot once with readable names and valid icons',()=>{
- assert.equal(SHOP_GROUPS.length,4);const slots=SHOP_GROUPS.flatMap(g=>g.slots);
+test('gear and style tabs partition every slot once with readable names and valid icons',()=>{
+ assert.equal(SHOP_GROUPS.length,2);const slots=SHOP_GROUPS.flatMap(g=>g.slots);
  assert.equal(new Set(slots).size,SLOTS.length);assert.deepEqual(new Set(slots),new Set(SLOTS));
- for(const g of SHOP_GROUPS){assert.ok(UI_ICONS[g.icon]);assert.ok(g.slots.length<=5);for(const s of g.slots){assert.equal(shopGroup(s).id,g.id);assert.ok(SLOT_LABELS[s]);}}
+ for(const g of SHOP_GROUPS){assert.ok(UI_ICONS[g.icon]);for(const s of g.slots){assert.equal(shopGroup(s).id,g.id);assert.ok(SLOT_LABELS[s]);}}
 });
 test('availability filters are exact; challenges are never advertised as affordable',()=>{
  assert.deepEqual(shopItems('head',{owned:['none','halo'],filter:'owned'}).map(i=>i.id),['none','halo']);
@@ -19,7 +19,7 @@ test('availability filters are exact; challenges are never advertised as afforda
 });
 test('classification reflects the implemented benefit rather than calling all effects combat',()=>{
  const get=id=>classifyItem(ITEMS.find(i=>i.id===id));
- assert.equal(get('laser').family,'blade');assert.equal(get('visor').family,'focus');assert.equal(get('gold').family,'score');assert.equal(get('neko').family,'chain');assert.equal(get('radar-1').family,'sensor');assert.equal(get('none').family,'baseline');
+ assert.equal(get('laser').family,'blade');assert.equal(get('visor').family,'cosmetic');assert.equal(get('gold').family,'score');assert.equal(get('neko').family,'chain');assert.equal(get('radar-1').family,'sensor');assert.equal(get('none').family,'baseline');
  for(const item of ITEMS){const c=classifyItem(item);assert.ok(c.trigger&&c.benefit&&c.label);assert.ok(Object.isFrozen(c));}
 });
 test('item studies show ready, trigger, result; reduced motion is a stable result frame',()=>{

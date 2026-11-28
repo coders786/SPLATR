@@ -1,3 +1,6 @@
+import {SPEED_PACE} from './speed-pace.js';
+import {OVERDRIVE} from './flow.js';
+
 /**
  * CHUNK 1 — THE HUD'S WORDS.
  *
@@ -37,7 +40,7 @@ export function rushReadout(p, breakthrough = null, drive = 0) {
   const overdrive = (Number(drive) || 0) > 0;
   const live = sonic || surge > 0 || overdrive;
   let label = RUSH_LABEL;
-  if (overdrive) label = 'OVERDRIVE';
+  if (overdrive) label = `RUSH ${(drive / 60).toFixed(1)}s`;
   else if (sonic) label = 'RUSH HELD';
   else if (surge > 0) label = `RUSH ${(surge / 60).toFixed(1)}s`;
   else if (ready) label = 'RUSH READY';
@@ -100,4 +103,16 @@ export function damageBearing(line, bearing) {
  */
 export function hintVisible(kills, ticksSinceStart) {
   return (Number(kills) || 0) < START_HINT_KILLS && (Number(ticksSinceStart) || 0) < 480;
+}
+
+/** Arcade: speed OR combo fills one meter and triggers the same Rush. */
+export function arcadeRushReadout(state={}) {
+ const drive = Math.max(0, Number(state.drive) || 0);
+ if (drive > 0) return {label:`RUSH ${(drive/60).toFixed(1)}s`,fill:Math.min(1,drive/OVERDRIVE.ticks),ready:true,live:true};
+ const target=Math.max(1,Number(state.rushKillTarget)||6),chain=state.chainTime>0?Math.max(0,Number(state.chain)||0):0;
+ const combo=(chain%target)/target;
+ const pace=state.wave?.pace;
+ // Once pace has paid its Rush for this wave it cannot promise another one.
+ const speed=state.wave?.paceNotified?0:Math.max(0,Math.min(1,(Number(pace?.progress)||0)/SPEED_PACE.goalTicks));
+ return {label:'BUILD RUSH',fill:Math.max(combo,speed),ready:false,live:false};
 }

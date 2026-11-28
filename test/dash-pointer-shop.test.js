@@ -13,7 +13,8 @@ test('old saves migrate to adaptive dash and reticle, purchases and presets roun
   const equip=normalizeEquipment({...receipt.state.equipped,[item.slot]:id},receipt.state.owned);
   const reloaded=loadEquipment(JSON.stringify({...receipt.state,equipped:equip,presets:[equip]}));
   assert.equal(reloaded.equipped[item.slot],id);assert.equal(reloaded.presets[0][item.slot],id);
-  assert.notDeepEqual(equipmentRules(equip),equipmentRules(old.equipped),'purchased part has a real gameplay perk');
+  if(item.slot==='dash')assert.deepEqual(equipmentRules(equip),equipmentRules(old.equipped),'dash is cosmetic');
+  else assert.notDeepEqual(equipmentRules(equip),equipmentRules(old.equipped),'pointer has a gameplay perk');
  }
 });
 test('explicit dash selection overrides sword and equipment; adaptive preserves existing identity',()=>{
@@ -48,8 +49,8 @@ test('captured touch draws selected origin at press and clears it on cancel',asy
  const canvas=win.document.createElement('canvas');win.document.body.append(canvas);
  Object.defineProperties(canvas,{clientWidth:{value:800},clientHeight:{value:600}});
  canvas.setPointerCapture=()=>{};canvas.hasPointerCapture=()=>false;canvas.releasePointerCapture=()=>{};
- const run={state:{equipment:{pointer:'pointer-diamond',dash:'dash-fire'}},aimAt:()=>({target:null}),focus(){}};
- const input=createInput(canvas,{get:()=>run,active:()=>true,point:(x,y)=>({x,y}),assist:()=>false,engage(){},lock:{tick(){}},commit:()=>true});
+ const run={state:{equipment:{pointer:'pointer-diamond',dash:'dash-fire'}},world:{player:{position:{x:0,y:0}}},combat:{enemies:new Map()},aimAt:()=>({x:0,y:-20,power:.5,target:null}),adjust:v=>v,focus(){}};
+ const input=createInput(canvas,{get:()=>run,active:()=>true,point:(x,y)=>({x,y}),assist:()=>false,aimMode:()=> 'pull',engage(){},lock:{tick(){}},commit:()=>true});
  const event=(type,x,y)=>new win.PointerEvent(type,{bubbles:true,isPrimary:true,pointerId:1,pointerType:'touch',button:0,clientX:x,clientY:y});
  try{
   canvas.dispatchEvent(event('pointerdown',100,120));const overlay=win.document.querySelector('svg');

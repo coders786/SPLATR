@@ -13,31 +13,23 @@
     <!-- Keep dead controls out of sight even if the game entry fails to load.
          visibility preserves the canvas dimensions during initialization. -->
     <style>
-      #game[inert] {
-        visibility: hidden;
-      }
-      #boot {
-        position: fixed;
-        inset: 0;
-        z-index: 10;
-        display: grid;
-        place-items: center;
-        padding: 24px;
-        background: #14101e;
-        color: #fff8ec;
-        font:
-          16px/1.5 system-ui,
-          sans-serif;
-      }
-      #boot strong,
-      #boot a {
-        color: #deff52;
-      }
-      #boot p {
-        max-width: 34em;
-        margin: 0.5em 0;
-      }
-      #boot>div{display:none}#boot::after{content:"";width:48px;height:4px;background:#dfff82}
+      /* Inline by design: this remains visible if CSS or the game module fails. */
+      #game[inert]{visibility:hidden}
+      #boot{position:fixed;inset:0;z-index:1000;box-sizing:border-box;display:grid;place-items:center;overflow:auto;padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));background:#111b21;color:#edf0d9;font-family:system-ui,sans-serif}
+      #boot *{box-sizing:border-box}
+      #boot::before{content:"";position:fixed;inset:0;pointer-events:none;background:linear-gradient(135deg,transparent 0 57%,#c4e77608 57% 57.15%,transparent 57.15%),repeating-linear-gradient(0deg,transparent 0 63px,#d8efbc08 64px),repeating-linear-gradient(90deg,transparent 0 63px,#d8efbc08 64px)}
+      .boot-shell{position:relative;width:min(930px,100%);min-height:min(560px,calc(100vh - 48px));display:flex;flex-direction:column;border:1px solid #6b858060;background:#15252bec;box-shadow:0 28px 90px #05090db3}
+      .boot-top,.boot-bottom{display:flex;align-items:center;justify-content:space-between;gap:16px;font:700 10px/1.4 monospace;letter-spacing:.17em;color:#9fb5a9}
+      .boot-top{padding:18px 24px;border-bottom:1px solid #7b9d8a40}.boot-top b{color:#d9fa99}.boot-top span:last-child{color:#8aa59b}
+      .boot-body{display:grid;grid-template-columns:1.04fr .96fr;flex:1;min-height:340px}
+      .boot-copy{display:flex;flex-direction:column;justify-content:center;padding:clamp(28px,6vw,64px);position:relative;z-index:1}
+      .boot-kicker{color:#c9eb91;font:700 10px/1.5 monospace;letter-spacing:.22em;margin:0 0 17px}.boot-title{font:900 italic clamp(54px,8vw,104px)/.82 system-ui,sans-serif;letter-spacing:-.09em;margin:0 0 12px;color:#f1f3df}.boot-sub{margin:0;color:#c6e791;font:800 12px/1.2 monospace;letter-spacing:.22em}.boot-desc{color:#b4c6b8;max-width:27ch;font-size:14px;line-height:1.55;margin:28px 0 0}
+      .boot-art{position:relative;overflow:hidden;min-height:250px;background:radial-gradient(circle at 51% 49%,#37544c 0,#223b3a 38%,#172b30 75%);border-left:1px solid #7b9d8a40}.boot-art svg{position:absolute;inset:0;width:100%;height:100%}.boot-art-label{position:absolute;top:20px;right:20px;color:#9eb7a9;font:700 9px monospace;letter-spacing:.15em}.boot-ring{transform-origin:240px 190px;animation:boot-turn 14s linear infinite}.boot-sweep{transform-origin:240px 190px;animation:boot-turn 8s linear infinite reverse}@keyframes boot-turn{to{transform:rotate(360deg)}}
+      .boot-bottom{padding:22px 24px;align-items:end;border-top:1px solid #7b9d8a40}.boot-status{min-width:0;flex:1}.boot-status-line{display:flex;justify-content:space-between;gap:12px;margin-bottom:10px}.boot-status-line strong{color:#e4f4d1;font-weight:700}.boot-track{height:3px;overflow:hidden;background:#50635b}.boot-track i{display:block;width:36%;height:100%;background:#d7fa91;animation:boot-load 1.7s ease-in-out infinite}@keyframes boot-load{0%{transform:translateX(-110%)}100%{transform:translateX(300%)}}
+      .boot-number{color:#d4efac;white-space:nowrap}.boot-help{font:12px/1.5 system-ui,sans-serif;color:#dce6d0;margin:13px 0 0;letter-spacing:0}.boot-help a{color:#d7fa91}.boot-noscript{color:#ffd2a6}
+      @media(max-width:650px){#boot{padding:16px}.boot-shell{min-height:min(660px,calc(100dvh - 32px))}.boot-top,.boot-bottom{padding:15px 18px}.boot-top span:last-child{display:none}.boot-body{grid-template-columns:1fr;grid-template-rows:auto minmax(180px,1fr)}.boot-copy{padding:30px 26px 24px}.boot-title{font-size:clamp(56px,17vw,90px)}.boot-desc{margin-top:16px}.boot-art{border-left:0;border-top:1px solid #7b9d8a40;min-height:180px}.boot-art svg{object-fit:contain}.boot-number{display:none}}
+      @media(max-height:500px) and (min-width:651px){#boot{padding:10px}.boot-shell{min-height:calc(100vh - 20px)}.boot-body{min-height:190px}.boot-copy{padding:20px 40px}.boot-desc{margin-top:14px}.boot-top,.boot-bottom{padding:10px 20px}}
+      @media(prefers-reduced-motion:reduce){.boot-ring,.boot-sweep,.boot-track i{animation:none}.boot-track i{width:42%}}
     </style>
     <link
       rel="icon"
@@ -45,17 +37,19 @@
     />
   </head>
   <body>
-    <aside id="boot" role="status" aria-label="Loading arena">
-      <div>
-        <strong>SPLATR: Shape Riot</strong>
-        <p>Loading the arena…</p>
-        <p>
-          If the title doesn’t appear, <a href="">reload the preview</a> or open the standalone game
-          file (<code>dist/index.html</code>).
-        </p>
-        <noscript><style>#boot>div{display:block}</style>JavaScript must be enabled to play.</noscript>
+    <aside id="boot" aria-label="Loading SPLATR">
+      <div class="boot-shell">
+        <header class="boot-top"><span><b>✳</b> &nbsp; SPLATR / SHAPE RIOT</span><span>ARCADE SYSTEM &nbsp; / &nbsp; 01</span></header>
+        <div class="boot-body">
+          <div class="boot-copy"><p class="boot-kicker">// THE FIELD IS CALLING</p><h1 class="boot-title">SPLATR<span style="color:#d4f58d">.</span></h1><p class="boot-sub">SHAPE RIOT &nbsp; / &nbsp; ARCADE</p><p class="boot-desc">One cube. Endless shapes.<br>Find your line and make it count.</p></div>
+          <div class="boot-art" aria-hidden="true"><span class="boot-art-label">FIELD // 001</span><svg viewBox="0 0 480 380" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="240" cy="190" r="145" stroke="#c7e9a1" stroke-opacity=".12"/><circle cx="240" cy="190" r="110" stroke="#c7e9a1" stroke-opacity=".3" stroke-dasharray="2 10"/><g class="boot-ring" stroke="#b9dca1" stroke-opacity=".42"><circle cx="240" cy="190" r="135" stroke-dasharray="75 24 9 14"/><path d="M240 42v22M240 316v22M92 190h22M366 190h22"/></g><g class="boot-sweep" stroke="#dbff9c" stroke-opacity=".7"><path d="M240 53a137 137 0 0 1 123 76" stroke-width="3"/><circle cx="363" cy="129" r="4" fill="#dbff9c"/></g><path d="M84 285 390 91" stroke="#d8f69d" stroke-opacity=".18" stroke-width="26"/><path d="M82 292 393 87" stroke="#e6ffba" stroke-width="3"/><path d="M199 146h77l16 18v70l-16 13h-77l-16-14v-70z" fill="#101c23" stroke="#e5f3cd" stroke-width="5"/><path d="m198 178 24 5-1 8-23-3zm55 5 24-5v10l-23 3z" fill="#d9ff8e"/><path d="m205 242-40 27 45-12 15-12" fill="#ec7180"/><path d="m342 245 25-43 25 43z" fill="#e66e78"/><path d="m114 136 16-28 16 28z" fill="#bd6c83"/><path d="M131 222h27m-13-13v27M335 154h22m-11-11v22" stroke="#d9eeae" stroke-opacity=".5"/></svg></div>
+        </div>
+        <footer class="boot-bottom"><div class="boot-status"><div class="boot-status-line"><strong id="boot-status" role="status" aria-live="polite">Preparing the arena</strong><span>LOADING</span></div><div class="boot-track" aria-hidden="true"><i></i></div><p class="boot-help" id="boot-help" hidden>Taking longer than expected? <a href="">Reload the game</a>. If the preview still fails, open the built <code>dist/index.html</code>.</p><noscript><p class="boot-help boot-noscript">JavaScript is required to play. Enable it and reload.</p></noscript></div><span class="boot-number">CUT / CHAIN / REPEAT</span></footer>
       </div>
     </aside>
+    <script>
+      (()=>{const boot=document.getElementById('boot'),status=document.getElementById('boot-status'),help=document.getElementById('boot-help');window.__splatrBootMark=(message)=>{if(boot.isConnected)status.textContent=message;};setTimeout(()=>{if(boot.isConnected){status.textContent='Still preparing the arena';help.hidden=false;}},12000);})();
+    </script>
     <svg class="defs" width="0" height="0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
       <symbol id="i-sound" viewBox="0 0 24 24">
         <path d="m11 5-5 4H3v6h3l5 4zM15 8a5 5 0 0 1 0 8m3-11a9 9 0 0 1 0 14" />
@@ -89,9 +83,10 @@
       <canvas
         id="arena"
         tabindex="-1"
-        aria-describedby="story-alt"
-        aria-label="Shape Riot arena. Mouse: drag back and release to launch the opposite way; distance sets power. Shift+click shoots at the cursor. Right-click cancels. Touch: tap or pull back and release. Hold airborne to focus. Arrows or WASD aim, Space slashes, Escape cancels a held aim or pauses."
+        aria-describedby="scene-alt"
+        aria-label="Shape Riot arena. Mouse or touch: point toward your target and release to slash. Hold airborne to slow time. Right-click cancels. Switch to pull-back slingshot in Options. Arrows or WASD aim, Space slashes, Escape cancels a held aim or pauses."
       ></canvas>
+      <div id="resume-cue" hidden aria-hidden="true"><span>GO</span></div>
       <section id="title-screen" aria-labelledby="brand-title">
         <div class="title-stack">
           <div class="eyebrow"><i class="slashes"></i> Wave slash action</div>
@@ -123,12 +118,12 @@
             ><span class="subtitle"><b>//</b> Shape Riot</span>
           </h1>
           <nav id="main-nav" aria-label="Main menu">
-            <p class="first-run-cue">Pull back → release. Shift+click to aim directly.<br><small>Clear the wave → land on the glowing platform → choose an upgrade.</small></p>
+            <p class="first-run-cue">Aim toward a target → release to slash.<br><small>Clear enemies → build your chain → take on the next wave.</small></p>
             <button id="start-btn" class="choice primary">
               <svg class="icon"><use href="#i-play" /></svg><span>Start run</span
               ><kbd>↵</kbd></button
             ><button id="manual-btn" class="choice quiet">
-              <svg class="icon"><use href="#i-guide" /></svg>Practice &amp; help</button
+              <svg class="icon"><use href="#i-guide" /></svg>Training arena</button
             ><button id="options-btn" class="choice quiet">
               <svg class="icon"><use href="#i-options" /></svg>Options
             </button>
@@ -175,7 +170,7 @@
           <div id="chain" hidden>
             <span id="chain-text"></span> <b id="multiplier"></b><i id="chain-meter"></i>
           </div>
-          <div id="drive" hidden>Overdrive<i id="drive-meter"></i></div>
+          <div id="drive" hidden>Rush<i id="drive-meter"></i></div>
           <div id="form-read" hidden>
             <span id="form-word"></span><i id="form-pips"></i>
           </div>
@@ -251,7 +246,7 @@
           </div>
           <div class="momentum-pips speedo-pips" aria-hidden="true"><i></i><i></i><i></i></div>
         </div>
-        <span id="story-alt" class="sr" role="status"></span>
+        <span id="scene-alt" class="sr" role="status"></span>
       </section>
       <div id="tutorial-objective" aria-hidden="true" hidden><span id="tutorial-objective-text"></span><small id="tutorial-objective-why"></small></div>
       <!-- CHUNK 1: THE TARGETING RING. The OS cursor is hidden over the
@@ -268,7 +263,7 @@
       <!-- CHUNK 1: one red frame-edge flash on the tick health drops. -->
       <div id="damage-rim" aria-hidden="true"></div>
       <!-- CHUNK 1: the four-word starter hint, retired by the first kill. -->
-      <div id="start-hint" aria-hidden="true" hidden>PULL BACK &amp; RELEASE TO CUT · SHIFT+CLICK DIRECT</div>
+      <div id="start-hint" aria-hidden="true" hidden>AIM AT A TARGET · RELEASE TO SLASH</div>
       <!-- CHUNK 2: the three-colour law, taught once on the bottom ticker.
            Three words, three colours, retired after three cuts. -->
       <div id="law-hint" aria-hidden="true" hidden>
@@ -276,10 +271,6 @@
         <b class="law-lethal">RED</b> HURTS
         <b class="law-reward">GOLD</b> PAYS
       </div>
-      <!-- CHUNK 6A: THE STORY CHIP. One chip, ≤4 words, the only legible
-           text allowed mid-play. Purely decorative — combat-relevant content
-           always ships via ordinary focus order. -->
-      <div id="story-chip" class="story-chip" aria-hidden="true" hidden></div>
       <!-- CHUNK 6B: THE LANDLORD'S BAR — Minecraft parity. One cell per plate;
            fills drain bottom-up as plates fall. Purely a projection of the
            boss's plates; it can never disagree with the sim. -->
@@ -294,6 +285,7 @@
         <span class="small panel-brand"><i class="slashes"></i> SPLATR / Shape Riot <b id="dev-panel-badge" hidden> / DEV SANDBOX</b></span>
         <h2 id="panel-heading">Paused</h2>
         <section id="pause-page" hidden data-intrusion="false">
+          <div class="pause-menu">
           <!-- CHUNK 7: an automatic pause states its cause here. -->
           <p id="pause-why" class="pause-why" data-auto="false">PAUSED</p>
           <!-- CHUNK 7: shown only when frame errors are repeating. A bug the
@@ -306,26 +298,32 @@
           ><button class="choice quiet" id="dev-fault" hidden>Copy frame-error report</button
           ><button class="choice quiet" id="dev-refill" hidden>Refill health / Edge / focus</button
           ><button class="choice quiet" id="dev-trace" hidden>Download combat trace</button
-          ><button class="choice quiet" id="pause-manual">Field manual</button
+          ><button class="choice quiet" id="pause-manual">Training arena</button
+          ><button class="choice quiet" id="pause-restart">Restart run</button
           ><button class="choice quiet" id="pause-options">Options</button
           ><button class="choice quiet" id="end-btn">End run</button>
+          </div>
+          <aside class="pause-build" aria-label="Equipped gameplay gear"><h3>YOUR GEAR</h3><ul id="pause-build-list"></ul></aside>
         </section>
         <section id="options-page" hidden>
           <div class="option-list">
             <button id="audio-opt">Sound <b>On</b></button
             ><button id="music-opt">Beat track <b>On</b></button
+            ><button id="aim-mode-opt" aria-describedby="aim-mode-note">Aim controls <b>Direct</b></button
             ><button id="assist-opt">Aim assist <b>On</b></button
             ><button id="motion-opt">Motion effects <b>On</b></button
             ><button id="postfx-opt" aria-describedby="postfx-note">Post FX <b>Auto</b></button
+            ><button id="postfx-strength-opt" aria-describedby="postfx-note">FX intensity <b>Balanced</b></button
             ><button id="shake-opt" aria-describedby="shake-note">Screen shake <b>Full</b></button
-            ><button id="pace-opt" aria-describedby="pace-note">Reaction pace <b>Fast</b></button
+            ><button id="pace-opt" aria-describedby="pace-note">Bullet-time pace <b>Fast</b></button
             ><button id="opening-opt" aria-describedby="opening-note">
               Enemy mix <b>Gradual</b></button
-            ><button id="dev-opt" aria-describedby="dev-note">Developer sandbox <b>Off</b></button
+            ><button id="dev-opt" aria-describedby="dev-note">Sandbox cheats <b>Off</b></button
             ><button id="full-opt" class="full">Fullscreen <b>Toggle</b></button>
           </div>
+          <p id="aim-mode-note">Point toward your target and release. Slingshot aims opposite your pull; longer pulls launch harder.</p>
           <p id="dev-note"></p>
-          <p id="postfx-note">Auto keeps the lighter Canvas path on low-memory devices. On enables the single-pass WebGL lens when supported.</p>
+          <p id="postfx-note">Auto uses the lighter Canvas path on low-memory devices. On enables the WebGL lens when supported. Intensity adjusts the grade; motion effects off removes animated distortion.</p>
           <p id="shake-note"><b>Full</b> shakes. <b>Low</b> softens. <b>Off</b> stops.</p>
           <p id="pace-note"></p>
           <p id="opening-note"></p>

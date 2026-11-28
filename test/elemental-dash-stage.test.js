@@ -158,7 +158,7 @@ test('native production run forwards real dash and primary cut, with read-only d
  }finally{renderer.dispose();run.dispose();dom.uninstall();}
 });
 
-test('native elemental mechanics deliver only admitted proc accents through production renderer',async()=>{
+test('cosmetic elemental dashes never create gameplay proc accents in the production renderer',async()=>{
  const [{createRenderer},{createRun},{installDom,createDisplay},{placePlayer,stopPlayer}]=await Promise.all([import('../src/renderer.js'),import('../src/run.js'),import('./support/display.js'),import('../src/physics.js')]);
  const dom=installDom();
  try{for(const [dash,proc]of [['fire','emberIgnite'],['ice','frostContact'],['lightning','voltContact']]){
@@ -166,7 +166,7 @@ test('native elemental mechanics deliver only admitted proc accents through prod
   const run=createRun(77,(type,data)=>{receipts.push({type,data});renderer?.event(type,data,true);},{waveMode:true,equipment:{dash:'dash-'+dash}});renderer=createRenderer(canvas);
   try{Object.assign(run.state,{phase:'playing',opening:null,inputLock:false,invul:99999,stop:1});for(const e of [...run.combat.enemies.values()])run.combat.remove(e);run.state.wave.entry=0;placePlayer(run.world,{x:-450,y:-250});stopPlayer(run.world);renderer.tick(run,true);run.dash({x:25,y:0,power:.6});
    const p=run.world.player.position,primary=run.combat.add({id:'primary-'+dash,kind:'fang',x:-300,y:-400,hp:5,delay:99999}),neighbor=run.combat.add({id:'neighbor-'+dash,kind:'fang',x:-300,y:-485,hp:5,delay:99999});run.state.blade=12;run.state.stop=1;run.combat.contacts.add(primary);run.tick();renderer.tick(run,true);
-   assert.ok(receipts.some(e=>e.type===proc),dash+' emits real '+proc);const admitted=receipts.filter(e=>e.type===proc).some(e=>dash==='lightning'?e.data.links.length>0:e.data.targets.length>0);assert.equal(renderer.effectState().dashStage.marks.some(m=>m.role==='proc'),admitted,dash+' accents match admission, including empty conduction');if(dash!=='lightning')assert.ok(admitted);assert.ok(neighbor.hp>0);assert.ok(renderer.effectState().dashStage.marks.filter(m=>m.role==='proc').every(m=>m.element===dash));
+   assert.equal(receipts.some(e=>e.type===proc),false,dash+' is cosmetic');assert.equal(renderer.effectState().dashStage.marks.some(m=>m.role==='proc'),false);assert.ok(neighbor.hp>0);
   }finally{renderer.dispose();run.dispose();}
  }}finally{dom.uninstall();}
 });

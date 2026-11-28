@@ -48,37 +48,22 @@ try {
     }),
     ['null', 'absolute', 880, 710, true],
   );
-  const place = (where) => frame.waitForSelector(`#hud[data-place="${where}"]`, { visible: true });
-  const scene=k=>frame.waitForFunction(key=>document.querySelector('#arena').dataset.scene===key,{timeout:9000},k);
-  const press = () => page.keyboard.press('Space');
-  const bank = async () => {
-    await page.keyboard.press('p');
-    await frame.click('#end-btn');
-  };
+  // A new save starts directly in the arcade, even when storage is denied.
   await frame.click('#start-btn');
-  await place('room');
-  // Storage is denied here. Complete the actual wordless room. A retry in
-  // the SAME document must go straight to the field, with no proof strip.
-  await scene('tap');
-  for(const next of ['pull','shell','crack','lane']){await press();await scene(next);}
-  await place('field');
-  assert.equal(await frame.$eval('#score',n=>Number(n.textContent)),5700);
-  await bank();await frame.click('#retry-btn');await place('field');
-  assert.equal(await frame.$eval('#arena',n=>n.hasAttribute('data-scene')),false);
-  await bank();await frame.click('#home-btn');await frame.click('#options-btn');await frame.click('#opening-opt');
-  await frame.click('#options-page .back');await frame.click('#start-btn');await place('field');await press();
-  await frame.waitForFunction(
-    () =>
-      Number(document.getElementById('stroke-award').textContent.replace(/[^0-9]/g, '')) >= 1500 &&
-      !document.getElementById('imprint').hidden,
-    { timeout: 6000 },
-  );
+  await frame.waitForFunction(() => document.querySelector('#game').dataset.learning === 'false');
+  await frame.waitForSelector('#hud', { visible: true });
+  assert.equal(await frame.$('#story-chip'), null);
+  // Combat starts immediately; a launch, pause and resume remain available.
+  await page.keyboard.press('Space');
+  await frame.waitForFunction(() => !document.querySelector('.wave-hud')?.hidden, { timeout: 8000 });
   await page.keyboard.press('p');
   await frame.waitForSelector('#resume-btn', { visible: true });
+  await frame.click('#resume-btn');
+  await frame.waitForSelector('#hud', { visible: true });
   assert.deepEqual(dependencies, [], 'Preview tried to fetch assets outside its HTML');
   assert.deepEqual(errors, []);
   console.log(
-    'PASS: scripts-only opaque preview played the wordless room, remembered first Start without storage, and scored a full-field Throughcut using only its HTML.',
+    'PASS: scripts-only opaque preview starts directly in arcade combat, launches, pauses and resumes using only its HTML.',
   );
 } finally {
   await browser.close();

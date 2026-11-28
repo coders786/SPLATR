@@ -48,13 +48,8 @@ import { clamp } from './levels.js';
 /**
  * Sector cadence for the Monolith: sectors 4, 8, 12 …
  *
- * `first: 4` is not arbitrary. Sectors 1–3 are the authored teaching ladder —
- * a cut, then fear, then the conduit/rage chapter — and dropping a boss in the
- * middle of it would interrupt the only three sectors that are actually
- * scripted (and would put the landlord in front of a player who has not yet met
- * a Prism). Sector 4 is the first sector with nothing authored over it, which
- * is exactly where a boss belongs. `every: 4` keeps it rarer than the rest
- * deck: a landlord every other sector is not a boss, it is a chore.
+ * Give players several sectors to learn enemy patterns before the first boss,
+ * then keep encounters spaced apart at four-sector intervals.
  */
 export const LANDLORD = Object.freeze({ first: 4, every: 4 });
 
@@ -141,8 +136,8 @@ export const GOALS = Object.freeze({
   }),
   overdrive: Object.freeze({
     id: 'overdrive',
-    label: 'REACH OVERDRIVE',
-    line: 'REACH OVERDRIVE',
+    label: 'REACH RUSH',
+    line: 'REACH RUSH',
     metric: 'overdrive',
     target: 1,
   }),

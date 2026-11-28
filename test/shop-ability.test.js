@@ -47,14 +47,14 @@ test('sixteen studies are distinct, visibly progress and stay pixel-still under 
  const results=new Set();for(const id of SHOWCASE_IDS){const it=ITEMS.find(i=>i.id===id),eq=normalizeEquipment({[it.slot]:id}),draw=(t,motion)=>{const cv=createCanvas(640,400);drawShopItemStudy(playerCanvas(cv.getContext('2d')),640,400,{study:shopStudy(it,t,motion,eq),equipment:eq});return cv.toBuffer('image/png');};assert.deepEqual(draw(0,false),draw(9999,false),id);assert.notDeepEqual(draw(0,true),draw(3300,true),id);results.add(draw(3300,false).toString('base64'));}assert.equal(results.size,16);
 });
 test('copy explicitly excludes unreleased elemental powers and correctly describes fragile/slow/limited tradeoffs',()=>{
- assert.match(shopAbility('dash-fire').limit,/10% narrower/);assert.match(shopAbility('dash-ice').limit,/bosses resist/);assert.match(shopAbility('dash-echo').limit,/One pending replay/);assert.match(shopAbility('sniper').limit,/No homing or score bonus/);
+ for(const id of ['dash-fire','dash-ice','dash-echo','sniper'])assert.match(shopAbility(id).effect,/look only/);
  assert.match(shopAbility('glass').effect,/maximum health is 1/);assert.match(shopAbility('riot').limit,/2 maximum EDGE/);assert.match(shopAbility('crown').limit,/8% launch speed/);assert.match(shopAbility('viper').effect,/15% narrower/);assert.match(shopAbility('coil').limit,/cannot create more zaps/);
 });
 test('search can find abilities in ordinary words without inventing a new power',()=>{
- assert.ok(shopItems('head',{query:'gravity'}).some(i=>i.id==='halo'));assert.ok(shopItems('core',{query:'ghost blade'}).some(i=>i.id==='echo'));assert.ok(shopItems('dash',{query:'Fangs freeze'}).some(i=>i.id==='dash-ice'));
+ assert.ok(shopItems('head',{query:'gravity'}).some(i=>i.id==='halo'));assert.ok(shopItems('core',{query:'ghost blade'}).some(i=>i.id==='echo'));assert.ok(shopItems('dash',{query:'Frost'}).some(i=>i.id==='dash-ice'));
 });
 test('Notched plain-language copy still reports the actual extra recovery at a shared cap',()=>{
- const p=powerReadout('notched',{eyes:'glitch',world:'synth',pointer:'pointer-orbit',dash:'dash-water'});assert.equal(p.chips[0],'RECOVERY +0%');assert.match(p.detail,/add \+0%/);assert.match(p.detail,/total recovery bonus is \+40%/);
+ const p=powerReadout('notched',{eyes:'glitch',world:'synth',pointer:'pointer-orbit',dash:'dash-water'});assert.equal(p.chips[0],'RECOVERY +12%');assert.match(p.detail,/add \+12%/);assert.match(p.detail,/total recovery bonus is \+22%/);
 });
 test('showcases/copy never buy, equip, discover or modify caller-owned save data',()=>{
  const raw=JSON.stringify({version:1,owned:[],equipped:{head:'none'},presets:[null,null,null],discovered:[]}),save=loadEquipment(raw),before=JSON.stringify(save);

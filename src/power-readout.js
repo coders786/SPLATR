@@ -1,3 +1,4 @@
+import {isCosmeticSlot} from './cosmetic-slots.js';
 import {primaryWidth} from './primary-width.js';
 import {readablePower} from './shop-language.js';
 import {PART_PERKS,BASE_PARTS} from './part-perks.js';
@@ -35,7 +36,7 @@ const powers={
  wings:['↟','WALL REFILL','FIRST AIRBORNE WALL',['+1 EDGE'],'bounce'],
  ghost:['≋','LONGER BLADE','EVERY DASH',['+6 BLADE TICKS'],'dash'],
  time:['◷','FOCUS RECOVERY','AFTER A KILL',['2× RECOVERY','120 TICKS'],'aim'],
- riot:['ϟ','QUICK OVERDRIVE','CONSECUTIVE KILLS',['4 KILLS TO DRIVE','MAX EDGE 2'],'slice'],
+ riot:['ϟ','QUICK RUSH','CONSECUTIVE KILLS',['4 KILLS TO DRIVE','MAX EDGE 2'],'slice'],
  glass:['◆','DOUBLE SCORE','ALL RUN',['SCORE ×2','MAX HEALTH 1'],'hit'],
  standard:['◇','BALANCED','ALL RUN',['3 EDGE','3 HEALTH'],'slice'],
  'radar-base':['◎','LOCAL RADAR','ALL RUN',['NEARBY CONTACTS'],'aim'],
@@ -51,6 +52,7 @@ const quick={'dash-lightning':'BURST → CONTACT ARC','dash-echo':'OLD PATH → 
 export function powerReadout(item,equipment=null){
  const value=typeof item==='string'?ITEMS.find(x=>x.id===item):item;
  if(!value)throw new RangeError('Unknown equipment');
+ if(isCosmeticSlot(value.slot))return Object.freeze({icon:'◇',title:'COSMETIC',trigger:'VISUAL ONLY',chips:Object.freeze(['NO GAMEPLAY CHANGE']),mode:'dash',cosmetic:true,short:'VISUAL ONLY',detail:'Changes appearance only. No effect on damage, movement, score, abilities or sword build.'});
  const perk=PART_PERKS[value.id],base=BASE_PARTS[value.id];
  if(value.id==='dash-ink'){
   const eq=normalizeEquipment({...equipment,dash:'dash-ink'}),r=equipmentRules(eq),withInk=primaryWidth(0,r),without=primaryWidth(0,{...r,inkWidth:1}),far=Math.round((withInk.far.total/without.far.total-1)*100),near=Math.round((withInk.near.total/without.near.total-1)*100);
@@ -79,5 +81,5 @@ export function buildReadout(equipment){
 export function primaryReadout(equipment,sword){
  const r=equipmentRules(normalizeEquipment(equipment));
  return Object.freeze({speed:Math.round(r.dashSpeed*100),width:Math.round(r.cutWidth*r.inkWidth*r.dashNarrowing*(sword?.width??1)*100),reach:Math.round((sword?.reach??1)*100),window:r.bladeExtra+(sword?.ticks??0),armor:r.armorDamage+(sword?.armor??0),edge:r.edgeMax,hull:r.healthMax,score:r.scoreMultiplier,
- conditional:Object.freeze([...(r.horizontalWidth>1?['Near-horizontal width up to +20%; combined bonus limit +35%.']:[]),...(r.closeWidth>1?['Within 100px: width up to +20%; combined bonus limit +35%.']:[]),...(equipment?.eyes==='sniper'?['At 90%+ release: first armor +1 plate; shot width −10%.']:[]),...(r.lastHullBonus>1?['At 1 health: kill score +50%.']:[])])});
+ conditional:Object.freeze([...(r.horizontalWidth>1?['Near-horizontal width up to +20%; combined bonus limit +35%.']:[]),...(r.closeWidth>1?['Within 100px: width up to +20%; combined bonus limit +35%.']:[]),...(r.lastHullBonus>1?['At 1 health: kill score +50%.']:[])])});
 }
