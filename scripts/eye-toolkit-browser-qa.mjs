@@ -33,7 +33,7 @@ try{
    for(const e of [...r.combat.enemies.values()])r.combat.remove(e);
    // Removing the authored formation would otherwise trigger its half-clear story.
    // This fixture isolates combat, not narrative/input-lock coverage.
-   Object.assign(s,{phase:'playing',opening:null,visualTutorial:null,tutorialActive:false,inputLock:false,midWaveStorySeen:true,invul:99999});s.wave.entry=0;
+   Object.assign(s,{phase:'playing',opening:null,visualTutorial:null,tutorialActive:false,inputLock:false,invul:99999});s.wave.entry=0;
    const v=r.world.viewport,p={x:v.x+v.w*.5,y:v.y+v.h*.55};placePlayer(r.world,p);stopPlayer(r.world);r.world.grounded=false;
    r.combat.add({id:'sentinel',kind:'fang',x:p.x+1000,y:p.y-900,pinned:true,delay:999999});
    const step=()=>{s.stop=1;r.tick();};let proof={};

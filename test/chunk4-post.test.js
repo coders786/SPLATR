@@ -83,22 +83,18 @@ test('no lesson keyed on an event the shipped mode never emits', () => {
   // may be keyed on it.
   const kinds = new Set(QUESTS.filter((q) => q.lesson).map((q) => q.kind));
   assert.equal(kinds.has('waveRest'), false, 'waveRest is unreachable in continuous mode: no lesson may need it');
-  for (const live of ['waveClear', 'cleanBank', 'paceHeld', 'dimensionBreak']) {
+  for (const live of ['waveClear', 'cleanBank', 'paceHeld', 'monolithDown']) {
     assert.ok(kinds.has(live), `${live} should still be taught`);
   }
 });
 
-test('the replaced lesson asks for the seal, which is what a clear IS here', () => {
-  const seal = QUESTS.filter((q) => q.lesson && q.label === 'BREAK THE SEAL');
-  assert.equal(seal.length, 3, 'one per tier, like every other lesson');
-  for (const q of seal) {
+test('the wave lesson describes the arcade objective', () => {
+  const lessons = QUESTS.filter(q => q.lesson && q.label === 'FINISH THE WAVE');
+  assert.equal(lessons.length, 3);
+  for (const q of lessons) {
     assert.equal(q.kind, 'waveClear');
-    // The copy must name the things actually on screen: the three anchors and
-    // the seam they hold shut. ('seal' is what the code calls it; the player
-    // sees a seam.)
-    assert.match(q.instruction, /anchor/i, 'the copy names the anchors');
-    assert.match(q.instruction, /seam/i, 'and the seam they hold shut');
-    assert.ok(q.instruction.length <= 70, 'still one line of instruction');
+    assert.match(q.instruction, /enemy/i);
+    assert.ok(q.instruction.length <= 70);
   }
 });
 
@@ -110,23 +106,9 @@ function shipped(seed = 11, emit = () => {}) {
 }
 
 function clearSector(r) {
-  const n = r.state.narrative;
-  for (const l of n.locks) {
-    if (l.broken) continue;
-    placePlayer(r.world, { x: l.x, y: l.y + 130 });
-    stopPlayer(r.world);
-    r.state.edge = r.state.edgeMax;
-    r.state.invul = 99999;
-    r.dash({ x: 0, y: -42, power: 1 });
-    for (let i = 0; i < 12; i++) r.tick();
-  }
-  const seal = n.seal;
-  placePlayer(r.world, { x: seal.x, y: seal.y + 130 });
-  stopPlayer(r.world);
-  r.state.edge = r.state.edgeMax;
-  r.state.invul = 99999;
-  r.dash({ x: 0, y: -42, power: 1 });
-  for (let i = 0; i < 40; i++) r.tick();
+  for (const enemy of [...r.combat.enemies.values()]) r.combat.remove(enemy);
+  r.state.stop = 0;
+  r.tick();
 }
 
 test('a shipped run now grows: one card per clear, never two', () => {

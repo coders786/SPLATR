@@ -9,6 +9,7 @@ import {
 import {resolveArtDirection} from '../src/art/splatr-art-engine.js';
 import {ITEMS, SLOTS, DEFAULT_EQUIPMENT, equipmentRules, loadEquipment} from '../src/equipment.js';
 import {swordProfile} from '../src/swords.js';
+import {isCosmeticSlot} from '../src/cosmetic-slots.js';
 
 // Captured before the shared-family change, not generated from current swordProfile.
 const baseline = JSON.parse(readFileSync(new URL('./support/sword-profile-baseline.json', import.meta.url), 'utf8'));
@@ -25,11 +26,19 @@ function expectedRecipe(eq) {
   }
   return selected;
 }
+function expectedGearRecipe(eq) {
+ let selected=null, specificity=0;
+ for(const r of HYBRIDS){
+  const parts=Object.entries(r.parts).filter(([slot])=>!isCosmeticSlot(slot));
+  if(parts.length>=2 && parts.every(([slot,id])=>eq[slot]===id) && parts.length>specificity){selected=r;specificity=parts.length;}
+ }
+ return selected;
+}
 function assertSelection(eq) {
   const expected = expectedRecipe(eq);
   const selected = activeHybrid(eq);
   assert.equal(selected?.id ?? null, expected?.id ?? null);
-  assert.deepEqual(swordProfile(eq), baseline[expected?.id ?? 'standard']);
+  assert.deepEqual(swordProfile(eq), baseline[expectedGearRecipe(eq)?.id ?? 'standard']);
   assert.equal(resolveArtDirection(eq).family, expected?.id ?? null);
   if (expected) {
     assert.equal(hybridHint(eq), expected.title);
@@ -45,7 +54,7 @@ for (const [a, b, winner] of [
   ['reaper', 'arcade', 'arcade'],
   ['briar', 'razoredge', 'razoredge'],
 ]) {
-  test(`overlap ${a} + ${b}: art, hint and sword select ${winner}`, () => {
+  test(`overlap ${a} + ${b}: visual family selects ${winner}; combat follows gear only`, () => {
     const eq = Object.freeze(combine(a, b));
     assert.equal(activeHybrid(eq)?.id, winner);
     assertSelection(eq);
@@ -56,7 +65,7 @@ for (const [a, b, winner] of [
   });
 }
 
-test('all exact recipes and every compatible recipe subset preserve sword tuning and share one family', () => {
+test('all visual recipes preserve art selection and gear-only sword tuning', () => {
   let checked = 0;
   function visit(start, eq) {
     assertSelection(Object.freeze(eq));
@@ -82,7 +91,7 @@ test('equal specificity keeps catalogue priority independent of equip/object ord
   }
 });
 
-test('all 2,402 cross-slot pairs in a default build agree without mutating input or rules', () => {
+test('all 2,402 cross-slot pairs preserve independent art and gear selection without mutation', () => {
   let checked = 0;
   for (let i = 0; i < SLOTS.length; i++) for (let j = i + 1; j < SLOTS.length; j++) {
     for (const a of ITEMS.filter(r => r.slot === SLOTS[i])) for (const b of ITEMS.filter(r => r.slot === SLOTS[j])) {
@@ -114,7 +123,7 @@ test('Sparks and partial recipes retain discovery/hint behavior without gaining 
   for (const spark of SPARKS) {
     const eq = Object.freeze({...spark.parts});
     assert.equal(activeHybrid(eq), null);
-    assert.deepEqual(swordProfile(eq), baseline.standard);
+    assert.deepEqual(swordProfile(eq), baseline[expectedGearRecipe(eq)?.id ?? 'standard']);
     assert.ok(activeSparks(eq).some(r => r.id === spark.id));
     assert.ok(mutationTitle(eq).includes(spark.title));
   }

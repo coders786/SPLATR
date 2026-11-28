@@ -129,6 +129,9 @@ dd {
   width: 100%;
   height: 100%;
   touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   outline: 0;
 }
 #game[data-screen='run'] #arena {
@@ -2410,16 +2413,6 @@ body:has(#panel[open]) #hud {
 @media(max-height:500px){#bossbar{width:min(420px,64vw);bottom:max(6px,env(safe-area-inset-bottom));gap:3px}#bossbar .bossbar-rail{padding:3px 4px}#bossbar .bossbar-rail i{height:9px}#bossbar .bossbar-name{font-size:8px;letter-spacing:.18em}}
 @media(prefers-reduced-motion:reduce){#bossbar.crack .bossbar-rail{animation:none}#bossbar.sweep .bossbar-rail::after{display:none}}
 
-/* ── CHUNK 6A: THE STORY CHIP ───────────────────────────────────────────────
-   The ONLY legible text allowed mid-play. One chip, ≤4 words, acid on
-   #101310, slight skew. Fade in fast, fade out slow; never blinks, never
-   stacks. aria-hidden by contract. */
-.story-chip{position:absolute;left:50%;top:auto;bottom:calc(var(--foot,24px) + 34px);transform:translateX(-50%) skewX(-6deg);z-index:8;pointer-events:none;user-select:none;font:800 13px/1 var(--mono);letter-spacing:.16em;color:#101310;background:#ddff89;padding:.38em .95em;box-shadow:0 2px 18px rgba(221,255,137,.35),0 0 0 1px #101310 inset;opacity:0;transition:opacity .7s ease}
-.story-chip.on{opacity:1;transition:opacity .22s ease}
-.story-chip[hidden]{display:none}
-@media(prefers-reduced-motion:reduce){.story-chip{transition:none}}
-@media(max-width:600px){.story-chip{font-size:14px;top:auto}}
-
 /* CHUNK 6A: SECTOR/WAVE readout — a 1.4s flash on transition, then gone. */
 .sector-chip{position:absolute;bottom:var(--foot);left:var(--gutter);z-index:6;pointer-events:none;user-select:none;font:700 10px 'Space Mono',monospace;letter-spacing:.24em;color:#ddff89;background:#0e0d16cc;border-left:3px solid var(--hot);padding:4px 10px 4px 9px;opacity:0;transition:opacity .45s ease}
 .sector-chip.on{opacity:1}
@@ -2473,7 +2466,7 @@ body:has(#panel[open]) #hud {
 .teaching-guide .teaching-meters{position:absolute;z-index:3;top:max(76px,calc(env(safe-area-inset-top) + 70px));left:max(14px,env(safe-area-inset-left));width:min(360px,calc(100vw - 28px));box-sizing:border-box;background:#171520d9;border:1px solid #5b5268;pointer-events:none}
 .teaching-guide .teaching-directions{display:flex;flex-direction:column;align-items:center;gap:7px;padding:0;background:transparent;border:0;bottom:max(70px,calc(env(safe-area-inset-bottom) + 58px));pointer-events:none}
 .teaching-guide .watch-lesson-mark{font:700 9px/1 var(--mono);letter-spacing:.14em;color:#d5cbdc;text-shadow:0 1px 3px #000;opacity:.86}
-.teaching-guide .watch-chip{position:static;transform:skewX(-6deg);display:inline-block;opacity:1;font-size:17px;line-height:1;min-width:92px;text-align:center;box-shadow:0 2px 18px rgba(221,255,137,.35),0 0 0 1px #101310 inset}
+.teaching-guide .watch-chip{color:#101310;background:#ddff89;padding:.38em .95em;font:800 13px/1 var(--mono);letter-spacing:.16em;position:static;transform:skewX(-6deg);display:inline-block;opacity:1;font-size:17px;line-height:1;min-width:92px;text-align:center;box-shadow:0 2px 18px rgba(221,255,137,.35),0 0 0 1px #101310 inset}
 .teaching-guide .watch-chip[data-phase=idle]{background:#d8f19c}
 .teaching-guide .watch-chip[data-phase=tell]{background:#ffe39a}
 .teaching-guide .watch-chip[data-phase=resolve]{background:#fff2d1}
@@ -2927,24 +2920,6 @@ body:has(#panel[open]) #hud {
   }
 }
 
-/* ── THE STORY CHIP IS A TICKER, NOT A PHOTO BOMB ─────────────────────────
-   It used to sit at 60% height, dead centre of live combat, at 17px, with a
-   lime plate behind it: story lines and wave callouts covered the fight.
-   The base rule (above) now pins it to the bottom edge, where a banner is
-   allowed to be. Everything below is weight and legibility only. */
-.story-chip {
-  padding: 6px 14px 7px;
-  color: #131609;
-  background: #ddff89;
-  box-shadow: 0 2px 14px #0006;
-}
-@media (max-width: 600px) {
-  .story-chip {
-    font-size: 11px;
-    bottom: calc(var(--foot, 24px) + 26px);
-  }
-}
-
 /* ── THE CORNER CALL-OUT IS NOW A DAMAGE LINE ─────────────────────────────
    Four words maximum (see DAMAGE_LINE_MAX_WORDS). `HEALTH −1 / Pulse wave`
    became `RING HIT`: what touched you, not the name of the system it belonged
@@ -3008,13 +2983,44 @@ body:has(#panel[open]) #hud {
 #tail-ability[hidden]{display:none}
 @media(max-width:420px){#tail-ability{font-size:7px}}
 
-/* The first-time handoff is playable, not a movie pretending to be a tutorial. */
-.opening-guide{position:absolute;z-index:12;left:50%;top:7%;transform:translateX(-50%);width:min(610px,calc(100% - 36px));text-align:center;pointer-events:none;color:#f4efdb;text-shadow:0 2px 8px #000}
-.opening-guide small{display:block;color:#edca86;font:700 10px Mono,monospace;letter-spacing:.2em;margin-bottom:10px}
-.opening-guide h2{font:800 clamp(24px,4vw,42px)/1.05 Riot,sans-serif;margin:0;text-wrap:balance}
-.opening-guide p{display:inline-block;font:13px/1.4 Body,sans-serif;background:#101d29ed;border:1px solid #849779;padding:10px 18px;border-radius:4px;color:#e2f3c8;margin-top:13px}
-#game[data-opening-guide=true] :is(#hud,.wave-hud,#hybrid-title,#story-chip,.boss-charge){visibility:hidden!important}
-#game[data-opening-guide=true] #arena{cursor:crosshair}
-@media(max-width:600px){.opening-guide{top:8%}.opening-guide small{font-size:8px;letter-spacing:.13em}.opening-guide p{font-size:12px;max-width:280px;padding:9px 12px}}
-@media(max-height:470px){.opening-guide{top:4%}.opening-guide small{margin-bottom:4px}.opening-guide h2{font-size:24px}.opening-guide p{margin-top:6px;padding:5px 12px;font-size:11px}}
-#game[data-opening-guide=true] #fracture-hud{visibility:hidden!important}
+/* Combat information belongs at the periphery, not in a solid panel over the fight.
+   The breach phase keeps its controls and instructions fully visible. */
+.wave-hud[data-phase=combat] { left:auto; right:12px; top:74px; transform:none; width:auto; min-width:0; max-width:200px; padding:0; background:transparent; border:0; text-align:right; }
+.wave-hud[data-phase=combat] > strong,
+.wave-hud[data-phase=combat] > .wave-pips,
+.wave-hud[data-phase=combat] > .cycle-progress,
+.wave-hud[data-phase=combat] > .momentum-row,
+.wave-hud[data-phase=combat] > .speed-pace,
+.wave-hud[data-phase=combat] > .active-wave-upgrade { display:none; }
+.wave-hud[data-phase=combat] .wave-goal,
+.wave-hud[data-phase=combat] .wave-post { background:#10111ab3; text-align:left; }
+.fracture-ribbon { top:auto; bottom:8px; left:10px; right:auto; width:160px; height:auto; padding:5px 7px; border:0; background:#10111ab3; }
+.fracture-ribbon .fracture-track { display:none; }
+.fracture-ribbon .fracture-read { margin-left:auto; }
+.fracture-ribbon .fracture-tier { display:none; }
+@media(max-width:600px){.wave-hud[data-phase=combat]{top:105px;right:8px;max-width:160px}.fracture-ribbon .fracture-name{display:inline;font-size:8px}}
+/* A wave announcement is a transient stencil, never a solid combat panel. */
+.sector-chip { top:20%; bottom:auto; left:50%; transform:translateX(-50%); max-width:86vw; padding:0; border:0; background:transparent; color:#f7ffce; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font:italic 900 clamp(20px,3.5vw,48px)/1 var(--type); letter-spacing:.08em; text-shadow:0 2px 6px #080912,2px 2px 0 #080912; opacity:0; }
+@media(max-width:600px){.sector-chip{top:24%;font-size:22px;max-width:90vw}}
+
+/* Resume cue lives on the player rather than covering the combat field. */
+#resume-cue{position:absolute;z-index:8;width:78px;height:78px;transform:translate(-50%,-50%);pointer-events:none;display:grid;place-items:center;border-radius:50%;background:conic-gradient(#d9ff26 calc(var(--resume-progress,0) * 1turn),#202c31 0);padding:3px;box-shadow:0 0 0 2px #10151f}
+#resume-cue span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:#10151faa;color:#fff;font:800 13px 'Space Mono',monospace;text-shadow:0 1px 3px #000}
+#resume-cue[data-phase=ramp]{opacity:.65}
+@media(prefers-reduced-motion:reduce){#resume-cue{background:#d9ff26}}
+
+.pause-build{min-width:0;border-left:2px solid #677b61;padding:6px 0 0 16px;color:#dce5d9}
+.pause-build h3{font:800 16px 'Barlow Condensed',sans-serif;letter-spacing:.08em;color:#d9ff26}
+.pause-build ul{list-style:none;margin:8px 0;padding:0;display:grid;gap:9px}
+.pause-build li{font:12px/1.35 'Space Grotesk',sans-serif}.pause-build strong{display:block;color:#fff}.pause-build span{display:block;color:#c9d4c9}
+#end-btn[data-confirm=true]{color:#ff8091;border-color:#ff3b5c}
+@media(max-width:440px){.pause-build{border-left:0;border-top:1px solid #677b61;padding:10px 0 0}.pause-build ul{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Continuous arcade has one true Rush meter, including its remaining time. */
+.speed-pace[data-arcade='true'] .pace-target-label { display:block; font-size:9px; line-height:1.3; color:#e3dbcb; }
+.speed-pace[data-arcade='true'] .pace-caption { justify-content:space-between; }
+.speed-pace[data-arcade='true'] .pace-target[hidden],
+.speed-pace[data-arcade='true'] .pace-needle[hidden] { display:none; }
+
+.wave-hud[data-phase=combat] > .speed-pace[data-arcade='true']:not([hidden]) { display:block; min-width:0; width:190px; max-width:100%; padding:7px 9px; background:#10111ae8; border:1px solid #ffffff29; text-align:left; }
+@media(max-width:600px) { .wave-hud[data-phase=combat] > .speed-pace[data-arcade='true']:not([hidden]) { width:155px; } }

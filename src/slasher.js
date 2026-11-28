@@ -36,6 +36,7 @@ export function closest(ax, ay, bx, by) {
   return Math.hypot(ax + t * dx, ay + t * dy);
 }
 export function hazardHits(h, p, prev) {
+  if (h.cosmetic) return false;
   const ax = prev.x - h.px,
     ay = prev.y - h.py,
     bx = p.x - h.x,
@@ -301,8 +302,7 @@ export function createCombat(world, tell = () => {}, onBoss = null) {
   // its clock), and every tell is the real countdown, not an animation.
   //
   // SEISMIC LASH (6.0s): crack-lines crawl out of the base for 0.9s, then
-  // four debris arcs fan out ballistically. Hits cost 1 hull. Parryable with
-  // a live blade like any needle; dodge by banking or being elsewhere.
+  // four harmless debris arcs fan out ballistically; they do not collide.
   //
   // PLATE SLAM (4.5s, while ≥ 3 plates stand): the lowest live plate slots
   // loose and hangs white for 0.5s, then drops — a 150px shockwave rings the
@@ -336,7 +336,7 @@ export function createCombat(world, tell = () => {}, onBoss = null) {
         x = e.x + Math.cos(angle) * (e.r * 0.75),
         y = baseY - 8;
       hazards.push({
-        kind: 'needle', source: 'monolith', sourceId: e.id,
+        kind: 'needle', source: 'monolith', sourceId: e.id, cosmetic: true,
         attackId: `${e.id}:lash:${++attackSerial}`,
         x, y, px: x, py: y,
         vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
@@ -416,7 +416,7 @@ export function createCombat(world, tell = () => {}, onBoss = null) {
     // A Crown's ten needles are one volley, not ten independent turns.
     const threats=new Set();
     for(const e of enemies.values())if(e.mode!=='idle'&&Math.hypot(e.x-p.x,e.y-p.y)<1120)threats.add(e.attackId||`enemy:${e.id}`);
-    for(const h of hazards)if(!h.spent&&Math.hypot(h.x-p.x,h.y-p.y)<1120)threats.add(h.attackId||`hazard:${h.sourceId||h.source}`);
+    for(const h of hazards)if(!h.spent&&!h.cosmetic&&Math.hypot(h.x-p.x,h.y-p.y)<1120)threats.add(h.attackId||`hazard:${h.sourceId||h.source}`);
     for(const link of links)threats.add(`link:${link.a.id}:${link.b.id}`);
     slots=(difficulty<=2?1:2)-threats.size;
     for (const e of enemies.values()) {
@@ -638,6 +638,8 @@ export function createCombat(world, tell = () => {}, onBoss = null) {
         hazards.splice(i, 1);
         continue;
       }
+      // Seismic debris is scenery, not a hidden damaging projectile. The
+      // separately telegraphed slam remains dangerous.
       const touching=hazardHits(h,world.player.position,world.player.plugin.previous);
       // Optional narrow pair admission BEFORE spending/removing the hazard.
       // A phased needle keeps moving, rendering and expiring normally.
@@ -701,7 +703,7 @@ export function createCombat(world, tell = () => {}, onBoss = null) {
    *
    *  Deliberately NOT done: cutting everything on screen, or auto-aiming the
    *  sweep. Chaos is only fun while it still answers to the player's input; a
-   *  blade that swings itself is a cutscene.
+   *  blade that swings itself is not player-controlled.
    */
   function sweepBlade(angle, reach = 1, width = 1, closeWidth = 1, closeRadius = 100 * closeWidth) {
     const p = world.player.position;

@@ -23,6 +23,10 @@ export const COMBAT_SOURCE_CONTEXTS = Object.freeze(Object.fromEntries([
   descriptor('void-collapse', true, true),
   descriptor('dash-reprise', true, true),
   descriptor('volt-conduction', true, true),
+  descriptor('rush-blast', true, true),
+  descriptor('corpse-shard', true, true),
+  descriptor('mine-bat', true, true),
+  descriptor('hijacked-link', true, true),
 ].map(context => [context.kind, context])));
 
 export function combatSourceContext(kind) {

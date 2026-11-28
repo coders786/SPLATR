@@ -12,9 +12,9 @@ export function createClock() {
       previous = null;
       debt = 0;
     },
-    frame(now, update) {
+    frame(now, update, scale = 1) {
       if (previous === null) previous = now;
-      debt += Math.min(Math.max(0, now - previous), MAX_STEPS * STEP_MS);
+      debt += Math.min(Math.max(0, now - previous), MAX_STEPS * STEP_MS) * Math.max(0, Math.min(1, scale));
       previous = now;
       let steps = 0;
       while (debt + 1e-8 >= STEP_MS && steps < MAX_STEPS) {

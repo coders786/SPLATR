@@ -2,16 +2,20 @@
 const clamp=(n,lo=0,hi=1)=>Math.max(lo,Math.min(hi,Number.isFinite(n)?n:0));
 export const COMBAT_LENS_LIMITS=Object.freeze({chromatic:3.2,blur:.72,contrast:1.16,protect:8});
 export function createCombatLens(){
- let focus=0,streak=0,beat=0,release=0,lastChain=0,lastShots=null,held=false,hit=false;
- const reset=()=>{focus=streak=beat=release=lastChain=0;lastShots=null;held=hit=false;};
- const event=(type,data={})=>{if(type==='cut'&&!data?.secondary&&!data?.small)hit=true;};
+ let focus=0,streak=0,beat=0,release=0,lastChain=0,lastShots=null,held=false,hit=false,energy=0,damage=0,launch=0;
+ const reset=()=>{focus=streak=beat=release=lastChain=0;lastShots=null;held=hit=false;energy=damage=launch=0;};
+ const event=(type,data={})=>{if(type==='cut'&&!data?.secondary&&!data?.small)hit=true;if(type==='hurt')damage=1;if(type==='dash')launch=Math.max(launch,clamp(data?.power??1));};
  function tick(state={},motion=true){
   if(state.phase!=='playing'){reset();return;}
-  const on=!!state.held&&!state.depleted&&(state.focus??1)>.01;
+  const on=!!state.held;
   const live=state.chainTime>0?Math.max(0,state.chain||0):0;
   const target=live>=3?clamp((live-2)/8,.15,.9):0;
-  if(!motion){focus=on?1:0;streak=target;beat=release=0;}
+  if(!motion){focus=on?1:0;streak=target;beat=release=energy=damage=launch=0;}
   else{
+   const speed=clamp(((state.movedAvg??state.moved??0)-12)/48);
+   const targetEnergy=Math.max(speed,state.hyper?.85:0,state.drive>0?.5:0);
+   energy+=(targetEnergy-energy)*(targetEnergy>energy?.10:.055);
+   damage*=.89;launch*=.86;
    focus+=(Number(on)-focus)*(on?.14:.1);
    streak+=(target-streak)*(target>streak?.12:.07);
    beat*=.87;release*=.84;
@@ -32,7 +36,9 @@ export function createCombatLens(){
    vignette:.075+f*.085+s*.055,
    bloom:.1+s*.07+b*.035,
    tint:s*.035-f*.025,
-   grain:motion?.002:0};
+   grain:motion?.002:0,
+   energy:motion?clamp(energy):0,damage:motion?clamp(damage):0,launch:motion?clamp(launch):0,
+   clarity:.10+s*.06};
  }
  return {tick,event,read,reset};
 }

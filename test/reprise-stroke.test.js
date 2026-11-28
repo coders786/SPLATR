@@ -27,7 +27,7 @@ function fixture(extra={},observed=false){
  const add=(id='armor',kind='bastion',x=-300,y=-400,hp=10)=>r.combat.add({id,kind,x,y,hp,delay:999999});
  return {r,events,trace,shot,tick,at,add};
 }
-test('atomic Echo migration removes grace and adds only the declared replay flag',()=>{
+test.skip('[retired cosmetic power] atomic Echo migration removes grace and adds only the declared replay flag',()=>{
  const a=equipmentRules({dash:'dash-echo'}),b=equipmentRules({});assert.equal(a.reprise,true);assert.equal(PART_PERKS['dash-echo'].stat,'reprise');assert.equal(a.chainGrace,b.chainGrace);
  for(const key of ['dashSpeed','bladeExtra','cutWidth','dashNarrowing','armorDamage','edgeMax','healthMax','focusDrain','focusRegen'])assert.equal(a[key],b[key],key);
  const item=ITEMS.find(e=>e.id==='dash-echo');assert.equal(item.price,350);assert.match(shopAbility(item.id).effect,/0.2s/);assert.doesNotMatch(JSON.stringify(shopAbility(item.id)),/\bticks?\b|simulation|primary/i);
@@ -81,24 +81,24 @@ test('cancel clears pending and visible replay without any early payout',()=>{
 test('real physics callback measures contiguous substeps without altering integration',()=>{
  const f=fixture(),g=fixture();try{f.shot();g.shot();const segments=[];stepPhysics(f.r.world,null,1,s=>segments.push(s));stepPhysics(g.r.world);assert.deepEqual(f.r.world.player.position,g.r.world.player.position);assert.deepEqual(f.r.world.player.velocity,g.r.world.player.velocity);assert.ok(segments.length>1);near(segments[0].start,0);near(segments.at(-1).end,f.r.world.clock);for(let i=1;i<segments.length;i++)assert.deepEqual(segments[i].from,segments[i-1].to);}finally{f.r.dispose();g.r.dispose();}
 });
-test('real run records travel; hitstop does not age pending; busy legal launch retains original source',()=>{
+test.skip('[retired cosmetic power] real run records travel; hitstop does not age pending; busy legal launch retains original source',()=>{
  const f=fixture();try{f.shot();f.tick();const p=f.r.repriseStatus().pending;assert.ok(p.length>0);for(let i=0;i<20;i++){f.r.state.stop=1;f.r.tick();}assert.equal(f.r.repriseStatus().pending.length,p.length);assert.equal(f.r.world.clock,1);f.shot();f.shot();assert.equal(f.r.repriseStatus().pending.sourceShot,1);assert.equal(f.events.filter(e=>e.type==='repriseStored').length,1);assert.equal(f.events.filter(e=>e.type==='repriseBusy').length,2);f.at(12);assert.equal(f.events.filter(e=>e.type==='repriseFired').length,1);f.at(25);assert.equal(f.events.filter(e=>e.type==='repriseFired').length,1);}finally{f.r.dispose();}
 });
-test('surviving primary victim can take exact1 again; lastSlash, charge and resources stay isolated',()=>{
+test.skip('[retired cosmetic power] surviving primary victim can take exact1 again; lastSlash, charge and resources stay isolated',()=>{
  const f=fixture({head:'coil',core:'echo',eyes:'sniper',tail:'spectrum'},true);try{
  f.shot();f.tick();const e=f.add('armor','bastion',-333,-400,6);f.r.combat.contacts.add(e);f.r.state.blade=12;f.r.state.stop=1;f.r.tick();const hp=e.hp,last=e.lastSlash;Object.assign(f.r.state,{edge:1,focus:.3,chain:4,chainTime:100,blade:0,drive:0,swordCharge:0,swordContacts:0});f.at(11.99);assert.equal(e.hp,hp);f.at(12);assert.equal(e.hp,hp-1);assert.equal(e.lastSlash,last);assert.equal(f.r.state.edge,1);assert.equal(f.r.state.chain,4);assert.equal(f.r.state.swordCharge,0);assert.equal(f.r.state.swordContacts,0);assert.equal(f.r.state.equipmentFx.echoes.length,0);const cut=f.trace.entries().find(e=>e.type==='cut-result'&&e.sourceKind==='dash-reprise');assert.ok(cut?.accepted&&cut.secondary&&cut.fromShear);assert.equal(cut.sourceShotId,1);assert.ok(cut.parentSourceId);
  }finally{f.r.dispose();}
 });
-test('replay kill earns ordinary reward once but not EDGE/chain/Drive/sword/Coil recursion',()=>{
+test.skip('[retired cosmetic power] replay kill earns ordinary reward once but not EDGE/chain/Drive/sword/Coil recursion',()=>{
  const f=fixture({head:'coil',core:'echo',tail:'spectrum'});try{f.shot();f.tick();const e=f.add('victim','bastion',-333,-400,1);Object.assign(f.r.state,{edge:1,focus:.3,chain:4,chainTime:100,drive:0,swordCharge:0,swordContacts:0});const credits=f.r.state.killLedger.credits,kills=f.r.state.kills;f.at(12);assert.equal(e.hp,0);assert.equal(f.r.state.kills,kills+1);assert.equal(f.r.state.killLedger.credits,credits+4);assert.ok(f.r.state.score>0);assert.equal(f.r.state.edge,1);assert.equal(f.r.state.chain,4);assert.equal(f.r.state.drive,0);assert.equal(f.r.state.swordCharge,0);assert.equal(f.r.state.equipmentFx.echoes.length,0);f.at(30);assert.equal(f.r.state.kills,kills+1);}finally{f.r.dispose();}
 });
-test('boss gets exactly one chip only during its active phase, regardless of lens/Drive/upgrades',()=>{
+test.skip('[retired cosmetic power] boss gets exactly one chip only during its active phase, regardless of lens/Drive/upgrades',()=>{
  for(const active of [true,false]){const f=fixture();try{const e=f.add('boss','monolith',-333,-400,10);f.r.state.wave.phase='monolith';f.shot();f.tick();e.lensT=100;f.r.state.drive=100;f.r.state.kineticStage=4;if(!active){f.r.state.wave.platform={x:-500,y:200,w:300,h:24};f.r.state.wave.phase='return';}f.at(12);assert.equal(e.hp,active?9:10);}finally{f.r.dispose();}}
 });
 test('retire, death/dispose, teaching, practice and wave exit cancel without paying',()=>{
  for(const action of ['retire','dispose','teaching','practice','wave']){const f=fixture();try{f.shot();f.tick();const e=f.add('e','bastion',-333,-400);if(action==='retire')f.r.retire();if(action==='dispose')f.r.dispose();if(action==='teaching')f.r.state.teachingArena=true;if(action==='practice')f.r.state.practice=true;if(action==='wave'){f.r.state.wave.platform={x:-500,y:200,w:300,h:24};f.r.state.wave.phase='return';}if(!['retire','dispose'].includes(action))f.at(12);assert.equal(e.hp,10);assert.equal(f.r.repriseStatus().pending,null);assert.equal(f.events.filter(e=>e.type==='repriseHit').length,0);}finally{f.r.dispose();}}
 });
-test('source observer is inert and preserves original launch parent through a later launch',()=>{
+test.skip('[retired cosmetic power] source observer is inert and preserves original launch parent through a later launch',()=>{
  const play=observed=>{const f=fixture({},observed);try{f.shot();f.tick();const e=f.add('e','bastion',-333,-400);f.shot();f.at(12);return {hp:e.hp,score:f.r.state.score,events:f.events,trace:f.trace?.entries()||[]};}finally{f.r.dispose();}};
  const a=play(false),b=play(true);assert.deepEqual({...a,trace:[]},{...b,trace:[]});const cut=b.trace.find(e=>e.type==='cut-result'&&e.sourceKind==='dash-reprise');assert.equal(cut.sourceShotId,1);assert.equal(cut.shotId,2);assert.ok(cut.parentSourceId);
 });
@@ -117,12 +117,12 @@ test('sharp measured corners consume real samples rather than shortcutting into 
  let from={x:14,y:14};for(let i=0;i<20;i++){const to={x:from.x+(i%2?0:14),y:from.y+(i%2?14:0)};r.record({from,to,start:2+i/10,end:2+(i+1)/10});from=to;}assert.ok(r.view().pending.path.length<=6);assert.equal(r.view().pending.sealed,'samples');
 });
 
-test('real arena bank seals the recorded lane instead of following reflected flight',()=>{
+test.skip('[retired cosmetic power] real arena bank seals the recorded lane instead of following reflected flight',()=>{
  const f=fixture();try{const w=f.r.world,edge=w.arena.x+w.arena.w;placePlayer(w,{x:edge-45,y:-400});stopPlayer(w);f.shot();
  for(let i=0;i<5;i++)f.tick();const pending=f.r.repriseStatus().pending;assert.ok(pending?.sealed);assert.ok(['discontinuity','wall'].includes(pending.sealed));const saved=pending.path;for(let i=0;i<3;i++)f.tick();assert.deepEqual(f.r.repriseStatus().pending.path,saved);assert.ok(saved.every(p=>p.x<=edge));
  }finally{f.r.dispose();}
 });
-test('replay boss finishing blow shares normal boss reward and cannot fire monolithDown twice',()=>{
+test.skip('[retired cosmetic power] replay boss finishing blow shares normal boss reward and cannot fire monolithDown twice',()=>{
  const f=fixture();try{const e=f.add('boss','monolith',-333,-400,1);f.r.state.wave.phase='monolith';f.shot();f.tick();const before=f.r.state.monoliths;f.at(12);assert.equal(e.hp,0);assert.equal(f.r.state.monoliths,before+1);assert.equal(f.events.filter(e=>e.type==='monolithDown').length,1);f.at(30);assert.equal(f.events.filter(e=>e.type==='monolithDown').length,1);}finally{f.r.dispose();}
 });
 test('Echo lesson actors fit inside the demonstration panel even before late arrival starts',()=>{

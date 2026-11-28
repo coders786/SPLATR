@@ -222,23 +222,6 @@
           "upgrade": "ghostlash",
           "armorRemoved": 1,
           "secondary": true
-        },
-        {
-          "type": "storyMoment",
-          "id": "hold-the-wave",
-          "chip": "LET IT PASS.",
-          "mechanic": "pulse",
-          "lesson": "Dodge the expanding rim; the space behind it is safe.",
-          "consequence": "The Watcher holds the wave so the Cutter can pass.",
-          "chapter": "seal",
-          "emotion": "friendship",
-          "wave": 1,
-          "targetId": "wave/1/1",
-          "targetX": 179.98116269670427,
-          "targetY": -259.5315527519677,
-          "targetR": 32,
-          "age": 0,
-          "number": 1
         }
       ],
       "legacyTrace": [
@@ -471,23 +454,6 @@
           "type": "waveStart",
           "number": 1,
           "total": 12
-        },
-        {
-          "type": "storyMoment",
-          "id": "hold-the-wave",
-          "chip": "LET IT PASS.",
-          "mechanic": "pulse",
-          "lesson": "Dodge the expanding rim; the space behind it is safe.",
-          "consequence": "The Watcher holds the wave so the Cutter can pass.",
-          "chapter": "seal",
-          "emotion": "friendship",
-          "wave": 1,
-          "targetId": "wave/1/1",
-          "targetX": 179.98116269670427,
-          "targetY": -259.5315527519677,
-          "targetR": 32,
-          "age": 0,
-          "number": 1
         },
         {
           "type": "dash",
@@ -744,23 +710,6 @@
           "label": "CRUISE",
           "multiplier": 2,
           "speed": 24
-        },
-        {
-          "type": "storyMoment",
-          "id": "hold-the-wave",
-          "chip": "LET IT PASS.",
-          "mechanic": "pulse",
-          "lesson": "Dodge the expanding rim; the space behind it is safe.",
-          "consequence": "The Watcher holds the wave so the Cutter can pass.",
-          "chapter": "seal",
-          "emotion": "friendship",
-          "wave": 1,
-          "targetId": "wave/1/1",
-          "targetX": 179.98116269670427,
-          "targetY": -259.5315527519677,
-          "targetR": 32,
-          "age": 0,
-          "number": 1
         }
       ],
       "legacyTrace": [
@@ -1028,23 +977,6 @@
           "total": 12
         },
         {
-          "type": "storyMoment",
-          "id": "hold-the-wave",
-          "chip": "LET IT PASS.",
-          "mechanic": "pulse",
-          "lesson": "Dodge the expanding rim; the space behind it is safe.",
-          "consequence": "The Watcher holds the wave so the Cutter can pass.",
-          "chapter": "seal",
-          "emotion": "friendship",
-          "wave": 1,
-          "targetId": "wave/1/1",
-          "targetX": 179.98116269670427,
-          "targetY": -259.5315527519677,
-          "targetR": 32,
-          "age": 0,
-          "number": 1
-        },
-        {
           "type": "fractureGain",
           "pct": 0.4,
           "gained": 0.4,
@@ -1309,23 +1241,6 @@
           "label": "CRUISE",
           "multiplier": 2,
           "speed": 24
-        },
-        {
-          "type": "storyMoment",
-          "id": "hold-the-wave",
-          "chip": "LET IT PASS.",
-          "mechanic": "pulse",
-          "lesson": "Dodge the expanding rim; the space behind it is safe.",
-          "consequence": "The Watcher holds the wave so the Cutter can pass.",
-          "chapter": "seal",
-          "emotion": "friendship",
-          "wave": 1,
-          "targetId": "wave/1/1",
-          "targetX": 179.98116269670427,
-          "targetY": -259.5315527519677,
-          "targetR": 32,
-          "age": 0,
-          "number": 1
         }
       ],
       "legacyTrace": [
@@ -1625,23 +1540,6 @@
           "upgrade": "ghostlash",
           "armorRemoved": 1,
           "secondary": true
-        },
-        {
-          "type": "storyMoment",
-          "id": "hold-the-wave",
-          "chip": "LET IT PASS.",
-          "mechanic": "pulse",
-          "lesson": "Dodge the expanding rim; the space behind it is safe.",
-          "consequence": "The Watcher holds the wave so the Cutter can pass.",
-          "chapter": "seal",
-          "emotion": "friendship",
-          "wave": 1,
-          "targetId": "wave/1/1",
-          "targetX": 179.98116269670427,
-          "targetY": -259.5315527519677,
-          "targetR": 32,
-          "age": 0,
-          "number": 1
         }
       ],
       "legacyTrace": [
@@ -1874,23 +1772,6 @@
           "type": "waveStart",
           "number": 1,
           "total": 12
-        },
-        {
-          "type": "storyMoment",
-          "id": "hold-the-wave",
-          "chip": "LET IT PASS.",
-          "mechanic": "pulse",
-          "lesson": "Dodge the expanding rim; the space behind it is safe.",
-          "consequence": "The Watcher holds the wave so the Cutter can pass.",
-          "chapter": "seal",
-          "emotion": "friendship",
-          "wave": 1,
-          "targetId": "wave/1/1",
-          "targetX": 179.98116269670427,
-          "targetY": -259.5315527519677,
-          "targetR": 32,
-          "age": 0,
-          "number": 1
         },
         {
           "type": "dash",
@@ -2147,23 +2028,6 @@
           "label": "CRUISE",
           "multiplier": 2,
           "speed": 24
-        },
-        {
-          "type": "storyMoment",
-          "id": "hold-the-wave",
-          "chip": "LET IT PASS.",
-          "mechanic": "pulse",
-          "lesson": "Dodge the expanding rim; the space behind it is safe.",
-          "consequence": "The Watcher holds the wave so the Cutter can pass.",
-          "chapter": "seal",
-          "emotion": "friendship",
-          "wave": 1,
-          "targetId": "wave/1/1",
-          "targetX": 179.98116269670427,
-          "targetY": -259.5315527519677,
-          "targetR": 32,
-          "age": 0,
-          "number": 1
         }
       ],
       "legacyTrace": [
@@ -2431,23 +2295,6 @@
           "total": 12
         },
         {
-          "type": "storyMoment",
-          "id": "hold-the-wave",
-          "chip": "LET IT PASS.",
-          "mechanic": "pulse",
-          "lesson": "Dodge the expanding rim; the space behind it is safe.",
-          "consequence": "The Watcher holds the wave so the Cutter can pass.",
-          "chapter": "seal",
-          "emotion": "friendship",
-          "wave": 1,
-          "targetId": "wave/1/1",
-          "targetX": 179.98116269670427,
-          "targetY": -259.5315527519677,
-          "targetR": 32,
-          "age": 0,
-          "number": 1
-        },
-        {
           "type": "fractureGain",
           "pct": 0.4,
           "gained": 0.4,
@@ -2712,23 +2559,6 @@
           "label": "CRUISE",
           "multiplier": 2,
           "speed": 24
-        },
-        {
-          "type": "storyMoment",
-          "id": "hold-the-wave",
-          "chip": "LET IT PASS.",
-          "mechanic": "pulse",
-          "lesson": "Dodge the expanding rim; the space behind it is safe.",
-          "consequence": "The Watcher holds the wave so the Cutter can pass.",
-          "chapter": "seal",
-          "emotion": "friendship",
-          "wave": 1,
-          "targetId": "wave/1/1",
-          "targetX": 179.98116269670427,
-          "targetY": -259.5315527519677,
-          "targetR": 32,
-          "age": 0,
-          "number": 1
         }
       ],
       "legacyTrace": [

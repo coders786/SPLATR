@@ -85,7 +85,7 @@ test('CHUNK 1: RUSH is one label with four honest states', () => {
   assert.equal(rushReadout({ progress: 1 }, { paceReady: true }).label, 'RUSH READY');
   assert.equal(rushReadout({ progress: 1 }, { surgeTicks: 90 }).label, 'RUSH 1.5s');
   assert.equal(rushReadout({ progress: 1 }, { sonic: true }).label, 'RUSH HELD');
-  assert.equal(rushReadout({ progress: 0.4 }, null, 20).label, 'OVERDRIVE');
+  assert.equal(rushReadout({ progress: 0.4 }, null, 20).label, 'RUSH 0.3s');
   assert.equal(rushReadout({ progress: 0.4 }).fill, 0.4, 'the bar is the progress');
   assert.equal(rushReadout({ progress: 0.4 }, { paceReady: true }).fill, 1, 'a ready bar is full');
 });
@@ -109,7 +109,7 @@ test('CHUNK 1: the world meter reads as the next boss, not as world mood jargon'
 test('CHUNK 1: the title has one practice door and no stray score sticker', () => {
   const nav = html.slice(html.indexOf('id="main-nav"'), html.indexOf('</nav>', html.indexOf('id="main-nav"')));
   assert.equal((nav.match(/class="choice/g) || []).length, 3, 'the authored nav is three doors: run, practice, options');
-  assert.ok(/Practice &amp; help/.test(nav), 'the practice door is named for what it does');
+  assert.ok(/Training arena/.test(nav), 'the practice door is named for what it does');
   assert.ok(!/Field manual/.test(nav), 'the duplicate manual door is renamed, not repeated');
   assert.ok(!html.includes('fillText("+300"'), 'the stray +300 sticker is removed from the title key art');
   assert.ok(engine.includes('CHUNK 1: the stray "+300"'), 'and the removal is documented where it happened');
@@ -157,16 +157,9 @@ test('CHUNK 1: the damage reaction is painted in screen space with a real rim fl
 });
 
 // ── 6. EDGE TICKERS, NOT CENTRE MODALS ───────────────────────────────────
-test('CHUNK 1: story callouts and the starter hint hang off the bottom edge', () => {
-  const chip = css.match(/\.story-chip\s*\{[^}]*\}/);
-  assert.ok(chip, '.story-chip needs a rule');
-  assert.ok(/top:\s*auto/.test(chip[0]) && /bottom:/.test(chip[0]), 'the chip is a bottom ticker');
-  assert.ok(!/top:\s*60%/.test(chip[0]), 'it is no longer at 60% height, over live combat');
-  const size = +(chip[0].match(/font:\s*800 (\d+)px/) || [])[1];
-  assert.ok(size >= 13, `the chip must stay legible in an embed (got ${size}px)`);
-
+test('CHUNK 1: the starter hint retires after the first kill', () => {
   assert.ok(/id="start-hint"/.test(html), 'the four-word starter hint exists');
-  assert.ok(/PULL BACK &amp; RELEASE TO CUT/.test(html), 'and says what to do');
+  assert.ok(/AIM AT A TARGET · RELEASE TO SLASH/.test(html), 'and says what to do');
   assert.equal(hintVisible(0, 0), true);
   assert.equal(hintVisible(1, 0), false, 'the first kill retires it');
   assert.equal(hintVisible(0, 999), false, 'and it cannot outstay its welcome');

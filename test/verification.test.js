@@ -5,7 +5,7 @@ const { Body } = Matter;
 import { createRun, MAX_EDGE, EMPTY_WATCHDOG_TICKS, WATCHDOG_REACH, pushMove, settleMove } from '../src/run.js';
 import { ARENA, bandAt } from '../src/levels.js';
 import { TYPES } from '../src/shapes.js';
-import { sceneFor } from '../src/storyboard.js';
+import { guideSceneFor } from '../src/guideboard.js';
 import { createCamera } from '../src/camera.js';
 import { createShake, CAMERA, SHAKE, ANIM, meterReadout, dialGeometry, speedReadout } from '../src/motion.js';
 import { HYPER, FLOOR_IGNORE_TICKS, FALL_CAP_VY, AIM_FALL_KEEP, ARMOR_GRACE, CUT_GRACE } from '../src/run.js';
@@ -133,7 +133,7 @@ test('test_hud_playfield_isolation', () => {
   assert.equal(s.tutorialActive, false, 'staged run starts with tutorials off');
   for (const band of [1, 2, 5, 32]) {
     s.band = band;
-    s.story = true;
+    s.guide = true;
     for (const [name, setup] of [
       ['falling', () => ({ net: true, firstAir: false, caught: false })],
       ['firstAir', () => ({ net: false, firstAir: true, breath: 5, caught: false })],
@@ -141,7 +141,7 @@ test('test_hud_playfield_isolation', () => {
       ['caught', () => ({ caught: true })],
     ]) {
       Object.assign(s, setup());
-      const scene = sceneFor(s, { sentry: true }, true, 100);
+      const scene = guideSceneFor(s, { sentry: true }, true, 100);
       assert.equal(scene, null, `sector ${band} / ${name}: no tutorial card may appear`);
     }
   }

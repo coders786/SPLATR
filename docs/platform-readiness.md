@@ -43,7 +43,7 @@ while an ad plays. Restore the player's chosen audio settings even if the SDK
 rejects or no ad is served. Do not add internal ad-frequency timers. Rewarded
 ads are optional; never grant an unconfirmed reward.
 
-Audit every interruption, including story/cutscene locks and nested practice /
+Audit every interruption, including nested practice /
 shop dialogs, against `gameplayStart` / `gameplayStop`. Bridge unit tests do not
 prove that every shell path calls them correctly. Run the official SDK in Poki
 Inspector, not only with a stub or blocked SDK.

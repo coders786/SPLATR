@@ -4,7 +4,7 @@ const count=n=>Number.isFinite(n)?Math.max(0,Math.floor(n)):0;
 export function runCoaching(state={}){
  const shots=count(state.shots),kills=count(state.kills),pace=count(state.bestPace),banks=count(state.cleanBankTotal),shatters=count(state.shatters);
  const tip=(id,evidence,action)=>Object.freeze({id,evidence,action,text:`${evidence} ${action}`});
- if(!shots)return tip('launch','No launches yet.','Tap a target, or pull back and release forward. Arrows and Space also work.');
+ if(!shots)return tip('launch','No launches yet.','Aim toward a target and release. Arrows and Space also work.');
  if(!kills)return tip('contact',`${shots} launches; no kills.`, 'A dash must carry the active blade through a target. Try CUT LANE in Shop practice.');
  if(shatters)return tip('experiment',`${shatters} dimension${shatters===1?'':'s'} shattered.`, 'Try a different part in Shop practice; compare its strength and tradeoff before equipping.');
  if(state.breakthrough?.sonic)return tip('breach','Sonic was earned.', 'After the fifth-wave clear, make a fresh launch through the breach—or rest without shattering.');

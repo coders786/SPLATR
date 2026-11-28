@@ -60,6 +60,7 @@ function stubRig(run, { camY = 0 } = {}) {
         // in screen space.
         point: (x, y) => ({ x, y: y + cameraY }),
         assist: () => false,
+        aimMode: () => 'pull',
         engage() {},
         lock: { once: null, at: -1e9, tick() {} },
         commit(v) { const ok = run.dash(v); if (ok) shots.push(v); return ok; },

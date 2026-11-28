@@ -207,23 +207,9 @@ function bridgeRun(seed, opts = {}) {
 
 /** Break every anchor lock and cross the seal, the way a player clears a sector. */
 function clearSector(r) {
-  const n = r.state.narrative;
-  for (const l of n.locks) {
-    if (l.broken) continue;
-    placePlayer(r.world, { x: l.x, y: l.y + 130 });
-    stopPlayer(r.world);
-    r.state.edge = r.state.edgeMax;
-    r.state.invul = 99999;
-    r.dash({ x: 0, y: -42, power: 1 });
-    for (let i = 0; i < 12; i++) r.tick();
-  }
-  const seal = n.seal;
-  placePlayer(r.world, { x: seal.x, y: seal.y + 130 });
-  stopPlayer(r.world);
-  r.state.edge = r.state.edgeMax;
-  r.state.invul = 99999;
-  r.dash({ x: 0, y: -42, power: 1 });
-  for (let i = 0; i < 12; i++) r.tick();
+  for (const enemy of [...r.combat.enemies.values()]) r.combat.remove(enemy);
+  r.state.stop = 0;
+  r.tick();
 }
 
 test('the live sector publishes a goal, and its readout is wired to the run', () => {

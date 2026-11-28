@@ -4,13 +4,16 @@ import {createVoidWell} from './void-well.js';
 import {createFrostControl,coldTiming} from './frost-control.js';
 import {createEmberBurn} from './ember-burn.js';
 import {precisionShot,primaryGeometry,legacyPrimaryBase,commitPrecision} from './primary-contact.js';
-import {createHypnoHold,blazeEntryGrant} from './eye-toolkit.js';
+import {createHypnoHold,blazeEntryGrant,eyeSight} from './eye-toolkit.js';
 import {viperRetention,createSpectrumSequence} from './tail-toolkit.js';
 import {createNeedlePhase} from './needle-phase.js';
 import { perkScoreMultiplier } from './part-perks.js';
 import {recoverFocus} from './focus-recovery.js';
 import {ARMOR_SHELL,armorShellRecoil,storeArmorLoss,activeArmorSpring,returnArmorSpring} from './armor-shell.js';
 import {contactVisual} from './contact-visual.js';
+import {flingCorpse,stepCorpseProjectiles} from './corpse-projectiles.js';
+import {spawnPulseMine,stepPulseMines} from './pulse-mines.js';
+import {hijackLink,stepHijackedLinks} from './hijacked-link.js';
 import {launchSurge,bankBreakthrough,BREAKTHROUGH} from './breakthrough.js';
 import {createKillLedger,recordEnemyReward} from './kill-rewards.js';
 import {disturbDimension,stepDimensionField} from './dimension-field.js';
@@ -392,7 +395,7 @@ export function upgradeHas(state, id) {
 export function createRun(
   seed,
   emit = () => {},
-  { warmup = false, staged = warmup, viewport = null, combatTrace = null, combatSourceTrace = null, equipment = null, waveMode = false, controlPractice = false, continuous = false, lockdownIntro = false, arena = null, fracturePct = 0, catalogRewards = false, postRewards = false } = {},
+  { warmup = false, staged = warmup, viewport = null, combatTrace = null, combatSourceTrace = null, equipment = null, waveMode = false, controlPractice = false, continuous = false, arena = null, fracturePct = 0, catalogRewards = false, postRewards = false } = {},
 ) {
   // Stream the normal neighbourhood, but keep its other bodies off the
   // Hold the rest of the stream until the first live Fang is cut (or the
@@ -402,7 +405,7 @@ export function createRun(
   // everything else gets the wave arena (grown in CHUNK 1) or the open world.
   // Optional, local-only observer. No recorder or weak maps in ordinary runs.
   const sourceObserver = combatSourceTrace ? combatSourceTrace.startRun() : null;
-  const ARENA=arena||(waveMode?(continuous?{...WAVE_ARENA}:WAVE_ARENA):DEFAULT_ARENA);
+  const ARENA=arena||(waveMode?(continuous?{x:-2400,y:-3300,w:4800,h:3600}:WAVE_ARENA):DEFAULT_ARENA);
   const loadout = normalizeEquipment(equipment), rules = equipmentRules(loadout), edgeMax = rules.edgeMax;
   const voltBurst=createVoltBurst(),voltConduction=createVoltConduction();
   const reprise=createRepriseStroke();
@@ -476,19 +479,7 @@ export function createRun(
     /** Ticks remaining of the singularity-flash FX after the trigger. */
     shatter: 0,
     shatterDone: false,
-    // CHUNK 6A: THE CUTSCENES. While true, dash/focus/aim are all dead —
-    // the shell holds the lock and the cinematic holds the world.
     inputLock: false,
-    /** Mirror of the live cutscene (set by the shell; painters read it). */
-    cutscene: null,
-    /** A mid-wave story beat is armed by real encounter progress and cleared
-     * when its brief cutscene ends. The guard belongs to the run,
-     * not the wave, so later waves can never replay the set piece. */
-    storyMoment: null,
-    midWaveStorySeen: false,
-    /** CHUNK 6A: how many SHATTERs this run has already spent — escalates
-     *  the cinematic's rung, never the rules. */
-    shatterRung: 1,
     phase: 'ready',
     practice:!!controlPractice,killLedger:waveMode&&!controlPractice?createKillLedger():null,shatters:0,cleanBankTotal:0,bestCleanBankChain:0,
     // CHUNK 6: the MOMENTUM ledger — three pips earned by cutting at pace
@@ -502,7 +493,7 @@ export function createRun(
     caught: false,
     reach: 1,
     breath:0,
-    story:warmup,
+    guide:warmup,
     // Tutorial banners are legal ONLY in the Cutting Room. `enterField()`
     // lowers this for good; nothing in the live field can raise it again.
     tutorialActive: warmup,
@@ -675,6 +666,15 @@ export function createRun(
     hitAge: -1,
     stop: 0,
     drive: 0,
+    rushKillTarget: rules.overdriveKills,
+    rushSource: null,
+    corpseProjectiles: [],
+    corpseWave: 0,
+    pulseMines: [],
+    mineWave: 0,
+    mineTaught: false,
+    friendlyLinks: [],
+    linkWave: 0,
     /** CHUNK 3: highest tick count Overdrive has ever been at this run — the
      *  bonus goal 'reach Overdrive' reads it, and it cannot be re-earned. */
     overdriveBest: 0,
@@ -777,7 +777,7 @@ export function createRun(
   if(viewport)world.viewport={...viewport};
   // 6C stays opt-in: focused harnesses and future modes can request the
   // catalog, while ordinary gameplay keeps the 6B reward path unchanged.
-  const waveDirector=waveMode?(continuous?createContinuousDirector({seed,world,combat,state:s,emit,intro:lockdownIntro,catalogRewards,postRewards,onUpgrade:applyCatalogUpgrade}):createWaveDirector({seed,world,combat,state:s,emit,baseDashSpeed:rules.dashSpeed,controlPractice,catalogRewards,onUpgrade:applyCatalogUpgrade})):null;
+  const waveDirector=waveMode?(continuous?createContinuousDirector({seed,world,combat,state:s,emit,catalogRewards,postRewards,onUpgrade:applyCatalogUpgrade,onRush:enterRush}):createWaveDirector({seed,world,combat,state:s,emit,baseDashSpeed:rules.dashSpeed,controlPractice,catalogRewards,onUpgrade:applyCatalogUpgrade})):null;
   if (!lesson && !waveMode) stream.sync(SPAWN, s.line);
   function nearest() {
     const p = world.player.position;
@@ -832,7 +832,7 @@ export function createRun(
   function adjust(v, assist = true) {
     if (!v?.power) return v;
     const speed = Math.hypot(v.x, v.y);
-    if (s.phase === 'ready' && v.y > -speed * 0.13) {
+    if (s.phase === 'ready' && !s.wave && v.y > -speed * 0.13) {
       const y = -Math.max(Math.abs(v.y), speed * 0.22);
       v = { ...v, x: Math.sign(v.x) * Math.sqrt(Math.max(0, speed * speed - y * y)), y };
     }
@@ -910,7 +910,7 @@ export function createRun(
     if(wasHeld!==s.held)clearFocusRecovery();
     if (!s.opening && ((!wasHeld && s.held && rules.focusDrain < 1) || (wasHeld && !s.held && rules.focusRegen > 1 && loadout.body!=='notched'))) equipmentBurst(world.player.position,'perk-focus');
     if (!on) s.depleted = false;
-    setBulletTime(world, s.held && !s.depleted && s.focus > 0.01, !on);
+    setBulletTime(world, s.held, !on);
   }
   // Steering at speed is a redirect, never a reset — see `steerRetention` at
   // module scope. It reads `s.hyper` at the dash() call site, so hyper steers
@@ -957,18 +957,12 @@ export function createRun(
     // Kinetic baseline: first border is ×1, as the ladder promises.
     s.kineticStage = 1;
     s.kineticBounces = 0;
-    // Singularity-flash clock for the renderer. CHUNK 6A: the flash runs
-    // 140 ticks — long enough to carry the 2.5s cinematic into the
-    // permanent post-tear sky without outliving the player’s handoff.
+    // Singularity-flash clock for the renderer.
     s.shatter = 140;
-    // CHUNK 6A: each SHATTER this run escalates the show one rung. The
-    // rules never change; the light does.
-    s.shatterRung = 1 + (s.shatters | 0);
     s.shatters = (s.shatters | 0) + 1;
     emit('shatterEvent', { x: world.player.position.x, y: world.player.position.y, spent, hp: s.hp });
   }
   function dash(v) {
-    // CHUNK 6A: the cutscene holds the world. No launches through a tear.
     if (s.inputLock) return false;
     const pv = rules.voltLance?voltBurst.baseVelocity(world.player.velocity):world.player.velocity, incomingVelocity={x:pv.x,y:pv.y},
       speedBeforeLaunch = Math.hypot(pv.x, pv.y);
@@ -1132,7 +1126,7 @@ export function createRun(
         emit(admitted?'repriseStored':'repriseBusy',{shot:s.shots,x:world.player.position.x,y:world.player.position.y});
       }else reprise.clear();
     }
-    s.precisionShot = precisionShot(loadout.eyes,s.stroke.power,s.shots);
+    s.precisionShot = precisionShot('ninja',s.stroke.power,s.shots);
     s.precisionReceipt = null;
     s.inkCutScale = rules.inkWidth;
     s.sweep = null;
@@ -1373,6 +1367,14 @@ export function createRun(
     else emit('hurt', { ...world.player.position, cause,contact,attack });
     return true;
   }
+  function enterRush(source='combo') {
+    const fresh = s.drive <= 0;
+    s.drive = OVERDRIVE.ticks;
+    s.rushSource = source;
+    if (s.drive > s.overdriveBest) s.overdriveBest = s.drive;
+    if (fresh) emit('drive', continuous ? {source, ...world.player.position} : {});
+    return fresh;
+  }
   function cut(e, kind, sourceObject = null, source = null) {
     // All gameplay callers name their route. No diagnostic identity or missing
     // boolean can silently turn a delayed/recursive contact into a primary.
@@ -1383,7 +1385,7 @@ export function createRun(
       throw new TypeError('Sword contact requires its attack object');
     // Legacy routes keep their resolver; bounded scheduled units share an
     // explicit resource-isolated authority, never primary bookkeeping.
-    if (!sourceObserver) return ['ember-burn','void-collapse','dash-reprise','volt-conduction'].includes(kind)?resolveScheduledUnit(e,sourceObject,null,kind):resolveCut(e,fromShear,secondary,swordSource);
+    if (!sourceObserver) return ['ember-burn','void-collapse','dash-reprise','volt-conduction','rush-blast','corpse-shard','mine-bat','hijacked-link'].includes(kind)?resolveScheduledUnit(e,sourceObject,null,kind):resolveCut(e,fromShear,secondary,swordSource);
     const origin = source || (sourceObject
       ? sourceObserver.get(sourceObject,kind,s.shots,s.elapsed,world.clock)
       : kind==='primary-blade'
@@ -1392,7 +1394,7 @@ export function createRun(
     const observation=sourceObserver.begin(origin,e,s.elapsed,world.clock,s.shots,fromShear,secondary,swordSource);
     let failed=true;
     try {
-      const result=['ember-burn','void-collapse','dash-reprise','volt-conduction'].includes(kind)?resolveScheduledUnit(e,sourceObject,observation,kind):resolveCut(e,fromShear,secondary,swordSource,observation);
+      const result=['ember-burn','void-collapse','dash-reprise','volt-conduction','rush-blast','corpse-shard','mine-bat','hijacked-link'].includes(kind)?resolveScheduledUnit(e,sourceObject,observation,kind):resolveCut(e,fromShear,secondary,swordSource,observation);
       failed=false;
       return result;
     } finally {
@@ -1487,11 +1489,8 @@ export function createRun(
     if(precision){s.precisionReceipt=precision;emit('precisionPuncture',{entityId:e.id,...precision});}
     // ── CHUNK 4: THE MONOLITH ──────────────────────────────────────────
     //
-    // Five plates, two health each, and only one key: a cut banked to
-    // OVERCHARGED takes a whole plate. Anything weaker chips one point —
-    // crown kits, armor plates, every reward the run handed out — because the
-    // landlord does not negotiate. Ten chips or five A-frames; the arena is
-    // the only thing that opens it either way.
+    // Five plates, two health each. A regular slash breaks a plate;
+    // an overcharged slash deals three damage. Every contact is useful.
     // CHUNK 6B: during the GRAVITY LENS window the slab takes +1 from
     // anything it pulls through it — it doesn't get to choose what hits it.
     const lensBonus = e.kind === 'monolith' && e.lensT > 0 ? 1 : 0;
@@ -1500,7 +1499,7 @@ export function createRun(
     const secondTarget = !secondary && !fromShear && cutBatchHits++ === 1 ? (mods.secondTargetDamage || 1) : 1;
     if (e.kind === 'monolith') {
       const overcharge = kin >= 4 ? (mods.monolithDamage || 1) : 1;
-      e.hp -= (kin >= 4 ? 2 : 1) * overcharge * secondTarget + lensBonus;
+      e.hp -= (kin >= 4 ? 3 : 2) * overcharge * secondTarget + lensBonus;
     } else e.hp -= Math.max(1, Math.floor((kin >= 4 ? e.hp + 1 : kineticBase * kin) * execute * secondTarget)) + (precision?.total||0);
     if(rules.voidWell&&!secondary&&!fromShear&&emberActive()){
       const field=voidWell.contact(e,{primary:true,now:world.clock,enemies:combat.enemies.values(),geometry:world.geometry,
@@ -1530,7 +1529,7 @@ export function createRun(
     if (s.opening) lesson.hit(e.hp > 0);
     if (e.hp > 0) {
       if (!s.opening) grantBreath(breathFor(s, 'cut'));
-      s.stop = Math.max(e.pinned ? 5 : 2, s.stop);
+      s.stop = Math.max(e.pinned ? 5 : s.wave ? 4 : 2, s.stop);
       e.fault = s.slashAngle - e.angle;
       // ── HITTING ARMOUR IS A SHOVE, NOT A TURN ───────────────────────────
       //
@@ -1600,14 +1599,7 @@ export function createRun(
     // meter always means "fraction of THIS chain's window remaining".
     s.chainMax = s.chainTime;
     let freshDrive=false;
-    if (s.chain % rules.overdriveKills === 0) {
-      const fresh = s.drive <= 0;
-      s.drive = OVERDRIVE.ticks;
-      // Recorded at the grant, not after the first tick of drain, so "reached
-      // Overdrive" means the full bank was actually awarded.
-      if (s.drive > s.overdriveBest) s.overdriveBest = s.drive;
-      if (fresh) {freshDrive=true;emit('drive', {});}
-    }
+    if (s.chain % rules.overdriveKills === 0) freshDrive=enterRush('combo');
     // CHUNK 1: +1 per cleared wave, additive with the chain ladder and capped
     // at its ceiling (+8). Entering Overdrive still doubles the whole thing.
     const perkMult = s.opening || secondary || fromShear ? 1 : perkScoreMultiplier(rules.scorePerks, {
@@ -1641,7 +1633,7 @@ export function createRun(
     // launch. A full-size kill buys a real choice, longer on the first one.
     if (!s.opening && !fromShear && e.small) grantBreath(breathFor(s, 'small'));
     if (!s.opening && !e.small && !fromShear) {
-      if (e.sentry && s.story) s.firstAir = true;
+      if (e.sentry && s.guide) s.firstAir = true;
       grantBreath(
         s.firstAir ? breathFor(s, 'firstAir') : Math.round(breathFor(s, 'cut') * 1.35),
       );
@@ -1682,7 +1674,10 @@ export function createRun(
     }
     s.focus = 1;
     s.blade = Math.min(38, s.blade + 7);
-    const impact = impactFor(e.kind, e.small, release, e.paper);
+    const baseImpact = impactFor(e.kind, e.small, release, e.paper);
+    // Arcade-only impact budget; old non-wave simulation remains deterministic.
+    const arcadeImpacts={chip:{stop:2,flecks:2,kick:.6},paper:{stop:3,flecks:4,kick:1.2},plate:{stop:5,flecks:5,kick:2}};
+    const impact = s.wave && arcadeImpacts[baseImpact.cue] ? {...baseImpact,...arcadeImpacts[baseImpact.cue]} : baseImpact;
     s.stop = Math.max(s.stop, impact.stop);
     // A cut is a contact too: squash along the incoming travel, ring at the
     // exact point the two silhouettes met.
@@ -1733,6 +1728,33 @@ export function createRun(
       for (const victim of combat.forwardHits(e, end, SHEAR.width)) cut(victim,'legacy-shear',null,shearSource);
     }
     defeatAftermath(e);
+    if(continuous && !secondary && !fromShear && !s.practice && !s.opening && !s.tutorialActive && !s.visualTutorial && !s.teachingArena && s.wave?.phase==='combat' && e.kind==='prism'){
+      const link=hijackLink(s.friendlyLinks,waveDirector.cells,combat.enemies,e,s.shots);if(link){s.linkWave=s.wave.number;emit('linkHijack',{x:e.x,y:e.y,partner:link.partner});}
+    }
+    if(continuous && !secondary && !fromShear && !s.practice && !s.opening && !s.tutorialActive && !s.visualTutorial && !s.teachingArena && s.wave?.phase==='combat' && e.kind!=='monolith' && cutSpeed>=8) {
+      flingCorpse(s.corpseProjectiles,e,s.slashAngle,s.shots);s.corpseWave=s.wave.number;
+    }
+    if(continuous && s.drive>0 && !secondary && !fromShear && !s.practice && !s.opening && !s.tutorialActive && !s.visualTutorial && !s.teachingArena && s.wave?.phase==='combat') rushChain(e,observation?.source.sourceId);
+  }
+  // Every direct Rush kill starts one bounded breadth-first chain. Each target
+  // takes at most one secondary damage per chain; only a kill relays it. Walls,
+  // bosses and practice actors are excluded, and secondary hits never grant
+  // primary resources or recursively start another chain.
+  function rushChain(first,parentSourceId){
+    const radius=135,limit=6,queue=[{x:first.x,y:first.y}],seen=new Set([first.id]);let count=0;
+    while(queue.length&&count<limit){
+      const origin=queue.shift();
+      const candidates=[...combat.enemies.values()].filter(e=>e.hp>0&&!seen.has(e.id)&&e.kind!=='monolith'&&!e.paper&&!e.tutorialProtected&&!e.tutorialTargetPlayer&&Math.hypot(e.x-origin.x,e.y-origin.y)<=radius&&eyeSight(origin,e,world.geometry))
+       .sort((a,b)=>Math.hypot(a.x-origin.x,a.y-origin.y)-Math.hypot(b.x-origin.x,b.y-origin.y)||String(a.id).localeCompare(String(b.id)));
+      if(candidates.length)emit('rushBlast',{x:origin.x,y:origin.y,radius});
+      for(const victim of candidates){
+        if(count>=limit)break;seen.add(victim.id);count++;
+        const unit={target:victim,shot:s.shots,index:count};
+        const source=sourceObserver?.create('rush-blast',s.shots,s.elapsed,world.clock,parentSourceId);
+        cut(victim,'rush-blast',unit,source);
+        if(!combat.enemies.has(victim.id))queue.push({x:victim.x,y:victim.y});
+      }
+    }
   }
   function removeDefeatedEnemy(e){combat.remove(e);stream.mark(e);s.kills++;}
   function recordDefeatCredits(e,points){
@@ -1759,7 +1781,7 @@ export function createRun(
     if(!unit||unit.target!==e||!(kind==='dash-reprise'?repriseActive():emberActive())||combat.enemies.get(e.id)!==e||e.hp<=0){if(observation)observation.rejection=kind==='ember-burn'?'burn-inactive':kind==='dash-reprise'?'reprise-inactive':'collapse-inactive';return;}
     if(observation)observation.accepted=true;
     const hpBefore=e.hp;e.hp=Math.max(0,e.hp-1);
-    emit(kind==='ember-burn'?'emberHit':kind==='dash-reprise'?'repriseHit':kind==='volt-conduction'?'voltHit':'voidHit',{entityId:e.id,x:e.x,y:e.y,hp:e.hp,index:unit.index,sourceShot:unit.shot});
+    emit(kind==='ember-burn'?'emberHit':kind==='dash-reprise'?'repriseHit':kind==='volt-conduction'?'voltHit':kind==='rush-blast'?'rushBlastHit':kind==='corpse-shard'?'corpseHit':kind==='mine-bat'?'mineHit':kind==='hijacked-link'?'linkHit':'voidHit',{entityId:e.id,x:e.x,y:e.y,hp:e.hp,index:unit.index,sourceShot:unit.shot});
     if(e.hp>0)return;
     removeDefeatedEnemy(e);
     const mult=Math.max(1,Math.min(8,s.chain))*(s.drive>0?2:1)+Math.min(8,s.waveMult||0),
@@ -1914,7 +1936,7 @@ export function createRun(
     // ── AND THE BANNERS GO WITH IT ────────────────────────────────────────
     // One-way. The live field has no tutorial cards at all after this, which
     // is the fix for the card that kept reappearing in Sector 32.
-    s.story = false;
+    s.guide = false;
     s.tutorialActive = false;
     s.caught = false;
     s.net = false;
@@ -1929,10 +1951,8 @@ export function createRun(
     for (const e of combat.enemies.values()) combat.remove(e);
     s.opening = null;
     s.net = cleared;
-    // `story` used to be re-armed to `cleared` here, which is what let the
-    // guide cards come back for a player who finished the racks. It is a
-    // one-way switch now: the field has no tutorial cards at all.
-    s.story = false;
+    // The guide is a one-way switch: the field has no tutorial cards.
+    s.guide = false;
     focus(false);
     stopPlayer(world);
     freezePoses();
@@ -1973,7 +1993,7 @@ export function createRun(
   }
   function tickCore() {
     if(waveDirector && s.wave.phase==='choose'){freezePoses();return;}
-    if (s.phase === 'ready' || s.phase === 'over') { if(s.phase==='ready'&&s.narrative?.intro)waveDirector.tick(1); return; }
+    if (s.phase === 'ready' || s.phase === 'over') return;
     if (s.phase === 'dying') {
       freezePoses();
       if (--s.death === 0) {
@@ -2122,11 +2142,16 @@ export function createRun(
       return;
     }
     const focusBeforeRecovery=s.focus,wasRecovering=s.focusRecoveryActive;
+    // Physics can suspend slow time on landing; if the same held gesture is
+    // airborne again, restore it without requiring a new press.
+    if (s.held && !world.grounded && !world.slow) setBulletTime(world, true);
     if (s.held && !s.depleted) {
       s.focus = Math.max(0, s.focus - (s.opening ? 1 : rules.focusDrain) / 165);
       if (s.focus < 0.0001) {
+        // An empty meter disables focus-dependent perks, not the held input.
+        // Snapping from 10% to full speed here looked exactly like an
+        // unsolicited release even though the pointer was still down.
         s.depleted = true;
-        setBulletTime(world, false);
       }
     } else if (!s.held) s.focus = recoverFocus(s.focus,(focusRecovery > 0 ? 2 : 1) * (s.opening ? 1 : rules.focusRegen));
     // Read-only presentation view of this authority's actual passive grant.
@@ -2849,6 +2874,13 @@ export function createRun(
     }
     if(rules.frostControl){if(emberActive())frostControl.advance(world.clock,combat.enemies,frostThaw);else frostControl.clear();}
     if(rules.emberBurn){if(emberActive())emberBurn.step(world.clock,combat.enemies,(e,unit)=>cut(e,'ember-burn',unit,unit.source));else emberBurn.clear();}
+    if(continuous && s.corpseProjectiles.length){
+      if(s.corpseWave!==s.wave?.number || s.phase!=='playing' || s.wave?.phase!=='combat') s.corpseProjectiles.length=0;
+      else if(!stopped)stepCorpseProjectiles(s.corpseProjectiles,{dt,enemies:combat.enemies,geometry:world.geometry,arena:ARENA,onHit:(target,shard)=>{
+        const unit={target,shot:shard.shot,index:0};
+        cut(target,'corpse-shard',unit);
+      }});
+    }
     combat.attacks(dt, (h) => {
       const facing = h.kind === 'needle' && Math.cos(s.slashAngle - h.angle) < -0.2;
       // CHUNK 6B: the slam concussion — not damage. A live blade or parry
@@ -2875,6 +2907,21 @@ export function createRun(
       if(result===2){s.lastDefense={kind:'phase',tick:s.elapsed};syncShellAbility();emit('needlePhase',{x:world.player.position.x,y:world.player.position.y,angle:h.angle||0});}
       return result===0;
     }:null});
+    if(continuous&&!s.practice&&!s.opening&&!s.tutorialActive&&!s.visualTutorial&&!s.teachingArena){
+      if(s.mineWave!==s.wave?.number){s.pulseMines.length=0;s.mineWave=s.wave.number;}
+      if(s.wave?.phase==='combat'&&!stopped){
+        for(const ring of combat.hazards)if(ring.kind==='ring'&&ring.source==='pulse'&&!ring.arcadeMineSpawned){
+          ring.arcadeMineSpawned=true;const mine=spawnPulseMine(s.pulseMines,ring,world.player.position,ARENA);if(mine){emit('mineSpawn',{x:mine.x,y:mine.y,first:!s.mineTaught});s.mineTaught=true;}
+        }
+        stepPulseMines(s.pulseMines,{dt,player:world.player.position,previousPlayer:world.player.plugin.previous,blade:s.blade,angle:s.slashAngle,enemies:combat.enemies,geometry:world.geometry,arena:ARENA,
+          onBat:mine=>emit('mineBat',{x:mine.x,y:mine.y}),onHurt:mine=>hurt('Pulse mine',mine,Object.freeze({kind:'pulse-mine',angle:0})),
+          onHit:(target,mine)=>{cut(target,'mine-bat',{target,shot:s.shots,index:0});emit('mineImpact',{x:mine.x,y:mine.y});}});
+      }else if(s.wave?.phase!=='combat')s.pulseMines.length=0;
+    }
+    if(continuous&&s.friendlyLinks.length){
+      if(s.linkWave!==s.wave?.number||s.wave?.phase!=='combat')s.friendlyLinks.length=0;
+      else if(!stopped)stepHijackedLinks(s.friendlyLinks,{dt,enemies:combat.enemies,geometry:world.geometry,onHit:(target,link)=>cut(target,'hijacked-link',{target,shot:link.shot,index:0})});
+    }
     combat.linkAttacks(waveDirector?waveDirector.cells:stream.live, s.wave?.entry>0?0:dt, (link) => {
       if (s.parry <= 0) hurt('Prism link',link.a,Object.freeze({kind:'prism-link',angle:Math.atan2(link.b.y-link.a.y,link.b.x-link.a.x)}));
       else s.lastDefense={kind:'parry',tick:s.elapsed};

@@ -1,4 +1,5 @@
-import {HYBRIDS,activeHybrid} from './hybrids.js';
+import {HYBRIDS} from './hybrids.js';
+import {isCosmeticSlot} from './cosmetic-slots.js';
 
 /** Authoritative, immutable styles. No luck, targeting correction or save writes.
  * Width multiplies the existing forward sensor; reach is measured from cube centre.
@@ -47,10 +48,11 @@ function describeStyle(style){
  return {...style,strength,cost:costs.length?costs.join(' / ')+'.':style.cost,receipt:[special,...deltas.map(([key,n,unit])=>`${key} ${signed(n)}${unit}`)].filter(Boolean).join(' / ')};
 }
 export const SWORD_BUILDS=Object.freeze(HYBRIDS.map(h=>Object.freeze({id:h.id,title:h.title,parts:h.parts,color:h.color,style:assignments[h.id][0],tier:assignments[h.id][1]})));
+const gearBuilds=SWORD_BUILDS.map(build=>({build,parts:Object.entries(build.parts).filter(([slot])=>!isCosmeticSlot(slot))})).filter(x=>x.parts.length>=2).sort((a,b)=>b.parts.length-a.parts.length);
 export function swordProfile(equipment={}){
- // Art, hints and combat share selection; sword tuning stays in this module.
- const selected=activeHybrid(equipment);
- const build=selected?SWORD_BUILDS.find(b=>b.id===selected.id):null;
+ // A visual recipe can still change the art, but never the sword. Match only
+ // gameplay slots, preferring the most specific recipe and catalogue order.
+ const build=gearBuilds.find(x=>x.parts.every(([slot,id])=>equipment[slot]===id))?.build||null;
  const style=build?describeStyle({...SWORD_STYLES[build.style],...variants[build.id]}):SWORD_STYLES.standard;
  return Object.freeze({...style,build:build?.id||null,buildTitle:build?.title||'MIXED LOADOUT',tier:build?.tier||'standard',color:build?.color||style.color});
 }

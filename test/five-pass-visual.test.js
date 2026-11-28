@@ -1,17 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createCanvas} from '@napi-rs/canvas';
-import {openingGuide} from '../src/opening-guide.js';
 import {WORLD_GUIDES,worldGuide} from '../src/world-guide.js';
 import {drawWorldIdentity,drawPartComparison} from '../src/art/splatr-art-engine.js';
 import {DEFAULT_EQUIPMENT} from '../src/equipment.js';
 
-test('opening help is persistent while the real gate exists and matches the input device',()=>{
- const s=Object.freeze({narrative:Object.freeze({intro:true,fracture:Object.freeze({x:0,y:0})})});
- assert.match(openingGuide(s,'keys').hint,/Space/);assert.match(openingGuide(s,'touch').hint,/Tap/);assert.match(openingGuide(s,'mouse').hint,/Drag down and release/);
- assert.match(openingGuide(s).action,/CUT/);
- for(const value of [null,{}, {narrative:{intro:false,fracture:{}}},{narrative:{intro:true,fracture:null}}])assert.equal(openingGuide(value),null);
-});
 test('six landmark identities are distinct, stationary with reduced motion and preserve caller state',()=>{
  const images=new Set();
  for(const world of Object.keys(WORLD_GUIDES)){

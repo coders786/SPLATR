@@ -4,20 +4,21 @@ A full-screen **2D geometry slasher**. You're the square with the scarf. Cut sha
 
 ## Play
 
-- **Start run** on a new save puts three paper triangles in front of you. Click, tap or press **Space**; try cutting the whole rack in one swing. A small paper strip under the cube draws the move you're on. Nothing attacks here, and a miss brings you back for another go.
-- The next rack is across your path. Then there's one hexagon: the first cut cracks it, the second breaks it. Take your points and Overdrive into the field. One live red triangle shows its charge lane before the fight starts. When you clear the racks, one net waits above the Redline. It catches you once and refills your cuts.
-- The guide is spent by your **first Start**, so a later run begins with the single triangle. It does not matter whether you finish, skip, reload or never swing. **Pause → Skip the racks** goes straight to the field for this run. **Options → Run opening** can show the orientation on every run (**Gradual**) or use the original mixed field (**Full field**). Racks, a debrief score and the field all belong to the same run.
-- **Touch / mouse:** tap a destination, or hold anywhere, pull **backward** and release. A longer pull gives more speed. Holding in flight slows time; a held target stays aimed until release. The dotted arc previews the shot.
+- **Start run** goes directly to the arcade field, with no opening movie or door to unlock. Clear the enemies to begin the next wave; a Monolith joins the fight on boss waves.
+- The arcade is a 4,800 × 3,600-unit arena with endless, seeded waves. New formations appear near the player; the world and your controls keep moving between waves. Automatic upgrades and wave goals reward a successful run.
+- **Training arena** offers optional practice and enemy lessons whenever you want them.
+- **Touch / mouse:** point toward your destination and release for a full-power slash. In Options, switch to **Slingshot** to pull away from the target; longer pulls give more speed. Holding in flight slows time until release, even after the focus meter empties; focus-dependent equipment perks still require focus. A held drag stays aimed until release, and returning to the start cancels it. The dotted arc previews the shot.
 - **Keyboard:** arrows / WASD set a direction; Space slashes. Hold Shift for focus and use left/right to fine-adjust the angle. On the racks and at a fresh launch, an unaimed Space takes the offered shot. In flight it repeats your last direction.
-- **Pause:** P, Escape or the pause icon. Blurring or hiding the tab pauses a live run and cancels a held shot. Options, the field manual and Resume are available without losing the run. **M** toggles audio; **F** requests browser fullscreen where supported.
+- **Visual options:** Post FX can be Auto, On or Off; FX intensity cycles through Soft, Balanced and Vivid. Auto falls back to Canvas on lower-capability devices; motion effects can be disabled independently.
+- **Pause:** P, Escape or the pause icon. Blurring or hiding the tab pauses a live run and cancels a held shot. Options, the training arena and Resume are available without losing the run. **M** toggles audio; **F** requests browser fullscreen where supported.
 
 The game fills the available viewport even if the browser disallows fullscreen. It needs neither a landscape lock nor a virtual joystick. Best score and preferences are saved in your browser. In an embed that blocks storage, the first Start still counts for the rest of that visit.
 
 ## How to score
 
-In the field you have **three hull and three cuts**. The cutting room gives you a longer blade and free cuts on paper. The marks under the flying cube are remaining cuts. One cut regenerates every 60 simulation ticks (one second) whenever your stock is below three — in flight or not; a kill restores one immediately and refills focus. A chain advances the score multiplier up to ×8. Every sixth consecutive kill starts **Overdrive**: a blade with 38% more reach, double the multiplier, and enough damage to split a Crown in one hit. A hull hit breaks the chain. Height unlocks encounters; it doesn't earn points by itself.
+In the field you have **three hull and three cuts**. The cutting room gives you a longer blade and free cuts on paper. The marks under the flying cube are remaining cuts. One cut regenerates every 60 simulation ticks (one second) whenever your stock is below three — in flight or not; a kill restores one immediately and refills focus. A chain advances the score multiplier up to ×8. Every sixth consecutive kill starts **Overdrive**: a blade with 38% more reach, double the multiplier, and enough damage to split a Crown in one hit. A hull hit breaks the chain. Clearing waves unlocks tougher encounters; height does not earn points by itself.
 
-**The seam under the world.** Every cut feeds the **Dimension Fracture**, a persistent 0–100 meter that survives restarts. Fill it and you will meet the **SHATTER EVENT**. Its tiers escalate the sky, the tremor under the field and the formations it throws at you. It never drains; it only waits.
+**Boss charge.** Every cut feeds the **Dimension Fracture**, a persistent 0–100 meter that survives restarts. Fill it and you will meet the **SHATTER EVENT**. Its tiers escalate the sky, the tremor under the field and the formations it throws at you. It never drains; it only waits.
 
 **Stroke ≠ chain.** A new dash starts a new stroke, not a new chain. The second direct full-size kill on one stroke earns a **flat +300** and sends a short, straight cut forward from that shape. It strips two plates (three in Overdrive), scores any kills, and can only fire once per launch. Small Fangs score and refund a cut but don’t arm it. The notches preview a possible pair at their current positions; moving enemies and gravity wells can spoil the line. At run end the paper slip prints the most valuable stroke you actually made.
 
@@ -32,7 +33,7 @@ In the field you have **three hull and three cuts**. The cutting room gives you 
 | Well · pentagon | Pulls the cube toward its core. | Dash out of the field or through the core. |
 | Crown · octagon | Hunts every third sector, with three plates and a radial volley. | Read the spokes. Breaking the Crown repairs one hull. |
 
-Each new run rolls a seed. In Auto, the first rows use triangles and two-plate shells. The next rows add circles, then diamonds. Crosses, wells, stars and linked sentries come later. Full field starts with the original four mirrored opening arrangements. Both paths lead to the same five encounter formations, district mixes and recurring Crown hunts. Go sideways for another chain or climb into a new sector. Only the nearby field is loaded; cutting a shape, leaving its cell and coming back does not respawn it for free points.
+Each new run rolls a seed. The first wave introduces Fangs and a Pulse; later waves mix in armor, links, splits and other threats. The action remains in one large arena, with no gates or mandatory cutscenes between waves.
 
 ## Run or distribute
 
@@ -45,9 +46,10 @@ npm run dev         # local development / HMR in a top-level browser tab
 npm test            # deterministic simulation, art, camera and SDK checks
 npm run build       # standalone dist/index.html; checks the actual artifact
 npm run preview     # serve the built game (or open the HTML directly)
+node scripts/loading-postfx-smoke.mjs # built preview, loader and WebGL checks (Chrome required)
 ```
 
-**For an embedded/shared preview, use `npm start`, not the Vite development server.** A sandboxed iframe can have an opaque origin: the HTML loads, but the browser rejects the dev server’s external ESM requests. The built game needs only the document request and works without granting the iframe storage access or relaxing CORS. The repository-root `index.html` is a build input; `dist/index.html` is the file you can play directly. While `npm start` is running, `npm run test:preview` checks startup and a scored slash inside a scripts-only iframe (Chrome required; set `CHROME_BIN` if needed).
+**For an embedded/shared preview, use `npm start`, not the Vite development server.** A sandboxed iframe can have an opaque origin: the HTML loads, but the browser rejects the dev server’s external ESM requests. The built game needs only the document request and works without granting the iframe storage access or relaxing CORS. The repository-root `index.html` is a build input; `dist/index.html` is the file you can play directly. While `npm start` is running, `npm run test:preview` checks direct arcade startup, a launch and pause/resume inside a scripts-only iframe (Chrome required; set `CHROME_BIN` if needed).
 
 The standalone is **one offline HTML file** with inline code, vector drawing routines, four font subsets and licenses. Sound effects and the switchable beat track are synthesized after user input. No external art, fonts, analytics or SDK requests are required. `dist/` and dependencies are intentionally not versioned.
 
@@ -56,10 +58,10 @@ For a host that requires the official Poki SDK v2, `npm run build:poki` produces
 ## Implementation and checks
 
 - `src/levels.js` generates stable 1,600 × 1,240-unit cells by seed and integer address, with staggered spawn slots rather than a grid. The active neighbourhood is at most 3 × 3. Defeats are bitmasks per visited cell; the tide prunes unreachable rows.
-- `src/opening.js` runs the paper racks: real blade contacts, a brief return on a miss, and a handoff into the same scoring run. `src/storyboard.js` draws the wordless first-run guide from actual game states; it never plays the game for you.
+- `src/opening.js` runs the paper racks: real blade contacts, a brief return on a miss, and a handoff into the same scoring run. `src/guideboard.js` draws the wordless first-run guide from actual game states; it never plays the game for you.
 - `src/fracture.js` owns the persistent Dimension Fracture (tiers, sky stages, gains); `src/run.js` feeds it from cuts; `src/waves.js` from wave clears and Dimension Shatters.
 - `src/run.js` owns survival, scoring and transitions; `src/slasher.js` owns enemy AI, compound sensors, blade contact, needles, rings and links. Neither needs the DOM. The test driver that plays long runs is not part of the shipped game.
-- `src/physics.js` and `src/clock.js` advance Matter at fixed 60 Hz with bounded catch-up and collision substeps. `src/camera.js` and `src/renderer.js` blend previous/current states using the fractional tick remainder, including in focus. The framebuffer is viewport-sized, capped at 2× device pixel ratio and about 2.6 megapixels, not the size of the world.
+- `src/physics.js` and `src/clock.js` advance Matter at fixed 60 Hz with bounded catch-up and collision substeps. `src/camera.js` and `src/renderer.js` blend previous/current states using the fractional tick remainder, including in focus. The framebuffer is viewport-sized, capped at 1× device pixel ratio and 921,600 pixels, not the size of the world.
 - `src/shapes.js`, `src/art.js` and `src/atmosphere.js` draw flat silhouettes, the title illustration, sector scenery and fragments. `src/input.js` handles captured pointers and keyboard aiming. `src/main.js` connects these to the menus, HUD, storage, audio and optional portal lifecycle.
 - **[The cutting room: the first four swings and the wordless guide](docs/cutting-room.md).**
 - **[Throughcut: the art/UI/juice audit, research, and real play frames](docs/throughcut.md).** [Menu, HUD and silhouette design references](docs/shape-riot.md).

@@ -15,8 +15,8 @@ try {
   await page.evaluate(()=>retryQA.start());assert.equal(await page.$eval('#game',e=>e.dataset.learning),'false');
   await page.keyboard.press('Escape');await page.click('#end-btn');await page.waitForSelector('#retry-btn',{visible:true});await page.click('#retry-btn');assert.equal(await page.$eval('#game',e=>e.dataset.learning),'false');assert.equal(await page.evaluate(()=>retryQA.storage.get('tutorialCompleted','0')),'0');
   await page.keyboard.press('Escape');await page.click('#end-btn');await page.waitForSelector('#home-btn',{visible:true});await page.click('#home-btn');await page.click('#quests-btn');assert.equal(await page.$eval('#game',e=>e.dataset.learning),'true');
-  await page.click('#rack-skip');assert.equal(await page.$eval('#game',e=>e.dataset.learning),'false');assert.equal(await page.evaluate(()=>retryQA.storage.get('tutorialCompleted','0')),'1');assert.equal(await page.evaluate(()=>retryQA.run.state.narrative.intro),true);
-  await page.keyboard.press('Escape');await page.click('#end-btn');await page.waitForSelector('#home-btn',{visible:true});await page.click('#home-btn');await page.click('#quests-btn');await page.click('#rack-skip');assert.equal(await page.evaluate(()=>retryQA.run.state.narrative.intro),false,'replay does not repeat completion intro');
+  await page.click('#rack-skip');assert.equal(await page.$eval('#game',e=>e.dataset.learning),'false');assert.equal(await page.evaluate(()=>retryQA.storage.get('tutorialCompleted','0')),'1');assert.equal(await page.evaluate(()=>retryQA.run.state.arcade.sector),1);
+  await page.keyboard.press('Escape');await page.click('#end-btn');await page.waitForSelector('#home-btn',{visible:true});await page.click('#home-btn');await page.click('#quests-btn');await page.click('#rack-skip');assert.equal(await page.evaluate(()=>retryQA.run.state.arcade.sector),1,'replay starts arcade play');
   assert.deepEqual(errors,[]);await page.close();
  }
  console.log('PASS interrupted tutorial, result Retry, deliberate Learn replay, skip and session-only blocked-storage fallback.');

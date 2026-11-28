@@ -332,7 +332,7 @@ export function createDisplay(width = 880, height = 710) {
     width,
     height,
     style: {},
-    // The renderer annotates the element with its current storyboard scene, so
+    // The renderer annotates the element with its current guide scene, so
     // the CSS and the draw share one source. A real element always has `dataset`.
     dataset: {},
     getContext: () => ctx,

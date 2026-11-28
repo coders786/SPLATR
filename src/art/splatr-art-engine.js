@@ -423,8 +423,8 @@ var TYPES = {
     // units of r and scales with it; the sensor body scales the same way.
     215,
     2500,
-    "The landlord of the tear. Five plates; only a banked OVERCHARGED cut takes one.",
-    "Bank the rails to x4, then cut. Repeat five times.",
+    "Five plates guard the Monolith. Every slash damages it.",
+    "Slash to break plates. Bank to x4 for extra damage.",
     { hp: 10 }
   ),
   crown: species(
@@ -4618,11 +4618,11 @@ function drawQuestPart(c, id, x, y, scale = 1, time = 0) {
   c.restore();
 }
 
-// consolidated/storyboard.js
-var storyboard_exports = {};
-__export(storyboard_exports, {
-  drawStory: () => drawStory,
-  sceneFor: () => sceneFor
+// consolidated/guideboard.js
+var guideboard_exports = {};
+__export(guideboard_exports, {
+  drawGuide: () => drawGuide,
+  guideSceneFor: () => guideSceneFor
 });
 
 // consolidated/levels.js
@@ -5375,9 +5375,9 @@ function frameRun(camera, run, motion = true) {
   if(s.wave?.platform&&["return","choose"].includes(s.wave.phase))camera.frameLanding(p.position,s.wave.platform);
 }
 
-// consolidated/storyboard.js
-function sceneFor(s, target, falling, gap) {
-  if (!s.story || !["ready", "playing"].includes(s.phase)) return null;
+// consolidated/guideboard.js
+function guideSceneFor(s, target, falling, gap) {
+  if (!s.guide || !["ready", "playing"].includes(s.phase)) return null;
   const o = s.opening;
   if (o) {
     if (o.returning) return "rewind";
@@ -5628,7 +5628,7 @@ function film(c, v, scene, device, frame, actors) {
 function bracket(c, x, y, r) {
   for (let j = 0; j < 4; j++) arc(c, INK.paper, 1.6, x, y, r, j * Math.PI / 2 + 0.16, j * Math.PI / 2 + 0.66);
 }
-function drawStory(c, { v, p, e, shot, scene, device, age, motion, aim }) {
+function drawGuide(c, { v, p, e, shot, scene, device, age, motion, aim }) {
   c.save();
   const period = 168, t = motion ? age % period / period : 0.39, stage = motion ? Math.min(2, Math.floor(t * 3)) : scene === "crack" ? 2 : scene === "shell" ? 1 : 0;
   const actors = [{ ...toScreen(v, p), r: 24 * v.scale + 10 }];
@@ -7007,7 +7007,7 @@ function threatAhead(world, combat, velocity, { blade: blade2 = 0, line: line3 =
     else if (miss <= 46 && along <= e.r + r) consider(0, "shape", e.x, e.y);
   }
   for (const h of combat.hazards || []) {
-    if (h.spent) continue;
+    if (h.spent || h.cosmetic) continue;
     if (h.kind === "needle") {
       const ax = h.x - p.x, ay = h.y - p.y;
       const along = clamp(ax * ux + ay * uy, 0, speed * reach);
@@ -7522,6 +7522,25 @@ export function drawPlayerDamageReceipt(c,v,player,state){
  }finally{c.restore();}
 }
 
+/** Project off-screen contacts to the screen edge, not over the playfield.
+ * Radar upgrades retain their range and hazard/tell distinctions. The data is
+ * read-only and capped so crowded waves cannot flood the screen with markers. */
+export function peripheralRadar(v, player, combat, id='radar-base') {
+ const level=sensorTier(id,'radar'), range=radarRange(id), out=[];
+ const add=(object,kind,active=false)=>{
+  if(!object||!Number.isFinite(object.x)||!Number.isFinite(object.y))return;
+  const dx=object.x-player.x,dy=object.y-player.y;
+  if(Math.abs(dx)>v.w*range||dy < -v.h*2*range||dy > v.h*.5*range)return;
+  const q=toScreen(v,object);
+  if(q.x>=0&&q.x<=v.width&&q.y>=0&&q.y<=v.height)return;
+  const sx=q.x-v.width/2,sy=q.y-v.height/2;
+  const k=Math.min(Math.max(1,v.width/2-24)/Math.max(1,Math.abs(sx)),Math.max(1,v.height/2-24)/Math.max(1,Math.abs(sy)));
+  out.push({x:v.width/2+sx*k,y:v.height/2+sy*k,angle:Math.atan2(sy,sx),kind,active,distance:Math.hypot(dx,dy),id:object.id||object.attackId||''});
+ };
+ for(const e of combat.enemies.values())add(e,'enemy',level>=3&&(e.mode==='tell'||e.mode==='rush'));
+ if(level>=2)for(const h of combat.hazards||[])if(!h.spent&&!h.cosmetic)add(h,'hazard',true);
+ return out.sort((a,b)=>Number(b.active)-Number(a.active)||a.distance-b.distance).slice(0,12);
+}
 /** Camera-only edge notices. They never affect AI or hit geometry. */
 export function enemyThreatIndicators(v,combat){
  const out=[],seen=new Set(),w=v.width,h=v.height;
@@ -7535,7 +7554,7 @@ export function enemyThreatIndicators(v,combat){
   add(e,e.kind.toUpperCase(),e.frostCold?.phase==='active'&&e.frostCold.kind==='freeze'?'FROZEN':e.mode==='tell'?'TELL':'ATTACK',`enemy:${e.id}`,e.mode==='tell'&&Number.isFinite(e.clock)&&Number.isFinite(e.span)?clamp(1-e.clock/Math.max(1,e.span),0,1):null,INTENT_VERBS[e.kind]);
   if(e.kind==='rift'&&e.mode==='tell'&&e.attackZone)add(e.attackZone,'RIFT','LANDING',`rift:${e.id}`,Number.isFinite(e.clock)&&Number.isFinite(e.span)?clamp(1-e.clock/Math.max(1,e.span),0,1):null,'STRIKE');
  }
- for(const h of combat.hazards||[])if(!h.spent)add(h,String(h.source||'ATTACK').toUpperCase(),'ATTACK',`hazard:${h.attackId||h.source}`);
+ for(const h of combat.hazards||[])if(!h.spent&&!h.cosmetic)add(h,String(h.source||'ATTACK').toUpperCase(),'ATTACK',`hazard:${h.attackId||h.source}`);
  for(const l of combat.links||[])if(l.mode==='tell'||l.mode==='live'){
   add(l.a,'LINK',l.mode==='tell'?'TELL':'ATTACK',`link:${l.a.id}`,l.mode==='tell'?clamp(l.f,0,1):null,'BEAM');add(l.b,'LINK',l.mode==='tell'?'TELL':'ATTACK',`link:${l.b.id}`,l.mode==='tell'?clamp(l.f,0,1):null,'BEAM');
  }
@@ -8059,7 +8078,7 @@ function createRenderer(c, viewport) {
   const sparkPool=createVisualPool(MOTION.maxSparks,{create:()=>({x:0,y:0,px:0,py:0,pa:0,angle:0,vx:0,vy:0,l:0,life:0,col:''}),clear:()=>{}});
   const renderCuller=createRenderCuller();
   const glowBake=viewport.surface?createArtBake({surface:viewport.surface,maxEntries:3,maxPixels:49152}):null;
-  const wardBreaks=[],contactBursts=[];let cutExitSource=null;
+  const wardBreaks=[],contactBursts=[],rushBlasts=[];let cutExitSource=null;
   let harmonyRun=null,harmonyBuild=null,harmonyAge=36;
   const dimensionImpact = createDimensionImpact();
   const objectJuice=createLiveObjectJuice({dashWake:true});
@@ -8114,7 +8133,7 @@ function createRenderer(c, viewport) {
     trail.length = shards.length = imprints.length = sparks.length = pops.length = beams.length = 0;
     ghosts.clear();
     ghostClock = 0;
-    dashDust.length = 0;wardBreaks.length=0;contactBursts.length=0;cutExitSource=null;
+    dashDust.length = 0;wardBreaks.length=0;contactBursts.length=0;rushBlasts.length=0;cutExitSource=null;
     harmonyRun=null;harmonyBuild=null;harmonyAge=36;
     dashBurstAt = -1; dashBurstSwing = null;
   }
@@ -8123,6 +8142,7 @@ function createRenderer(c, viewport) {
     dimensionImpact.event(type,d,motion && shakeLevel !== 'off');
     if(['cut','armor'].includes(type)&&!d.secondary&&d.entityId!=null)cutExitSource={id:d.entityId,x:d.x,y:d.y};
     if(["cut","armor","hurt","break","waveBlock"].includes(type)){contactBursts.push({x:d.x,y:d.y,type,kind:d.kind,r:d.r,cut:d.cut,hpBefore:d.hpBefore,hp:d.hp,fromShear:d.fromShear,entityId:d.entityId,sword:d.sword,equipment:d.equipment,upgrade:d.upgrade,armorRemoved:d.armorRemoved,secondary:d.secondary,contact:d.contact||null,attack:d.attack||null,life:type==="break"?27:18});if(contactBursts.length>12)contactBursts.shift();}
+    if(type==="rushBlast"){rushBlasts.push({x:d.x,y:d.y,r:d.radius,life:16});if(rushBlasts.length>8)rushBlasts.shift();return;}
     if(type==="waveBlock"){wardBreaks.push({x:d.x,y:d.y,life:24,contact:d.contact,equipment:d.equipment,sword:d.sword});if(wardBreaks.length>4)wardBreaks.shift();return;}
     if (type === "armor" && motion) shake.ask(2.1, d.cut, 0.8);
     if (type === "cut" && !d.small && (d.throughcut || d.strokeKills>=2)) {
@@ -8195,7 +8215,7 @@ function createRenderer(c, viewport) {
     if (sparks.length > MOTION.maxSparks) sparks.splice(0, sparks.length - MOTION.maxSparks);
   }
   function syncScene(run, nearest) {
-    const s = run.state, b = run.world.player, k = sceneFor(s, nearest, b.velocity.y > 0, s.line - b.position.y);
+    const s = run.state, b = run.world.player, k = guideSceneFor(s, nearest, b.velocity.y > 0, s.line - b.position.y);
     if (k !== scene) {
       scene = k;
       sceneTicks = 0;
@@ -8212,13 +8232,14 @@ function createRenderer(c, viewport) {
     if(harmonyRun!==run||harmonyBuild!==recipeId){harmonyRun=run;harmonyBuild=recipeId;harmonyAge=0;}
     else if(s.phase==='playing'&&!s.opening&&!s.tutorialActive)harmonyAge=Math.min(36,harmonyAge+1);
     dimensionImpact.tick(motion && shakeLevel !== 'off');
-    syncScene(run, s.story ? run.nearest() : null);
+    syncScene(run, s.guide ? run.nearest() : null);
     if (scene) sceneTicks++;
     frameRun(camera, run, motion);
     anim = animationState(s);
     const dt = 1;
     for(let i=contactBursts.length-1;i>=0;i--)if(--contactBursts[i].life<=0)contactBursts.splice(i,1);
     for(let i=wardBreaks.length-1;i>=0;i--)if(--wardBreaks[i].life<=0)wardBreaks.splice(i,1);
+    for(let i=rushBlasts.length-1;i>=0;i--)if(--rushBlasts[i].life<=0)rushBlasts.splice(i,1);
     frameDt = dt;
     // Particle age belongs to simulation ticks, not the number of draws. A
     // 144 Hz display must not make the same burst expire 2.4 times faster.
@@ -8429,7 +8450,7 @@ function createRenderer(c, viewport) {
       if(blip.cold){c2.strokeStyle='#bce6ec';c2.lineWidth=1.2;c2.beginPath();if(blip.cold==='freeze'){c2.rect(blip.x-blip.r-2,blip.y-blip.r-2,blip.r*2+4,blip.r*2+4);c2.moveTo(blip.x-1,blip.y-2);c2.lineTo(blip.x-1,blip.y+2);c2.moveTo(blip.x+1,blip.y-2);c2.lineTo(blip.x+1,blip.y+2);}else{c2.moveTo(blip.x-blip.r-3,blip.y-3);c2.lineTo(blip.x-blip.r-5,blip.y);c2.lineTo(blip.x-blip.r-3,blip.y+3);}c2.stroke();}
       if(level>=3&&blip.mode==='tell'){c2.strokeStyle='#ffb491';c2.setLineDash([2,2]);c2.beginPath();c2.arc(blip.x,blip.y,blip.r+4,0,TAU);c2.stroke();c2.setLineDash([]);}
     }
-    if(level>=2){for(const h of (combat.hazards||[]).slice(0,24)){if(h.spent||!Number.isFinite(h.x)||!Number.isFinite(h.y))continue;const q=radar.project(h,3);if(q.outside)continue;c2.strokeStyle='#ffb080';c2.lineWidth=1.3;c2.beginPath();if(h.kind==='ring'||h.kind==='zone'||h.kind==='shock')c2.arc(q.x,q.y,4,0,TAU);else{c2.moveTo(q.x,q.y-4);c2.lineTo(q.x+4,q.y+3);c2.lineTo(q.x-4,q.y+3);c2.closePath();}c2.stroke();}}
+    if(level>=2){for(const h of (combat.hazards||[]).slice(0,24)){if(h.spent||h.cosmetic||!Number.isFinite(h.x)||!Number.isFinite(h.y))continue;const q=radar.project(h,3);if(q.outside)continue;c2.strokeStyle='#ffb080';c2.lineWidth=1.3;c2.beginPath();if(h.kind==='ring'||h.kind==='zone'||h.kind==='shock')c2.arc(q.x,q.y,4,0,TAU);else{c2.moveTo(q.x,q.y-4);c2.lineTo(q.x+4,q.y+3);c2.lineTo(q.x-4,q.y+3);c2.closePath();}c2.stroke();}}
     if (radar.portal) {
       const q2 = radar.portal;
       c2.save();
@@ -8468,140 +8489,6 @@ function createRenderer(c, viewport) {
       c2.fill();
     }
     c2.restore();
-  }
-  function storyEmotionMotif(c,width,height,emotion,time,motion,intensity=.8){
-    if(!emotion)return;
-    const clock=motion?time:0,pulse=motion?(.5+.5*Math.sin(clock*.055)):.65,power=Math.max(0,Math.min(1,Number(intensity)||0));
-    if(!power)return;
-    c.save();c.lineCap='round';c.lineJoin='round';
-    if(emotion==='friendship'){
-      const x=width*.22,y=height*.17,gap=Math.min(width*.075,54),s=10+4*pulse;
-      c.globalAlpha=.16+.15*power;c.strokeStyle='#ffd68c';c.lineWidth=2;
-      c.beginPath();c.moveTo(x-gap,y);c.quadraticCurveTo(x,y-height*.035*(.7+pulse),x+gap,y);c.stroke();
-      c.globalAlpha=.32+.28*power;c.fillStyle='#ffe7a7';c.beginPath();c.arc(x+(pulse*2-1)*gap,y-height*.012,s*.24,0,Math.PI*2);c.fill();
-      for(const side of [-1,1]){c.save();c.translate(x+side*gap,y);c.rotate(side*(.12+.1*pulse));c.globalAlpha=.42+.2*power;c.fillStyle='#171323';c.strokeStyle='#ffd68c';c.lineWidth=2.5;c.beginPath();c.moveTo(0,-s);c.lineTo(s*.72,0);c.lineTo(0,s);c.lineTo(-s*.72,0);c.closePath();c.fill();c.stroke();c.fillStyle='#ddff89';c.globalAlpha=.72;c.beginPath();c.arc(0,0,2.4,0,Math.PI*2);c.fill();c.restore();}
-    }else if(emotion==='fear'){
-      const x=width*.5,y=height*.17,r=Math.min(width,height)*.14;
-      c.globalAlpha=.12+.13*power;c.strokeStyle='#ff7e6d';c.lineWidth=2;
-      for(let i=0;i<3;i++){const rr=r*(1+i*.24)+pulse*3;c.beginPath();c.arc(x,y,rr,-Math.PI*.18+clock*.002+i*.7,Math.PI*.72+clock*.002+i*.7);c.stroke();}
-      c.globalAlpha=.3+.2*power;c.strokeStyle='#ffb27a';c.beginPath();c.moveTo(x-r*1.25,y);c.lineTo(x-r*.92,y);c.moveTo(x+r*.92,y);c.lineTo(x+r*1.25,y);c.stroke();
-    }else if(emotion==='rage'){
-      const x=width*.5,y=height*.42,flare=.65+.35*pulse;
-      c.globalAlpha=(.12+.16*power)*flare;c.strokeStyle='#ff684f';c.lineWidth=3;
-      for(let i=0;i<7;i++){const a=-Math.PI*.92+i*Math.PI*.3+Math.sin(clock*.03+i)*.025,r0=Math.min(width,height)*.08,r1=r0+20+18*pulse;c.beginPath();c.moveTo(x+Math.cos(a)*r0,y+Math.sin(a)*r0);c.lineTo(x+Math.cos(a)*r1,y+Math.sin(a)*r1);c.stroke();}
-      c.globalAlpha=.34+.2*power;c.fillStyle='#ffb066';c.beginPath();c.arc(x,y,3+3*pulse,0,Math.PI*2);c.fill();
-    }else if(emotion==='ambition'){
-      const base=height*.52,top=height*.09,x=width*.74,step=Math.min(width*.055,42);
-      c.globalAlpha=.16+.16*power;c.strokeStyle='#ffe09a';c.lineWidth=2.5;
-      for(let i=0;i<4;i++){const y=base-i*(base-top)/4,xx=x-i*step;c.beginPath();c.moveTo(xx-step*1.5,y);c.lineTo(xx+step*.6,y);c.lineTo(xx+step*.6,y-(base-top)/4);c.stroke();}
-      c.globalAlpha=.34+.2*power;c.beginPath();c.moveTo(x-3*step,top+20);c.lineTo(x-3*step,top);c.lineTo(x-3*step-10,top+12);c.moveTo(x-3*step,top);c.lineTo(x-3*step+10,top+12);c.stroke();
-    }else if(emotion==='love'){
-      const y=height*.18,gap=Math.min(width*.13,88),x=width*.5;
-      c.globalAlpha=.16+.16*power;c.strokeStyle='#ffe0a0';c.lineWidth=2.5;c.beginPath();c.moveTo(x-gap,y);c.bezierCurveTo(x-gap*.38,y-height*.07,x+gap*.38,y-height*.07,x+gap,y);c.stroke();
-      c.globalAlpha=.28+.22*power;c.fillStyle='#ffe7ad';c.beginPath();c.arc(x+(pulse*2-1)*gap,y-height*.035*(.5+pulse),3+2*pulse,0,Math.PI*2);c.fill();
-      for(const side of [-1,1]){c.globalAlpha=.45+.2*power;c.fillStyle=side<0?'#ffd68c':'#ddff89';c.beginPath();c.arc(x+side*gap,y,5+2*pulse,0,Math.PI*2);c.fill();}
-    }else if(emotion==='resolve'){
-      const y=height*.25,gap=Math.min(width*.12,80),x=width*.5;
-      c.globalAlpha=.18+.14*power;c.strokeStyle='#ffe0a0';c.lineWidth=3;c.beginPath();c.moveTo(x-gap,y);c.lineTo(x-gap*.42,y-height*.055);c.lineTo(x+gap*.42,y-height*.055);c.lineTo(x+gap,y);c.stroke();
-      c.globalAlpha=.34+.2*power;c.fillStyle='#fff0b5';c.beginPath();c.arc(x,y-height*.055,4+3*pulse,0,Math.PI*2);c.fill();
-    }
-    c.restore();
-  }
-  function narrativeBackdrop(n, width, height, time, motion) {
-    if (!n) return;
-    const clock=motion?time:0, sector=n.sector, chapter=n.chapter||'';
-    c.save();
-    if(n.intro){
-      const q=Math.min(1,n.introAge/55);c.fillStyle=`rgba(8,7,20,${.12+q*.34})`;c.fillRect(0,0,width,height);
-    } else {
-      c.fillStyle=sector>=4?'rgba(221,137,83,.16)':sector===3?'rgba(34,99,102,.14)':sector===2?'rgba(123,48,38,.13)':'rgba(16,13,28,.20)';c.fillRect(0,0,width,height);
-      if(sector===1){
-        c.strokeStyle='#a89b9a44';c.lineWidth=2;for(const x of [width*.09,width*.89])for(let y=0;y<height*.48;y+=14){c.beginPath();c.ellipse(x,y,4,7,0,0,Math.PI*2);c.stroke();}
-      } else if(sector===2){
-        for(const [x,y,r] of [[width*.14,height*.27,54],[width*.82,height*.39,36]]){
-          c.save();c.translate(x,y);c.rotate(clock*.008);c.strokeStyle='#ba8b7955';c.lineWidth=7;c.beginPath();c.arc(0,0,r,0,Math.PI*2);c.stroke();for(let j=0;j<8;j++){c.rotate(Math.PI/4);c.beginPath();c.moveTo(r-5,0);c.lineTo(r+13,0);c.stroke();}c.restore();
-        }
-        c.strokeStyle='#ac8b7866';c.lineWidth=4;c.beginPath();c.moveTo(width*.6,0);c.lineTo(width*.6,height*.2);c.lineTo(width*.77,height*.2);c.lineTo(width*.77,height*.31);c.stroke();
-        // Silhouettes in the distant machine are forge markings, not live targets.
-        c.save();c.translate(width*.45,height*.25);c.globalAlpha=.3;c.strokeStyle='#f0a37d';c.fillStyle='#6f3a39';c.lineWidth=3;c.strokeRect(-52,-35,104,70);c.beginPath();c.moveTo(-36,-12);c.lineTo(-16,-12);c.lineTo(-26,10);c.closePath();c.fill();c.stroke();c.beginPath();c.moveTo(24,-16);c.lineTo(39,0);c.lineTo(24,16);c.lineTo(9,0);c.closePath();c.stroke();c.restore();
-      } else if(sector===3){
-        for(let i=0;i<3;i++){const on=i<n.conduits;c.strokeStyle=on?'#a4f6c770':'#64615f55';c.lineWidth=3;c.beginPath();c.moveTo(i*width*.3,0);c.lineTo(i*width*.3,height*.34);c.lineTo(i*width*.3+width*.12,height*.46);c.stroke();if(!on&&motion&&n.sparkAge>0){c.fillStyle='#ffe79a';c.globalAlpha=.3+.4*Math.abs(Math.sin(clock*.14+i));c.fillRect(i*width*.3+width*.12,height*.46,4,4);c.globalAlpha=1;}}
-      } else if(sector>=4){for(let i=0;i<22;i++){c.fillStyle=i%4?'#ffe8b466':'#fff6d3aa';c.fillRect((i*179+23)%width,(i*79+31)%(height*.55),i%4?2:3,i%4?2:3);}}
-      // Each wave has a visual noun. These motifs are the sentence behind the
-      // chapter chip: an eye turns, the seam climbs, and the final seal burns.
-      if(chapter==='eye'){
-        const ex=width*.5,ey=height*.17,open=.72+.12*Math.sin(clock*.06);
-        c.save();c.globalAlpha=.78;c.strokeStyle='#ffb27a99';c.lineWidth=4;c.beginPath();c.ellipse(ex,ey,width*.12,height*.038*open,0,0,Math.PI*2);c.stroke();
-        c.fillStyle='#ff6f6288';c.beginPath();c.arc(ex,ey,height*.018,0,Math.PI*2);c.fill();c.fillStyle='#ffe8b2';c.beginPath();c.arc(ex,ey,height*.007,0,Math.PI*2);c.fill();
-        c.globalAlpha=.28;c.strokeStyle='#ff8368';c.lineWidth=2;for(let i=0;i<8;i++){const a=i*Math.PI/4+clock*.012;c.beginPath();c.moveTo(ex+Math.cos(a)*width*.14,ey+Math.sin(a)*height*.05);c.lineTo(ex+Math.cos(a)*width*.19,ey+Math.sin(a)*height*.08);c.stroke();}c.restore();
-      } else if(chapter==='seam'||chapter==='last-seal'){
-        const sx=width*.5,reach=chapter==='last-seal' ? .38 : .28;c.save();c.globalAlpha=.5;c.strokeStyle='#e8b36f';c.lineWidth=3;c.beginPath();c.moveTo(sx,height*.02);c.lineTo(sx-width*.025,height*reach*.45);c.lineTo(sx+width*.018,height*reach);c.stroke();c.globalAlpha=.22;c.strokeStyle='#ddff89';c.lineWidth=10;c.beginPath();c.moveTo(sx,height*.04);c.lineTo(sx-width*.02,height*reach*.46);c.lineTo(sx+width*.015,height*reach);c.stroke();c.restore();
-      } else if(chapter==='landlord'){
-        c.save();c.globalAlpha=.34;c.fillStyle='#ff996688';c.beginPath();c.arc(width*.5,height*.24,Math.min(width,height)*.16,0,Math.PI*2);c.fill();c.restore();
-      }
-      // The chapter noun sets the place; the emotional motif sets the reason
-      // to keep cutting. It is animation, not an explanatory overlay.
-      storyEmotionMotif(c,width,height,n.emotion,clock,motion,.9);
-    }
-    // A small independent story silhouette never intercepts input or pauses play.
-    if(n.reaction){
-      const reaction=n.reaction,age=reaction?.age||0,split=reaction?.kind==='split',alarm=reaction?.kind==='alarm';
-      const scale=Math.min(width,height)*.00075, x=width*.78,y=height*.15+(n.intro?(motion?Math.min(1,n.introAge/40):1)*height*.07:0);
-      c.translate(x,y);c.scale(scale,scale);if(alarm){c.globalAlpha=.25;c.fillStyle='#fb3650';c.beginPath();c.arc(0,0,105,0,Math.PI*2);c.fill();c.globalAlpha=1;}
-      for(const side of [-1,1]){c.save();if(split)c.translate(side<0?0:(motion?age*2:40),side<0?(motion?age*1.2:24):(motion?-age:0));c.fillStyle='#171323';c.strokeStyle=alarm?'#ff5368':'#e1b85e';c.lineWidth=7;c.beginPath();c.moveTo(side*4,54);c.lineTo(side*90,54);c.lineTo(side*92,-55);c.lineTo(side*62,-30);c.lineTo(side*35,-91);c.lineTo(side*4,-46);c.closePath();c.fill();c.stroke();c.fillStyle=alarm?'#ffdbcb':'#dff58c';c.fillRect(side<0?-69:24,-7,45,9);c.restore();}
-    }
-    c.restore();
-  }
-  function narrativeWorld(n, scale, time, motion){
-    if(!n)return;c.save();c.lineWidth=3/scale;
-    if(n.intro&&n.fracture){
-      const q=n.fracture,age=motion?n.introAge:90,pulse=motion?.5+.5*Math.sin(age*.045):.65,gap=48+Math.min(1,age/65)*23;
-      c.translate(q.x,q.y);
-      // A physical-looking bulkhead, with the real sensor in its open center.
-      for(const side of [-1,1]){c.save();c.scale(side,1);c.fillStyle='#111f2b';c.strokeStyle='#647779';c.lineWidth=3;c.beginPath();c.moveTo(gap,-32);c.lineTo(760,-32);c.lineTo(760,33);c.lineTo(gap,33);c.lineTo(gap-18,0);c.closePath();c.fill();c.stroke();c.strokeStyle='#e8bc73';c.lineWidth=5;c.beginPath();c.moveTo(gap+16,-25);c.lineTo(gap,0);c.lineTo(gap+16,25);c.stroke();for(let x=gap+55;x<730;x+=100){c.fillStyle='#33444d';c.fillRect(x,-20,44,5);c.fillStyle='#d9ba6c';c.fillRect(x,15,20,4);}c.restore();}
-      // Watcher is visibly bracing against the same gate the player will cut.
-      watcherMask(c,-127,-72,.38,{glow:.35,eye:1});
-      c.strokeStyle='#efc67d';c.lineWidth=2.5;c.beginPath();c.moveTo(-108,-53);c.quadraticCurveTo(-88,-72,-gap,-17);c.moveTo(-144,-54);c.quadraticCurveTo(-179,-19,-gap,17);c.stroke();
-      c.fillStyle='#dfff8530';c.beginPath();c.ellipse(0,0,30+4*pulse,47,0,0,Math.PI*2);c.fill();c.strokeStyle='#e2ff91';c.lineWidth=3;c.beginPath();c.ellipse(0,0,31+4*pulse,46,0,0,Math.PI*2);c.stroke();
-      c.fillStyle='#f1ffc8';c.beginPath();c.moveTo(0,-22);c.lineTo(16,4);c.lineTo(5,0);c.lineTo(5,24);c.lineTo(-5,24);c.lineTo(-5,0);c.lineTo(-16,4);c.closePath();c.fill();
-      // Directional marks connect the launch pad to the actual target.
-      c.strokeStyle='#dfff85';c.lineWidth=3;for(let i=0;i<3;i++){const y=65+i*30;c.globalAlpha=.3+.25*pulse;c.beginPath();c.moveTo(-10,y+8);c.lineTo(0,y);c.lineTo(10,y+8);c.stroke();}
-      c.restore();return;
-    }
-    if(n.openingBurst){const b=n.openingBurst,u=Math.min(1,b.age/70);c.save();c.translate(b.x,b.y);c.globalAlpha=1-u;c.strokeStyle='#efcf87';c.lineWidth=5;for(const side of [-1,1]){c.save();c.translate(side*(70+u*160),-u*35);c.rotate(side*u*.35);c.strokeRect(-55,-26,110,52);c.restore();}c.strokeStyle='#e6ff9e';c.lineWidth=2;c.beginPath();c.ellipse(0,0,42+u*95,24+u*45,0,0,Math.PI*2);c.stroke();c.restore();}
-
-    const seal=n.seal;if(!seal){c.restore();return;}
-    c.strokeStyle=seal.ready?'#e6ff70':'#8b617b';c.lineWidth=seal.ready?9:6;c.beginPath();c.moveTo(seal.x-seal.w/2,seal.y);c.lineTo(seal.x+seal.w/2,seal.y);c.stroke();
-    c.strokeStyle=seal.ready?'#fff7b0':'#403245';c.lineWidth=2;c.beginPath();c.moveTo(seal.x-seal.w/2,seal.y-6);c.lineTo(seal.x+seal.w/2,seal.y-6);c.stroke();
-    for(const lock of n.locks){
-      c.save();c.translate(lock.x,lock.y);c.strokeStyle=lock.broken?'#544751':'#c0a6a8';c.lineWidth=3;c.beginPath();c.moveTo(0,-34);c.lineTo(0,seal.y-lock.y);c.stroke();
-      if(lock.broken){c.strokeStyle='#e7e7a0';c.beginPath();c.moveTo(-24,-8);c.lineTo(-8,4);c.moveTo(8,-4);c.lineTo(25,8);c.stroke();}
-      else{c.strokeStyle='#dfb97755';c.lineWidth=2;c.beginPath();c.arc(0,0,43,0,Math.PI*2);c.stroke();for(let i=0;i<3;i++){c.fillStyle='#edd493';c.fillRect(-16+i*13,-52,7,5);}c.rotate(Math.PI/4);c.fillStyle='#352634';c.strokeStyle='#e1b878';c.lineWidth=4;c.fillRect(-25,-25,50,50);c.strokeRect(-25,-25,50,50);c.fillStyle='#f7df94';c.fillRect(-5,-5,10,10);}
-      c.restore();
-    }
-    // A lock is a real piece of the Watcher's machinery. When the blade breaks
-    // one, the world answers at that exact coordinate: a ring opens, the
-    // conduit snaps, and three fragments leave the anchor. This is intentionally
-    // local and short — the sector crossing remains the large story sentence.
-    for(const burst of n.lockBursts||[]){
-      const age=Math.max(0,burst.age||0),u=motion?Math.min(1,age/30):.18,fade=Math.max(0,1-age/30),spin=(burst.index||0)*.7+u*1.8;
-      c.save();c.translate(burst.x,burst.y);c.rotate(spin);c.globalAlpha=.8*fade;
-      c.strokeStyle='#e6ff78';c.lineWidth=4/scale;c.beginPath();c.arc(0,0,(38+u*35)/scale,0,Math.PI*2);c.stroke();
-      c.globalAlpha=.9*fade;c.strokeStyle='#ffd487';c.lineWidth=2/scale;
-      for(let i=0;i<3;i++){
-        const a=i*Math.PI*2/3-.4,r=(22+u*54)/scale,x=Math.cos(a)*r,y=Math.sin(a)*r;
-        c.beginPath();c.moveTo(Math.cos(a)*12/scale,Math.sin(a)*12/scale);c.lineTo(x,y);c.stroke();
-        c.fillStyle=i===1?'#fff2be':'#ddff89';c.fillRect(x-3/scale,y-3/scale,6/scale,6/scale);
-      }
-      c.restore();
-    }
-    c.restore();
-  }
-  function narrativeTrack(n,width,height){
-    if(!n||n.intro)return;const x=width-18,y=Math.max(95,height*.26),h=Math.min(180,height*.34);
-    c.save();c.strokeStyle='#80786f';c.lineWidth=2;c.beginPath();c.moveTo(x,y);c.lineTo(x,y+h);c.stroke();
-    for(let i=0;i<3;i++){c.fillStyle=n.locks[i]?.broken?'#e6ff78':'#64515d';c.beginPath();c.arc(x,y+h-(i+1)*h/4,4,0,Math.PI*2);c.fill();}
-    c.fillStyle=n.seal?.ready?'#efff8f':'#9b7a81';c.beginPath();c.moveTo(x,y-7);c.lineTo(x+5,y);c.lineTo(x,y+7);c.lineTo(x-5,y);c.closePath();c.fill();c.restore();
   }
   // ── CHUNK 6A: THE SPINE ────────────────────────────────────────────────
   // The FRACTURE meter, diegetic: a stress crack down the lower third of the
@@ -8682,31 +8569,6 @@ function createRenderer(c, viewport) {
     c.restore();
   }
 
-  // ── CHUNK 6A: THE CUTSCENE OVERLAY ─────────────────────────────────────
-  // Screen-space painters for the story sequences, keyed off `s.cutscene`
-  // (mirrored by the shell every tick). Draws after everything, before the
-  // DOM HUD — the chips live in the DOM, not here.
-  function watcherMask(c, x, y, scale, { glow = 0, split = 0, eye = 1 } = {}) {
-    c.save();
-    c.translate(x, y); c.scale(scale, scale);
-    if (glow > 0) { c.shadowColor = '#ffd98c'; c.shadowBlur = 26 * glow; }
-    for (const side of [-1, 1]) {
-      c.save();
-      if (split > 0) c.translate(side * split * 46, -split * 10);
-      c.fillStyle = '#141020'; c.strokeStyle = '#e8b45e'; c.lineWidth = 7;
-      c.beginPath();
-      c.moveTo(side * 4, 54); c.lineTo(side * 90, 54); c.lineTo(side * 92, -55);
-      c.lineTo(side * 62, -30); c.lineTo(side * 35, -91); c.lineTo(side * 4, -46);
-      c.closePath(); c.fill(); c.stroke();
-      // Eye slit, ignited to ember.
-      c.shadowBlur = 0;
-      c.globalAlpha = 0.3 + 0.7 * eye;
-      c.fillStyle = '#dff58c';
-      c.fillRect(side < 0 ? -69 : 24, -7, 45, 9);
-      c.restore();
-    }
-    c.restore();
-  }
   function jaggedLine(c, pts) {
     c.beginPath();
     pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y));
@@ -8722,100 +8584,6 @@ function createRenderer(c, viewport) {
     }
     return pts;
   }
-  function drawStoryMechanicDiagram(c,w,h,moment,progress,clock,motion,sx,sy,v,shot='tension'){
-    // This is the actual first-wave Pulse lesson, enlarged into a cinematic
-    // frame. The ring is whole—there is no invented gap—and the player glyph
-    // visibly crosses clear of its expanding rim while the Watcher holds the
-    // thread. Each shot changes the composition, not just a caption.
-    const phase=motion?Math.max(0,Math.min(1,progress)):0.72,
-      pulse=motion?(.5+.5*Math.sin(clock*.08)):.7,
-      cx=w*.56,cy=h*.43,scale=Math.min(w,h)/700,
-      acid='#ddff89',warm='#ffd487',hot='#ff8068',ink='#121020',pass=shot==='pass',returnShot=shot==='return';
-    const watcherX=w*.17,watcherY=h*.2,ring=22*scale+phase*112*scale;
-    const escape=Math.max(0,Math.min(1,(phase-.12)/.7)),path=-.54,
-      passU=pass?Math.max(0,Math.min(1,(phase-.5)/.32)):0,
-      cutterX=pass
-        ? cx+(-150+passU*300)*scale
-        : cx+Math.cos(path)*(ring+24*scale+escape*42*scale),
-      cutterY=pass
-        ? cy+Math.sin(path)*(ring+24*scale)-Math.sin(passU*Math.PI)*44*scale
-        : cy+Math.sin(path)*(ring+24*scale+escape*42*scale);
-    const sourceX=Number.isFinite(moment?.targetX)&&Number.isFinite(v?.scale)
-      ? (moment.targetX-v.x)*v.scale : NaN,
-      sourceY=Number.isFinite(moment?.targetY)&&Number.isFinite(v?.scale)
-      ? (moment.targetY-v.y)*v.scale : NaN;
-    const valid=(x,y)=>Number.isFinite(x)&&Number.isFinite(y)&&x>24&&x<w-24&&y>36&&y<h-30;
-    const thread=(x0,y0,x1,y1,alpha,width=2)=>{
-      const tremor=motion?(Math.sin(clock*.22)*3+Math.sin(clock*.071)*2)*scale:0;
-      c.save();c.globalAlpha=alpha;c.strokeStyle=warm;c.lineWidth=width*scale;c.beginPath();
-      c.moveTo(x0,y0);c.quadraticCurveTo((x0+x1)*.5+tremor,Math.min(y0,y1)-26*scale+tremor,x1,y1);c.stroke();
-      if(motion&&phase>.32){c.globalAlpha=alpha*.28;c.strokeStyle=hot;c.lineWidth=Math.max(1,width*.45)*scale;c.beginPath();c.moveTo(x0,y0+3*scale);c.quadraticCurveTo((x0+x1)*.5-tremor,Math.min(y0,y1)-20*scale-tremor,x1,y1+2*scale);c.stroke();}
-      c.restore();
-    };
-    const ringLine=(r,alpha,width,color=hot)=>{c.save();c.globalAlpha=alpha;c.strokeStyle=color;c.lineWidth=width*scale;c.beginPath();c.arc(cx,cy,r,0,Math.PI*2);c.stroke();c.restore();};
-    c.save();c.lineCap='round';c.lineJoin='round';
-    if(valid(sourceX,sourceY)){
-      c.globalAlpha=.2;c.strokeStyle=warm;c.lineWidth=1.5;c.setLineDash([5,10]);c.beginPath();c.moveTo(sourceX,sourceY);c.lineTo(cx,cy);c.stroke();c.setLineDash([]);
-      c.globalAlpha=.55;c.strokeStyle=warm;c.lineWidth=2;c.beginPath();c.arc(sourceX,sourceY,18*scale+4*pulse*scale,0,Math.PI*2);c.stroke();
-    }
-    const threadEndX=phase>.8?watcherX+42*scale:cutterX,
-      threadEndY=phase>.8?watcherY+8*scale:cutterY;
-    thread(watcherX+40*scale,watcherY+5*scale,threadEndX,threadEndY,.38+.3*(1-phase),2.2);
-    // The Watcher does not merely point at the danger: two angular braces
-    // visibly take the wave's force. Their light bends toward the ring, then
-    // thins when the Cutter gets through.
-    if(phase>.18&&!returnShot){
-      const braceAlpha=Math.min(.7,(phase-.18)*1.25)*(pass?.9:1);
-      c.save();c.globalAlpha=braceAlpha;c.strokeStyle=warm;c.lineWidth=4*scale;c.lineCap='round';
-      for(const side of [-1,1]){
-        const x0=watcherX+48*scale,y0=watcherY+side*24*scale,
-          x1=cx-ring*.62,y1=cy+side*ring*.62;
-        c.globalAlpha=braceAlpha;c.beginPath();c.moveTo(x0,y0);c.quadraticCurveTo((x0+x1)*.5-12*scale,Math.min(y0,y1)-side*18*scale,x1,y1);c.stroke();
-        c.globalAlpha=braceAlpha*.72;c.beginPath();c.moveTo(x1,y1);c.lineTo(x1+side*13*scale,y1-side*9*scale);c.stroke();
-      }
-      c.restore();
-    }
-    // After the pass, the Watcher is still holding the far end; the connection
-    // is no longer a comfortable line between friends.
-    if(phase>.62&&motion){
-      const fx=cx+Math.cos(path)*(ring-4*scale),fy=cy+Math.sin(path)*(ring-4*scale);
-      c.globalAlpha=.65*(phase-.62)/.38;c.strokeStyle=hot;c.lineWidth=2*scale;
-      for(let i=0;i<4;i++){const a=-.8+i*.52;c.beginPath();c.moveTo(fx,fy);c.lineTo(fx+Math.cos(a)*18*scale,fy+Math.sin(a)*18*scale);c.stroke();}
-    }
-    // Trailing rings are afterimages of the same expanding annulus, not extra
-    // hazards. The leading solid rim is the actionable thing to read.
-    ringLine(Math.max(5,ring-46*scale),.1+.12*pulse,2,warm);
-    ringLine(Math.max(5,ring-22*scale),.18+.16*pulse,3,warm);
-    c.save();c.shadowColor=hot;c.shadowBlur=18*scale;
-    ringLine(ring,.52+.25*pulse,5,hot);c.restore();
-    if(motion){
-      c.save();c.lineCap='round';
-      for(let i=0;i<12;i++){
-        const a=i*Math.PI*2/12+clock*.018,inner=ring+5*scale+((i*17)%9)*scale,outer=inner+(5+10*phase)*scale;
-        c.globalAlpha=.16+.22*pulse;c.strokeStyle=i%3===0?acid:warm;c.lineWidth=(1.2+(i%2))*scale;c.beginPath();c.moveTo(cx+Math.cos(a)*inner,cy+Math.sin(a)*inner);c.lineTo(cx+Math.cos(a)*outer,cy+Math.sin(a)*outer);c.stroke();
-      }
-      c.restore();
-    }
-    c.globalAlpha=.1+.06*pulse;c.fillStyle=acid;c.beginPath();c.arc(cx,cy,Math.max(3,ring-10*scale),0,Math.PI*2);c.fill();
-    foe(c,'pulse',cx,cy,24*scale,0,{time:clock,mode:'idle'});
-    // The Cutter exits the rim's path. This is the same moving-body action the
-    // live Pulse collision allows; the visual never claims the ring has a gap.
-    if(pass&&motion){
-      const slashT=Math.max(0,Math.min(1,passU)),slashFade=Math.sin(Math.PI*slashT);
-      c.save();c.translate(cutterX,cutterY);c.rotate(path+.2);c.globalAlpha=.45+.45*slashFade;c.strokeStyle=acid;c.shadowColor=acid;c.shadowBlur=16*scale;c.lineWidth=4*scale;c.beginPath();c.moveTo(-42*scale,28*scale);c.lineTo(34*scale,-34*scale);c.stroke();c.shadowBlur=0;c.globalAlpha=.55*slashFade;c.lineWidth=2*scale;c.beginPath();c.moveTo(-34*scale,37*scale);c.lineTo(43*scale,-25*scale);c.stroke();c.restore();
-    }
-    cube(c,cutterX,cutterY,pass?20*scale:17*scale,path+.2,0,1);
-    c.save();c.globalAlpha=.72+.2*pulse;c.strokeStyle=acid;c.lineWidth=3*scale;c.beginPath();
-    c.moveTo(cutterX,cutterY);c.lineTo(cutterX+Math.cos(path)*30*scale,cutterY+Math.sin(path)*30*scale);c.lineTo(cutterX+Math.cos(path)*22*scale-7*scale,cutterY+Math.sin(path)*22*scale-5*scale);c.moveTo(cutterX+Math.cos(path)*30*scale,cutterY+Math.sin(path)*30*scale);c.lineTo(cutterX+Math.cos(path)*22*scale-7*scale,cutterY+Math.sin(path)*22*scale+5*scale);c.stroke();c.restore();
-    const watcherGlow=returnShot?.28:phase>.72?.95:.72;
-    watcherMask(c,watcherX,watcherY,Math.min(w,h)*.00092+.25,{glow:watcherGlow,eye:returnShot?.22:.42+.45*(1-phase),split:returnShot?.18:phase>.82?(phase-.82)*.25:0});
-    c.restore();
-  }
-  // ── CHUNK 1: "WHAT HIT ME?" ──────────────────────────────────────────────
-  // One red line from the cube to the body that hit it, an impact ring on
-  // that body, and a rim flash at the screen edge. The rim is capped at 25%
-  // opacity by design (src/damage-feedback.js): a flash bright enough to hide
-  // the attacker is the bug, not the feature.
   function drawHitFeedback(c, w, h, s, v, p, motion, time, fb) {
     if (!fb || !fb.live) return;
     const dir = fb.direction;
@@ -8906,319 +8674,6 @@ function createRenderer(c, viewport) {
     c.restore();
   }
 
-  function drawCutsceneOverlay(c, w, h, s, v, p, time, motion) {
-    const cs = s.cutscene;
-    if (!cs) return;
-    const flash = motion ? 1 : 0.35;
-    const sx = (p.x - v.x) * v.scale, sy = (p.y - v.y) * v.scale;
-    const t = cs.t, easeOut = (u) => 1 - Math.pow(1 - u, 3), easeIn = (u) => u * u * u;
-    const wash = (a) => { c.fillStyle = `rgba(4,4,10,${a})`; c.fillRect(0, 0, w, h); };
-    c.save();
-    if(cs.beatId?.startsWith('sector-'))storyEmotionMotif(c,w,h,s.narrative?.emotion,cs.elapsedTotal??time,motion,.82);
-    if(cs.beatId?.startsWith('mid-wave-'))storyEmotionMotif(c,w,h,s.storyMoment?.emotion,cs.elapsedTotal??time,motion,.32);
-    // Letterbox bars for the locked beats.
-    if (cs.lockInput) {
-      const barT = Math.min(1, Math.min(t, 1 - t) / 0.16);
-      const barH = 30 * easeOut(barT);
-      c.fillStyle = '#050510';
-      c.fillRect(0, 0, w, barH); c.fillRect(0, h - barH, w, barH);
-    }
-    switch (cs.beatId) {
-      case 'cold-dark': {
-        wash(0.96 - 0.06 * t);
-        // The hook is deliberately brief: sparks and eyes arrive immediately.
-        for (let i = 0; i < 26; i++) {
-          const x = hash(11, i, 3) % 1000 / 1000 * w;
-          const y = ((hash(11, i, 5) % 1000) / 1000 * h * 0.35 + t * h * 0.42);
-          const size = 1 + (hash(11, i, 7) % 1000) / 1000 * 2.2;
-          c.globalAlpha = (0.35 + 0.65 * ((hash(11, i, 9) % 1000) / 1000)) * (1 - t * 0.4);
-          c.fillStyle = hash(11, i, 13) % 3 ? '#ffb066' : '#ffe9b0';
-          c.fillRect(x, y, size, size * 1.8);
-        }
-        // Two eyes open, very slowly.
-        const eye = Math.max(0, Math.min(1, (t - 0.22) / 0.55));
-        if (eye > 0) for (const side of [-1, 1]) {
-          c.save();
-          c.translate(w / 2 + side * 52, h * 0.4); c.rotate(side * 0.16); c.scale(1, Math.max(0.06, eye));
-          const g = c.createRadialGradient(0, 0, 0, 0, 0, 40);
-          g.addColorStop(0, `rgba(255,233,176,${0.9 * eye})`);
-          g.addColorStop(0.45, `rgba(255,176,102,${0.55 * eye})`);
-          g.addColorStop(1, 'rgba(255,176,102,0)');
-          c.fillStyle = g; c.beginPath(); c.ellipse(0, 0, 40, 13, 0, 0, Math.PI * 2); c.fill();
-          c.fillStyle = `rgba(20,16,8,${0.9 * eye})`; c.beginPath(); c.ellipse(0, 0, 3.2, 10.5, 0, 0, Math.PI * 2); c.fill();
-          c.restore();
-        }
-        c.globalAlpha = 1;
-        break;
-      }
-      case 'cold-watcher': {
-        wash(0.88);
-        // The seam breathes below it.
-        const breathe = 0.5 + 0.5 * Math.sin(t * Math.PI * 2);
-        const sy = h * 0.66, pts = fracturePath(335, w * 0.08, sy, w * 0.92, sy, 13);
-        const glow = c.createRadialGradient(w / 2, sy, 0, w / 2, sy, h * 0.34);
-        glow.addColorStop(0, `rgba(221,255,137,${0.16 + 0.3 * breathe})`); glow.addColorStop(1, 'rgba(221,255,137,0)');
-        c.fillStyle = glow; c.fillRect(0, sy - h * 0.34, w, h * 0.68);
-        c.globalAlpha = 0.85; c.strokeStyle = '#0a0812'; c.lineWidth = 13; c.lineJoin = 'miter'; jaggedLine(c, pts); c.stroke();
-        c.globalAlpha = 0.45 + 0.5 * breathe; c.strokeStyle = '#ddff89'; c.lineWidth = 3; jaggedLine(c, pts); c.stroke();
-        c.globalAlpha = 1;
-        watcherMask(c, w / 2, h * 0.3, Math.min(w, h) * 0.0016 + 0.55, { glow: easeIn(t), eye: 0.2 + 0.8 * t });
-        break;
-      }
-      case 'cold-tear': {
-        const f = t < 0.18 ? t / 0.18 : t > 0.62 ? Math.max(0, 1 - (t - 0.62) / 0.38) : 1;
-        wash(0.5);
-        c.fillStyle = `rgba(255,244,214,${f * flash})`; c.fillRect(0, 0, w, h);
-        // The crack races the seam line.
-        const origin = [w / 2, h * 0.66], cornerTargets = [[0, 0], [w, 0], [0, h], [w, h], [w / 2, 0]];
-        const reach = easeOut(Math.min(1, t / 0.55));
-        cornerTargets.forEach(([tx, ty], i) => {
-          const pts = fracturePath(411 + i, origin[0], origin[1], origin[0] + (tx - origin[0]) * reach, origin[1] + (ty - origin[1]) * reach, 8);
-          c.globalAlpha = f; c.strokeStyle = '#ffb256'; c.lineWidth = 9; jaggedLine(c, pts); c.stroke();
-          c.globalAlpha = f; c.strokeStyle = '#fffdf2'; c.lineWidth = 2.5; jaggedLine(c, pts); c.stroke();
-        });
-        // Shards drift down like snow.
-        for (let i = 0; i < 22; i++) {
-          const x = hash(517, i, 3) % 1000 / 1000 * w;
-          const y = h * 0.66 + t * (h * 0.3 + (hash(517, i, 5) % 200));
-          const rot = (hash(517, i, 7) % 628) / 100;
-          c.save(); c.globalAlpha = Math.max(0, 1 - t * 0.85); c.translate(x, y); c.rotate(rot);
-          c.fillStyle = hash(517, i, 11) % 4 ? '#2a2136' : '#ddff89';
-          c.fillRect(-3, -5, 6, 10); c.restore();
-        }
-        c.globalAlpha = 1;
-        break;
-      }
-      case 'cold-fangs': {
-        wash(0.62 - 0.3 * t);
-        const e = easeOut(t);
-        const fang = (x, size, lean) => {
-          c.save(); c.translate(x, -90 + (h * 0.58 + 90) * e); c.rotate(lean);
-          c.fillStyle = '#e8e4d8'; c.strokeStyle = '#0b0a10'; c.lineWidth = 3.4;
-          c.beginPath(); c.moveTo(0, size * 0.62); c.lineTo(-size * 0.34, -size * 0.5); c.lineTo(-size * 0.1, -size * 0.18); c.lineTo(size * 0.34, -size * 0.5); c.closePath(); c.fill(); c.stroke();
-          c.fillStyle = '#0b0a10'; c.beginPath(); c.arc(-size * 0.11, 0, size * 0.055, 0, Math.PI * 2); c.arc(size * 0.11, 0, size * 0.055, 0, Math.PI * 2); c.fill();
-          c.restore();
-        };
-        fang(w / 2 - 160, 56, -0.12); fang(w / 2, 70, 0); fang(w / 2 + 160, 56, 0.12);
-        // The pad slams forward.
-        if (t > 0.55) {
-          const k = (t - 0.55) / 0.45;
-          c.globalAlpha = Math.min(0.85, k * 0.85 * flash); c.fillStyle = '#fff8ea';
-          c.fillRect(0, h * 0.86, w, h * 0.14);
-          c.globalAlpha = Math.max(0, 0.8 * (1 - k));
-          c.strokeStyle = '#ffe9b0'; c.lineWidth = 3;
-          for (let i = 0; i < 10; i++) {
-            const x = (hash(631, i, 3) % 1000) / 1000 * w, r = 6 + k * 46;
-            c.beginPath(); c.arc(x, h * 0.88, r, Math.PI, 0); c.stroke();
-          }
-        }
-        c.globalAlpha = 1;
-        break;
-      }
-      case 'cold-settle': {
-        wash(0.55 * (1 - t));
-        watcherMask(c, w / 2, h * 0.3, Math.min(w, h) * 0.0016 + 0.55, { glow: Math.max(0, 1 - t * 1.6), eye: Math.max(0, 1 - t) });
-        break;
-      }
-      case 'mid-wave-signal': {
-        // A mid-wave beat is a signal, not a pause: the Watcher points at the
-        // real Pulse while the live formation remains visible underneath.
-        wash(.18);
-        drawStoryMechanicDiagram(c,w,h,s.storyMoment,t*.25,cs.elapsedTotal??time,motion,sx,sy,v,'signal');
-        break;
-      }
-      case 'mid-wave-tension': {
-        // The Pulse rim grows into the friendship line. The player is held for
-        // only this readable tell; no gameplay result is invented here.
-        wash(.3);
-        drawStoryMechanicDiagram(c,w,h,s.storyMoment,.12+.38*t,cs.elapsedTotal??time,motion,sx,sy,v,'tension');
-        break;
-      }
-      case 'mid-wave-pass': {
-        // The Watcher takes the impact so the Cutter can clear the rim. This is
-        // the story consequence and the actionable Pulse dodge in one motion.
-        wash(.24);
-        drawStoryMechanicDiagram(c,w,h,s.storyMoment,.5+.32*t,cs.elapsedTotal??time,motion,sx,sy,v,'pass');
-        break;
-      }
-      case 'mid-wave-return': {
-        const fade=Math.max(0,.12*(1-t));
-        if(fade){c.fillStyle=`rgba(8,7,20,${fade})`;c.fillRect(0,0,w,h);}
-        drawStoryMechanicDiagram(c,w,h,s.storyMoment,.82+.18*t,cs.elapsedTotal??time,motion,sx,sy,v,'return');
-        break;
-      }
-      case 'sector-locks': {
-        // The old room is visibly letting go: three anchor locks drop and
-        // flare instead of silently teleporting the player to a new counter.
-        wash(0.24 + 0.18 * (1 - t));
-        const fall = easeIn(t), glow = 0.35 + 0.65 * (1 - t);
-        for (let i = 0; i < 3; i++) {
-          const x = w * (0.28 + i * 0.22), y = h * 0.56 + fall * (h * 0.22 + i * 8);
-          c.save();
-          c.translate(x, y);
-          c.rotate((i - 1) * 0.42 + t * (i % 2 ? 1 : -1));
-          c.globalAlpha = glow;
-          c.fillStyle = '#171323'; c.strokeStyle = '#e1b878'; c.lineWidth = 3;
-          c.beginPath(); c.moveTo(0, -24); c.lineTo(24, 0); c.lineTo(0, 24); c.lineTo(-24, 0); c.closePath(); c.fill(); c.stroke();
-          c.globalAlpha = 0.8 * glow; c.strokeStyle = '#ddff89'; c.lineWidth = 2;
-          c.beginPath(); c.moveTo(-12, -2); c.lineTo(-3, 7); c.lineTo(14, -10); c.stroke();
-          c.restore();
-        }
-        break;
-      }
-      case 'sector-seam': {
-        // The Watcher is not a menu narrator. It is the thing opening the next
-        // room: its eyes wake, then the seam tears behind the player.
-        wash(0.18);
-        const breathe = 0.45 + 0.55 * Math.sin(t * Math.PI);
-        watcherMask(c, w / 2, h * 0.27, Math.min(w, h) * 0.00155 + 0.5, { glow: breathe * flash, eye: 0.25 + 0.75 * t });
-        const seamY = h * 0.66, reach = easeOut(Math.min(1, t * 1.2));
-        const pts = fracturePath(1200 + (s.narrative?.sector || 1), w / 2, seamY, w / 2 + (w * 0.46) * reach, seamY + Math.sin(t * Math.PI) * 18, 11);
-        c.globalAlpha = 0.55 + 0.45 * breathe; c.strokeStyle = '#ddff89'; c.lineWidth = 3; jaggedLine(c, pts); c.stroke();
-        c.globalAlpha = 0.28 * breathe; c.strokeStyle = '#ffb256'; c.lineWidth = 12; jaggedLine(c, pts); c.stroke();
-        c.globalAlpha = 1;
-        break;
-      }
-      case 'sector-rise': {
-        // A vertical lift gives the crossing a destination: the next arena is
-        // being pulled up through the wound, with real fragments moving toward
-        // the new horizon rather than an unexplained screen flash.
-        wash(0.12 * (1 - t));
-        const lift = easeOut(t), horizon = h * (0.78 - 0.42 * lift);
-        c.globalAlpha = 0.55 + 0.45 * lift;
-        c.strokeStyle = '#ddff89'; c.lineWidth = 3;
-        c.beginPath(); c.moveTo(0, horizon); c.lineTo(w, horizon); c.stroke();
-        for (let i = 0; i < 9; i++) {
-          const x = (i + 0.5) * w / 9, y0 = h + (i % 3) * 30, y1 = horizon + (i % 4) * 16;
-          c.globalAlpha = (0.14 + 0.08 * (i % 3)) * (0.35 + 0.65 * lift);
-          c.strokeStyle = i % 2 ? '#ffb066' : '#ddff89'; c.lineWidth = 2 + (i % 2);
-          c.beginPath(); c.moveTo(x, y0); c.lineTo(x + (i - 4) * 12 * lift, y1); c.stroke();
-        }
-        watcherMask(c, w / 2, horizon - h * 0.18, Math.min(w, h) * 0.0012 + 0.38, { glow: 0.55 * flash, eye: 0.9, split: 0.22 * lift });
-        c.globalAlpha = 1;
-        break;
-      }
-      case 'sector-release': {
-        // The new room is already underneath the live run. This is only the
-        // last breath of the crossing; control returns without a title card.
-        const fade = Math.max(0, 0.16 * (1 - t));
-        if (fade) { c.fillStyle = `rgba(8,7,20,${fade})`; c.fillRect(0, 0, w, h); }
-        for (let i = 0; i < 12; i++) {
-          const x = (hash(1411 + (s.narrative?.sector || 1), i, 3) % 1000) / 1000 * w;
-          const y = h * 0.32 + ((hash(1411, i, 5) % 1000) / 1000) * h * 0.42 - t * h * 0.12;
-          c.globalAlpha = Math.max(0, 0.5 * (1 - t)); c.fillStyle = i % 3 ? '#ddff89' : '#ffb066'; c.fillRect(x, y, 2, 5);
-        }
-        c.globalAlpha = 1;
-        break;
-      }
-      case 'shatter-freeze': {
-        wash(0.3);
-        const snap = Math.min(1, t / 0.4);
-        watcherMask(c, w / 2, h * 0.22, Math.min(w, h) * 0.0013 + 0.4, { glow: snap * flash, eye: t < 0.5 ? 1 : 0.55, split: 0 });
-        break;
-      }
-      case 'shatter-core': {
-        wash(0.2);
-        const r = 10 + 62 * easeOut(t);
-        const g = c.createRadialGradient(sx, sy, 0, sx, sy, r);
-        g.addColorStop(0, '#05060c'); g.addColorStop(0.62, '#05060c');
-        g.addColorStop(0.85, '#241c12'); g.addColorStop(1, 'rgba(221,255,137,0)');
-        c.fillStyle = g; c.beginPath(); c.arc(sx, sy, r, 0, Math.PI * 2); c.fill();
-        c.globalAlpha = 0.5 + 0.5 * t; c.strokeStyle = '#ddff89'; c.lineWidth = 2.4;
-        c.shadowColor = '#ddff89'; c.shadowBlur = 24;
-        c.beginPath(); c.arc(sx, sy, r * 0.86, 0, Math.PI * 2); c.stroke();
-        c.shadowBlur = 0; c.globalAlpha = 0.45 + 0.3 * t;
-        c.setLineDash([10, 14]); c.lineDashOffset = -t * 90; c.lineWidth = 2;
-        c.beginPath(); c.arc(sx, sy, r * 1.35, 0, Math.PI * 2); c.stroke();
-        c.setLineDash([]);
-        // The world bends: vignette pulls inward.
-        const pull = c.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.32, w / 2, h / 2, Math.max(w, h) * 0.78);
-        pull.addColorStop(0, 'rgba(6,5,14,0)'); pull.addColorStop(1, `rgba(6,5,14,${0.62 * t})`);
-        c.globalAlpha = 1; c.fillStyle = pull; c.fillRect(0, 0, w, h);
-        break;
-      }
-      case 'shatter-crack': {
-        const f = t < 0.22 ? 1 : Math.max(0, 1 - (t - 0.22) / 0.78);
-        const g = c.createRadialGradient(sx, sy, 0, sx, sy, Math.max(w, h) * 1.15 * easeOut(Math.min(1, t / 0.6 + 0.12)));
-        g.addColorStop(0, `rgba(255,252,238,${f * flash})`); g.addColorStop(0.35, `rgba(255,214,140,${0.8 * f * flash})`); g.addColorStop(1, 'rgba(255,190,110,0)');
-        c.fillStyle = g; c.fillRect(0, 0, w, h);
-        const reach = easeOut(Math.min(1, t / 0.5));
-        for (const [tx, ty] of [[0, 0], [w, 0], [0, h], [w, h]]) {
-          const pts = fracturePath(771, sx, sy, sx + (tx - sx) * reach, sy + (ty - sy) * reach, 9);
-          c.globalAlpha = f; c.strokeStyle = '#ffbe6e'; c.lineWidth = 9; jaggedLine(c, pts); c.stroke();
-          c.globalAlpha = f; c.strokeStyle = '#fffdf2'; c.lineWidth = 2.6; jaggedLine(c, pts); c.stroke();
-        }
-        // Shards lift in rings.
-        for (let i = 0; i < 16; i++) {
-          const ang = (hash(881, i, 3) % 628) / 100, ring = 120 + (hash(881, i, 5) % 340), rr = easeOut(t) * ring;
-          const x = sx + Math.cos(ang) * rr, y = sy + Math.sin(ang) * rr * 0.82 - t * 26;
-          c.save(); c.globalAlpha = Math.max(0, 0.9 - t * 0.45); c.translate(x, y); c.rotate(ang + t);
-          c.fillStyle = hash(881, i, 7) % 4 ? '#241c32' : '#ffd98c';
-          c.fillRect(-4, -6, 8 + (hash(881, i, 9) % 8), 12); c.restore();
-        }
-        c.globalAlpha = 1;
-        break;
-      }
-      case 'shatter-sky': {
-        wash(0.24);
-        // The COLLAPSE SKY drops in; the shards settle and STAY.
-        c.globalAlpha = 0.35 + 0.65 * easeOut(t);
-        drawShatteredSky(c, w, h, { shatter: Math.max(6, Math.round(56 - 44 * t)) }, motion ? time : 0, motion);
-        c.globalAlpha = 1;
-        // The Watcher splits down the middle.
-        watcherMask(c, w / 2, h * 0.24, Math.min(w, h) * 0.00135 + 0.42, { glow: 0.4 * flash, eye: 0.8, split: easeOut(t) });
-        break;
-      }
-      case 'shatter-borders': {
-        wash(0.1);
-        // One pulse travelling clockwise around the borders.
-        const inset = 22, per = 2 * (w - 2 * inset) + 2 * (h - 2 * inset), head = (t * 1.15 % 1) * per;
-        const seg = per / 4, side = Math.floor(head / seg), local = (head - side * seg) / seg;
-        const edge = (a, b, u) => [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u];
-        const corners = [[inset, inset], [w - inset, inset], [w - inset, h - inset], [inset, h - inset], [inset, inset]];
-        c.strokeStyle = '#ddff89'; c.globalAlpha = 0.4; c.lineWidth = 6;
-        c.strokeRect(inset, inset, w - 2 * inset, h - 2 * inset);
-        const [a, b] = [corners[side], corners[side + 1]];
-        const [x0, y0] = edge(a, b, Math.max(0, local - 0.12)), [x1, y1] = edge(a, b, local);
-        c.globalAlpha = 0.95; c.lineWidth = 9; c.shadowColor = '#ddff89'; c.shadowBlur = 20;
-        c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.shadowBlur = 0;
-        // Aurora band + ember rain.
-        const aurora = c.createLinearGradient(0, 0, 0, h * 0.15);
-        aurora.addColorStop(0, `rgba(221,255,137,${0.34 + 0.14 * Math.sin(time * 0.09)})`); aurora.addColorStop(1, 'rgba(221,255,137,0)');
-        c.globalAlpha = 1; c.fillStyle = aurora; c.fillRect(0, 0, w, h * 0.15);
-        for (let i = 0; i < 44; i++) {
-          const x = hash(993, i, 3) % 1000 / 1000 * w;
-          const y = h * 0.16 + ((hash(993, i, 5) % 1000) / 1000 * h * 0.2 + t * h * 0.62);
-          c.globalAlpha = 0.8 * (1 - t * 0.3); c.fillStyle = hash(993, i, 7) % 3 ? '#ffb066' : '#ffe9b0';
-          c.beginPath(); c.arc(x, y, 1.4 + (hash(993, i, 9) % 1000) / 1000 * 2.4, 0, Math.PI * 2); c.fill();
-        }
-        c.globalAlpha = 1;
-        break;
-      }
-      case 'shatter-dolly': {
-        // A brief white flicker as the world, not the cube, takes focus.
-        const flick = t < 0.12 ? (t < 0.06 ? 0.5 : 0.32) * flash : 0;
-        if (flick > 0) { c.fillStyle = `rgba(255,255,255,${flick})`; c.fillRect(0, 0, w, h); }
-        // The spine bursts full-bright.
-        if (t < 0.42) {
-          const k = 1 - t / 0.42;
-          const g = c.createLinearGradient(0, h, 0, h * 0.3);
-          g.addColorStop(0, `rgba(255,250,226,${0.85 * k})`); g.addColorStop(0.5, `rgba(255,214,140,${0.4 * k})`); g.addColorStop(1, 'rgba(255,214,140,0)');
-          c.globalAlpha = 1; c.fillStyle = g;
-          c.fillRect(w * 0.5 - (3 + 9 * k), h * 0.3, 6 + 18 * k, h * 0.7);
-        }
-        break;
-      }
-      case 'shatter-release': {
-        const fade = Math.max(0, 0.22 - t * 0.22);
-        if (fade > 0) { c.fillStyle = `rgba(255,255,255,${fade * flash})`; c.fillRect(0, 0, w, h); }
-        break;
-      }
-      default:
-        break;
-    }
-    c.restore();
-  }
   function draw(run, alpha, aim, motion, device = "mouse") {
     transform();
     const { world, state: s, combat } = run, v = lastView = camera.view(alpha), p = bodyPose(world.player, alpha), nearest = run.nearest(), time = mix(world.previousClock, world.clock, alpha);
@@ -9269,7 +8724,6 @@ function createRenderer(c, viewport) {
     } else {
       drawFractureSky(c, w, h, s.fracture?.pct ?? 0, motion ? time : 0, motion);
     }
-    narrativeBackdrop(s.narrative,w,h,time,motion);
     // CHUNK 6B: the arena behind the landlord darkens one level, so the slab
     // reads against the sky and not against the pips.
     for (const e of combat.enemies.values()) {
@@ -9280,12 +8734,6 @@ function createRenderer(c, viewport) {
         c.restore();
         break;
       }
-    }
-    narrativeTrack(s.narrative,w,h);
-    if(s.narrative&&!s.narrative.intro&&s.narrative.seal){
-      const n=s.narrative,live=n.locks.filter(lock=>!lock.broken),q=live.length?live.reduce((best,lock)=>Math.hypot(lock.x-p.x,lock.y-p.y)<Math.hypot(best.x-p.x,best.y-p.y)?lock:best,live[0]):n.seal;
-      const sx=(q.x-v.x)*v.scale,sy=(q.y-v.y)*v.scale;
-      if(sx<35||sx>w-35||sy<70||sy>h-35){const dx=sx-w/2,dy=sy-h/2,k=Math.min((w/2-30)/Math.max(1,Math.abs(dx)),(h/2-70)/Math.max(1,Math.abs(dy)));c.save();c.translate(w/2+dx*k,h/2+dy*k);c.rotate(Math.atan2(dy,dx));c.fillStyle=n.seal.ready?'#e6ff78':'#dfb977';c.globalAlpha=.8;c.beginPath();c.moveTo(11,0);c.lineTo(-7,-6);c.lineTo(-3,0);c.lineTo(-7,6);c.closePath();c.fill();c.restore();}
     }
     if(s.phase==='playing')drawLiveWorldWeather(c,w,h,{world:s.equipment?.world,time,motion});
     if(s.visualTutorial){
@@ -9321,7 +8769,6 @@ function createRenderer(c, viewport) {
     c.translate(-v.x, -v.y);
     if(s.phase==='playing'){objectJuice.drawUnder(c,{view:v,scale:v.scale,motion});dashWake.draw(c,{view:v,scale:v.scale,motion});dashStage.draw(c,{view:v,scale:v.scale,motion,hero:p,alpha});reboundMorph.draw(c,{hero:p,aim,scale:v.scale,motion});}
     if(s.visualTutorial)drawTutorialScene(c,s.visualTutorial,combat,p,v.scale,motion,time);
-    if(s.narrative)narrativeWorld(s.narrative,v.scale,time,motion);
     if(s.dimension&&!s.visualTutorial)drawDimensionField(c,s.dimension,v,motion,{separation:shakeLevel!=='off'});
     if(motion&&shakeLevel!=='off')for(const hit of contactBursts.slice(-3))drawHitRegistration(c,hit,18-hit.life,motion);
     if(s.wave?.shatterTrace&&!s.wave.shatterFx)drawSettledSeam(c,s.wave.shatterTrace,s.equipment);
@@ -9545,18 +8992,23 @@ function createRenderer(c, viewport) {
       const a = pose(l.a, alpha), b = pose(l.b, alpha);
       c.save();
       if (l.mode === "tell") {
-        c.setLineDash([5, 10]);
-        line(c, "#bf7fa7", 1.5, a.x, a.y, b.x, b.y);
+        // Dark-backed magenta lane separates the tell from scenery and aim.
+        line(c, "#100812", 10 / v.scale, a.x, a.y, b.x, b.y);
+        c.setLineDash([9 / v.scale, 7 / v.scale]);
+        line(c, "#ff4b82", 3 / v.scale, a.x, a.y, b.x, b.y);
         c.setLineDash([]);
         const k = clamp(l.f, 0, 1) * 0.46;
         line(c, "#fba9dc", 3, a.x, a.y, mix(a.x, b.x, k), mix(a.y, b.y, k));
         line(c, "#fba9dc", 3, b.x, b.y, mix(b.x, a.x, k), mix(b.y, a.y, k));
       } else {
-        line(c, INK.rose, 9, a.x, a.y, b.x, b.y);
-        line(c, "#ffe4ea", 3, a.x, a.y, b.x, b.y);
+        line(c, "#100812", 15 / v.scale, a.x, a.y, b.x, b.y);
+        line(c, "#ff335c", 10 / v.scale, a.x, a.y, b.x, b.y);
+        line(c, "#fff6e6", 3.5 / v.scale, a.x, a.y, b.x, b.y);
       }
       c.restore();
     }
+    // Green lines are friendly, severed-node links; they cannot hurt the player.
+    for(const link of s.friendlyLinks||[]){const partner=combat.enemies.get(link.partner);if(!partner)continue;c.save();c.globalAlpha=Math.min(1,link.life/12)*.22;line(c,'#c7fb70',28,link.x,link.y,partner.x,partner.y);c.globalAlpha=Math.min(1,link.life/12);line(c,'#10140b',10/v.scale,link.x,link.y,partner.x,partner.y);line(c,'#c7fb70',5/v.scale,link.x,link.y,partner.x,partner.y);line(c,'#fffce5',2/v.scale,link.x,link.y,partner.x,partner.y);arc(c,'#c7fb70',3/v.scale,link.x,link.y,14);c.restore();}
     for (const m of beams) {
       const u = 1 - m.life / 12, grow = 0.55 + u * 0.45, fadeOut = Math.min(1, m.life / 5), dx = Math.cos(m.angle), dy = Math.sin(m.angle), h2 = m.reach * grow;
       c.save();
@@ -9594,6 +9046,8 @@ function createRenderer(c, viewport) {
       c.fillText(m.text, 0, 0);
       c.restore();
     }
+    // Circle marks the actual blast radius at the moment damage was applied.
+    for(const blast of rushBlasts){c.save();c.globalAlpha=Math.min(0.7,blast.life/16);c.strokeStyle='#e8ff9d';c.lineWidth=3/v.scale;c.beginPath();c.arc(blast.x,blast.y,blast.r,0,TAU);c.stroke();if(motion){c.globalAlpha*=.14;c.fillStyle='#e8ff9d';c.fill();}c.restore();}
     for(const impact of contactBursts){const age=(impact.type==='break'?27:18)-impact.life;drawLiveCombatImpact(c,impact,age,motion);if(impact.type==='cut')drawBuildHarmony(c,{equipment:impact.equipment,sword:impact.sword,stage:'kill',x:impact.x,y:impact.y,radius:impact.r||R,angle:impact.cut||0,age,motion});if(['cut','armor'].includes(impact.type))drawCombatHit(c,impact,age,motion);else drawContactBurst(c,{...impact,age,motion});if(impact.type==='break'){drawPlayerFracture(c,{x:impact.x,y:impact.y,age,motion,equipment:impact.equipment,contact:impact.contact});}if(impact.type==='break'&&impact.sword){const t=motion?age:3;c.save();c.globalAlpha=impact.life/27;drawSwordWeapon(c,{x:impact.x+t*(impact.contact?.vx||0)*.18,y:impact.y+t*t*.12,radius:R,angle:(impact.contact?.angle||0)+t*.07,active:false,aiming:true,sword:impact.sword,motion:false});c.restore();}}
     for(const ward of wardBreaks)drawWardFracture(c,{x:ward.x,y:ward.y,age:24-ward.life,motion,equipment:ward.equipment,sword:ward.sword,angle:ward.contact?.angle||0,strength:ward.contact?.strength||0});
     for (const m of imprints) {
@@ -9621,7 +9075,7 @@ function createRenderer(c, viewport) {
       }
       c.restore();
     }
-    if ((aim?.power && !s.visualTutorial) || (aim?.power && !aim.anchor) || s.story && s.opening?.rest && s.edge > 0 && !s.opening.finishing || s.phaseLineTicks > 0) {
+    if ((aim?.power && !s.visualTutorial) || (aim?.power && !aim.anchor) || s.guide && s.opening?.rest && s.edge > 0 && !s.opening.finishing || s.phaseLineTicks > 0) {
       const shot = drawArc(
         c,
         run,
@@ -9686,7 +9140,7 @@ function createRenderer(c, viewport) {
         flash: e.flash > 0 ? fade("flash", ANIM.flash.life - e.flash)*(reaction?.55:1) : 0,
         fault: e.fault,
         mode:e.mode,clock:e.clock,span:e.span,aim:e.aim,
-        active:e.mode==='rush'||combat.hazards.some(h=>!h.spent&&h.sourceId===e.id),
+        active:e.mode==='rush'||combat.hazards.some(h=>!h.spent&&!h.cosmetic&&h.sourceId===e.id),
         // CHUNK 6B: the landlord's tells — crack-crawl, the dropped plate,
         // and the dilating iris — travel through opts to the painter.
         lashTell: e.lashTell || 0,
@@ -9726,6 +9180,19 @@ function createRenderer(c, viewport) {
     // a live ring is never hidden behind a bracket. Screen-space free: the view
     // array is built once per frame by the shell.
     if (sliceMarkView.length && !s.opening) drawSliceSafe(c, sliceMarkView, { scale: v.scale, motion, time });
+    // Red spiked outline warns before the mine arms; green means batted and friendly.
+    for(const mine of s.pulseMines||[]){
+      const x=mix(mine.px,mine.x,alpha),y=mix(mine.py,mine.y,alpha),color=mine.friendly?'#dfff8b':mine.age<45?'#ffc080':'#ff4b67';
+      c.save();c.translate(x,y);c.fillStyle='#160f1a';c.strokeStyle=color;c.lineWidth=3/v.scale;c.beginPath();c.arc(0,0,16,0,TAU);c.fill();c.stroke();
+      for(let j=0;j<4;j++){const a=j*Math.PI/2;line(c,color,2/v.scale,Math.cos(a)*19,Math.sin(a)*19,Math.cos(a)*25,Math.sin(a)*25);}
+      c.fillStyle=color;c.beginPath();c.arc(0,0,mine.friendly?4:mine.age<45?3:6,0,TAU);c.fill();c.restore();
+    }
+    // Flying corpse splinters are friendly projectiles, not dead debris or hazards.
+    for(const shard of s.corpseProjectiles||[]){
+      c.save();c.translate(mix(shard.px,shard.x,alpha),mix(shard.py,shard.y,alpha));c.rotate(Math.atan2(shard.vy,shard.vx));
+      poly2(c,'#dfff8b',[[13,0],[-8,-8],[-4,0],[-8,8]],'#11141c',2.5/v.scale);
+      line(c,'#ffffff',1.5/v.scale,-3,0,8,0);c.restore();
+    }
     for (const a of combat.hazards) {
       const x = mix(a.px, a.x, alpha), y = mix(a.py, a.y, alpha);
       if (a.kind === "zone") {
@@ -10206,13 +9673,10 @@ function createRenderer(c, viewport) {
       if(s.sword){
         const swordReach=(s.reach||1)*s.sword.reach*(s.waveBuff?.reach||1);
         const swordAngle=s.held&&aim?Math.atan2(aim.y,aim.x):s.slashAngle;
-        drawSwordWeapon(c,{x:p.x,y:p.y,radius:R,angle:swordAngle,active:s.blade>0,aiming:s.held,sword:s.sword,reach:swordReach,charge:s.swordCharge,motion,time,buff:visualBuff,equipment:s.equipment,widthScale:(s.precisionShot?.widthScale??1)*(s.inkCutScale??1)*(s.equipment?.dash==='dash-fire'?.9:s.equipment?.dash==='dash-lightning'?.85:1),bladeRemaining:s.blade,finish:structural?upgradePhase.amount:1,age:s.slashAge,reveal:structural?1:s.waveBuff?Math.min(1,(s.wave?.age||0)/18):1});
+        drawSwordWeapon(c,{x:p.x,y:p.y,radius:R,angle:swordAngle,active:s.blade>0,aiming:s.held,sword:s.sword,reach:swordReach,charge:s.swordCharge,motion,time,buff:visualBuff,equipment:s.equipment,widthScale:(s.precisionShot?.widthScale??1)*(s.inkCutScale??1),bladeRemaining:s.blade,finish:structural?upgradePhase.amount:1,age:s.slashAge,reveal:structural?1:s.waveBuff?Math.min(1,(s.wave?.age||0)/18):1});
         for(const attack of s.swordFx||[])drawSwordAttack(c,attack,s.sword,!motion,s.equipment);
       }
       if (s.equipment?.head === "oni" && s.hp === 1 && s.blade > 0) drawEquipmentSlash(c, p.x, p.y, p.x + Math.cos(s.slashAngle) * 80, p.y + Math.sin(s.slashAngle) * 80, "blood", 1,{progress:1-Math.min(1,s.blade/12),equipment:s.equipment,reducedMotion:!motion});
-      if(s.equipment?.dash==='dash-lightning'&&s.held)drawVoltReadiness(c,{x:p.x,y:p.y,radius:R,ready:s.volt?.conduction?.ready!==false});
-      if(s.equipment?.dash==='dash-echo'&&s.held)drawRepriseReadiness(c,{x:p.x,y:p.y,radius:R,ready:s.reprise?.ready!==false});
-      if(s.equipment?.dash==='dash-void'&&s.held)drawVoidReadiness(c,{x:p.x,y:p.y,radius:R,readyIn:s.voidWell?.readyIn||0});
       drawEquipmentEffects(c, motion ? s.equipmentFx : { ...s.equipmentFx, bursts: [] }, motion ? time : 0, ARENA.y + ARENA.h,motion?glowBake:null,s.equipment);
       if (s.equipment?.head === "beacon") {
         for (const enemy of combat.enemies.values()) if (enemy.kind === "fang" && enemy.mode === "tell") {
@@ -10320,29 +9784,21 @@ function createRenderer(c, viewport) {
           now = clamp(s.edge ?? max, 0, max),
           empty = now <= 0,
           pulse = motion ? 0.5 + 0.5 * Math.sin(time * 0.42) : 0.7,
-          blockW = 9 * ux, blockH = 8 * ux, gap = 3.5 * ux,
+          blockW = 12 * ux, blockH = 12 * ux, gap = 5 * ux,
           total = max * blockW + (max - 1) * gap,
           y = s.visualTutorial ? sp.y + R * Math.SQRT2 * v.scale + 10 * ux : sp.y + (R * Math.SQRT2 + 8) * ux,
           x0 = sp.x - total / 2;
-        // A dark plate under the row so the charges read on a lit floor or a
-        // white flash frame alike.
-        c.fillStyle = 'rgba(10,8,16,0.72)';
-        c.fillRect(x0 - 3 * ux, y - 2 * ux, total + 6 * ux, blockH + 4 * ux);
+        // Countable, dark-backed diamonds follow the cube without adding a HUD panel.
         for (let i = 0; i < max; i++) {
           const x = x0 + i * (blockW + gap), filled = i < now;
-          c.fillStyle = filled ? INK.acid : empty ? `rgba(255,53,84,${0.45 + 0.55 * pulse})` : '#4b4050';
-          c.fillRect(x, y, blockW, blockH);
+          const diamond=()=>{c.beginPath();c.moveTo(x+blockW/2,y);c.lineTo(x+blockW,y+blockH/2);c.lineTo(x+blockW/2,y+blockH);c.lineTo(x,y+blockH/2);c.closePath();};
+          diamond();c.lineWidth=3*ux;c.strokeStyle='#100a13';c.stroke();
+          c.fillStyle = filled ? INK.acid : empty ? `rgba(255,53,84,${0.45 + 0.55 * pulse})` : '#4b4050';c.fill();
           if (filled) {
-            // One white notch per block so the count survives a colour-blind
-            // read and the shapes are countable at a glance.
-            c.fillStyle = INK.paper;
-            c.fillRect(x + blockW * 0.28, y + blockH * 0.28, blockW * 0.44, blockH * 0.44);
-          }
-          if (i === now) {
-            // The charge being REGENERATED fills in white from the left, so an
-            // empty row says when it will not be empty.
-            c.fillStyle = INK.paper;
-            c.fillRect(x, y, blockW * Math.min(1, (s.recharge || 0) / (s.regenWindow || 60)), blockH);
+            c.fillStyle=INK.paper;c.fillRect(x+blockW*.4,y+blockH*.4,blockW*.2,blockH*.2);
+          } else if (i === now) {
+            // Clip to the diamond: the white fill still reflects real recharge progress.
+            c.save();diamond();c.clip();c.fillStyle=INK.paper;c.fillRect(x,y,blockW*Math.min(1,(s.recharge||0)/(s.regenWindow||60)),blockH);c.restore();
           }
         }
       }
@@ -10398,8 +9854,23 @@ function createRenderer(c, viewport) {
       c.restore();
       c.restore();
     }
-    if(!s.opening&&!s.visualTutorial){c.save();c.setTransform(viewport.width/w,0,0,viewport.height/h,0,0);for(const item of enemyThreatIndicators(v,combat)){const q=overlayPoint(v.width,v.height,item,{radius:16,top:hudTop(),gutter:hudGutter()});c.save();c.translate(q.x,q.y);c.rotate(item.angle);c.fillStyle="#ffb7a7";c.beginPath();c.moveTo(10,0);c.lineTo(-7,-6);c.lineTo(-7,6);c.closePath();c.fill();c.restore();}drawPlayerDamageReceipt(c,v,p,s);c.restore();}
-    if (scene && !s.visualTutorial) drawStory(c, { v, p, e: nearest && { ...pose(nearest, alpha), r: nearest.r }, shot: run.suggestion(), scene, device, age: sceneTicks + alpha, motion, aim: !!aim?.power });
+    if(!s.opening&&!s.visualTutorial){
+      c.save();c.setTransform(viewport.width/w,0,0,viewport.height/h,0,0);
+      const threats=enemyThreatIndicators(v,combat);
+      const markers=peripheralRadar(v,p,combat,s.equipment?.radar);
+      // Live warnings retain priority and remain available with the starter radar.
+      for(const item of [...threats.map(t=>({...t,kind:'threat',active:true})),...markers]){
+        if(item.kind!=='threat'&&threats.some(t=>Math.hypot(t.x-item.x,t.y-item.y)<20))continue;
+        const q={x:Math.max(18,Math.min(v.width-18,item.x)),y:Math.max(Math.min(v.height-18,Math.max(35,hudTop()+8)),Math.min(v.height-18,item.y))};
+        c.save();c.translate(q.x,q.y);c.rotate(item.angle);
+        c.lineWidth=2.5;c.strokeStyle='#120b14';c.fillStyle=item.active?'#fff1c3':'#ff5d72';
+        c.beginPath();c.moveTo(11,0);c.lineTo(-7,-7);c.lineTo(-3,0);c.lineTo(-7,7);c.closePath();c.stroke();c.fill();
+        if(item.kind==='hazard'){c.fillStyle='#ff3350';c.beginPath();c.arc(-10,0,2.5,0,TAU);c.fill();}
+        c.restore();
+      }
+      drawPlayerDamageReceipt(c,v,p,s);c.restore();
+    }
+    if (scene && !s.visualTutorial) drawGuide(c, { v, p, e: nearest && { ...pose(nearest, alpha), r: nearest.r }, shot: run.suggestion(), scene, device, age: sceneTicks + alpha, motion, aim: !!aim?.power });
     if(s.visualTutorial?.stage===4 && s.visualTutorial.finishDelay>0){
       const age=42-s.visualTutorial.finishDelay, fade=Math.max(0,1-age/32);
       c.save();c.setTransform(viewport.width/w,0,0,viewport.height/h,0,0);
@@ -10439,16 +9910,10 @@ function createRenderer(c, viewport) {
       c.save();c.setTransform(viewport.width / w,0,0,viewport.height / h,0,0);
       const darkness=Math.min(.28,(27-s.death)/90);c.fillStyle=`rgba(16,11,20,${Math.max(0,darkness)})`;c.fillRect(0,0,w,h);c.restore();
     }
-    if (!s.opening && !s.teachingArena) {
-      c.save();
-      minimap(c, world, combat, v, s, motion);
-      c.restore();
-    }
-    // CHUNK 6A: the diegetic spine under the DOM HUD, and the cutscene
-    // overlay above everything (the chips themselves are DOM).
+    // Draw the fracture meter under the DOM HUD.
     c.save();
     c.setTransform(viewport.width / w, 0, 0, viewport.height / h, 0, 0);
-    drawSpine(c, w, h, s, motion, time);
+    // The old screen-fixed fracture spine looked like a tether; boss charge is in the HUD instead.
     const fractureImpact = dimensionImpact.snapshot();
     if(fractureImpact&&!s.opening&&!s.visualTutorial)drawDimensionImpact(c,w,h,{
       ...fractureImpact,
@@ -10456,7 +9921,6 @@ function createRenderer(c, viewport) {
       y:fractureImpact.y===null?h*.5:(fractureImpact.y-v.y)*v.scale,
       motion:motion&&shakeLevel!=='off',low:shakeLevel==='low',
     });
-    drawCutsceneOverlay(c, w, h, s, v, p, time, motion);
     c.restore();
     // CHUNK 1: the two pieces of aim/damage feedback that belong in SCREEN
     // space, drawn last so nothing in the world can cover them. Both read a
@@ -10546,7 +10010,9 @@ __export(catalog_exports, {
   SLOTS: () => SLOTS
 });
 var SLOTS = Object.freeze(["head", "eyes", "body", "core", "tail", "slash", "dash", "pointer", "radar", "trajectory", "world"]);
-var item = (id, slot, name, price, tag, detail) => Object.freeze({ id, slot, name, price, tag, detail });
+var item = (id, slot, name, price, tag, detail) => Object.freeze({ id, slot, name, price,
+  tag:["eyes","dash","world"].includes(slot)?"Cosmetic":tag,
+  detail:["eyes","dash","world"].includes(slot)?"Appearance only. No gameplay modifiers.":detail });
 var ITEMS = Object.freeze([
   item("none", "head", "Bare Head", 0, "Original Cut", "No headgear. Clean silhouette."),
   item("halo", "head", "Gold Halo", 250, "Focus Float", "While holding aim and falling, gravity is 15% lighter."),
@@ -10561,8 +10027,8 @@ var ITEMS = Object.freeze([
   item("hologram", "body", "Hologram Wire", 500, "Precision Phase", "During the first 4 world ticks of a legal launch, phase through one Prism or Crown needle, then recharge for 120 world ticks. The needle continues. No beam, ring, zone, enemy, boss or wall immunity; no aim-cost discount."),
   item("standard", "core", "Standard Heart", 0, "Balanced Build", "Balanced movement. Three EDGE bars."),
   item("time", "core", "Time Crystal", 400, "Focus Recovery", "Kills start a 120-tick window of twice-normal passive FOCUS recovery."),
-  item("riot", "core", "Riot Reactor", 500, "Quick Overdrive", "Overdrive activates every four consecutive kills instead of six (1.5x faster). Maximum two EDGE bars."),
-  item("glass", "core", "Glass Cannon", null, "Double Score", "Challenge: reach SECTOR 05. Double score; maximum 1 HEALTH, including Crown repairs."),
+  item("riot", "core", "Riot Reactor", 500, "Quick Rush", "Rush activates every four consecutive kills instead of six (1.5x faster), or through sustained speed. Maximum two EDGE bars."),
+  item("glass", "core", "Glass Cannon", null, "Double Score", "Challenge: reach Wave 5. Double score; maximum 1 HEALTH, including Crown repairs."),
   item("ribbon", "tail", "Ninja Ribbon", 0, "Folded Cloth", "Yellow-green ribbon that follows your movement."),
   item("wings", "tail", "Prism Wings", 400, "Wall Recharge", "First side-wall contact per airborne streak restores one EDGE. Floor contact resets it."),
   item("ghost", "tail", "Ghost Scarf", 350, "Lingering Blade", "Twin spectral ribbons. Adds six simulation ticks to each launch blade; never repeats a hit on the same enemy in one shot."),
@@ -10612,10 +10078,10 @@ var ITEMS = Object.freeze([
   item("pointer-diamond", "pointer", "Prism Pointer", 200, "Blade Extension", "A faceted diamond marks your drag origin. Adds 1 simulation ticks to the active launch blade."),
   item("pointer-orbit", "pointer", "Orbit Pointer", 250, "Focus Return", "Broken orbital arcs frame your drag origin. Passive FOCUS recovery is 10% faster when not aiming."),
   item("pointer-cross", "pointer", "Crosshair Pointer", 200, "Focus Efficiency", "Four precision brackets mark your drag origin. Aiming consumes 8% less FOCUS. Does not slow physics further."),
-  item("radar-base", "radar", "Field Radar", 0, "Local Scan", "The standard local radar tracks nearby enemies and objectives."),
-  item("radar-1", "radar", "Long-Range Array", 1200, "Range +35%", "See 35% farther on the radar. Existing enemy and objective markers remain visible."),
-  item("radar-2", "radar", "Threat Array", 3000, "Range +70%", "See 70% farther and mark nearby active projectiles and danger zones."),
-  item("radar-3", "radar", "Oracle Array", 6500, "Range +120%", "See 120% farther, active hazards and live enemy wind-ups, plus your current heading."),
+  item("radar-base", "radar", "Field Radar", 0, "Local Scan", "Edge arrows mark nearby off-screen enemies. Objectives use a gold arrow."),
+  item("radar-1", "radar", "Long-Range Array", 1200, "Range +35%", "Detect off-screen enemies 35% farther away with edge arrows."),
+  item("radar-2", "radar", "Threat Array", 3000, "Range +70%", "Detect off-screen enemies 70% farther away and mark active hazards."),
+  item("radar-3", "radar", "Oracle Array", 6500, "Range +120%", "Detect off-screen enemies 120% farther away and highlight active hazards and enemy wind-ups."),
   item("trajectory-base", "trajectory", "Field Trajectory", 0, "Launch Preview", "A short calculated launch path appears while aiming. Stops at the first solid surface."),
   item("trajectory-1", "trajectory", "Vector Lens", 1200, "Extended Path", "Shows more of the calculated launch path while aiming."),
   item("trajectory-2", "trajectory", "Impact Lens", 3000, "Impact Markers", "A longer path adds time ticks and a first-impact marker for the current field snapshot."),
@@ -11200,7 +10666,19 @@ function drawSwordChamber(c,spec={}) {
   drawElementalDash(c,{x:p.x,y:p.y,vx:p.vx||0,vy:p.vy||0,age:s.slashAge,element:dashElement(equipment,s.sword),equipment,sword:s.sword,buff:s.waveBuff,radius:24,motion});
   if(!s.impact)drawCubeDashSmear(c,{x:p.x,y:p.y,vx:p.vx||0,vy:p.vy||0,age:s.slashAge,radius:24,equipment,motion});
   drawCubeHero(c,{x:p.x,y:p.y,radius:24,angle:0,equipment,motion:motion,time:age,face:1,pose:{aiming:s.held,focusRecovering:s.focusRecoveryActive,focusLevel:s.focus,recoveryAge:s.focusRecoveryAge,...armorShellPose(s),...coreMechanismPose(s),...headMechanismPose(s,enemies,{y:p.vy}),attackProgress:s.blade>0?1-Math.min(1,s.blade/12):-1,dashProgress:s.slashAge>=0?Math.min(1,s.slashAge/10):-1,shellAbility:s.shellAbility,tailAbility:s.tailAbility,eyeAbility:s.eyeAbility}});
-  drawSwordWeapon(c,{x:p.x,y:p.y,radius:24,angle:s.slashAngle,active:s.blade>0,sword:s.sword,reach:(s.reach||1)*s.sword.reach,charge:s.swordCharge,equipment,age:s.slashAge,widthScale:(s.precisionShot?.widthScale??1)*(s.inkCutScale??1)*(s.equipment?.dash==='dash-fire'?.9:s.equipment?.dash==='dash-lightning'?.85:1),motion:motion,time:age});c.restore();
+  drawSwordWeapon(c,{x:p.x,y:p.y,radius:24,angle:s.slashAngle,active:s.blade>0,sword:s.sword,reach:(s.reach||1)*s.sword.reach,charge:s.swordCharge,equipment,age:s.slashAge,widthScale:(s.precisionShot?.widthScale??1)*(s.inkCutScale??1),motion:motion,time:age});c.restore();
+  }finally{c.restore();}
+}
+
+/** Draw only the supplied practice snapshot; simulation and ownership stay outside art. */
+export function drawGarageCombat(c,{run,practice,equipment,age=0,motion=true}={}){
+  if(!run||!practice)return;
+  const p=run.world.player;
+  c.save();try{
+    c.fillStyle='#0e1018';c.fillRect(0,0,640,400);
+    drawSwordChamber(c,{equipment,state:run.state,player:{...p.position,vx:p.velocity.x,vy:p.velocity.y},enemies:[...run.combat.enemies.values()].filter(e=>e.id.startsWith('garage/')&&e.id!=='garage/sentinel'),time:age,motion});
+    if(practice.drag){c.beginPath();c.moveTo(practice.x,practice.y);c.lineTo(practice.drag.x,practice.drag.y);c.strokeStyle='#edffb4';c.lineWidth=3;c.setLineDash([7,5]);c.stroke();}
+    c.fillStyle='#e9dfec';c.font='12px monospace';c.fillText(`PRACTICE / ${practice.hits} CUTS / NO REWARDS`,20,385);
   }finally{c.restore();}
 }
 
@@ -11278,7 +10756,7 @@ export {
   renderer_exports as legacy_renderer,
   shapes_exports as legacy_shapes,
   smear_exports as legacy_smear,
-  storyboard_exports as legacy_storyboard,
+  guideboard_exports as legacy_guideboard,
   vault_art_exports as legacy_vault_art,
   world_clip_exports as legacy_world_clip
 };
@@ -11545,14 +11023,14 @@ export function drawSensorPreview(c,w,h,{slot='radar',level=0,time=0,motion=true
  c.textAlign='right';c.fillStyle='#e6f89d';c.fillText(level?`TIER 0${level}`:'STANDARD',286,17);
  c.strokeStyle='#a6f2dc';c.globalAlpha=.7;c.lineWidth=1;c.beginPath();c.moveTo(14,24);c.lineTo(286,24);c.stroke();c.globalAlpha=1;
  if(slot==='radar'){
-   const x=150,y=100,r=60;c.fillStyle='#07131c';c.beginPath();c.arc(x,y,r,0,TAU);c.fill();
-   c.strokeStyle='#8ee1c8';c.lineWidth=1.5;c.beginPath();c.arc(x,y,r,0,TAU);c.stroke();
-   c.globalAlpha=.3;for(let i=1;i<=3;i++){c.beginPath();c.arc(x,y,r*i/3,0,TAU);c.stroke();}c.beginPath();c.moveTo(x-r,y);c.lineTo(x+r,y);c.moveTo(x,y-r);c.lineTo(x,y+r);c.stroke();c.globalAlpha=1;
-   const sweep=motion?time*.001: -.7;c.strokeStyle='#b7ffd7';c.globalAlpha=.5;c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.cos(sweep)*r,y+Math.sin(sweep)*r);c.stroke();c.globalAlpha=1;
-   for(const [i,dx,dy] of [[0,-23,-18],[1,26,-31],[2,42,8],[3,-40,20]]){if(i>level+1)continue;c.fillStyle=i===3?'#ffba83':'#ff7899';c.beginPath();c.arc(x+dx,y+dy,i===1?3.7:2.8,0,TAU);c.fill();if(level>=3&&i===1){c.strokeStyle='#ffd5ae';c.setLineDash([2,2]);c.beginPath();c.arc(x+dx,y+dy,8,0,TAU);c.stroke();c.setLineDash([]);}}
-   c.fillStyle='#e3ff9d';c.beginPath();c.moveTo(x,y-5);c.lineTo(x+5,y+4);c.lineTo(x-5,y+4);c.closePath();c.fill();
-   for(let i=0;i<level;i++){c.fillStyle='#c9ebac';c.fillRect(18+i*9,139,6,4);}
-   c.fillStyle='#abc2bd';c.font='8px monospace';c.textAlign='left';c.fillText(['LOCAL','RANGE +35%','RANGE +70% / HAZARDS','RANGE +120% / LIVE TELLS'][level],14,158);
+   // A miniature view of the real edge-arrow presentation, not a fake map.
+   c.strokeStyle='#a7c8b44a';c.lineWidth=1;c.strokeRect(22,38,256,98);
+   c.save();c.translate(150,87);c.rotate(-.32);c.fillStyle='#f8f4e4';c.fillRect(-10,-10,20,20);c.lineWidth=2;c.strokeStyle='#14151d';c.strokeRect(-10,-10,20,20);c.restore();
+   const arrow=(x,y,angle,color,dot=false)=>{c.save();c.translate(x,y);c.rotate(angle);c.strokeStyle='#100812';c.lineWidth=2.5;c.fillStyle=color;c.beginPath();c.moveTo(9,0);c.lineTo(-6,-6);c.lineTo(-3,0);c.lineTo(-6,6);c.closePath();c.stroke();c.fill();if(dot){c.fillStyle='#ff3350';c.beginPath();c.arc(-10,0,2.5,0,TAU);c.fill();}c.restore();};
+   arrow(32,82,Math.PI,'#ff5d72');arrow(268,68,0,level>=3?'#fff1c3':'#ff5d72');
+   if(level>=1)arrow(195,46,-Math.PI/2,'#ff5d72');
+   if(level>=2)arrow(265,112,0,'#fff1c3',true);
+   c.textAlign='left';c.fillStyle='#abc2bd';c.font='8px monospace';c.fillText(['NEARBY EDGE ARROWS','RANGE +35%','RANGE +70% / HAZARDS','RANGE +120% / LIVE TELLS'][level],14,158);
  }else{
    const pts=[];for(let i=0;i<=30;i++){const t=i/30;pts.push({x:45+211*t,y:128-138*t+50*t*t});}
    const count=[11,16,23,31][level];c.strokeStyle='#425d64';c.lineWidth=8;c.lineCap='round';c.beginPath();pts.slice(0,count).forEach((p,i)=>i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y));c.stroke();
@@ -11947,9 +11425,9 @@ export function drawAbilityShowcase(c,w,h,{equipment={},study={}}={}){
   label('AFTER A KILL, RELEASE AIM',0,0);bar(0,45,235,v.without,'#8b9890');bar(0,101,235,v.focus,green);
   label('USUAL FOCUS RETURN',0,35);label('TWICE-FAST RETURN',0,91);label('BOOST LASTS 2s AFTER A KILL',0,151);
  }else if(id==='riot'||id==='echo'){
-  const count=id==='riot'?v.driveKills:3;label(id==='riot'?'FOUR KILLS TO OVERDRIVE':'THREE DIRECT COMBO KILLS',0,0);
+  const count=id==='riot'?v.driveKills:3;label(id==='riot'?'FOUR KILLS TO RUSH':'THREE DIRECT COMBO KILLS',0,0);
   for(let i=0;i<count;i++){c.fillStyle=on&&i<Math.ceil(a*count)?green:'#acb2a4';c.fillRect(10+i*53,30,37,25);txt(String(i+1),23+i*53,48,'#f8f2dd',14);}
-  if(id==='riot'){txt(result?'OVERDRIVE':'BUILD YOUR COMBO',8,105,dark,22);label('TRADEOFF: MAXIMUM 2 EDGE',0,151);}
+  if(id==='riot'){txt(result?'RUSH':'BUILD YOUR COMBO',8,105,dark,22);label('TRADEOFF: MAXIMUM 2 EDGE',0,151);}
   else{line([[18,115],[227,115]],'#9faaa3');if(result){line([[100,71],[100,135]],'#836596',5);line([[88,126],[112,126]],dark,3);}label(result?'A BLADE STAYS HERE FOR 0.5s':'THE GHOST STAYS WHERE IT SPAWNS',0,151);}
  }else if(id==='grav'){
   label('HOLD AIM TO DRAW SMALL FANGS IN',0,0);line([[0,115],[237,115]],green,2);if(on){c.globalAlpha=.25;enemy(126,67);c.globalAlpha=1;enemy(126,115-v.pullY);line([[150,68],[150,115-v.pullY]],'#538085',2);}else enemy(126,67);
@@ -12744,6 +12222,15 @@ export function visualOnlyContext(context){
 /** Wordless product theatre. Real fitted parts, restrained contact receipts,
  * and shared rule-derived studies. No shop scene can mutate a run or profile. */
 export function drawVisualShopStory(c,w,h,{equipment={},study={},sword=null,frame={},surface=null}={}){
+ // Cosmetics demonstrate their appearance, not retired attacks or stat bonuses.
+ if(['eyes','dash','world'].includes(study.slot)){
+  if(study.slot==='dash'){drawShopElementDash(visualOnlyContext(c),w,h,{equipment,sword,time:frame.time||0,motion:frame.motion===true});return;}
+  c.save();try{
+   c.fillStyle='#17232c';c.fillRect(0,0,w,h);
+   if(study.slot==='world')drawWorldBackdrop(c,w,h,equipment.world,frame.motion?frame.time/16.667:0);
+   drawCubeHero(c,{x:w*.5,y:h*.53,radius:Math.min(w,h)*.18,equipment,motion:frame.motion===true,time:frame.motion?(frame.time||0)/16.667:0,pose:{blink:1,breathe:0}});
+  }finally{c.restore();}return;
+ }
  const beat=frame.beat||0,p=clamp(frame.progress||0,0,1),active=beat>0,result=beat===2;
  const q=study.showcase,v=q?.values||{},id=study.id,slot=study.slot;
  const green='#526b38',cyan='#2d727c',red='#b6465e',gold='#8c6e36';

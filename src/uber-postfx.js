@@ -24,6 +24,11 @@ uniform float uSaturation;
 uniform float uVignette;
 uniform float uTint;
 uniform float uGrain;
+uniform float uIntensity;
+uniform float uEnergy;
+uniform float uDamage;
+uniform float uLaunch;
+uniform float uClarity;
 varying vec2 vUV;
 vec2 aspect(vec2 p){return p*vec2(uResolution.x/max(1.0,uResolution.y),1.0);}
 float actorMask(vec2 uv,vec3 actor){return 1.0-smoothstep(actor.z*.7,actor.z,length(aspect(uv-actor.xy)));}
@@ -60,16 +65,33 @@ void main(){
  vec3 split=vec3(left.r,mid.g,right.b);
  vec3 soft=(left+mid.rgb*2.0+right)*.25;
  vec3 rgb=mix(mid.rgb,mix(split,soft,uBlur*.32),effect);
+ // Reuse the same taps for edge definition, never sharpen danger or actors.
+ rgb+=clamp(mid.rgb-(left+right)*.5,vec3(-.06),vec3(.06))*uClarity*effect;
  float lum=dot(rgb,vec3(.2126,.7152,.0722));
  rgb=(rgb-vec3(.42))*uContrast+vec3(.42);
  rgb=mix(vec3(dot(rgb,vec3(.2126,.7152,.0722))),rgb,uSaturation);
  float shadow=1.0-smoothstep(.04,.4,lum);
  rgb=mix(rgb,vec3(lum),shadow*uGloom*.25)*(1.0-shadow*uGloom*.06);
  rgb+=rgb*smoothstep(.58,1.0,lum)*uBloom;
+ // A tiny highlight halo is reconstructed from the same neighboring samples;
+ // it costs no extra texture fetches or render targets and never floods danger.
+ vec3 neighborGlow=max(max(left,right)-mid.rgb,vec3(0.0));
+ rgb+=neighborGlow*smoothstep(.60,.95,max(max(left.r,left.g),max(right.r,right.g)))*uBloom*.32*effect;
  rgb+=vec3(uTint*.4,uTint*.12,-uTint*.3)*(1.0-lum)*effect;
  rgb*=1.0-smoothstep(.25,1.0,length(focusDelta))*uVignette*(1.0-max(danger,protectedActor)*.8);
  float grain=fract(sin(dot(uv*uResolution,vec2(12.9898,78.233)))*43758.5453)-.5;
  rgb+=grain*uGrain*effect;
+ // A restrained teal-shadow / warm-highlight grade gives the arena depth.
+ // These washes live only on the scene; the HUD and interaction layer stay crisp.
+ float highlights=smoothstep(.36,.86,lum);
+ rgb+=vec3(-.012,.017,.021)*shadow*(1.0-danger);
+ rgb+=vec3(.025,.018,-.012)*highlights*(1.0-danger);
+ float rim=smoothstep(.28,.88,length(focusDelta))*spatial*(1.0-danger);
+ rgb+=vec3(.025,.055,.018)*rim*uEnergy;
+ rgb+=vec3(.055,-.016,-.012)*rim*uDamage;
+ rgb+=vec3(.018,.025,.008)*rim*uLaunch;
+ // One bounded strength control blends the whole grade against the untouched scene.
+ rgb=mix(mid.rgb,rgb,uIntensity);
  if(uImpactMode>0.5){
   float bw=step(.45,lum);
   if(uImpactMode>1.5)bw=1.0-bw;
@@ -94,7 +116,7 @@ export function createImpactUniforms(){
 export class UberPostFX {
  constructor(source,{surface,capabilities={},onContextState=()=>{}}={}){
   this.source=source;this.surface=surface;this.capabilities=capabilities;this.onContextState=onContextState;
-  this.mode='off';this.gl=null;this.output=null;this.lost=false;this.failed=false;this.failureReason=null;this.enabled=false;this.disposed=false;this.envelope=createImpactUniforms();this.combat=createCombatLens();
+  this.mode='off';this.intensity='balanced';this.gl=null;this.output=null;this.lost=false;this.failed=false;this.failureReason=null;this.enabled=false;this.disposed=false;this.envelope=createImpactUniforms();this.combat=createCombatLens();
   this.originalOpacity=source.style?.opacity||'';
   this.lostHandler=e=>{e.preventDefault();this.lost=true;this.show(false);this.onContextState('lost');};
   this.restoreHandler=()=>{this.lost=false;this.failed=false;try{this.initResources();this.onContextState('restored');}catch{this.failed=true;this.onContextState('failed');}this.show(false);};
@@ -105,6 +127,7 @@ export class UberPostFX {
   if(this.enabled&&!this.gl&&!this.failed)this.initialize();
   if(!this.enabled){this.envelope.reset();this.combat.reset();this.show(false);const wasLost=this.lost;this.release();this.lost=false;this.failed=false;if(wasLost)this.onContextState('disabled');}
  }
+ setIntensity(intensity='balanced'){this.intensity=['soft','balanced','vivid'].includes(intensity)?intensity:'balanced';}
  initialize(){
   if(!this.surface||!this.source.parentNode)return;
   try{
@@ -128,7 +151,7 @@ export class UberPostFX {
   g.bufferData(g.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),g.STATIC_DRAW);
   this.attribute=g.getAttribLocation(this.program,'aPosition');this.texture=g.createTexture();g.bindTexture(g.TEXTURE_2D,this.texture);
   for(const [key,value]of [[g.TEXTURE_WRAP_S,g.CLAMP_TO_EDGE],[g.TEXTURE_WRAP_T,g.CLAMP_TO_EDGE],[g.TEXTURE_MIN_FILTER,g.LINEAR],[g.TEXTURE_MAG_FILTER,g.LINEAR]])g.texParameteri(g.TEXTURE_2D,key,value);
-  this.locations=Object.fromEntries(['uScene','uFocusPos','uAimPos','uAiming','uProtect[0]','uResolution','uGlitch','uChromatic','uGloom','uBloom','uImpactMode','uTime','uPixelScale','uLensAxis','uTravel','uBlur','uContrast','uSaturation','uVignette','uTint','uGrain'].map(n=>[n,g.getUniformLocation(this.program,n)]));
+  this.locations=Object.fromEntries(['uScene','uFocusPos','uAimPos','uAiming','uProtect[0]','uResolution','uGlitch','uChromatic','uGloom','uBloom','uImpactMode','uTime','uPixelScale','uLensAxis','uTravel','uBlur','uContrast','uSaturation','uVignette','uTint','uGrain','uIntensity','uEnergy','uDamage','uLaunch','uClarity'].map(n=>[n,g.getUniformLocation(this.program,n)]));
   this.size='';
  }
  triggerImpactFrame(durationMs){return this.enabled&&this.envelope.triggerImpactFrame(durationMs);}
@@ -152,7 +175,7 @@ export class UberPostFX {
    g.uniform2f(this.locations.uLensAxis,motion&&Number.isFinite(flow?.x)?flow.x:0,motion&&Number.isFinite(flow?.y)?flow.y:0);
    const masks=protectedActors?.length===24?protectedActors:new Float32Array([-10,-10,0,-10,-10,0,-10,-10,0,-10,-10,0,-10,-10,0,-10,-10,0,-10,-10,0,-10,-10,0]);
    g.uniform3fv(this.locations['uProtect[0]'],masks);
-   for(const [n,value]of Object.entries({uImpactMode:e.impact,uGlitch:e.glitch,uChromatic:Math.min(3.2,lens.chromatic+e.chromatic*45),uPixelScale:postFXPixelScale(w,this.source.clientWidth||w),uTravel:motion?Math.max(0,Math.min(1,flow?.amount||0)):0,uGloom:.1,uBloom:lens.bloom,uTime:now/1000,uBlur:lens.blur,uContrast:lens.contrast,uSaturation:lens.saturation,uVignette:lens.vignette,uTint:lens.tint,uGrain:lens.grain}))g.uniform1f(this.locations[n],value);
+   for(const [n,value]of Object.entries({uImpactMode:e.impact,uGlitch:e.glitch,uChromatic:Math.min(3.2,lens.chromatic+e.chromatic*45),uPixelScale:postFXPixelScale(w,this.source.clientWidth||w),uTravel:motion?Math.max(0,Math.min(1,flow?.amount||0)):0,uGloom:.1,uBloom:lens.bloom,uTime:now/1000,uBlur:lens.blur,uContrast:lens.contrast,uSaturation:lens.saturation,uVignette:lens.vignette,uTint:lens.tint,uGrain:lens.grain,uIntensity:({soft:.55,balanced:1,vivid:1.3})[this.intensity],uEnergy:lens.energy,uDamage:lens.damage,uLaunch:lens.launch,uClarity:lens.clarity}))g.uniform1f(this.locations[n],value);
    g.drawArrays(g.TRIANGLE_STRIP,0,4);this.show(true);return true;
   }catch(error){this.failureReason=String(error?.message||error);this.failed=true;this.show(false);return false;}
  }

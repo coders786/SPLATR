@@ -27,14 +27,14 @@ export const TRAINING_DOORS = Object.freeze([
   Object.freeze({
     id: 'lessons',
     index: '02',
-    name: 'ENEMY LESSONS',
+    name: 'ENEMY ARENA',
     tag: 'LIVE ENCOUNTERS · 11 SHAPES',
     action: 'CHOOSE AN ENEMY',
   }),
   Object.freeze({
     id: 'drills',
     index: '03',
-    name: 'CONTROL DRILLS',
+    name: 'SKILL DRILLS',
     tag: 'PACE · BANK · BREACH',
     action: 'OPEN THE DRILLS',
   }),
@@ -59,7 +59,7 @@ export function createTrainingHub({ host, startCourse, openLessons, openDrills }
   const head = document.createElement('header');
   head.className = 'training-head';
   head.innerHTML = `<small>SAFE PRACTICE · NO REWARDS</small>
-    <h2>CHOOSE A DOOR</h2>`;
+    <h2>TRAINING ARENA</h2>`;
   section.append(head);
 
   const doors = document.createElement('div');

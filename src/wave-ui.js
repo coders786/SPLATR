@@ -2,7 +2,7 @@ import {BUFF_PRESENTATION,buffPresentation} from './buff-presentation.js';
 import {iconNode,prependIcon,BUFF_ICONS,STAGE_ICONS} from './ui-icons.js';
 import {controlCue} from './control-cues.js';
 import {breakthroughLabel,breachCue} from './breakthrough.js';
-import {rushReadout} from './hud-copy.js';
+import {rushReadout,arcadeRushReadout} from './hud-copy.js';
 import {postVisible} from './post.js';
 import {SPEED_PACE} from './speed-pace.js';
 import {drawSwordWeapon,drawEncounterRoster,drawWaveUpgradePreview} from './art/splatr-art-engine.js';
@@ -92,10 +92,7 @@ const paceAction=pace.querySelector('.pace-action'),paceSpeed=pace.querySelector
   const run=getRun(),wave=run?.state.wave;restoreChoice();
   // The landlord's bar hides with the run's own chrome on any exit path.
   updateBossbar(run);
-  // CHUNK 1: the wave HUD belongs to the live continuous mode too. The old
-  // `run.state.narrative` carve-out hid it there entirely, so the shipped
-  // field never showed a wave counter or a pip row at all. The narrative does
-  // still own the intro banner logic below (entry timers), not visibility.
+  // Show the wave HUD in both director modes.
   if(!wave||!['ready','playing'].includes(run.state.phase)){hud.hidden=true;announcement.hidden=true;if(dialog.open)dialog.close();shown=null;return;}
   hud.hidden=document.querySelector('#panel')?.open||false;hud.dataset.phase=wave.phase;
   const line=wave.phase==='breach'?'SHATTER THE DIMENSION':wave.phase==='combat'?`WAVE ${String(wave.number).padStart(2,'0')} · ${wave.remaining} LEFT`:wave.phase==='return'?(wave.magnet?.active?'MAGNET · LANDING':wave.shattered?'SHATTERED · LAND ON PLATFORM':'WAVE CLEAR · LAND ON PLATFORM'):'REST · CHOOSE ONE';
@@ -195,7 +192,7 @@ const paceAction=pace.querySelector('.pace-action'),paceSpeed=pace.querySelector
    }else if(pips.parentNode)pips.remove();
   }
   const p=wave.pace,cue=controlCue(run.state);if(pace.dataset.icon!==STAGE_ICONS[cue.stage]){pace.querySelector('.pace-state-icon')?.remove();const symbol=iconNode(STAGE_ICONS[cue.stage]||'speed');symbol.classList.add('pace-state-icon');pace.querySelector('.speed-pace-readout').prepend(symbol);pace.dataset.icon=STAGE_ICONS[cue.stage];}
-  pace.hidden=!p||!['combat','breach'].includes(wave.phase);
+  pace.hidden=!p||!['combat','breach','monolith'].includes(wave.phase);
   if(p&&!pace.hidden){
    if(pace.parentNode!==hud)hud.append(pace);
    pace.dataset.status=p.status;
@@ -209,7 +206,7 @@ const paceAction=pace.querySelector('.pace-action'),paceSpeed=pace.querySelector
    // values and the headless checks read them) but are never painted: see
    // `.pace-speed` in style.css.
    const display=Math.round(p.displaySpeed*60),target=Math.round(p.target*60),percent=Math.round(p.progress/SPEED_PACE.goalTicks*100);
-   const rush=rushReadout(p,run.state.breakthrough,run.state.drive);
+   const rush=run.state.arcade?arcadeRushReadout(run.state):rushReadout(p,run.state.breakthrough,run.state.drive);
    paceAction.textContent=wave.phase==='breach'?breachCue(run.state).title:run.state.phase==='ready'?'LAUNCH':entering?'GET READY':rush.label;
    pace.dataset.ready=String(rush.ready);
    paceSpeed.textContent=`${display} px/s`;
@@ -219,7 +216,18 @@ const paceAction=pace.querySelector('.pace-action'),paceSpeed=pace.querySelector
    const ceiling=SPEED_PACE.displayCeiling;
    paceTrack.style.background=`linear-gradient(to right,#71677e 0%,#71677e ${p.target/ceiling*100}%,#758c48 ${p.target/ceiling*100}%,#758c48 100%)`;
    paceTarget.style.left=`${p.target/ceiling*100}%`;paceNeedle.style.left=`${Math.min(99,p.displaySpeed/ceiling*100)}%`;
-   paceTrack.setAttribute('aria-valuemax',String(Math.round(ceiling*60)));paceTrack.setAttribute('aria-valuenow',String(Math.min(display,ceiling*60)));paceTrack.setAttribute('aria-valuetext',`${display} pixels per second; target ${target} or higher. Pace practice ${percent} percent.`);
+   if(run.state.arcade){
+    const fill=Math.round(rush.fill*100),targetKills=run.state.rushKillTarget||6;
+    pace.dataset.arcade='true';
+    paceTrack.style.background=`linear-gradient(to right,#dfff8b 0%,#dfff8b ${fill}%,#40384c ${fill}%,#40384c 100%)`;
+    paceTarget.hidden=true;paceNeedle.hidden=true;
+    paceLabel.textContent=rush.live?'BONUS SCORE · CHAIN BLASTS':wave.paceNotified?`${targetKills} COMBO KILLS`:`HOLD SPEED 3s OR ${targetKills} KILLS`;
+    paceTrack.setAttribute('aria-label','Rush');paceTrack.setAttribute('aria-valuemax','100');paceTrack.setAttribute('aria-valuenow',String(fill));
+    paceTrack.setAttribute('aria-valuetext',rush.live?`${rush.label}; bonus score, increased armor damage, and chain blasts`:`${fill} percent; ${wave.paceNotified?'build with combo kills':`build with speed or ${targetKills} combo kills`}`);
+   }else{
+    pace.dataset.arcade='false';paceTarget.hidden=false;paceNeedle.hidden=false;
+    paceTrack.setAttribute('aria-label','Movement speed in pixels per second');paceTrack.setAttribute('aria-valuemax',String(Math.round(ceiling*60)));paceTrack.setAttribute('aria-valuenow',String(Math.min(display,ceiling*60)));paceTrack.setAttribute('aria-valuetext',`${display} pixels per second; target ${target} or higher. Pace practice ${percent} percent.`);
+   }
   }
 
   if(wave.phase==='breach'){
@@ -267,7 +275,7 @@ const paceAction=pace.querySelector('.pace-action'),paceSpeed=pace.querySelector
     b.setAttribute('aria-label',`${copy.accessibleName}. ${copy.effect}. ${copy.stat}.${copy.cost?' Cost: '+copy.cost+'.':''} ${duration}. Choose.`);
     const badge=iconNode(BUFF_ICONS[buff.id]||'blade');badge.classList.add('buff-icon');b.append(badge);
     const preview=document.createElement('canvas');preview.className='upgrade-creature-preview';preview.width=360;preview.height=200;preview.setAttribute('aria-hidden','true');preview.previewSpec={equipment:run.state.equipment,sword,buff};preview.previewStart=0;
-    const replay=()=>{if(motion()&&performance.now()-(dialog.storyOpened||0)>250)preview.previewStart=performance.now();};b.addEventListener('pointerenter',replay);b.addEventListener('focus',replay);drawWaveUpgradePreview(preview.getContext('2d'),preview.width,preview.height,{...preview.previewSpec,time:1100,motion:motion()});b.append(preview);
+    const replay=()=>{if(motion()&&performance.now()-(dialog.previewOpened||0)>250)preview.previewStart=performance.now();};b.addEventListener('pointerenter',replay);b.addEventListener('focus',replay);drawWaveUpgradePreview(preview.getContext('2d'),preview.width,preview.height,{...preview.previewSpec,time:1100,motion:motion()});b.append(preview);
     const category=document.createElement('span');category.className='wave-choice-category';category.textContent=buff.category||'MODIFIER';b.append(category);
     if(wave.recommendation?.id===buff.id){b.dataset.fit='true';const fit=document.createElement('em');fit.className='wave-choice-fit';fit.textContent='TACTICAL FIT';b.append(fit);}
     const name=document.createElement('b'),stat=document.createElement('strong'),desc=document.createElement('small');name.textContent=copy.name;if(copy.lucky)name.append(luckyStamp(copy));stat.textContent=copy.stat;if(copy.cost){const trade=document.createElement('span');trade.className='buff-tradeoff';trade.textContent='COST: '+copy.cost;stat.append(trade);}desc.textContent=copy.effect;
@@ -275,7 +283,7 @@ const paceAction=pace.querySelector('.pace-action'),paceSpeed=pace.querySelector
     b.addEventListener('pointerdown',e=>{if(e.button===0)needsFreshPress=false;});b.addEventListener('keydown',e=>{if(['Space','Enter'].includes(e.code)){if(e.repeat)e.preventDefault();else needsFreshPress=false;}});
     b.onclick=()=>{if(needsFreshPress||performance.now()<choiceLockedUntil||run!==getRun())return;if(run.chooseWaveBuff(buff.id)){resetInput();dialog.close();document.querySelector('#arena').focus({preventScroll:true});}};cards.append(b);
    }
-   dialog.append(cards);if(wave.recommendation){const reason=document.createElement('p');reason.className='wave-fit-reason';reason.textContent=wave.recommendation.reason;dialog.append(reason);}dialog.storyOpened=performance.now();dialog.showModal();const firstCard=cards.querySelector('button');if(firstCard)firstCard.focus();
+   dialog.append(cards);if(wave.recommendation){const reason=document.createElement('p');reason.className='wave-fit-reason';reason.textContent=wave.recommendation.reason;dialog.append(reason);}dialog.previewOpened=performance.now();dialog.showModal();const firstCard=cards.querySelector('button');if(firstCard)firstCard.focus();
   }
  }
  return {dispose(){disposed=true;choiceRun=null;pressed.clear();document.removeEventListener('keydown',press,true);document.removeEventListener('keyup',release,true);document.removeEventListener('keydown',escape,true);if(dialog.open)dialog.close();for(const n of [hud,dialog,announcement,goalChip,postLine,pace,momentumRow,cycle,pips,skip])n.remove();},update,get open(){return dialog.open;}};

@@ -18,7 +18,7 @@ try{for(const [width,height]of [[390,680],[550,720],[860,440]]){
  assert.ok(await p.evaluate(()=>touchFixture.input.aim?.y<0));await send('touchEnd');assert.equal(await shots(),1);
  const movement=await p.evaluate(()=>{const r=touchFixture.r,y=r.world.player.position.y;for(let i=0;i<8;i++)r.tick();return r.world.player.position.y-y;});assert.ok(movement<-10);checks++;
  // Deliberately return into the cancellation ring.
- await reset();await send('touchStart',[[1,150,200]]);await send('touchMove',[[1,150,230]]);await send('touchMove',[[1,150,204]]);await send('touchEnd');assert.equal(await shots(),0);checks++;
+ await reset();await send('touchStart',[[1,150,200]]);await send('touchMove',[[1,150,230]]);await send('touchMove',[[1,150,202]]);await send('touchEnd');assert.equal(await shots(),0);checks++;
  // Native touch cancellation must never launch later.
  await reset();await send('touchStart',[[1,150,200]]);await send('touchMove',[[1,150,240]]);await send('touchCancel');await p.evaluate(()=>touchFixture.input.retry());assert.equal(await shots(),0);checks++;
  // Secondary fingers do not hijack or double-commit the primary gesture.

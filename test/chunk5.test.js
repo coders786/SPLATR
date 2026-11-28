@@ -141,8 +141,8 @@ test('CHUNK 5 lessons: the Monolith lesson completes end to end', () => {
     assert.equal(s.waiting, true, 'stage 4 observed');
     assert.equal(s.continueStep(), true);
 
-    // Step 3 — CLEAR: five banked OVERCHARGED cuts, one plate each.
-    for (let i = 0; i < 5; i++) {
+    // Step 3 — CLEAR: four banked OVERCHARGED cuts.
+    for (let i = 0; i < 4; i++) {
       const m = monolith();
       assert.ok(m, `plate ${i + 1}: the Monolith still stands`);
       placePlayer(r.world, { x: m.x, y: m.y + 130 });

@@ -74,7 +74,7 @@ integrator that steps `v *= 0.9851` per tick and applies gravity to the
 velocity rather than as a closed-form `½gt²`. Two things to get right:
 
 1. **Do not change `projectilePoint` alone.** It is also used by `guide.js`,
-   `opening.js` and `storyboard.js`, where the constant-velocity arc is the
+   `opening.js` and `guideboard.js`, where the constant-velocity arc is the
    intended path of a *scripted* element, not a prediction of the player's cube.
 2. **Shorten `ARC.maxTicks`.** 190 ticks is 3.2 s of predicted flight; the cube
    stops at roughly tick 80. A preview drawn past the point where the cube has

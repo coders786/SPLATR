@@ -689,12 +689,12 @@ test('no red line is drawn anywhere in play', () => {
   dom.uninstall();
 });
 
-test('local radar draws a readable square panel instead of compressing the whole table', () => {
+test('gameplay no longer draws the square minimap panel', () => {
   const dom=installDom(),{canvas,ctx}=createDisplay(1560,866),renderer=createRenderer(canvas),run=createRun(19);
   try {
     renderer.draw(run,1,null,true,'mouse');
     const panels=ctx.__ops.filter(o=>o.kind==='strokeRect'&&o.pts.length===2).map(o=>({w:o.pts[1][0]-o.pts[0][0],h:o.pts[1][1]-o.pts[0][1]}));
-    assert.ok(panels.some(p=>p.w>=110&&p.w<=161&&Math.abs(p.w-p.h)<2),'radar must remain square and readable');
+    assert.ok(!panels.some(p=>p.w>=110&&p.w<=161&&Math.abs(p.w-p.h)<2),'minimap panel should not obscure combat');
   } finally {run.dispose();renderer.dispose();dom.uninstall();}
 });
 

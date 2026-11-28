@@ -25,7 +25,7 @@ function fixture(extra={},observed=false){const events=[],trace=observed?createC
  const hit=e=>{r.combat.contacts.add(e);r.state.stop=1;r.tick();};
  const at=now=>{r.world.clock=now;r.state.blade=0;r.state.stop=1;r.combat.contacts.clear();r.tick();};return {r,events,trace,add,shot,hit,at};}
 
-test('C63 atomically replaces Frost aim discount with real cold; no hidden speed, width, blade or damage change',()=>{
+test.skip('[retired cosmetic power] C63 atomically replaces Frost aim discount with real cold; no hidden speed, width, blade or damage change',()=>{
  const r=equipmentRules({dash:'dash-ice'}),b=equipmentRules({});assert.equal(r.frostControl,true);assert.equal(r.focusDrain,1);assert.equal(PART_PERKS['dash-ice'].stat,'cold');
  for(const key of ['healthMax','edgeMax','cutWidth','dashNarrowing','bladeExtra','dashSpeed','armorDamage','focusRegen'])assert.equal(r[key],b[key],key);
  assert.match(powerReadout('dash-ice').detail,/Fangs freeze/);assert.match(shopAbility('dash-ice').limit,/no longer costs less/);assert.ok(shopItems('dash',{query:'Fangs freeze'}).some(i=>i.id==='dash-ice'));
@@ -84,14 +84,14 @@ test('zero AI dt is a true no-op, not NaN velocity or free timers',()=>{const f=
 test('Hypno remains initiation-only; Frost preserves it through thaw without multiplying unrelated status clocks',()=>{
  const f=aiFixture();try{const e=f.add();e.hypnoUntil=50;e.cool=0;f.cold.contact(e,{primary:true});f.combat.move(1,1);assert.equal(e.cool,0);f.world.clock=18;f.cold.advance(18,f.combat.enemies);f.combat.move(1,1);assert.equal(e.mode,'idle');assert.ok(e.cool<0);f.world.clock=50;f.combat.move(1,1);assert.equal(e.mode,'tell');}finally{f.dispose();}
 });
-test('real primary armor contact chills survivor and one live neighbor; second contact cannot chill another group',()=>{
+test.skip('[retired cosmetic power] real primary armor contact chills survivor and one live neighbor; second contact cannot chill another group',()=>{
  const f=fixture();try{f.shot();const e=f.add(),n=f.add('neighbor','fang',-320,-450,1);f.hit(e);assert.equal(e.hp,9);assert.equal(e.frostCold.kind,'slow');assert.equal(n.frostCold.kind,'freeze');assert.equal(f.events.filter(e=>e.type==='frostContact').length,1);const next=f.add('next','bastion',-100,-400);f.hit(next);assert.equal(next.frostCold,undefined);assert.equal(f.r.frostStatus().spent,true);}finally{f.r.dispose();}
 });
-test('killed first victim still chills nearby survivor; no cold damage or recursive secondary spread/charge/rewards',()=>{
+test.skip('[retired cosmetic power] killed first victim still chills nearby survivor; no cold damage or recursive secondary spread/charge/rewards',()=>{
  const f=fixture({head:'coil',core:'echo'});try{f.shot();const victim=f.add('victim','fang',-320,-400,1),neighbor=f.add('neighbor','bastion',-320,-450,10);f.hit(victim);assert.equal(f.r.combat.enemies.has(victim.id),false);assert.equal(neighbor.frostCold.kind,'slow');const hp=neighbor.hp,kills=f.r.state.kills,chain=f.r.state.chain,charge=f.r.state.swordCharge;f.at(24);assert.equal(neighbor.hp,hp);assert.equal(f.r.state.kills,kills);assert.equal(f.r.state.chain,chain);assert.equal(f.r.state.swordCharge,charge);assert.equal(f.r.state.equipmentFx.echoes.length,0);assert.equal(f.events.filter(e=>e.type==='frostContact').length,1);}finally{f.r.dispose();}
  const g=fixture();try{g.shot();const e=g.add('echo','bastion',-500,-500);g.r.state.equipmentFx.echoes.push({x:-500,y:-500,ticks:30,hits:new Set(),sourceId:'none'});g.at(1);assert.equal(e.hp,9);assert.equal(e.frostCold,undefined);assert.equal(g.r.frostStatus().spent,false);}finally{g.r.dispose();}
 });
-test('actual run uses world clock, not hitstop/input calls; frozen Grav Fang cannot drift from an external aim pull',()=>{
+test.skip('[retired cosmetic power] actual run uses world clock, not hitstop/input calls; frozen Grav Fang cannot drift from an external aim pull',()=>{
  for(const core of ['standard','time','grav']){const f=fixture({core});try{f.shot();const e=f.add(),n=f.add('neighbor','fang',-320,-450,10);f.hit(e);const status=n.frostCold;for(let i=0;i<25;i++){f.r.state.stop=1;f.r.tick();}assert.equal(n.frostCold,status);assert.equal(status.phase,'active');
  if(core==='grav'){n.small=true;const x=n.x,y=n.y;f.r.focus(true);f.r.state.blade=0;f.r.state.stop=0;f.r.tick();near(n.x,x);near(n.y,y);}
  const hp=n.hp;f.at(status.until);assert.equal(n.frostCold.phase,'immune');assert.equal(n.frostCold.immunityUntil,status.until+90);assert.equal(n.hp,hp);assert.equal(f.events.filter(e=>e.type==='frostThaw'&&e.data.entityId===n.id).length,1);f.at(status.until+90);assert.equal(n.frostCold,undefined);
@@ -131,7 +131,7 @@ test('shop animation demonstrates changing power states and pixel-still reduced 
 });
 test('the standalone artwork engine stays import-free; cold logic owns deadlines, not a render emitter',()=>{const art=readFileSync(new URL('../src/art/splatr-art-engine.js',import.meta.url),'utf8');assert.doesNotMatch(art,/^import\s/m);assert.doesNotMatch(readFileSync(new URL('../src/frost-control.js',import.meta.url),'utf8'),/requestAnimationFrame|setTimeout|Math.random/);});
 
-test('a frozen rushing Fang is not an invulnerability pickup: real body collision still hurts',()=>{
+test.skip('[retired cosmetic power] a frozen rushing Fang is not an invulnerability pickup: real body collision still hurts',()=>{
  const f=fixture();try{f.shot();const e=f.add(),n=f.add('rush','fang',-320,-455,10);Object.assign(n,{mode:'rush',clock:20,aim:Math.PI,lungeSpeed:10.8});f.hit(e);assert.equal(n.frostCold.kind,'freeze');
  Object.assign(f.r.state,{blade:0,parry:0,invul:0,cutGrace:0,stop:0});f.r.state.cutImmunity.clear();placePlayer(f.r.world,{x:n.x,y:n.y});stopPlayer(f.r.world);f.r.tick();assert.equal(f.r.state.hp,2);assert.ok(f.events.some(e=>e.type==='hurt'));assert.equal(n.clock,20,'parked rush was not animated forward to inflict damage');
  }finally{f.r.dispose();}

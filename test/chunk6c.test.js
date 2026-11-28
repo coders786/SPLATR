@@ -103,7 +103,7 @@ test('CHUNK 6C: the catalogue owns one persistent card per rest, and continuous 
   try {
     continuous.state.phase = 'playing';
     assert.notEqual(continuous.state.wave.phase, 'choose');
-    continuous.state.narrative.rest = { sector: 1, age: 0, ticks: 30 };
+    continuous.state.arcade.rest = { sector: 1, age: 0, ticks: 30 };
     continuous.state.wave.entry = 30;
     for (let i = 0; i < 31; i++) { continuous.state.stop = 0; continuous.tick(); }
     assert.equal(continuous.state.wave.phase, 'choose', 'continuous mode opens the sector rest deal');
@@ -117,7 +117,7 @@ test('CHUNK 6C: the catalogue owns one persistent card per rest, and continuous 
   const ordinary = createRun(131, () => {}, { waveMode: true, continuous: true });
   try {
     ordinary.state.phase = 'playing';
-    ordinary.state.narrative.rest = { sector: 1, age: 0, ticks: 30 };
+    ordinary.state.arcade.rest = { sector: 1, age: 0, ticks: 30 };
     ordinary.state.wave.entry = 30;
     for (let i = 0; i < 31; i++) { ordinary.state.stop = 0; ordinary.tick(); }
     assert.notEqual(ordinary.state.wave.phase, 'choose', 'normal continuous play stays on the 6B path');

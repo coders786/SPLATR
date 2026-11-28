@@ -27,7 +27,7 @@ export const LESSON_CARD_COPY=Object.freeze({
 function cardCopy(lesson){return LESSON_CARD_COPY[lesson.id]||{title:lesson.name,signal:'LIVE CUE',move:'WATCH'};}
 
 /** The shipped lesson surface: a real encounter with THE WATCH chip state. */
-export function createTeachingUI({resetInput=()=>{},motion=()=>true,onOpen=()=>{},onClose=()=>{}}={}){
+export function createTeachingUI({resetInput=()=>{},motion=()=>true,aimMode=()=> 'direct',onOpen=()=>{},onClose=()=>{}}={}){
  const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!=null)n.textContent=text;return n;};
  const dialog=el('dialog','teaching-guide');dialog.setAttribute('aria-labelledby','teaching-title');dialog.dataset.mode='picker';
  const header=el('header'),identity=el('div'),title=el('h2','','LIVE TRAINING');title.id='teaching-title';identity.append(el('small','','THE WATCH / NO REWARDS'),title);
@@ -56,8 +56,8 @@ export function createTeachingUI({resetInput=()=>{},motion=()=>true,onOpen=()=>{
  const controls=el('p','teaching-controls','MOUSE · POINT / RELEASE  ·  HOLD · POWER  ·  TOUCH · TAP / PULL  ·  KEYS · ARROWS + SPACE');
  const healthHelp=el('p','teaching-health-help','HIT · REPEAT  ·  CUT · CLEAR  ·  NO REWARDS');
  menu.append(controls,healthHelp);
- const stage=el('div','teaching-stage'),canvas=el('canvas');canvas.tabIndex=0;canvas.setAttribute('aria-label','Live enemy rehearsal. Mouse: pull back, release to launch the opposite way; Shift+click aims directly; right-click cancels. Touch: tap or pull back and release. Arrows or WASD aim; Space launches; Shift focuses.');stage.append(canvas);
- const directions=el('div','teaching-directions'),chip=el('div','watch-chip story-chip','WATCH IT.');chip.setAttribute('aria-live','polite');chip.setAttribute('role','status');
+ const stage=el('div','teaching-stage'),canvas=el('canvas');canvas.tabIndex=0;canvas.setAttribute('aria-label','Live enemy rehearsal. Aim toward your target and release. Slingshot mode is available in Options. Right-click cancels. Arrows or WASD aim; Space launches; Shift focuses.');stage.append(canvas);
+ const directions=el('div','teaching-directions'),chip=el('div','watch-chip','WATCH IT.');chip.setAttribute('aria-live','polite');chip.setAttribute('role','status');
  const lessonMark=el('small','watch-lesson-mark'),trySpeed=el('button','watch-try-speed','TRY AT SPEED');trySpeed.type='button';trySpeed.hidden=true;
  const action=el('p','watch-action');action.setAttribute('aria-hidden','true');directions.append(lessonMark,chip,action,trySpeed);
  const meters=el('div','teaching-meters'),blade=el('div','teaching-blade'),bladeName=el('b'),track=el('progress'),bladeTime=el('span');track.max=38;track.setAttribute('aria-label','Remaining active slash window');blade.append(bladeName,track,bladeTime);
@@ -91,7 +91,7 @@ export function createTeachingUI({resetInput=()=>{},motion=()=>true,onOpen=()=>{
    if(message)announce.textContent=message;
   }});
   const run=session.run,rect=canvas.getBoundingClientRect();run.setViewport(rect.width,rect.height);renderer.field(run.world.player.position);renderer.draw(run,1,null,motion());run.setView(renderer.questView());
-  input=createInput(canvas,{get:()=>session?.run,active:()=>dialog.open&&!menu.open&&!!session&&!session.complete&&session.run.state.phase==='playing'&&!document.hidden,point:renderer.worldPoint,assist:()=>false,engage(){},commit:v=>session?.run.dash(v)||false,lock:{once:null,tick(){}}});
+  input=createInput(canvas,{get:()=>session?.run,active:()=>dialog.open&&!menu.open&&!!session&&!session.complete&&session.run.state.phase==='playing'&&!document.hidden,point:renderer.worldPoint,assist:()=>false,aimMode,engage(){},commit:v=>session?.run.dash(v)||false,lock:{once:null,tick(){}}});
   windowPeak=1;lastShots=-1;lastRestart=0;announce.textContent='Live rehearsal. Let the arena show the attack.';update();canvas.focus({preventScroll:true});raf=requestAnimationFrame(frame);
  }
  function update(){

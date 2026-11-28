@@ -4,9 +4,8 @@
 Five implementation passes on `arena/e465ea1b-splatr`, prioritizing the actual fresh-player handoff and visible world/shop changes. Existing local item-mechanics changes and profile fixtures were preserved. No commit or push was made.
 
 ## 1. The way through
-- Replaced the first real run’s symbolic cold-open movie with an immediately playable Watcher-held opening.
-- Persistent **CUT THROUGH THE OPENING** help explains the next action; wording follows mouse, keyboard or touch input. The normal score/bonus HUD stays quiet during this beat.
-- A real upward blade hit opens the gate and produces a local opening response. The prompt follows real gate state, not a timer.
+- The first real run begins with an immediately playable gate.
+- A real upward blade hit opens the gate and produces a local opening response.
 - Fixed the missing-goal readout before Sector 01 starts.
 - Verified the actual app handoff after the training bot completed all four rooms, without setting its completion flag or invoking `finishTutorial`. Both desktop and portrait captures stayed at the gate hands-off and entered play after one native upward mouse drag. No warning/error logs were recorded.
 

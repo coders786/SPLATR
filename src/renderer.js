@@ -29,9 +29,10 @@ export function createRenderer(canvas,{postfx='off'}={}){
   return new Proxy(engine,{get(target,key){
     if(key==='dispose')return ()=>{if(disposed)return;disposed=true;observer.disconnect();fx.dispose();target.dispose();};
     if(key==='setPostFXMode')return mode=>fx.setMode(mode);
+    if(key==='setPostFXIntensity')return intensity=>fx.setIntensity(intensity);
     if(key==='onGraphicsContext')return fn=>{contextListener=fn||(()=>{});};
     if(key==='triggerImpactFrame')return durationMs=>fx.triggerImpactFrame(durationMs);
-    if(key==='postFXState')return ()=>({mode:fx.mode,active:fx.enabled&&!!fx.gl&&!fx.failed&&!fx.lost,lost:fx.lost,uniforms:fx.envelope.read(),combat:fx.combat.read(lastMotion),failed:fx.failed,failureReason:fx.failureReason});
+    if(key==='postFXState')return ()=>({mode:fx.mode,intensity:fx.intensity,active:fx.enabled&&!!fx.gl&&!fx.failed&&!fx.lost,lost:fx.lost,uniforms:fx.envelope.read(),combat:fx.combat.read(lastMotion),failed:fx.failed,failureReason:fx.failureReason});
     if(key==='reset'||key==='field')return (...args)=>{fx.reset();return target[key](...args);};
     if(key==='title')return (...args)=>{fx.show(false);return target.title(...args);};
     if(key==='event')return (...args)=>{
