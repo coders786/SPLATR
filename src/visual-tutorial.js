@@ -105,7 +105,7 @@ export function riftObjective(visual,enemies,device='touch') {
  if(visual.dodged){const left=['tutorial/rift','tutorial/fang'].filter(id=>enemies.has(id)).length;return `${visual.successTicks>0?'GOOD! ':''}2/3 · SLICE SHAPES · ${left} LEFT`;}
  const kind=visual.guide?.kind;
  const stall=visual.stall;
- if(kind==='dodge')return device==='keys'?`1/3 · HOLD ${escapeDirection(visual.guide).toUpperCase()} ARROW + SPACE`:`1/3 · ${device==='mouse'?'CLICK':'TAP'} THE GREEN DIAMOND`;
+ if(kind==='dodge')return device==='keys'?`1/3 · HOLD ${escapeDirection(visual.guide).toUpperCase()} ARROW + SPACE`:`1/3 · ${device==='mouse'?'SHIFT+CLICK':'TAP'} THE GREEN DIAMOND`;
  if(kind==='resolve')return '1/3 · STAY OUTSIDE UNTIL IT STRIKES';
  if(kind==='wait-next')return stall?'GO — WAIT FOR THE RED CIRCLE, THEN BE OUTSIDE IT':'1/3 · WAIT FOR THE NEXT RED CIRCLE';
  if(visual.dodgeFeedback>0)return 'MISSED · WAIT FOR THE NEXT RED CIRCLE';
@@ -132,7 +132,7 @@ export function tutorialObjective(visual,enemies,device='touch') {
  if(visual.gateReady)return visual.gateBroken?'GO THROUGH THE OPEN GATE':'SLICE THE GLOWING GATE';
  if(visual.stage===0){
   const left=[...enemies.keys()].filter(id=>id.startsWith('tutorial/rack/')).length;
-  const action=`${device==='keys'?'ARROWS + SPACE':device==='mouse'?'CLICK A SHAPE':'TAP A SHAPE'} · ${left} LEFT`;
+  const action=`${device==='keys'?'ARROWS + SPACE':device==='mouse'?'PULL BACK + RELEASE':'TAP A SHAPE'} · ${left} LEFT`;
   return visual.stall?`${action} — IT CANNOT HIT BACK, CUT FREELY`:action;
  }
  if(visual.stage===1)return visual.stall?'GO — THE WALL IS MARKED, HIT IT':'BOUNCE OFF THE GLOWING RIGHT WALL';

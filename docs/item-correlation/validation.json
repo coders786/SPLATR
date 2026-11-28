@@ -1,0 +1,42 @@
+{
+  "tests": {
+    "passed": 1433,
+    "failed": 0,
+    "durationMs": 240474
+  },
+  "newFocusedTests": 6,
+  "initialIntegrationTests": 30,
+  "build": {
+    "status": "PASS",
+    "singleFileKiB": 1252.1
+  },
+  "nativeScreenshots": 101,
+  "productionArtIllustrations": 32,
+  "artAudit": {
+    "genuineBefore": ".arena/item-correlation/art-before.js",
+    "unchangedBaseline": 140,
+    "changedHeads": 1120,
+    "unchangedAttacks": 392,
+    "unchangedStories": 192,
+    "note": "Same current equipment and study data, genuine old/new production renderer. All eight paid/unlock head silhouettes intentionally change; bare-head construction and non-head default studies/attack artwork are protected. Pixel evidence is not a human-recognition study."
+  },
+  "shopHeadCases": {
+    "heads": 8,
+    "beats": 3,
+    "layoutMotionSettings": 3,
+    "errors": []
+  },
+  "liveRendererCases": 16,
+  "shopRegression": {
+    "layoutMotionSettings": 7,
+    "purchaseEquipFlows": 3,
+    "catalogueShelves": 22,
+    "errors": []
+  },
+  "limitations": [
+    "No balance or C64 Tide migration",
+    "Native live checks use deliberately isolated run conditions; Coil is a real admitted relay",
+    "No recruited-player recognition/comprehension test",
+    "No physical-device FPS measurement"
+  ]
+}

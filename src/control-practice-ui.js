@@ -13,11 +13,11 @@ export function createControlPracticeUI({resetInput,motion=()=>true,onClose=()=>
  const back=el('button','','BACK');back.type='button';prependIcon(back,'back');back.onclick=()=>dialog.close();header.append(identity,back);
  const toolbar=el('div','control-toolbar'),label=el('label','','DRILL'),select=el('select');select.setAttribute('aria-label','Control drill');for(const d of CONTROL_DRILLS){const o=el('option','',d.name);o.value=d.id;select.append(o);}label.append(select);
  const retry=el('button','control-retry','RESTART');retry.type='button';prependIcon(retry,'retry');toolbar.append(label,retry);
- const setup=el('p','control-setup'),canvas=el('canvas');canvas.tabIndex=0;canvas.setAttribute('aria-label','Safe arena. Pull back and release forward; arrows aim and Space launches. Hold Shift to focus.');
+ const setup=el('p','control-setup'),canvas=el('canvas');canvas.tabIndex=0;canvas.setAttribute('aria-label','Safe arena. Mouse: pull back, release to launch the opposite way; Shift+click aims directly; right-click cancels. Touch: pull back and release. Arrows aim and Space launches; Shift focuses.');
  const readout=el('section','control-readout'),heading=el('div'),step=el('b'),speed=el('span');heading.append(step,speed);
  const diagram=el('div','control-visual-cue');diagram.setAttribute('aria-hidden','true');readout.append(diagram);
  const track=el('progress');track.max=1;track.setAttribute('aria-label','Current practice step progress');const hint=el('p');readout.prepend(heading);readout.append(track,hint);
- const footer=el('p','control-help gesture-hints');for(const [id,text]of [['tap','Tap'],['pull','Pull back'],['release','Release']]){const item=el('span','',text);item.prepend(iconNode(id));footer.append(item);}
+ const footer=el('p','control-help gesture-hints');for(const [id,text]of [['pull','Pull back'],['release','Release'],['target','Shift+click: direct']]){const item=el('span','',text);item.prepend(iconNode(id));footer.append(item);}
  const announce=el('p','control-announcement');announce.setAttribute('role','status');announce.setAttribute('aria-live','polite');
  dialog.append(header,toolbar,setup,canvas,readout,footer,announce);document.querySelector('#game').append(dialog);
  let session=null,renderer=null,input=null,raf=0,lastStage='',drill='route';const clock=createClock();
@@ -26,7 +26,7 @@ export function createControlPracticeUI({resetInput,motion=()=>true,onClose=()=>
   teardown();resetInput();setup.textContent=controlDrill(drill).setup;setup.classList.add('icon-sr-only');canvas.title=controlDrill(drill).setup;dialog.dataset.drill=drill;renderer=createRenderer(canvas);renderer.reset(841);renderer.setShakeLevel('off');
   session=createControlSession({drill,emit:(type,data)=>{renderer?.event(type,data,motion());if(type==='waveClear'||type==='waveRest')input?.reset();}});
   const r=session.run,b=canvas.getBoundingClientRect();r.setViewport(b.width,b.height);renderer.field(r.world.player.position);renderer.draw(r,1,null,motion());session.start(renderer.questView());
-  input=createInput(canvas,{get:()=>session?.run,active:()=>dialog.open&&!!session&&!session.cue.complete&&!document.hidden,point:(x,y)=>{const b=canvas.getBoundingClientRect();return renderer.worldPoint(x-b.left,y-b.top);},assist:()=>false,engage(){},commit:v=>session?.run.dash(v)||false,lock:{once:null,tick(){}}});
+  input=createInput(canvas,{get:()=>session?.run,active:()=>dialog.open&&!!session&&!session.cue.complete&&!document.hidden,point:renderer.worldPoint,assist:()=>false,engage(){},commit:v=>session?.run.dash(v)||false,lock:{once:null,tick(){}}});
   draw(1);update();canvas.focus({preventScroll:true});raf=requestAnimationFrame(frame);
  }
  function draw(alpha=1){

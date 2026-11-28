@@ -1,0 +1,18 @@
+{
+  "date": "2026-11-24",
+  "fullTests": {
+    "passed": 1455,
+    "failed": 0,
+    "durationMs": 348381.171381
+  },
+  "focusedTests": 28,
+  "actualUIItemBeatCaptures": 219,
+  "mobileCases": 4,
+  "pageErrors": [],
+  "shopRegression": "PASS: 7 layout/motion, 22 shelves, 3 separate Buy/Equip flows",
+  "buildKiB": 1286.2,
+  "diffCheck": "PASS",
+  "actualStoreCanvasVideoSeconds": 16.8,
+  "scope": "Store-only material, lighting and eight elemental wake upgrades. Existing 73-item three-beat performances preserved. No combat or save changes.",
+  "limits": "Automated browser coverage, not human approval or physical-device FPS qualification."
+}

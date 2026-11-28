@@ -1,0 +1,392 @@
+{
+  "method": "Isolated real createInput/createRun/createRenderer. Actual Puppeteer mouse and keyboard events; controlled initial state and no simulation clock while measuring preview/release equality. Not ordinary progression. Before intentionally records old behavior without enforcing new contract.",
+  "rows": [
+    {
+      "name": "click",
+      "start": {
+        "x": 680,
+        "y": 250
+      },
+      "end": {
+        "x": 680,
+        "y": 250
+      },
+      "held": {
+        "preview": {
+          "x": 8.329687944079854,
+          "y": -41.16571751778718,
+          "power": 1,
+          "lock": null,
+          "control": "mouse"
+        },
+        "expected": {
+          "x": 8.329687944079854,
+          "y": -41.16571751778718,
+          "power": 1
+        },
+        "powerLabel": "100% · RELEASE",
+        "overlay": "<svg class=\"defs\" width=\"0\" height=\"0\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\">\n      <symbol id=\"i-sound\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM15 8a5 5 0 0 1 0 8m3-11a9 9 0 0 1 0 14\"></path>\n      </symbol>\n      <symbol id=\"i-mute\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM16 9l6 6m0-6-6 6\"></path>\n      </symbol>\n      <symbol id=\"i-full\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5\"></path>\n      </symbol>\n      <symbol id=\"i-trophy\" viewBox=\"0 0 24 24\">\n        <path d=\"M6 3h12l-1 8a5 5 0 0 1-10 0zM6 5H2l1 4 4 2m11-6h4l-1 4-4 2M12 16v4m-4 1h8\"></path>\n      </symbol>\n      <symbol id=\"i-guide\" viewBox=\"0 0 24 24\">\n        <path d=\"M12 6v14M3 4l9 2 9-2v14l-9 2-9-2z\"></path>\n      </symbol>\n      <symbol id=\"i-options\" viewBox=\"0 0 24 24\">\n        <path d=\"M3 6h10m4 0h4M3 12h3m4 0h11M3 18h11m4 0h3\"></path>\n        <path d=\"M13 3v6M7 9v6m8 0v6\" stroke-width=\"3\"></path>\n      </symbol>\n      <symbol id=\"i-pause\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 5v14m8-14v14\" stroke-width=\"4\"></path>\n      </symbol>\n      <symbol id=\"i-play\" viewBox=\"0 0 24 24\">\n        <path d=\"m6 3 14 9L6 21z\" fill=\"currentColor\" stroke=\"none\"></path>\n      </symbol>\n      <symbol id=\"i-arrow\" viewBox=\"0 0 24 24\"><path d=\"M3 12h17m-6-7 7 7-7 7\"></path></symbol>\n    </svg>"
+      },
+      "attempts": [
+        {
+          "v": {
+            "x": 8.329687944079854,
+            "y": -41.16571751778718,
+            "power": 1,
+            "lock": null,
+            "control": "mouse"
+          },
+          "accepted": true
+        }
+      ],
+      "shots": 1,
+      "aim": null,
+      "engaged": false
+    },
+    {
+      "name": "jitter7",
+      "start": {
+        "x": 680,
+        "y": 250
+      },
+      "end": {
+        "x": 687,
+        "y": 250
+      },
+      "held": {
+        "preview": {
+          "x": 9.17479488822524,
+          "y": -40.98564552082834,
+          "power": 1,
+          "lock": null,
+          "control": "mouse"
+        },
+        "expected": {
+          "x": 9.17479488822524,
+          "y": -40.98564552082834,
+          "power": 1
+        },
+        "powerLabel": "100% · RELEASE",
+        "overlay": "<svg class=\"defs\" width=\"0\" height=\"0\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\">\n      <symbol id=\"i-sound\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM15 8a5 5 0 0 1 0 8m3-11a9 9 0 0 1 0 14\"></path>\n      </symbol>\n      <symbol id=\"i-mute\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM16 9l6 6m0-6-6 6\"></path>\n      </symbol>\n      <symbol id=\"i-full\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5\"></path>\n      </symbol>\n      <symbol id=\"i-trophy\" viewBox=\"0 0 24 24\">\n        <path d=\"M6 3h12l-1 8a5 5 0 0 1-10 0zM6 5H2l1 4 4 2m11-6h4l-1 4-4 2M12 16v4m-4 1h8\"></path>\n      </symbol>\n      <symbol id=\"i-guide\" viewBox=\"0 0 24 24\">\n        <path d=\"M12 6v14M3 4l9 2 9-2v14l-9 2-9-2z\"></path>\n      </symbol>\n      <symbol id=\"i-options\" viewBox=\"0 0 24 24\">\n        <path d=\"M3 6h10m4 0h4M3 12h3m4 0h11M3 18h11m4 0h3\"></path>\n        <path d=\"M13 3v6M7 9v6m8 0v6\" stroke-width=\"3\"></path>\n      </symbol>\n      <symbol id=\"i-pause\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 5v14m8-14v14\" stroke-width=\"4\"></path>\n      </symbol>\n      <symbol id=\"i-play\" viewBox=\"0 0 24 24\">\n        <path d=\"m6 3 14 9L6 21z\" fill=\"currentColor\" stroke=\"none\"></path>\n      </symbol>\n      <symbol id=\"i-arrow\" viewBox=\"0 0 24 24\"><path d=\"M3 12h17m-6-7 7 7-7 7\"></path></symbol>\n    </svg>"
+      },
+      "attempts": [
+        {
+          "v": {
+            "x": 9.17479488822524,
+            "y": -40.98564552082834,
+            "power": 1,
+            "lock": null,
+            "control": "mouse"
+          },
+          "accepted": true
+        }
+      ],
+      "shots": 1,
+      "aim": null,
+      "engaged": false
+    },
+    {
+      "name": "jitter9",
+      "start": {
+        "x": 680,
+        "y": 250
+      },
+      "end": {
+        "x": 689,
+        "y": 250
+      },
+      "held": {
+        "preview": {
+          "x": 9.413995117803436,
+          "y": -40.93136567379561,
+          "power": 1,
+          "lock": null,
+          "control": "mouse"
+        },
+        "expected": {
+          "x": 9.413995117803436,
+          "y": -40.93136567379561,
+          "power": 1
+        },
+        "powerLabel": "100% · RELEASE",
+        "overlay": "<svg class=\"defs\" width=\"0\" height=\"0\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\">\n      <symbol id=\"i-sound\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM15 8a5 5 0 0 1 0 8m3-11a9 9 0 0 1 0 14\"></path>\n      </symbol>\n      <symbol id=\"i-mute\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM16 9l6 6m0-6-6 6\"></path>\n      </symbol>\n      <symbol id=\"i-full\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5\"></path>\n      </symbol>\n      <symbol id=\"i-trophy\" viewBox=\"0 0 24 24\">\n        <path d=\"M6 3h12l-1 8a5 5 0 0 1-10 0zM6 5H2l1 4 4 2m11-6h4l-1 4-4 2M12 16v4m-4 1h8\"></path>\n      </symbol>\n      <symbol id=\"i-guide\" viewBox=\"0 0 24 24\">\n        <path d=\"M12 6v14M3 4l9 2 9-2v14l-9 2-9-2z\"></path>\n      </symbol>\n      <symbol id=\"i-options\" viewBox=\"0 0 24 24\">\n        <path d=\"M3 6h10m4 0h4M3 12h3m4 0h11M3 18h11m4 0h3\"></path>\n        <path d=\"M13 3v6M7 9v6m8 0v6\" stroke-width=\"3\"></path>\n      </symbol>\n      <symbol id=\"i-pause\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 5v14m8-14v14\" stroke-width=\"4\"></path>\n      </symbol>\n      <symbol id=\"i-play\" viewBox=\"0 0 24 24\">\n        <path d=\"m6 3 14 9L6 21z\" fill=\"currentColor\" stroke=\"none\"></path>\n      </symbol>\n      <symbol id=\"i-arrow\" viewBox=\"0 0 24 24\"><path d=\"M3 12h17m-6-7 7 7-7 7\"></path></symbol>\n    </svg>"
+      },
+      "attempts": [
+        {
+          "v": {
+            "x": 9.413995117803436,
+            "y": -40.93136567379561,
+            "power": 1,
+            "lock": null,
+            "control": "mouse"
+          },
+          "accepted": true
+        }
+      ],
+      "shots": 1,
+      "aim": null,
+      "engaged": false
+    },
+    {
+      "name": "retarget",
+      "start": {
+        "x": 680,
+        "y": 250
+      },
+      "end": {
+        "x": 920,
+        "y": 190
+      },
+      "held": {
+        "preview": {
+          "x": 25.463569997121162,
+          "y": -33.40069764244021,
+          "power": 1,
+          "lock": null,
+          "control": "mouse"
+        },
+        "expected": {
+          "x": 25.46356999712116,
+          "y": -33.4006976424402,
+          "power": 0.9999999999999998
+        },
+        "powerLabel": "100% · RELEASE",
+        "overlay": "<svg class=\"defs\" width=\"0\" height=\"0\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\">\n      <symbol id=\"i-sound\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM15 8a5 5 0 0 1 0 8m3-11a9 9 0 0 1 0 14\"></path>\n      </symbol>\n      <symbol id=\"i-mute\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM16 9l6 6m0-6-6 6\"></path>\n      </symbol>\n      <symbol id=\"i-full\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5\"></path>\n      </symbol>\n      <symbol id=\"i-trophy\" viewBox=\"0 0 24 24\">\n        <path d=\"M6 3h12l-1 8a5 5 0 0 1-10 0zM6 5H2l1 4 4 2m11-6h4l-1 4-4 2M12 16v4m-4 1h8\"></path>\n      </symbol>\n      <symbol id=\"i-guide\" viewBox=\"0 0 24 24\">\n        <path d=\"M12 6v14M3 4l9 2 9-2v14l-9 2-9-2z\"></path>\n      </symbol>\n      <symbol id=\"i-options\" viewBox=\"0 0 24 24\">\n        <path d=\"M3 6h10m4 0h4M3 12h3m4 0h11M3 18h11m4 0h3\"></path>\n        <path d=\"M13 3v6M7 9v6m8 0v6\" stroke-width=\"3\"></path>\n      </symbol>\n      <symbol id=\"i-pause\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 5v14m8-14v14\" stroke-width=\"4\"></path>\n      </symbol>\n      <symbol id=\"i-play\" viewBox=\"0 0 24 24\">\n        <path d=\"m6 3 14 9L6 21z\" fill=\"currentColor\" stroke=\"none\"></path>\n      </symbol>\n      <symbol id=\"i-arrow\" viewBox=\"0 0 24 24\"><path d=\"M3 12h17m-6-7 7 7-7 7\"></path></symbol>\n    </svg>"
+      },
+      "attempts": [
+        {
+          "v": {
+            "x": 25.463569997121162,
+            "y": -33.40069764244021,
+            "power": 1,
+            "lock": null,
+            "control": "mouse"
+          },
+          "accepted": true
+        }
+      ],
+      "shots": 1,
+      "aim": null,
+      "engaged": false
+    },
+    {
+      "name": "return-origin",
+      "start": {
+        "x": 680,
+        "y": 250
+      },
+      "end": {
+        "x": 680,
+        "y": 250
+      },
+      "held": {
+        "preview": {
+          "x": 8.329687944079854,
+          "y": -41.16571751778718,
+          "power": 1,
+          "lock": null,
+          "control": "mouse"
+        },
+        "expected": {
+          "x": 8.329687944079854,
+          "y": -41.16571751778718,
+          "power": 1
+        },
+        "powerLabel": "100% · RELEASE",
+        "overlay": "<svg class=\"defs\" width=\"0\" height=\"0\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\">\n      <symbol id=\"i-sound\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM15 8a5 5 0 0 1 0 8m3-11a9 9 0 0 1 0 14\"></path>\n      </symbol>\n      <symbol id=\"i-mute\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM16 9l6 6m0-6-6 6\"></path>\n      </symbol>\n      <symbol id=\"i-full\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5\"></path>\n      </symbol>\n      <symbol id=\"i-trophy\" viewBox=\"0 0 24 24\">\n        <path d=\"M6 3h12l-1 8a5 5 0 0 1-10 0zM6 5H2l1 4 4 2m11-6h4l-1 4-4 2M12 16v4m-4 1h8\"></path>\n      </symbol>\n      <symbol id=\"i-guide\" viewBox=\"0 0 24 24\">\n        <path d=\"M12 6v14M3 4l9 2 9-2v14l-9 2-9-2z\"></path>\n      </symbol>\n      <symbol id=\"i-options\" viewBox=\"0 0 24 24\">\n        <path d=\"M3 6h10m4 0h4M3 12h3m4 0h11M3 18h11m4 0h3\"></path>\n        <path d=\"M13 3v6M7 9v6m8 0v6\" stroke-width=\"3\"></path>\n      </symbol>\n      <symbol id=\"i-pause\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 5v14m8-14v14\" stroke-width=\"4\"></path>\n      </symbol>\n      <symbol id=\"i-play\" viewBox=\"0 0 24 24\">\n        <path d=\"m6 3 14 9L6 21z\" fill=\"currentColor\" stroke=\"none\"></path>\n      </symbol>\n      <symbol id=\"i-arrow\" viewBox=\"0 0 24 24\"><path d=\"M3 12h17m-6-7 7 7-7 7\"></path></symbol>\n    </svg>"
+      },
+      "attempts": [
+        {
+          "v": {
+            "x": 8.329687944079854,
+            "y": -41.16571751778718,
+            "power": 1,
+            "lock": null,
+            "control": "mouse"
+          },
+          "accepted": true
+        }
+      ],
+      "shots": 1,
+      "aim": null,
+      "engaged": false
+    },
+    {
+      "name": "camera-pan",
+      "start": {
+        "x": 680,
+        "y": 250
+      },
+      "end": {
+        "x": 680,
+        "y": 250
+      },
+      "held": {
+        "preview": {
+          "x": -4.550857751997301,
+          "y": -41.75272079423191,
+          "power": 1,
+          "lock": null,
+          "control": "mouse"
+        },
+        "expected": {
+          "x": -4.550857751997301,
+          "y": -41.75272079423191,
+          "power": 1
+        },
+        "powerLabel": "100% · RELEASE",
+        "overlay": "<svg class=\"defs\" width=\"0\" height=\"0\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\">\n      <symbol id=\"i-sound\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM15 8a5 5 0 0 1 0 8m3-11a9 9 0 0 1 0 14\"></path>\n      </symbol>\n      <symbol id=\"i-mute\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM16 9l6 6m0-6-6 6\"></path>\n      </symbol>\n      <symbol id=\"i-full\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5\"></path>\n      </symbol>\n      <symbol id=\"i-trophy\" viewBox=\"0 0 24 24\">\n        <path d=\"M6 3h12l-1 8a5 5 0 0 1-10 0zM6 5H2l1 4 4 2m11-6h4l-1 4-4 2M12 16v4m-4 1h8\"></path>\n      </symbol>\n      <symbol id=\"i-guide\" viewBox=\"0 0 24 24\">\n        <path d=\"M12 6v14M3 4l9 2 9-2v14l-9 2-9-2z\"></path>\n      </symbol>\n      <symbol id=\"i-options\" viewBox=\"0 0 24 24\">\n        <path d=\"M3 6h10m4 0h4M3 12h3m4 0h11M3 18h11m4 0h3\"></path>\n        <path d=\"M13 3v6M7 9v6m8 0v6\" stroke-width=\"3\"></path>\n      </symbol>\n      <symbol id=\"i-pause\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 5v14m8-14v14\" stroke-width=\"4\"></path>\n      </symbol>\n      <symbol id=\"i-play\" viewBox=\"0 0 24 24\">\n        <path d=\"m6 3 14 9L6 21z\" fill=\"currentColor\" stroke=\"none\"></path>\n      </symbol>\n      <symbol id=\"i-arrow\" viewBox=\"0 0 24 24\"><path d=\"M3 12h17m-6-7 7 7-7 7\"></path></symbol>\n    </svg>"
+      },
+      "attempts": [
+        {
+          "v": {
+            "x": -4.550857751997301,
+            "y": -41.75272079423191,
+            "power": 1,
+            "lock": null,
+            "control": "mouse"
+          },
+          "accepted": true
+        }
+      ],
+      "shots": 1,
+      "aim": null,
+      "engaged": false
+    },
+    {
+      "name": "escape",
+      "start": {
+        "x": 680,
+        "y": 250
+      },
+      "end": {
+        "x": 680,
+        "y": 250
+      },
+      "held": {
+        "preview": {
+          "x": 8.329687944079854,
+          "y": -41.16571751778718,
+          "power": 1,
+          "lock": null,
+          "control": "mouse"
+        },
+        "expected": {
+          "x": 8.329687944079854,
+          "y": -41.16571751778718,
+          "power": 1
+        },
+        "powerLabel": "100% · RELEASE",
+        "overlay": "<svg class=\"defs\" width=\"0\" height=\"0\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\">\n      <symbol id=\"i-sound\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM15 8a5 5 0 0 1 0 8m3-11a9 9 0 0 1 0 14\"></path>\n      </symbol>\n      <symbol id=\"i-mute\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM16 9l6 6m0-6-6 6\"></path>\n      </symbol>\n      <symbol id=\"i-full\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5\"></path>\n      </symbol>\n      <symbol id=\"i-trophy\" viewBox=\"0 0 24 24\">\n        <path d=\"M6 3h12l-1 8a5 5 0 0 1-10 0zM6 5H2l1 4 4 2m11-6h4l-1 4-4 2M12 16v4m-4 1h8\"></path>\n      </symbol>\n      <symbol id=\"i-guide\" viewBox=\"0 0 24 24\">\n        <path d=\"M12 6v14M3 4l9 2 9-2v14l-9 2-9-2z\"></path>\n      </symbol>\n      <symbol id=\"i-options\" viewBox=\"0 0 24 24\">\n        <path d=\"M3 6h10m4 0h4M3 12h3m4 0h11M3 18h11m4 0h3\"></path>\n        <path d=\"M13 3v6M7 9v6m8 0v6\" stroke-width=\"3\"></path>\n      </symbol>\n      <symbol id=\"i-pause\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 5v14m8-14v14\" stroke-width=\"4\"></path>\n      </symbol>\n      <symbol id=\"i-play\" viewBox=\"0 0 24 24\">\n        <path d=\"m6 3 14 9L6 21z\" fill=\"currentColor\" stroke=\"none\"></path>\n      </symbol>\n      <symbol id=\"i-arrow\" viewBox=\"0 0 24 24\"><path d=\"M3 12h17m-6-7 7 7-7 7\"></path></symbol>\n    </svg>"
+      },
+      "attempts": [],
+      "shots": 0,
+      "aim": null,
+      "engaged": false
+    },
+    {
+      "name": "right-cancel",
+      "start": {
+        "x": 680,
+        "y": 250
+      },
+      "end": {
+        "x": 680,
+        "y": 250
+      },
+      "held": {
+        "preview": {
+          "x": 8.329687944079854,
+          "y": -41.16571751778718,
+          "power": 1,
+          "lock": null,
+          "control": "mouse"
+        },
+        "expected": {
+          "x": 8.329687944079854,
+          "y": -41.16571751778718,
+          "power": 1
+        },
+        "powerLabel": "100% · RELEASE",
+        "overlay": "<svg class=\"defs\" width=\"0\" height=\"0\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\">\n      <symbol id=\"i-sound\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM15 8a5 5 0 0 1 0 8m3-11a9 9 0 0 1 0 14\"></path>\n      </symbol>\n      <symbol id=\"i-mute\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM16 9l6 6m0-6-6 6\"></path>\n      </symbol>\n      <symbol id=\"i-full\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5\"></path>\n      </symbol>\n      <symbol id=\"i-trophy\" viewBox=\"0 0 24 24\">\n        <path d=\"M6 3h12l-1 8a5 5 0 0 1-10 0zM6 5H2l1 4 4 2m11-6h4l-1 4-4 2M12 16v4m-4 1h8\"></path>\n      </symbol>\n      <symbol id=\"i-guide\" viewBox=\"0 0 24 24\">\n        <path d=\"M12 6v14M3 4l9 2 9-2v14l-9 2-9-2z\"></path>\n      </symbol>\n      <symbol id=\"i-options\" viewBox=\"0 0 24 24\">\n        <path d=\"M3 6h10m4 0h4M3 12h3m4 0h11M3 18h11m4 0h3\"></path>\n        <path d=\"M13 3v6M7 9v6m8 0v6\" stroke-width=\"3\"></path>\n      </symbol>\n      <symbol id=\"i-pause\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 5v14m8-14v14\" stroke-width=\"4\"></path>\n      </symbol>\n      <symbol id=\"i-play\" viewBox=\"0 0 24 24\">\n        <path d=\"m6 3 14 9L6 21z\" fill=\"currentColor\" stroke=\"none\"></path>\n      </symbol>\n      <symbol id=\"i-arrow\" viewBox=\"0 0 24 24\"><path d=\"M3 12h17m-6-7 7 7-7 7\"></path></symbol>\n    </svg>"
+      },
+      "attempts": [],
+      "shots": 0,
+      "aim": null,
+      "engaged": false
+    },
+    {
+      "name": "outside",
+      "start": {
+        "x": 680,
+        "y": 250
+      },
+      "end": {
+        "x": 1320,
+        "y": 190
+      },
+      "held": {
+        "preview": {
+          "x": 35.35434891093089,
+          "y": -22.673112117311113,
+          "power": 1,
+          "lock": null,
+          "control": "mouse"
+        },
+        "expected": {
+          "x": 35.35434891093089,
+          "y": -22.673112117311113,
+          "power": 1
+        },
+        "powerLabel": "100% · RELEASE",
+        "overlay": "<svg class=\"defs\" width=\"0\" height=\"0\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\">\n      <symbol id=\"i-sound\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM15 8a5 5 0 0 1 0 8m3-11a9 9 0 0 1 0 14\"></path>\n      </symbol>\n      <symbol id=\"i-mute\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM16 9l6 6m0-6-6 6\"></path>\n      </symbol>\n      <symbol id=\"i-full\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5\"></path>\n      </symbol>\n      <symbol id=\"i-trophy\" viewBox=\"0 0 24 24\">\n        <path d=\"M6 3h12l-1 8a5 5 0 0 1-10 0zM6 5H2l1 4 4 2m11-6h4l-1 4-4 2M12 16v4m-4 1h8\"></path>\n      </symbol>\n      <symbol id=\"i-guide\" viewBox=\"0 0 24 24\">\n        <path d=\"M12 6v14M3 4l9 2 9-2v14l-9 2-9-2z\"></path>\n      </symbol>\n      <symbol id=\"i-options\" viewBox=\"0 0 24 24\">\n        <path d=\"M3 6h10m4 0h4M3 12h3m4 0h11M3 18h11m4 0h3\"></path>\n        <path d=\"M13 3v6M7 9v6m8 0v6\" stroke-width=\"3\"></path>\n      </symbol>\n      <symbol id=\"i-pause\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 5v14m8-14v14\" stroke-width=\"4\"></path>\n      </symbol>\n      <symbol id=\"i-play\" viewBox=\"0 0 24 24\">\n        <path d=\"m6 3 14 9L6 21z\" fill=\"currentColor\" stroke=\"none\"></path>\n      </symbol>\n      <symbol id=\"i-arrow\" viewBox=\"0 0 24 24\"><path d=\"M3 12h17m-6-7 7 7-7 7\"></path></symbol>\n    </svg>"
+      },
+      "attempts": [
+        {
+          "v": {
+            "x": 35.35434891093089,
+            "y": -22.673112117311113,
+            "power": 1,
+            "lock": null,
+            "control": "mouse"
+          },
+          "accepted": true
+        }
+      ],
+      "shots": 1,
+      "aim": null,
+      "engaged": false
+    },
+    {
+      "name": "capture-loss",
+      "start": {
+        "x": 680,
+        "y": 250
+      },
+      "end": {
+        "x": 680,
+        "y": 250
+      },
+      "held": {
+        "preview": {
+          "x": 8.329687944079854,
+          "y": -41.16571751778718,
+          "power": 1,
+          "lock": null,
+          "control": "mouse"
+        },
+        "expected": {
+          "x": 8.329687944079854,
+          "y": -41.16571751778718,
+          "power": 1
+        },
+        "powerLabel": "100% · RELEASE",
+        "overlay": "<svg class=\"defs\" width=\"0\" height=\"0\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\">\n      <symbol id=\"i-sound\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM15 8a5 5 0 0 1 0 8m3-11a9 9 0 0 1 0 14\"></path>\n      </symbol>\n      <symbol id=\"i-mute\" viewBox=\"0 0 24 24\">\n        <path d=\"m11 5-5 4H3v6h3l5 4zM16 9l6 6m0-6-6 6\"></path>\n      </symbol>\n      <symbol id=\"i-full\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5\"></path>\n      </symbol>\n      <symbol id=\"i-trophy\" viewBox=\"0 0 24 24\">\n        <path d=\"M6 3h12l-1 8a5 5 0 0 1-10 0zM6 5H2l1 4 4 2m11-6h4l-1 4-4 2M12 16v4m-4 1h8\"></path>\n      </symbol>\n      <symbol id=\"i-guide\" viewBox=\"0 0 24 24\">\n        <path d=\"M12 6v14M3 4l9 2 9-2v14l-9 2-9-2z\"></path>\n      </symbol>\n      <symbol id=\"i-options\" viewBox=\"0 0 24 24\">\n        <path d=\"M3 6h10m4 0h4M3 12h3m4 0h11M3 18h11m4 0h3\"></path>\n        <path d=\"M13 3v6M7 9v6m8 0v6\" stroke-width=\"3\"></path>\n      </symbol>\n      <symbol id=\"i-pause\" viewBox=\"0 0 24 24\">\n        <path d=\"M8 5v14m8-14v14\" stroke-width=\"4\"></path>\n      </symbol>\n      <symbol id=\"i-play\" viewBox=\"0 0 24 24\">\n        <path d=\"m6 3 14 9L6 21z\" fill=\"currentColor\" stroke=\"none\"></path>\n      </symbol>\n      <symbol id=\"i-arrow\" viewBox=\"0 0 24 24\"><path d=\"M3 12h17m-6-7 7 7-7 7\"></path></symbol>\n    </svg>"
+      },
+      "attempts": [],
+      "shots": 0,
+      "aim": null,
+      "engaged": false
+    }
+  ]
+}

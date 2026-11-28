@@ -14,6 +14,7 @@ test('every part has a gameplay receipt; perks belong to real catalogue entries'
 });
 test('stacked perks have explicit hard limits and conditional score is not always on',()=>{
  const p=resolvePartPerks({a:'neko',b:'lava',c:'comic',d:'spectrum',e:'dash-echo'});assert.equal(p.chainGrace,36);
+ assert.equal(resolvePartPerks({a:'dash-echo'}).chainGrace,0,'Echo replaces, rather than stacks, the old combo grace');
  const f=resolvePartPerks({a:'hypno',b:'hologram',c:'dash-ice',d:'pointer-cross'});assert.equal(f.focusDrain,.92,'Hypno and Frost no longer discount aim; only Pointer remains');
  assert.equal(resolvePartPerks({a:'visor',b:'visor',c:'visor',d:'visor'}).focusDrain,.7,'shared hard cap retained');
  const r=resolvePartPerks({a:'glitch',b:'synth',c:'dash-water',d:'pointer-orbit'});assert.equal(r.focusRegen,1.4);

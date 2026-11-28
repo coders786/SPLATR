@@ -1,0 +1,1609 @@
+{
+  "method": "Ordinary main.js Start Run. Real Puppeteer pointer clicks. Read-only debug/renderer trace used for aiming and timing receipts; no state, renderer or enemies injected. Tutorial flag only seeded. Canvas recorded at 30fps. Not human play or device FPS certification.",
+  "results": [
+    {
+      "width": 1280,
+      "height": 720,
+      "shots": [
+        {
+          "shots": 1,
+          "kills": 1,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 2,
+          "kills": 2,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 3,
+          "kills": 2,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 4,
+          "kills": 3,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 5,
+          "kills": 5,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 6,
+          "kills": 6,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 6,
+          "kills": 6,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 7,
+          "kills": 6,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 8,
+          "kills": 7,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 9,
+          "kills": 7,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 10,
+          "kills": 7,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 11,
+          "kills": 7,
+          "hp": 3,
+          "phase": "playing"
+        }
+      ],
+      "frames": [
+        {
+          "shot": 0,
+          "requested": 16,
+          "elapsed": 81,
+          "age": 3,
+          "shots": 1,
+          "startShot": 0,
+          "phase": "playing",
+          "kills": 0
+        },
+        {
+          "shot": 0,
+          "requested": 66,
+          "elapsed": 432.90000000596046,
+          "age": 7,
+          "shots": 1,
+          "startShot": 0,
+          "phase": "playing",
+          "kills": 1
+        },
+        {
+          "shot": 0,
+          "requested": 133,
+          "elapsed": 579.6000000014901,
+          "age": 11,
+          "shots": 1,
+          "startShot": 0,
+          "phase": "playing",
+          "kills": 1
+        },
+        {
+          "shot": 0,
+          "requested": 250,
+          "elapsed": 769.1000000014901,
+          "age": 15,
+          "shots": 1,
+          "startShot": 0,
+          "phase": "playing",
+          "kills": 1
+        },
+        {
+          "shot": 0,
+          "requested": 600,
+          "elapsed": 918.6000000014901,
+          "age": 19,
+          "shots": 1,
+          "startShot": 0,
+          "phase": "playing",
+          "kills": 1
+        },
+        {
+          "shot": 0,
+          "requested": 1050,
+          "elapsed": 1149.3000000044703,
+          "age": 26,
+          "shots": 1,
+          "startShot": 0,
+          "phase": "playing",
+          "kills": 1
+        },
+        {
+          "shot": 1,
+          "requested": 16,
+          "elapsed": 87.89999999850988,
+          "age": 7,
+          "shots": 2,
+          "startShot": 1,
+          "phase": "playing",
+          "kills": 1
+        },
+        {
+          "shot": 1,
+          "requested": 66,
+          "elapsed": 166.19999999552965,
+          "age": 11,
+          "shots": 2,
+          "startShot": 1,
+          "phase": "playing",
+          "kills": 1
+        },
+        {
+          "shot": 1,
+          "requested": 133,
+          "elapsed": 233.09999999403954,
+          "age": 14,
+          "shots": 2,
+          "startShot": 1,
+          "phase": "playing",
+          "kills": 1
+        },
+        {
+          "shot": 1,
+          "requested": 250,
+          "elapsed": 299.3999999985099,
+          "age": 18,
+          "shots": 2,
+          "startShot": 1,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 1,
+          "requested": 600,
+          "elapsed": 676.2999999970198,
+          "age": 34,
+          "shots": 2,
+          "startShot": 1,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 1,
+          "requested": 1050,
+          "elapsed": 1207.7999999970198,
+          "age": 45,
+          "shots": 2,
+          "startShot": 1,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 2,
+          "requested": 16,
+          "elapsed": 56.20000000298023,
+          "age": 3,
+          "shots": 3,
+          "startShot": 2,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 2,
+          "requested": 66,
+          "elapsed": 241.90000000596046,
+          "age": 7,
+          "shots": 3,
+          "startShot": 2,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 2,
+          "requested": 133,
+          "elapsed": 363.70000000298023,
+          "age": 10,
+          "shots": 3,
+          "startShot": 2,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 2,
+          "requested": 250,
+          "elapsed": 469.5,
+          "age": 14,
+          "shots": 3,
+          "startShot": 2,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 2,
+          "requested": 600,
+          "elapsed": 677.3000000044703,
+          "age": 22,
+          "shots": 3,
+          "startShot": 2,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 2,
+          "requested": 1050,
+          "elapsed": 1091.2000000029802,
+          "age": 34,
+          "shots": 3,
+          "startShot": 2,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 3,
+          "requested": 16,
+          "elapsed": 52.20000000298023,
+          "age": 3,
+          "shots": 4,
+          "startShot": 3,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 3,
+          "requested": 66,
+          "elapsed": 201,
+          "age": 7,
+          "shots": 4,
+          "startShot": 3,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 3,
+          "requested": 133,
+          "elapsed": 394.8999999985099,
+          "age": 11,
+          "shots": 4,
+          "startShot": 3,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 3,
+          "requested": 250,
+          "elapsed": 622.2000000029802,
+          "age": 15,
+          "shots": 4,
+          "startShot": 3,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 3,
+          "requested": 600,
+          "elapsed": 843.2000000029802,
+          "age": 18,
+          "shots": 4,
+          "startShot": 3,
+          "phase": "playing",
+          "kills": 3
+        },
+        {
+          "shot": 3,
+          "requested": 1050,
+          "elapsed": 1112.1000000014901,
+          "age": 30,
+          "shots": 4,
+          "startShot": 3,
+          "phase": "playing",
+          "kills": 3
+        },
+        {
+          "shot": 4,
+          "requested": 16,
+          "elapsed": 20.5,
+          "age": 2,
+          "shots": 5,
+          "startShot": 4,
+          "phase": "playing",
+          "kills": 3
+        },
+        {
+          "shot": 4,
+          "requested": 66,
+          "elapsed": 148,
+          "age": 6,
+          "shots": 5,
+          "startShot": 4,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 4,
+          "requested": 133,
+          "elapsed": 177.5,
+          "age": 10,
+          "shots": 5,
+          "startShot": 4,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 4,
+          "requested": 250,
+          "elapsed": 323.69999999552965,
+          "age": 14,
+          "shots": 5,
+          "startShot": 4,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 4,
+          "requested": 600,
+          "elapsed": 732.6999999955297,
+          "age": 25,
+          "shots": 5,
+          "startShot": 4,
+          "phase": "playing",
+          "kills": 5
+        },
+        {
+          "shot": 4,
+          "requested": 1050,
+          "elapsed": 1103.6000000014901,
+          "age": 33,
+          "shots": 5,
+          "startShot": 4,
+          "phase": "playing",
+          "kills": 5
+        },
+        {
+          "shot": 5,
+          "requested": 16,
+          "elapsed": 175.39999999850988,
+          "age": 3,
+          "shots": 6,
+          "startShot": 5,
+          "phase": "playing",
+          "kills": 5
+        },
+        {
+          "shot": 5,
+          "requested": 66,
+          "elapsed": 287.3999999985099,
+          "age": 6,
+          "shots": 6,
+          "startShot": 5,
+          "phase": "playing",
+          "kills": 5
+        },
+        {
+          "shot": 5,
+          "requested": 133,
+          "elapsed": 411.29999999701977,
+          "age": 10,
+          "shots": 6,
+          "startShot": 5,
+          "phase": "playing",
+          "kills": 5
+        },
+        {
+          "shot": 5,
+          "requested": 250,
+          "elapsed": 497.70000000298023,
+          "age": 14,
+          "shots": 6,
+          "startShot": 5,
+          "phase": "playing",
+          "kills": 5
+        },
+        {
+          "shot": 5,
+          "requested": 600,
+          "elapsed": 655.6000000014901,
+          "age": 18,
+          "shots": 6,
+          "startShot": 5,
+          "phase": "playing",
+          "kills": 6
+        },
+        {
+          "shot": 5,
+          "requested": 1050,
+          "elapsed": 1122.7000000029802,
+          "age": 41,
+          "shots": 6,
+          "startShot": 5,
+          "phase": "playing",
+          "kills": 6
+        },
+        {
+          "shot": 6,
+          "requested": 16,
+          "elapsed": 59.600000001490116,
+          "age": 60,
+          "shots": 6,
+          "startShot": 6,
+          "phase": "playing",
+          "kills": 6
+        },
+        {
+          "shot": 6,
+          "requested": 66,
+          "elapsed": 172.20000000298023,
+          "age": 64,
+          "shots": 6,
+          "startShot": 6,
+          "phase": "playing",
+          "kills": 6
+        },
+        {
+          "shot": 6,
+          "requested": 133,
+          "elapsed": 323.6000000014901,
+          "age": 68,
+          "shots": 6,
+          "startShot": 6,
+          "phase": "playing",
+          "kills": 6
+        },
+        {
+          "shot": 6,
+          "requested": 250,
+          "elapsed": 441.29999999701977,
+          "age": 72,
+          "shots": 6,
+          "startShot": 6,
+          "phase": "playing",
+          "kills": 6
+        },
+        {
+          "shot": 6,
+          "requested": 600,
+          "elapsed": 677.8999999985099,
+          "age": 79,
+          "shots": 6,
+          "startShot": 6,
+          "phase": "playing",
+          "kills": 6
+        },
+        {
+          "shot": 6,
+          "requested": 1050,
+          "elapsed": 1174.7999999970198,
+          "age": 95,
+          "shots": 6,
+          "startShot": 6,
+          "phase": "playing",
+          "kills": 6
+        },
+        {
+          "shot": 7,
+          "requested": 16,
+          "elapsed": 50.70000000298023,
+          "age": 3,
+          "shots": 7,
+          "startShot": 6,
+          "phase": "playing",
+          "kills": 6
+        },
+        {
+          "shot": 7,
+          "requested": 66,
+          "elapsed": 308.5,
+          "age": 7,
+          "shots": 7,
+          "startShot": 6,
+          "phase": "playing",
+          "kills": 6
+        },
+        {
+          "shot": 7,
+          "requested": 133,
+          "elapsed": 440.1000000014901,
+          "age": 11,
+          "shots": 7,
+          "startShot": 6,
+          "phase": "playing",
+          "kills": 6
+        },
+        {
+          "shot": 7,
+          "requested": 250,
+          "elapsed": 516.4000000059605,
+          "age": 15,
+          "shots": 7,
+          "startShot": 6,
+          "phase": "playing",
+          "kills": 6
+        },
+        {
+          "shot": 7,
+          "requested": 600,
+          "elapsed": 601.8000000044703,
+          "age": 19,
+          "shots": 7,
+          "startShot": 6,
+          "phase": "playing",
+          "kills": 6
+        },
+        {
+          "shot": 7,
+          "requested": 1050,
+          "elapsed": 1071.6000000014901,
+          "age": 42,
+          "shots": 7,
+          "startShot": 6,
+          "phase": "playing",
+          "kills": 6
+        },
+        {
+          "shot": 8,
+          "requested": 16,
+          "elapsed": 171.79999999701977,
+          "age": 3,
+          "shots": 8,
+          "startShot": 7,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 8,
+          "requested": 66,
+          "elapsed": 250.69999999552965,
+          "age": 7,
+          "shots": 8,
+          "startShot": 7,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 8,
+          "requested": 133,
+          "elapsed": 398.19999999552965,
+          "age": 11,
+          "shots": 8,
+          "startShot": 7,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 8,
+          "requested": 250,
+          "elapsed": 477.29999999701977,
+          "age": 15,
+          "shots": 8,
+          "startShot": 7,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 8,
+          "requested": 600,
+          "elapsed": 641.1999999955297,
+          "age": 22,
+          "shots": 8,
+          "startShot": 7,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 8,
+          "requested": 1050,
+          "elapsed": 1135.2999999970198,
+          "age": 45,
+          "shots": 8,
+          "startShot": 7,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 9,
+          "requested": 16,
+          "elapsed": 87.60000000149012,
+          "age": 3,
+          "shots": 9,
+          "startShot": 8,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 9,
+          "requested": 66,
+          "elapsed": 409.6000000014901,
+          "age": 7,
+          "shots": 9,
+          "startShot": 8,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 9,
+          "requested": 133,
+          "elapsed": 518.3000000044703,
+          "age": 11,
+          "shots": 9,
+          "startShot": 8,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 9,
+          "requested": 250,
+          "elapsed": 603.4000000059605,
+          "age": 14,
+          "shots": 9,
+          "startShot": 8,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 9,
+          "requested": 600,
+          "elapsed": 675.3000000044703,
+          "age": 18,
+          "shots": 9,
+          "startShot": 8,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 9,
+          "requested": 1050,
+          "elapsed": 1128.2000000029802,
+          "age": 41,
+          "shots": 9,
+          "startShot": 8,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 10,
+          "requested": 16,
+          "elapsed": 16.100000001490116,
+          "age": 3,
+          "shots": 10,
+          "startShot": 9,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 10,
+          "requested": 66,
+          "elapsed": 115.5,
+          "age": 6,
+          "shots": 10,
+          "startShot": 9,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 10,
+          "requested": 133,
+          "elapsed": 318.3999999985099,
+          "age": 10,
+          "shots": 10,
+          "startShot": 9,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 10,
+          "requested": 250,
+          "elapsed": 430.70000000298023,
+          "age": 14,
+          "shots": 10,
+          "startShot": 9,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 10,
+          "requested": 600,
+          "elapsed": 610.3999999985099,
+          "age": 22,
+          "shots": 10,
+          "startShot": 9,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 10,
+          "requested": 1050,
+          "elapsed": 1084.3000000044703,
+          "age": 41,
+          "shots": 10,
+          "startShot": 9,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 11,
+          "requested": 16,
+          "elapsed": 74.60000000149012,
+          "age": 3,
+          "shots": 11,
+          "startShot": 10,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 11,
+          "requested": 66,
+          "elapsed": 267.79999999701977,
+          "age": 6,
+          "shots": 11,
+          "startShot": 10,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 11,
+          "requested": 133,
+          "elapsed": 515.7999999970198,
+          "age": 10,
+          "shots": 11,
+          "startShot": 10,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 11,
+          "requested": 250,
+          "elapsed": 614.8999999985099,
+          "age": 14,
+          "shots": 11,
+          "startShot": 10,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 11,
+          "requested": 600,
+          "elapsed": 761.6000000014901,
+          "age": 18,
+          "shots": 11,
+          "startShot": 10,
+          "phase": "playing",
+          "kills": 7
+        },
+        {
+          "shot": 11,
+          "requested": 1050,
+          "elapsed": 1113.1000000014901,
+          "age": 29,
+          "shots": 11,
+          "startShot": 10,
+          "phase": "playing",
+          "kills": 7
+        }
+      ],
+      "errors": [],
+      "frameErrors": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "shots": [
+        {
+          "shots": 1,
+          "kills": 2,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 2,
+          "kills": 3,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 3,
+          "kills": 4,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 4,
+          "kills": 4,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 5,
+          "kills": 4,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 6,
+          "kills": 4,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 7,
+          "kills": 4,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 8,
+          "kills": 4,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 9,
+          "kills": 4,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 10,
+          "kills": 4,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 11,
+          "kills": 4,
+          "hp": 3,
+          "phase": "playing"
+        },
+        {
+          "shots": 12,
+          "kills": 4,
+          "hp": 3,
+          "phase": "playing"
+        }
+      ],
+      "frames": [
+        {
+          "shot": 0,
+          "requested": 16,
+          "elapsed": 95.89999999850988,
+          "age": 1,
+          "shots": 1,
+          "startShot": 0,
+          "phase": "playing",
+          "kills": 0
+        },
+        {
+          "shot": 0,
+          "requested": 66,
+          "elapsed": 149.10000000149012,
+          "age": 5,
+          "shots": 1,
+          "startShot": 0,
+          "phase": "playing",
+          "kills": 0
+        },
+        {
+          "shot": 0,
+          "requested": 133,
+          "elapsed": 260.79999999701977,
+          "age": 9,
+          "shots": 1,
+          "startShot": 0,
+          "phase": "playing",
+          "kills": 1
+        },
+        {
+          "shot": 0,
+          "requested": 250,
+          "elapsed": 278.29999999701977,
+          "age": 13,
+          "shots": 1,
+          "startShot": 0,
+          "phase": "playing",
+          "kills": 1
+        },
+        {
+          "shot": 0,
+          "requested": 600,
+          "elapsed": 605.3999999985099,
+          "age": 33,
+          "shots": 1,
+          "startShot": 0,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 0,
+          "requested": 1050,
+          "elapsed": 1117,
+          "age": 60,
+          "shots": 1,
+          "startShot": 0,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 1,
+          "requested": 16,
+          "elapsed": 73.29999999701977,
+          "age": 3,
+          "shots": 2,
+          "startShot": 1,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 1,
+          "requested": 66,
+          "elapsed": 149.89999999850988,
+          "age": 6,
+          "shots": 2,
+          "startShot": 1,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 1,
+          "requested": 133,
+          "elapsed": 216.39999999850988,
+          "age": 10,
+          "shots": 2,
+          "startShot": 1,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 1,
+          "requested": 250,
+          "elapsed": 258.1000000014901,
+          "age": 14,
+          "shots": 2,
+          "startShot": 1,
+          "phase": "playing",
+          "kills": 2
+        },
+        {
+          "shot": 1,
+          "requested": 600,
+          "elapsed": 643,
+          "age": 37,
+          "shots": 2,
+          "startShot": 1,
+          "phase": "playing",
+          "kills": 3
+        },
+        {
+          "shot": 1,
+          "requested": 1050,
+          "elapsed": 1139.2999999970198,
+          "age": 52,
+          "shots": 2,
+          "startShot": 1,
+          "phase": "playing",
+          "kills": 3
+        },
+        {
+          "shot": 2,
+          "requested": 16,
+          "elapsed": 19.19999999552965,
+          "age": 3,
+          "shots": 3,
+          "startShot": 2,
+          "phase": "playing",
+          "kills": 3
+        },
+        {
+          "shot": 2,
+          "requested": 66,
+          "elapsed": 76.59999999403954,
+          "age": 7,
+          "shots": 3,
+          "startShot": 2,
+          "phase": "playing",
+          "kills": 3
+        },
+        {
+          "shot": 2,
+          "requested": 133,
+          "elapsed": 177.29999999701977,
+          "age": 11,
+          "shots": 3,
+          "startShot": 2,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 2,
+          "requested": 250,
+          "elapsed": 262.8999999985099,
+          "age": 18,
+          "shots": 3,
+          "startShot": 2,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 2,
+          "requested": 600,
+          "elapsed": 659.2999999970198,
+          "age": 45,
+          "shots": 3,
+          "startShot": 2,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 2,
+          "requested": 1050,
+          "elapsed": 1110,
+          "age": 61,
+          "shots": 3,
+          "startShot": 2,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 3,
+          "requested": 16,
+          "elapsed": 59.5,
+          "age": 3,
+          "shots": 4,
+          "startShot": 3,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 3,
+          "requested": 66,
+          "elapsed": 183,
+          "age": 7,
+          "shots": 4,
+          "startShot": 3,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 3,
+          "requested": 133,
+          "elapsed": 275.1000000014901,
+          "age": 11,
+          "shots": 4,
+          "startShot": 3,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 3,
+          "requested": 250,
+          "elapsed": 361.3999999985099,
+          "age": 14,
+          "shots": 4,
+          "startShot": 3,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 3,
+          "requested": 600,
+          "elapsed": 650,
+          "age": 34,
+          "shots": 4,
+          "startShot": 3,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 3,
+          "requested": 1050,
+          "elapsed": 1134.6000000014901,
+          "age": 53,
+          "shots": 4,
+          "startShot": 3,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 4,
+          "requested": 16,
+          "elapsed": 39.5,
+          "age": 2,
+          "shots": 5,
+          "startShot": 4,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 4,
+          "requested": 66,
+          "elapsed": 160.5,
+          "age": 6,
+          "shots": 5,
+          "startShot": 4,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 4,
+          "requested": 133,
+          "elapsed": 343.70000000298023,
+          "age": 10,
+          "shots": 5,
+          "startShot": 4,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 4,
+          "requested": 250,
+          "elapsed": 452,
+          "age": 14,
+          "shots": 5,
+          "startShot": 4,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 4,
+          "requested": 600,
+          "elapsed": 616.4000000059605,
+          "age": 22,
+          "shots": 5,
+          "startShot": 4,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 4,
+          "requested": 1050,
+          "elapsed": 1055.7000000029802,
+          "age": 48,
+          "shots": 5,
+          "startShot": 4,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 5,
+          "requested": 16,
+          "elapsed": 78.79999999701977,
+          "age": 3,
+          "shots": 6,
+          "startShot": 5,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 5,
+          "requested": 66,
+          "elapsed": 138.39999999850988,
+          "age": 6,
+          "shots": 6,
+          "startShot": 5,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 5,
+          "requested": 133,
+          "elapsed": 213.79999999701977,
+          "age": 10,
+          "shots": 6,
+          "startShot": 5,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 5,
+          "requested": 250,
+          "elapsed": 302.8999999985099,
+          "age": 14,
+          "shots": 6,
+          "startShot": 5,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 5,
+          "requested": 600,
+          "elapsed": 640.7999999970198,
+          "age": 33,
+          "shots": 6,
+          "startShot": 5,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 5,
+          "requested": 1050,
+          "elapsed": 1123.2999999970198,
+          "age": 53,
+          "shots": 6,
+          "startShot": 5,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 6,
+          "requested": 16,
+          "elapsed": 21.899999998509884,
+          "age": 64,
+          "shots": 6,
+          "startShot": 6,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 6,
+          "requested": 66,
+          "elapsed": 153.19999999552965,
+          "age": 7,
+          "shots": 7,
+          "startShot": 6,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 6,
+          "requested": 133,
+          "elapsed": 256.8999999985099,
+          "age": 11,
+          "shots": 7,
+          "startShot": 6,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 6,
+          "requested": 250,
+          "elapsed": 343.29999999701977,
+          "age": 14,
+          "shots": 7,
+          "startShot": 6,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 6,
+          "requested": 600,
+          "elapsed": 607.8999999985099,
+          "age": 26,
+          "shots": 7,
+          "startShot": 6,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 6,
+          "requested": 1050,
+          "elapsed": 1084.6999999955297,
+          "age": 57,
+          "shots": 7,
+          "startShot": 6,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 7,
+          "requested": 16,
+          "elapsed": 27,
+          "age": 3,
+          "shots": 8,
+          "startShot": 7,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 7,
+          "requested": 66,
+          "elapsed": 136.80000000447035,
+          "age": 7,
+          "shots": 8,
+          "startShot": 7,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 7,
+          "requested": 133,
+          "elapsed": 257.20000000298023,
+          "age": 11,
+          "shots": 8,
+          "startShot": 7,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 7,
+          "requested": 250,
+          "elapsed": 346.80000000447035,
+          "age": 15,
+          "shots": 8,
+          "startShot": 7,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 7,
+          "requested": 600,
+          "elapsed": 630.8000000044703,
+          "age": 26,
+          "shots": 8,
+          "startShot": 7,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 7,
+          "requested": 1050,
+          "elapsed": 1118.1000000014901,
+          "age": 45,
+          "shots": 8,
+          "startShot": 7,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 8,
+          "requested": 16,
+          "elapsed": 86.80000000447035,
+          "age": 3,
+          "shots": 9,
+          "startShot": 8,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 8,
+          "requested": 66,
+          "elapsed": 146.5,
+          "age": 6,
+          "shots": 9,
+          "startShot": 8,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 8,
+          "requested": 133,
+          "elapsed": 252.20000000298023,
+          "age": 10,
+          "shots": 9,
+          "startShot": 8,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 8,
+          "requested": 250,
+          "elapsed": 339.6000000014901,
+          "age": 14,
+          "shots": 9,
+          "startShot": 8,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 8,
+          "requested": 600,
+          "elapsed": 627.2000000029802,
+          "age": 30,
+          "shots": 9,
+          "startShot": 8,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 8,
+          "requested": 1050,
+          "elapsed": 1069.3999999985099,
+          "age": 56,
+          "shots": 9,
+          "startShot": 8,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 9,
+          "requested": 16,
+          "elapsed": 85.80000000447035,
+          "age": 3,
+          "shots": 10,
+          "startShot": 9,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 9,
+          "requested": 66,
+          "elapsed": 191.39999999850988,
+          "age": 6,
+          "shots": 10,
+          "startShot": 9,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 9,
+          "requested": 133,
+          "elapsed": 363.8999999985099,
+          "age": 10,
+          "shots": 10,
+          "startShot": 9,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 9,
+          "requested": 250,
+          "elapsed": 476.20000000298023,
+          "age": 14,
+          "shots": 10,
+          "startShot": 9,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 9,
+          "requested": 600,
+          "elapsed": 637,
+          "age": 18,
+          "shots": 10,
+          "startShot": 9,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 9,
+          "requested": 1050,
+          "elapsed": 1072.3000000044703,
+          "age": 41,
+          "shots": 10,
+          "startShot": 9,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 10,
+          "requested": 16,
+          "elapsed": 19,
+          "age": 64,
+          "shots": 10,
+          "startShot": 10,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 10,
+          "requested": 66,
+          "elapsed": 98.89999999850988,
+          "age": 3,
+          "shots": 11,
+          "startShot": 10,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 10,
+          "requested": 133,
+          "elapsed": 225.60000000149012,
+          "age": 7,
+          "shots": 11,
+          "startShot": 10,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 10,
+          "requested": 250,
+          "elapsed": 331.5,
+          "age": 11,
+          "shots": 11,
+          "startShot": 10,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 10,
+          "requested": 600,
+          "elapsed": 611.3999999985099,
+          "age": 22,
+          "shots": 11,
+          "startShot": 10,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 10,
+          "requested": 1050,
+          "elapsed": 1071.1000000014901,
+          "age": 53,
+          "shots": 11,
+          "startShot": 10,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 11,
+          "requested": 16,
+          "elapsed": 50.29999999701977,
+          "age": 3,
+          "shots": 12,
+          "startShot": 11,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 11,
+          "requested": 66,
+          "elapsed": 266.79999999701977,
+          "age": 7,
+          "shots": 12,
+          "startShot": 11,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 11,
+          "requested": 133,
+          "elapsed": 510.69999999552965,
+          "age": 11,
+          "shots": 12,
+          "startShot": 11,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 11,
+          "requested": 250,
+          "elapsed": 653.5,
+          "age": 15,
+          "shots": 12,
+          "startShot": 11,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 11,
+          "requested": 600,
+          "elapsed": 734.5,
+          "age": 19,
+          "shots": 12,
+          "startShot": 11,
+          "phase": "playing",
+          "kills": 4
+        },
+        {
+          "shot": 11,
+          "requested": 1050,
+          "elapsed": 1078.1999999955297,
+          "age": 45,
+          "shots": 12,
+          "startShot": 11,
+          "phase": "playing",
+          "kills": 4
+        }
+      ],
+      "errors": [],
+      "frameErrors": []
+    }
+  ]
+}

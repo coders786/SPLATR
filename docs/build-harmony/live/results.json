@@ -1,0 +1,1094 @@
+{
+  "rows": [
+    {
+      "width": 1280,
+      "height": 720,
+      "id": "wyrm",
+      "start": {
+        "build": "wyrm",
+        "harmony": {
+          "id": "wyrm",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "wyrm"
+        },
+        "fx": {
+          "id": "wyrm",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "id": "ronin",
+      "start": {
+        "build": "ronin",
+        "harmony": {
+          "id": "ronin",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "ronin"
+        },
+        "fx": {
+          "id": "ronin",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "id": "king",
+      "start": {
+        "build": "king",
+        "harmony": {
+          "id": "king",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "king"
+        },
+        "fx": {
+          "id": "king",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "id": "phantom",
+      "start": {
+        "build": "phantom",
+        "harmony": {
+          "id": "phantom",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "phantom"
+        },
+        "fx": {
+          "id": "phantom",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "id": "reaper",
+      "start": {
+        "build": "reaper",
+        "harmony": {
+          "id": "reaper",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "reaper"
+        },
+        "fx": {
+          "id": "reaper",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "id": "eater",
+      "start": {
+        "build": "eater",
+        "harmony": {
+          "id": "eater",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "eater"
+        },
+        "fx": {
+          "id": "eater",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "id": "sun",
+      "start": {
+        "build": "sun",
+        "harmony": {
+          "id": "sun",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "sun"
+        },
+        "fx": {
+          "id": "sun",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "id": "glacier",
+      "start": {
+        "build": "glacier",
+        "harmony": {
+          "id": "glacier",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "glacier"
+        },
+        "fx": {
+          "id": "glacier",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "id": "briar",
+      "start": {
+        "build": "briar",
+        "harmony": {
+          "id": "briar",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "briar"
+        },
+        "fx": {
+          "id": "briar",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "id": "sentinel",
+      "start": {
+        "build": "sentinel",
+        "harmony": {
+          "id": "sentinel",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "sentinel"
+        },
+        "fx": {
+          "id": "sentinel",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "id": "arcade",
+      "start": {
+        "build": "arcade",
+        "harmony": {
+          "id": "arcade",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "arcade"
+        },
+        "fx": {
+          "id": "arcade",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "id": "storm",
+      "start": {
+        "build": "storm",
+        "harmony": {
+          "id": "storm",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "storm"
+        },
+        "fx": {
+          "id": "storm",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "id": "forge",
+      "start": {
+        "build": "forge",
+        "harmony": {
+          "id": "forge",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "forge"
+        },
+        "fx": {
+          "id": "forge",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "id": "wraith",
+      "start": {
+        "build": "wraith",
+        "harmony": {
+          "id": "wraith",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "wraith"
+        },
+        "fx": {
+          "id": "wraith",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "id": "bulwark",
+      "start": {
+        "build": "bulwark",
+        "harmony": {
+          "id": "bulwark",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "bulwark"
+        },
+        "fx": {
+          "id": "bulwark",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "id": "razoredge",
+      "start": {
+        "build": "razoredge",
+        "harmony": {
+          "id": "razoredge",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "razoredge"
+        },
+        "fx": {
+          "id": "razoredge",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "id": "orbit",
+      "start": {
+        "build": "orbit",
+        "harmony": {
+          "id": "orbit",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "orbit"
+        },
+        "fx": {
+          "id": "orbit",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "id": "wyrm",
+      "start": {
+        "build": "wyrm",
+        "harmony": {
+          "id": "wyrm",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "wyrm"
+        },
+        "fx": {
+          "id": "wyrm",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "id": "ronin",
+      "start": {
+        "build": "ronin",
+        "harmony": {
+          "id": "ronin",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "ronin"
+        },
+        "fx": {
+          "id": "ronin",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "id": "king",
+      "start": {
+        "build": "king",
+        "harmony": {
+          "id": "king",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "king"
+        },
+        "fx": {
+          "id": "king",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "id": "phantom",
+      "start": {
+        "build": "phantom",
+        "harmony": {
+          "id": "phantom",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "phantom"
+        },
+        "fx": {
+          "id": "phantom",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "id": "reaper",
+      "start": {
+        "build": "reaper",
+        "harmony": {
+          "id": "reaper",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "reaper"
+        },
+        "fx": {
+          "id": "reaper",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "id": "eater",
+      "start": {
+        "build": "eater",
+        "harmony": {
+          "id": "eater",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "eater"
+        },
+        "fx": {
+          "id": "eater",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "id": "sun",
+      "start": {
+        "build": "sun",
+        "harmony": {
+          "id": "sun",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "sun"
+        },
+        "fx": {
+          "id": "sun",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "id": "glacier",
+      "start": {
+        "build": "glacier",
+        "harmony": {
+          "id": "glacier",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "glacier"
+        },
+        "fx": {
+          "id": "glacier",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "id": "briar",
+      "start": {
+        "build": "briar",
+        "harmony": {
+          "id": "briar",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "briar"
+        },
+        "fx": {
+          "id": "briar",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "id": "sentinel",
+      "start": {
+        "build": "sentinel",
+        "harmony": {
+          "id": "sentinel",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "sentinel"
+        },
+        "fx": {
+          "id": "sentinel",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "id": "arcade",
+      "start": {
+        "build": "arcade",
+        "harmony": {
+          "id": "arcade",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "arcade"
+        },
+        "fx": {
+          "id": "arcade",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "id": "storm",
+      "start": {
+        "build": "storm",
+        "harmony": {
+          "id": "storm",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "storm"
+        },
+        "fx": {
+          "id": "storm",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "id": "forge",
+      "start": {
+        "build": "forge",
+        "harmony": {
+          "id": "forge",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "forge"
+        },
+        "fx": {
+          "id": "forge",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "id": "wraith",
+      "start": {
+        "build": "wraith",
+        "harmony": {
+          "id": "wraith",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "wraith"
+        },
+        "fx": {
+          "id": "wraith",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "id": "bulwark",
+      "start": {
+        "build": "bulwark",
+        "harmony": {
+          "id": "bulwark",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "bulwark"
+        },
+        "fx": {
+          "id": "bulwark",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "id": "razoredge",
+      "start": {
+        "build": "razoredge",
+        "harmony": {
+          "id": "razoredge",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "razoredge"
+        },
+        "fx": {
+          "id": "razoredge",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "id": "orbit",
+      "start": {
+        "build": "orbit",
+        "harmony": {
+          "id": "orbit",
+          "age": 6,
+          "remaining": 30,
+          "confirmedKills": 0
+        }
+      },
+      "launch": {
+        "ok": true,
+        "readOnly": true
+      },
+      "killed": {
+        "delta": 1,
+        "receipt": {
+          "id": "confirmed-kill",
+          "build": "orbit"
+        },
+        "fx": {
+          "id": "orbit",
+          "age": 12,
+          "remaining": 24,
+          "confirmedKills": 1
+        },
+        "readOnly": true
+      }
+    }
+  ],
+  "errors": [],
+  "method": "Controlled createRun + native production renderer. Launch accepted by dash(); Fang primary contact admitted through production resolver. Renderer ticks isolate visual ages; not an uncontrolled gameplay video or device-FPS test."
+}

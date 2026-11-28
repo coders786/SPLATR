@@ -77,7 +77,7 @@ test('all eight dash lessons have frozen rule-derived values, actual marginal ca
  near(dashStudy(item('dash-ink'),3400,false).farGain,1.12);assert.equal(dashStudy(item('dash-ink'),3400,false,{head:'samurai',core:'magnet'}).nearGain,1);
  assert.equal(dashStudy(item('dash-fire'),3400,false).blade,0);assert.equal(dashStudy(item('dash-echo'),3400,false,{head:'neko',body:'lava',slash:'comic'}).grace,0);
  assert.equal(dashStudy(item('dash-water'),3400,false,{eyes:'glitch',world:'synth',pointer:'pointer-orbit'}).recovery,3);assert.equal(dashStudy(item('dash-void'),3400,false,{body:'gold',world:'foundry'}).scorePoints,0);
- assert.match(shopAbility('dash-fire').limit,/10% narrower/);assert.match(shopAbility('dash-ice').limit,/bosses resist/);assert.match(shopAbility('dash-echo').limit,/not repeated attacks/);
+ assert.match(shopAbility('dash-fire').limit,/10% narrower/);assert.match(shopAbility('dash-ice').limit,/bosses resist/);assert.match(shopAbility('dash-echo').limit,/One pending replay/);
  assert.equal(dashStudy(item('halo')),null);
 });
 test('all eight lessons render distinct/progressing/still scenes with plain copy and no input/context mutation',()=>{

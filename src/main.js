@@ -8,6 +8,7 @@ import {createVisualTutorial,tutorialObjective,tutorialAnnouncement,tutorialWhy,
 import {createControlPracticeUI} from './control-practice-ui.js';
 import {createTeachingUI} from './teaching-ui.js';
 import {createTrainingHub} from './training-hub.js';
+import {createOpeningGuide,openingGuide} from './opening-guide.js';
 import {healthDamageLabel,healthDeathMessage} from './health-ui.js';
 import {healthSegments,damageFeedback,dmgLabel,bearingWord,SAFE_BLINK_TICKS,HIT_RIM_TICKS} from './damage-feedback.js';
 // CHUNK 2: the live "safe to slice" set, measured against the blade's own sweep.
@@ -49,11 +50,11 @@ import { LANDLORD_STORY, storyChipForWave } from './story-arc.js';
 let pauseCause = 'paused';
 let shopWallet, rewardUI, customize, waveUI, controlPractice, teaching;let learningGround=false,tutorial=null,lastTutorialHint=null,lastRiftObjective='',lastTutorialWhy='';
 const tutorialHintSpeech=Object.freeze({
- slice:'Slice the highlighted target. Tap it, or pull away and release toward it.',
- bank:'Launch into the glowing wall. Pull away from the wall and release.',
+ slice:'Pull away from the highlighted target, then release. Shift+click aims directly.',
+ bank:'Aim at the glowing wall and launch into it.',
  approach:'Move closer to the Rift, then wait for its warning.',
  watch:'Wait for the Rift warning to cover you, then launch out of it.',
- dodge:'The Rift warning is on you. Pull back and release to launch out of it.',
+ dodge:'The Rift warning is on you. Aim outside it and release to escape.',
  gate:'The glowing gate can be broken. Launch into it.',
  cross:'Travel through the open doorway.'
 });
@@ -129,6 +130,7 @@ const active = () =>
 // ── CHUNK 6A: THE CUTSCENE DRIVER ─────────────────────────────────────────
 // Pure time; the art lives in the engine keyed off s.cutscene. The shell
 // owns input lock, the freeze, and the chip.
+const firstWayGuide = createOpeningGuide(game);
 const coldOpenGate = coldOpenOnce();
 let activeCutscene = null,
   cutsceneOnDone = null,
@@ -937,6 +939,7 @@ function updateHUD() {
   if (!run) return;
   const s = run.state;
   $('rack-skip').hidden=!learningGround;
+  firstWayGuide.update(s,lastDevice);
   setText('score', score(s.score));
   hud.dataset.place = s.opening ? 'room' : 'field';
   $('chain').hidden = !!s.opening || s.chain < 2;
@@ -1238,8 +1241,8 @@ function updateHUD() {
     (s.chainMax ? Math.min(1, Math.max(0, s.chainTime / s.chainMax)) : 0).toFixed(3),
   );
   // Nonvisual equivalents only. The proof strip itself never draws words.
-  const desc={tap:'Tap a pennant, click it, or press Space to cut through the rack.',pull:'Pull back, release forward. Tap a target to cut directly.',shell:'One plate over another. Cut the shell.',crack:'The first plate broke. Strike again.',rewind:'Returning to the launch point.',retry:'Try the marked shape again. Two tries left before this rack is conceded.',stock:'Wait for one cut to refill.',lane:'The triangle charges along its marked lane. Cut it or cross its path.',focus:'Hold a target in flight, or hold Shift to focus. Choose a new line and slash.',rise:'The marked floor is rising. Slash up.',net:'One net caught you. Your cuts are full. Launch up.'};
-  setText('story-alt',desc[canvas.dataset.scene]||'');
+  const desc={tap:'Tap a pennant, Shift+click it, or press Space to cut through the rack.',pull:'Pull back and release to launch the opposite way. Shift+click aims directly.',shell:'One plate over another. Cut the shell.',crack:'The first plate broke. Strike again.',rewind:'Returning to the launch point.',retry:'Try the marked shape again. Two tries left before this rack is conceded.',stock:'Wait for one cut to refill.',lane:'The triangle charges along its marked lane. Cut it or cross its path.',focus:'Hold a target in flight, or hold Shift to focus. Choose a new line and slash.',rise:'The marked floor is rising. Slash up.',net:'One net caught you. Your cuts are full. Launch up.'};
+  setText('story-alt',openingGuide(s,lastDevice)?.alt||desc[canvas.dataset.scene]||'');
 }
 function restoreField() {
   page = null;
@@ -1318,7 +1321,8 @@ function start({learningGround:learn=needsTutorial(), lockdown=false}={}) {
   nextHUD = 0;
   // CHUNK 6A: the cold open — first real run of the session. 2.4 seconds,
   // skippable with any key after 0.5s, never again this session.
-  if (!learn && coldOpenGate.should())
+  if (!learn && run.state.narrative?.intro) coldOpenGate.should(); // consume the retired movie for this session
+  if (!learn && !run.state.narrative?.intro && coldOpenGate.should())
     launchCutscene(COLD_OPEN_BEATS, { reducedMotion: !opts.motion, onDone: () => {
       hud.classList.add('hud-fade-in');
       setTimeout(() => hud.classList.remove('hud-fade-in'), 740);
@@ -1337,6 +1341,7 @@ function home() {
   run = null;tutorial=null;
   combatTrace = null;
   learningGround=false;game.dataset.learning='false';
+  firstWayGuide.update(null,lastDevice);
   restoreField();
   hud.hidden = true;
   $('rack-skip').hidden=true;$('tutorial-objective').hidden=true;
@@ -1705,6 +1710,7 @@ function safeStep(now) {
       // was refused is almost always a GAME state (recovery, hitstop) that only
       // changes on a tick.
       input.retry();
+      input.tick();
       run.setAim(input.aim);
       run.tick(); // owns the panic ray, grace and every other tick rule
       tickCutscene(); // CHUNK 6A: advances the cold open / mid-wave / sector / SHATTER cuts
@@ -1805,7 +1811,7 @@ function disposeGame(){
   if(disposedGame)return;disposedGame=true;cancelAnimationFrame(raf);raf=0;clearTimeout(blurTimer);
   for(const timer of [hitTimer,kickTimer,flareTimer,fractureGainTimer,fractureSurgeTimer])clearTimeout(timer);
   input.dispose();if(tutorial)tutorial.dispose();else run?.dispose();
-  customize?.dispose();controlPractice?.dispose();teaching?.dispose();waveUI?.dispose();rewardUI?.dispose();renderer.dispose();audio.dispose();
+  firstWayGuide.dispose();customize?.dispose();controlPractice?.dispose();teaching?.dispose();waveUI?.dispose();rewardUI?.dispose();renderer.dispose();audio.dispose();
 }
 window.addEventListener('pagehide',e=>{audio.setSuspended('page',true);if(!e.persisted)disposeGame();});
 window.addEventListener('pageshow',e=>{if(e.persisted){audio.setSuspended('page',false);clock.reset();lastFrameAt=0;dirty=true;}});

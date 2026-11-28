@@ -1,0 +1,321 @@
+{
+  "errors": [],
+  "results": [
+    {
+      "width": 1280,
+      "height": 720,
+      "motion": true,
+      "file": "live-standard-1280x720.jpg",
+      "core": "standard",
+      "equipment": {
+        "core": "standard",
+        "dash": "dash-ink",
+        "slash": "razor"
+      },
+      "x": -230.00000000000023,
+      "y": -416.89285714284654,
+      "slashAge": 3
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "motion": true,
+      "file": "live-grav-1280x720.jpg",
+      "core": "grav",
+      "equipment": {
+        "core": "grav",
+        "dash": "dash-void",
+        "slash": "katana"
+      },
+      "x": -230.00000000000023,
+      "y": -416.89285714284654,
+      "slashAge": 3
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "motion": true,
+      "file": "live-riot-1280x720.jpg",
+      "core": "riot",
+      "equipment": {
+        "core": "riot",
+        "dash": "dash-fire",
+        "slash": "blood"
+      },
+      "x": -230.00000000000023,
+      "y": -416.89285714284654,
+      "slashAge": 3
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "motion": true,
+      "file": "live-time-1280x720.jpg",
+      "core": "time",
+      "equipment": {
+        "core": "time",
+        "dash": "dash-ice",
+        "slash": "laser"
+      },
+      "x": -230.00000000000023,
+      "y": -416.89285714284654,
+      "slashAge": 3
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "motion": true,
+      "file": "live-glass-1280x720.jpg",
+      "core": "glass",
+      "equipment": {
+        "core": "glass",
+        "dash": "dash-water",
+        "slash": "confetti"
+      },
+      "x": -230.00000000000023,
+      "y": -416.89285714284654,
+      "slashAge": 3
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "motion": true,
+      "file": "live-magnet-1280x720.jpg",
+      "core": "magnet",
+      "equipment": {
+        "core": "magnet",
+        "dash": "dash-lightning",
+        "slash": "comic"
+      },
+      "x": -215.59999999999968,
+      "y": -419.29285714284663,
+      "slashAge": 3
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "motion": true,
+      "file": "live-echo-1280x720.jpg",
+      "core": "echo",
+      "equipment": {
+        "core": "echo",
+        "dash": "dash-echo",
+        "slash": "pixel"
+      },
+      "x": -230.00000000000023,
+      "y": -416.89285714284654,
+      "slashAge": 3
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": true,
+      "file": "live-standard-390x844.jpg",
+      "core": "standard",
+      "equipment": {
+        "core": "standard",
+        "dash": "dash-ink",
+        "slash": "razor"
+      },
+      "x": -230.00000000000023,
+      "y": -416.89285714284654,
+      "slashAge": 3
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": true,
+      "file": "live-grav-390x844.jpg",
+      "core": "grav",
+      "equipment": {
+        "core": "grav",
+        "dash": "dash-void",
+        "slash": "katana"
+      },
+      "x": -230.00000000000023,
+      "y": -416.89285714284654,
+      "slashAge": 3
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": true,
+      "file": "live-riot-390x844.jpg",
+      "core": "riot",
+      "equipment": {
+        "core": "riot",
+        "dash": "dash-fire",
+        "slash": "blood"
+      },
+      "x": -230.00000000000023,
+      "y": -416.89285714284654,
+      "slashAge": 3
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": true,
+      "file": "live-time-390x844.jpg",
+      "core": "time",
+      "equipment": {
+        "core": "time",
+        "dash": "dash-ice",
+        "slash": "laser"
+      },
+      "x": -230.00000000000023,
+      "y": -416.89285714284654,
+      "slashAge": 3
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": true,
+      "file": "live-glass-390x844.jpg",
+      "core": "glass",
+      "equipment": {
+        "core": "glass",
+        "dash": "dash-water",
+        "slash": "confetti"
+      },
+      "x": -230.00000000000023,
+      "y": -416.89285714284654,
+      "slashAge": 3
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": true,
+      "file": "live-magnet-390x844.jpg",
+      "core": "magnet",
+      "equipment": {
+        "core": "magnet",
+        "dash": "dash-lightning",
+        "slash": "comic"
+      },
+      "x": -215.59999999999968,
+      "y": -419.29285714284663,
+      "slashAge": 3
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": true,
+      "file": "live-echo-390x844.jpg",
+      "core": "echo",
+      "equipment": {
+        "core": "echo",
+        "dash": "dash-echo",
+        "slash": "pixel"
+      },
+      "x": -230.00000000000023,
+      "y": -416.89285714284654,
+      "slashAge": 3
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": false,
+      "file": "live-standard-390x844-reduced.jpg",
+      "core": "standard",
+      "equipment": {
+        "core": "standard",
+        "dash": "dash-ink",
+        "slash": "razor"
+      },
+      "x": -230.00000000000023,
+      "y": -416.89285714284654,
+      "slashAge": 3
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": false,
+      "file": "live-grav-390x844-reduced.jpg",
+      "core": "grav",
+      "equipment": {
+        "core": "grav",
+        "dash": "dash-void",
+        "slash": "katana"
+      },
+      "x": -230.00000000000023,
+      "y": -416.89285714284654,
+      "slashAge": 3
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": false,
+      "file": "live-riot-390x844-reduced.jpg",
+      "core": "riot",
+      "equipment": {
+        "core": "riot",
+        "dash": "dash-fire",
+        "slash": "blood"
+      },
+      "x": -230.00000000000023,
+      "y": -416.89285714284654,
+      "slashAge": 3
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": false,
+      "file": "live-time-390x844-reduced.jpg",
+      "core": "time",
+      "equipment": {
+        "core": "time",
+        "dash": "dash-ice",
+        "slash": "laser"
+      },
+      "x": -230.00000000000023,
+      "y": -416.89285714284654,
+      "slashAge": 3
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": false,
+      "file": "live-glass-390x844-reduced.jpg",
+      "core": "glass",
+      "equipment": {
+        "core": "glass",
+        "dash": "dash-water",
+        "slash": "confetti"
+      },
+      "x": -230.00000000000023,
+      "y": -416.89285714284654,
+      "slashAge": 3
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": false,
+      "file": "live-magnet-390x844-reduced.jpg",
+      "core": "magnet",
+      "equipment": {
+        "core": "magnet",
+        "dash": "dash-lightning",
+        "slash": "comic"
+      },
+      "x": -215.59999999999968,
+      "y": -419.29285714284663,
+      "slashAge": 3
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": false,
+      "file": "live-echo-390x844-reduced.jpg",
+      "core": "echo",
+      "equipment": {
+        "core": "echo",
+        "dash": "dash-echo",
+        "slash": "pixel"
+      },
+      "x": -230.00000000000023,
+      "y": -416.89285714284654,
+      "slashAge": 3
+    }
+  ],
+  "method": "21 real-run launch frames at desktop/mobile with motion on/off; seven workbench core stills, static reference stability/no horizontal overflow, 12.6-second production-art recording. Scripted browser checks, not a human usability/device FPS study."
+}

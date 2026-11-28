@@ -1,0 +1,45 @@
+{
+  "method": "Scripted player tasks in Chromium with controlled animation time. Touch emulation where marked, not a human/physical-phone study.",
+  "results": [
+    {
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "reduced": false,
+      "file": "before-comparison-390x844.jpg",
+      "errors": []
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "touch": true,
+      "reduced": false,
+      "file": "before-comparison-320x568.jpg",
+      "errors": []
+    },
+    {
+      "width": 640,
+      "height": 360,
+      "touch": false,
+      "reduced": false,
+      "file": "before-comparison-640x360.jpg",
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "touch": false,
+      "reduced": false,
+      "file": "before-comparison-1440x900.jpg",
+      "errors": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "reduced": true,
+      "file": "before-comparison-390x844-reduced.jpg",
+      "errors": []
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "currentContract": "Unmodified left drag is an inverted distance-powered spring. Stationary release is no shot. Shift+left is an explicit direct shot chosen on press. Touch tap/pull and keyboard remain.",
+  "fullSuite": {
+    "command": "npm test",
+    "tests": 1538,
+    "passed": 1538,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "durationMs": 246331.720788
+  },
+  "focused": {
+    "passed": 84,
+    "failed": 0,
+    "coverage": "Final mouse model, actual bounce/morph rendering, fixed-update ghost purity, visible/bounded body pixel deformation, portable art contract and movement verification."
+  },
+  "browserInput": {
+    "casesPassed": 20,
+    "errors": [],
+    "results": "input/results.json",
+    "scope": "Controlled real createInput/createRun/createRenderer, actual browser events. No simulation steps between preview/release measurement. Not ordinary gameplay."
+  },
+  "browserRebound": {
+    "framesPassed": 25,
+    "errors": [],
+    "results": "rebound/results.json",
+    "scope": "Controlled actual run/physics \u2192 admitted bank event \u2192 standalone art renderer \u2192 real software WebGL. Setup near right rail and invulnerability are test fixtures, not ordinary progression. Incoming/outgoing vectors, visible output, reduced motion, Off and draw read-only verified.",
+    "allBodyAxesBounded": true,
+    "sampleBank": {
+      "type": "bank",
+      "x": 1577,
+      "y": -405.38842372073816,
+      "nx": -1,
+      "ny": 0,
+      "speed": 35,
+      "arrivalSpeed": 42,
+      "incomingX": 39.48266207967686,
+      "incomingY": 14.363656580851682,
+      "outgoingX": -38.25869955520716,
+      "outgoingY": 11.49208576208315,
+      "side": "right",
+      "after": 40,
+      "reboundMultiplier": 1.14,
+      "hyper": false,
+      "banks": 1,
+      "paceTarget": 18,
+      "paceQualified": false,
+      "combo": false
+    }
+  },
+  "productionStartRun": {
+    "casesPassed": 7,
+    "results": "play/results.json",
+    "video": "play/gameplay.webm",
+    "method": "Normal main.js Start Run and real mouse/Shift events. Only tutorial-completion, motion, PostFX On preferences seeded. No run, actor, health, resources or renderer injection. Software GPU, not hardware latency/FPS certification. Screenshots include DOM; video is canvas-only.",
+    "outcome": {
+      "shots": 4,
+      "kills": 0,
+      "hp": 3,
+      "phase": "playing",
+      "frameErrors": []
+    },
+    "pageErrors": [],
+    "equipmentSaveUnchanged": true,
+    "observations": [
+      {
+        "action": "stationary",
+        "shotsBefore": 1,
+        "shotsAfter": 1,
+        "heldLabel": "PULL BACK",
+        "powerAfter": 0.7547619047619046,
+        "paused": false
+      },
+      {
+        "action": "pull-right",
+        "shotsBefore": 1,
+        "shotsAfter": 2,
+        "heldLabel": "100% \u00b7 RELEASE",
+        "powerAfter": 1,
+        "paused": false
+      },
+      {
+        "action": "pull-down",
+        "shotsBefore": 2,
+        "shotsAfter": 3,
+        "heldLabel": "100% \u00b7 RELEASE",
+        "powerAfter": 1,
+        "paused": false
+      },
+      {
+        "action": "return-cancel",
+        "shotsBefore": 3,
+        "shotsAfter": 3,
+        "heldLabel": "PULL BACK",
+        "powerAfter": 1,
+        "paused": false
+      },
+      {
+        "action": "right-cancel",
+        "shotsBefore": 3,
+        "shotsAfter": 3,
+        "heldLabel": "100% \u00b7 RELEASE",
+        "powerAfter": 1,
+        "paused": false
+      },
+      {
+        "action": "escape-cancel",
+        "shotsBefore": 3,
+        "shotsAfter": 3,
+        "heldLabel": "100% \u00b7 RELEASE",
+        "powerAfter": 1,
+        "paused": false
+      },
+      {
+        "action": "shift-direct",
+        "shotsBefore": 3,
+        "shotsAfter": 4,
+        "heldLabel": "SHIFT \u00b7 RELEASE",
+        "powerAfter": 0.7547619047619047,
+        "paused": false
+      }
+    ]
+  },
+  "build": {
+    "command": "npm run build",
+    "passed": true,
+    "singleFileKiB": 1342.2,
+    "gzipKB": 494.88
+  },
+  "diffCheckPassed": true,
+  "limitations": [
+    "Short scripted ordinary controls run, not a human usability study. Latest recording has zero kills; successful shot/cancel admission does not guarantee target acquisition.",
+    "Software GPU; no real-device latency or FPS certification.",
+    "Rebound graphics fixtures deliberately set up a near-wall run and invulnerability; this is not ordinary progression.",
+    "Canvas-only video excludes DOM HUD and local pull cue; screenshots include them.",
+    "Existing momentum, assist, resources, earned bank bonuses and flight limits remain."
+  ],
+  "git": "No commit or push. Existing dirty work preserved."
+}

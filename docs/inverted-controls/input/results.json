@@ -1,0 +1,738 @@
+{
+  "method": "Controlled real createInput/createRun/createRenderer, actual browser events. No simulation steps between preview/release measurement. Not ordinary gameplay.",
+  "rows": [
+    {
+      "name": "stationary",
+      "delta": {
+        "x": 0,
+        "y": 0
+      },
+      "held": {
+        "aim": null,
+        "mode": "pull",
+        "label": "PULL BACK"
+      },
+      "after": {
+        "attempts": [],
+        "shots": 0,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "jitter",
+      "delta": {
+        "x": 2,
+        "y": 0
+      },
+      "held": {
+        "aim": null,
+        "mode": "pull",
+        "label": "PULL BACK"
+      },
+      "after": {
+        "attempts": [],
+        "shots": 0,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "seven",
+      "delta": {
+        "x": 7,
+        "y": 0
+      },
+      "held": {
+        "aim": {
+          "x": -0.7594780073601656,
+          "y": 0,
+          "power": 0.01808280969905156,
+          "lock": null,
+          "anchor": {
+            "x": -322.26666666666665,
+            "y": -647.2888888888888
+          },
+          "control": "pull"
+        },
+        "mode": "pull",
+        "label": "2% · RELEASE"
+      },
+      "after": {
+        "attempts": [
+          {
+            "v": {
+              "x": -0.7594780073601656,
+              "y": 0,
+              "power": 0.01808280969905156,
+              "lock": null,
+              "anchor": {
+                "x": -322.26666666666665,
+                "y": -647.2888888888888
+              },
+              "control": "pull"
+            },
+            "accepted": true
+          }
+        ],
+        "shots": 1,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "nine",
+      "delta": {
+        "x": 9,
+        "y": 0
+      },
+      "held": {
+        "aim": {
+          "x": -2.257645390492171,
+          "y": 0,
+          "power": 0.053753461678385024,
+          "lock": null,
+          "anchor": {
+            "x": -322.26666666666665,
+            "y": -647.2888888888888
+          },
+          "control": "pull"
+        },
+        "mode": "pull",
+        "label": "5% · RELEASE"
+      },
+      "after": {
+        "attempts": [
+          {
+            "v": {
+              "x": -2.257645390492171,
+              "y": 0,
+              "power": 0.053753461678385024,
+              "lock": null,
+              "anchor": {
+                "x": -322.26666666666665,
+                "y": -647.2888888888888
+              },
+              "control": "pull"
+            },
+            "accepted": true
+          }
+        ],
+        "shots": 1,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "right",
+      "delta": {
+        "x": 140,
+        "y": 0
+      },
+      "held": {
+        "aim": {
+          "x": -42,
+          "y": 0,
+          "power": 1,
+          "lock": null,
+          "anchor": {
+            "x": -322.26666666666665,
+            "y": -647.2888888888888
+          },
+          "control": "pull"
+        },
+        "mode": "pull",
+        "label": "100% · RELEASE"
+      },
+      "after": {
+        "attempts": [
+          {
+            "v": {
+              "x": -42,
+              "y": 0,
+              "power": 1,
+              "lock": null,
+              "anchor": {
+                "x": -322.26666666666665,
+                "y": -647.2888888888888
+              },
+              "control": "pull"
+            },
+            "accepted": true
+          }
+        ],
+        "shots": 1,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "left",
+      "delta": {
+        "x": -140,
+        "y": 0
+      },
+      "held": {
+        "aim": {
+          "x": 42,
+          "y": 0,
+          "power": 1,
+          "lock": null,
+          "anchor": {
+            "x": -322.26666666666665,
+            "y": -647.2888888888888
+          },
+          "control": "pull"
+        },
+        "mode": "pull",
+        "label": "100% · RELEASE"
+      },
+      "after": {
+        "attempts": [
+          {
+            "v": {
+              "x": 42,
+              "y": 0,
+              "power": 1,
+              "lock": null,
+              "anchor": {
+                "x": -322.26666666666665,
+                "y": -647.2888888888888
+              },
+              "control": "pull"
+            },
+            "accepted": true
+          }
+        ],
+        "shots": 1,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "down",
+      "delta": {
+        "x": 0,
+        "y": 140
+      },
+      "held": {
+        "aim": {
+          "x": 0,
+          "y": -42,
+          "power": 1,
+          "lock": null,
+          "anchor": {
+            "x": -322.26666666666665,
+            "y": -647.2888888888888
+          },
+          "control": "pull"
+        },
+        "mode": "pull",
+        "label": "100% · RELEASE"
+      },
+      "after": {
+        "attempts": [
+          {
+            "v": {
+              "x": 0,
+              "y": -42,
+              "power": 1,
+              "lock": null,
+              "anchor": {
+                "x": -322.26666666666665,
+                "y": -647.2888888888888
+              },
+              "control": "pull"
+            },
+            "accepted": true
+          }
+        ],
+        "shots": 1,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "up",
+      "delta": {
+        "x": 0,
+        "y": -140
+      },
+      "held": {
+        "aim": {
+          "x": 0,
+          "y": 42,
+          "power": 1,
+          "lock": null,
+          "anchor": {
+            "x": -322.26666666666665,
+            "y": -647.2888888888888
+          },
+          "control": "pull"
+        },
+        "mode": "pull",
+        "label": "100% · RELEASE"
+      },
+      "after": {
+        "attempts": [
+          {
+            "v": {
+              "x": 0,
+              "y": 42,
+              "power": 1,
+              "lock": null,
+              "anchor": {
+                "x": -322.26666666666665,
+                "y": -647.2888888888888
+              },
+              "control": "pull"
+            },
+            "accepted": true
+          }
+        ],
+        "shots": 1,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "down-right",
+      "delta": {
+        "x": 100,
+        "y": 100
+      },
+      "held": {
+        "aim": {
+          "x": -29.698484809834994,
+          "y": -29.698484809834994,
+          "power": 1,
+          "lock": null,
+          "anchor": {
+            "x": -322.26666666666665,
+            "y": -647.2888888888888
+          },
+          "control": "pull"
+        },
+        "mode": "pull",
+        "label": "100% · RELEASE"
+      },
+      "after": {
+        "attempts": [
+          {
+            "v": {
+              "x": -29.698484809834994,
+              "y": -29.698484809834994,
+              "power": 1,
+              "lock": null,
+              "anchor": {
+                "x": -322.26666666666665,
+                "y": -647.2888888888888
+              },
+              "control": "pull"
+            },
+            "accepted": true
+          }
+        ],
+        "shots": 1,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "down-left",
+      "delta": {
+        "x": -100,
+        "y": 100
+      },
+      "held": {
+        "aim": {
+          "x": 29.698484809834994,
+          "y": -29.698484809834994,
+          "power": 1,
+          "lock": null,
+          "anchor": {
+            "x": -322.26666666666665,
+            "y": -647.2888888888888
+          },
+          "control": "pull"
+        },
+        "mode": "pull",
+        "label": "100% · RELEASE"
+      },
+      "after": {
+        "attempts": [
+          {
+            "v": {
+              "x": 29.698484809834994,
+              "y": -29.698484809834994,
+              "power": 1,
+              "lock": null,
+              "anchor": {
+                "x": -322.26666666666665,
+                "y": -647.2888888888888
+              },
+              "control": "pull"
+            },
+            "accepted": true
+          }
+        ],
+        "shots": 1,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "up-right",
+      "delta": {
+        "x": 100,
+        "y": -100
+      },
+      "held": {
+        "aim": {
+          "x": -29.698484809834994,
+          "y": 29.698484809834994,
+          "power": 1,
+          "lock": null,
+          "anchor": {
+            "x": -322.26666666666665,
+            "y": -647.2888888888888
+          },
+          "control": "pull"
+        },
+        "mode": "pull",
+        "label": "100% · RELEASE"
+      },
+      "after": {
+        "attempts": [
+          {
+            "v": {
+              "x": -29.698484809834994,
+              "y": 29.698484809834994,
+              "power": 1,
+              "lock": null,
+              "anchor": {
+                "x": -322.26666666666665,
+                "y": -647.2888888888888
+              },
+              "control": "pull"
+            },
+            "accepted": true
+          }
+        ],
+        "shots": 1,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "up-left",
+      "delta": {
+        "x": -100,
+        "y": -100
+      },
+      "held": {
+        "aim": {
+          "x": 29.698484809834994,
+          "y": 29.698484809834994,
+          "power": 1,
+          "lock": null,
+          "anchor": {
+            "x": -322.26666666666665,
+            "y": -647.2888888888888
+          },
+          "control": "pull"
+        },
+        "mode": "pull",
+        "label": "100% · RELEASE"
+      },
+      "after": {
+        "attempts": [
+          {
+            "v": {
+              "x": 29.698484809834994,
+              "y": 29.698484809834994,
+              "power": 1,
+              "lock": null,
+              "anchor": {
+                "x": -322.26666666666665,
+                "y": -647.2888888888888
+              },
+              "control": "pull"
+            },
+            "accepted": true
+          }
+        ],
+        "shots": 1,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "half",
+      "delta": {
+        "x": 60,
+        "y": 0
+      },
+      "held": {
+        "aim": {
+          "x": -31.09563512981758,
+          "y": 0,
+          "power": 0.7403722649956567,
+          "lock": null,
+          "anchor": {
+            "x": -322.26666666666665,
+            "y": -647.2888888888888
+          },
+          "control": "pull"
+        },
+        "mode": "pull",
+        "label": "74% · RELEASE"
+      },
+      "after": {
+        "attempts": [
+          {
+            "v": {
+              "x": -31.09563512981758,
+              "y": 0,
+              "power": 0.7403722649956567,
+              "lock": null,
+              "anchor": {
+                "x": -322.26666666666665,
+                "y": -647.2888888888888
+              },
+              "control": "pull"
+            },
+            "accepted": true
+          }
+        ],
+        "shots": 1,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "return",
+      "delta": {
+        "x": 140,
+        "y": 0
+      },
+      "held": {
+        "aim": null,
+        "mode": "pull",
+        "label": "PULL BACK"
+      },
+      "after": {
+        "attempts": [],
+        "shots": 0,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "camera-pan",
+      "delta": {
+        "x": 140,
+        "y": 0
+      },
+      "held": {
+        "aim": {
+          "x": -42,
+          "y": 0,
+          "power": 1,
+          "lock": null,
+          "anchor": {
+            "x": -322.26666666666665,
+            "y": -647.2888888888888
+          },
+          "control": "pull"
+        },
+        "mode": "pull",
+        "label": "100% · RELEASE"
+      },
+      "after": {
+        "attempts": [
+          {
+            "v": {
+              "x": -42,
+              "y": 0,
+              "power": 1,
+              "lock": null,
+              "anchor": {
+                "x": -322.26666666666665,
+                "y": -647.2888888888888
+              },
+              "control": "pull"
+            },
+            "accepted": true
+          }
+        ],
+        "shots": 1,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "escape",
+      "delta": {
+        "x": 140,
+        "y": 0
+      },
+      "held": {
+        "aim": {
+          "x": -42,
+          "y": 0,
+          "power": 1,
+          "lock": null,
+          "anchor": {
+            "x": -322.26666666666665,
+            "y": -647.2888888888888
+          },
+          "control": "pull"
+        },
+        "mode": "pull",
+        "label": "100% · RELEASE"
+      },
+      "after": {
+        "attempts": [],
+        "shots": 0,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "right-cancel",
+      "delta": {
+        "x": 140,
+        "y": 0
+      },
+      "held": {
+        "aim": {
+          "x": -42,
+          "y": 0,
+          "power": 1,
+          "lock": null,
+          "anchor": {
+            "x": -322.26666666666665,
+            "y": -647.2888888888888
+          },
+          "control": "pull"
+        },
+        "mode": "pull",
+        "label": "100% · RELEASE"
+      },
+      "after": {
+        "attempts": [],
+        "shots": 0,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "outside",
+      "delta": {
+        "x": 600,
+        "y": -300
+      },
+      "held": {
+        "aim": {
+          "x": -37.56594202199646,
+          "y": 18.78297101099823,
+          "power": 1,
+          "lock": null,
+          "anchor": {
+            "x": -322.26666666666665,
+            "y": -647.2888888888888
+          },
+          "control": "pull"
+        },
+        "mode": "pull",
+        "label": "100% · RELEASE"
+      },
+      "after": {
+        "attempts": [
+          {
+            "v": {
+              "x": -37.56594202199646,
+              "y": 18.78297101099823,
+              "power": 1,
+              "lock": null,
+              "anchor": {
+                "x": -322.26666666666665,
+                "y": -647.2888888888888
+              },
+              "control": "pull"
+            },
+            "accepted": true
+          }
+        ],
+        "shots": 1,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "capture-loss",
+      "delta": {
+        "x": 140,
+        "y": 0
+      },
+      "held": {
+        "aim": {
+          "x": -42,
+          "y": 0,
+          "power": 1,
+          "lock": null,
+          "anchor": {
+            "x": -322.26666666666665,
+            "y": -647.2888888888888
+          },
+          "control": "pull"
+        },
+        "mode": "pull",
+        "label": "100% · RELEASE"
+      },
+      "after": {
+        "attempts": [],
+        "shots": 0,
+        "aim": null,
+        "engaged": false
+      }
+    },
+    {
+      "name": "shift-direct",
+      "delta": {
+        "x": 0,
+        "y": 0
+      },
+      "held": {
+        "aim": {
+          "x": 3.361612604859568,
+          "y": -31.52125569666997,
+          "power": 0.7547619047619047,
+          "lock": null,
+          "control": "direct"
+        },
+        "mode": "direct",
+        "label": "SHIFT · RELEASE"
+      },
+      "after": {
+        "attempts": [
+          {
+            "v": {
+              "x": 3.361612604859568,
+              "y": -31.52125569666997,
+              "power": 0.7547619047619047,
+              "lock": null,
+              "control": "direct"
+            },
+            "accepted": true
+          }
+        ],
+        "shots": 1,
+        "aim": null,
+        "engaged": false
+      }
+    }
+  ],
+  "errors": []
+}

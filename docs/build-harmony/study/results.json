@@ -1,0 +1,346 @@
+{
+  "rows": [
+    {
+      "id": "wyrm",
+      "stage": "summon"
+    },
+    {
+      "id": "wyrm",
+      "stage": "dash"
+    },
+    {
+      "id": "wyrm",
+      "stage": "attack"
+    },
+    {
+      "id": "wyrm",
+      "stage": "power"
+    },
+    {
+      "id": "wyrm",
+      "stage": "kill"
+    },
+    {
+      "id": "ronin",
+      "stage": "summon"
+    },
+    {
+      "id": "ronin",
+      "stage": "dash"
+    },
+    {
+      "id": "ronin",
+      "stage": "attack"
+    },
+    {
+      "id": "ronin",
+      "stage": "power"
+    },
+    {
+      "id": "ronin",
+      "stage": "kill"
+    },
+    {
+      "id": "king",
+      "stage": "summon"
+    },
+    {
+      "id": "king",
+      "stage": "dash"
+    },
+    {
+      "id": "king",
+      "stage": "attack"
+    },
+    {
+      "id": "king",
+      "stage": "power"
+    },
+    {
+      "id": "king",
+      "stage": "kill"
+    },
+    {
+      "id": "phantom",
+      "stage": "summon"
+    },
+    {
+      "id": "phantom",
+      "stage": "dash"
+    },
+    {
+      "id": "phantom",
+      "stage": "attack"
+    },
+    {
+      "id": "phantom",
+      "stage": "power"
+    },
+    {
+      "id": "phantom",
+      "stage": "kill"
+    },
+    {
+      "id": "reaper",
+      "stage": "summon"
+    },
+    {
+      "id": "reaper",
+      "stage": "dash"
+    },
+    {
+      "id": "reaper",
+      "stage": "attack"
+    },
+    {
+      "id": "reaper",
+      "stage": "power"
+    },
+    {
+      "id": "reaper",
+      "stage": "kill"
+    },
+    {
+      "id": "eater",
+      "stage": "summon"
+    },
+    {
+      "id": "eater",
+      "stage": "dash"
+    },
+    {
+      "id": "eater",
+      "stage": "attack"
+    },
+    {
+      "id": "eater",
+      "stage": "power"
+    },
+    {
+      "id": "eater",
+      "stage": "kill"
+    },
+    {
+      "id": "sun",
+      "stage": "summon"
+    },
+    {
+      "id": "sun",
+      "stage": "dash"
+    },
+    {
+      "id": "sun",
+      "stage": "attack"
+    },
+    {
+      "id": "sun",
+      "stage": "power"
+    },
+    {
+      "id": "sun",
+      "stage": "kill"
+    },
+    {
+      "id": "glacier",
+      "stage": "summon"
+    },
+    {
+      "id": "glacier",
+      "stage": "dash"
+    },
+    {
+      "id": "glacier",
+      "stage": "attack"
+    },
+    {
+      "id": "glacier",
+      "stage": "power"
+    },
+    {
+      "id": "glacier",
+      "stage": "kill"
+    },
+    {
+      "id": "briar",
+      "stage": "summon"
+    },
+    {
+      "id": "briar",
+      "stage": "dash"
+    },
+    {
+      "id": "briar",
+      "stage": "attack"
+    },
+    {
+      "id": "briar",
+      "stage": "power"
+    },
+    {
+      "id": "briar",
+      "stage": "kill"
+    },
+    {
+      "id": "sentinel",
+      "stage": "summon"
+    },
+    {
+      "id": "sentinel",
+      "stage": "dash"
+    },
+    {
+      "id": "sentinel",
+      "stage": "attack"
+    },
+    {
+      "id": "sentinel",
+      "stage": "power"
+    },
+    {
+      "id": "sentinel",
+      "stage": "kill"
+    },
+    {
+      "id": "arcade",
+      "stage": "summon"
+    },
+    {
+      "id": "arcade",
+      "stage": "dash"
+    },
+    {
+      "id": "arcade",
+      "stage": "attack"
+    },
+    {
+      "id": "arcade",
+      "stage": "power"
+    },
+    {
+      "id": "arcade",
+      "stage": "kill"
+    },
+    {
+      "id": "storm",
+      "stage": "summon"
+    },
+    {
+      "id": "storm",
+      "stage": "dash"
+    },
+    {
+      "id": "storm",
+      "stage": "attack"
+    },
+    {
+      "id": "storm",
+      "stage": "power"
+    },
+    {
+      "id": "storm",
+      "stage": "kill"
+    },
+    {
+      "id": "forge",
+      "stage": "summon"
+    },
+    {
+      "id": "forge",
+      "stage": "dash"
+    },
+    {
+      "id": "forge",
+      "stage": "attack"
+    },
+    {
+      "id": "forge",
+      "stage": "power"
+    },
+    {
+      "id": "forge",
+      "stage": "kill"
+    },
+    {
+      "id": "wraith",
+      "stage": "summon"
+    },
+    {
+      "id": "wraith",
+      "stage": "dash"
+    },
+    {
+      "id": "wraith",
+      "stage": "attack"
+    },
+    {
+      "id": "wraith",
+      "stage": "power"
+    },
+    {
+      "id": "wraith",
+      "stage": "kill"
+    },
+    {
+      "id": "bulwark",
+      "stage": "summon"
+    },
+    {
+      "id": "bulwark",
+      "stage": "dash"
+    },
+    {
+      "id": "bulwark",
+      "stage": "attack"
+    },
+    {
+      "id": "bulwark",
+      "stage": "power"
+    },
+    {
+      "id": "bulwark",
+      "stage": "kill"
+    },
+    {
+      "id": "razoredge",
+      "stage": "summon"
+    },
+    {
+      "id": "razoredge",
+      "stage": "dash"
+    },
+    {
+      "id": "razoredge",
+      "stage": "attack"
+    },
+    {
+      "id": "razoredge",
+      "stage": "power"
+    },
+    {
+      "id": "razoredge",
+      "stage": "kill"
+    },
+    {
+      "id": "orbit",
+      "stage": "summon"
+    },
+    {
+      "id": "orbit",
+      "stage": "dash"
+    },
+    {
+      "id": "orbit",
+      "stage": "attack"
+    },
+    {
+      "id": "orbit",
+      "stage": "power"
+    },
+    {
+      "id": "orbit",
+      "stage": "kill"
+    }
+  ],
+  "errors": [],
+  "method": "Canvas-only screenshots and MediaRecorder recording of the explicitly labeled production-art study. Not gameplay footage."
+}

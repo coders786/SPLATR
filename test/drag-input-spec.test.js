@@ -66,14 +66,14 @@ function stubRig(run, { camY = 0 } = {}) {
       });
       return input.current;
     },
-    ev(x, y, type = 'mouse') {
+    ev(x, y, type = 'touch') {
       return { isPrimary: true, pointerId: 1, pointerType: type, button: 0, clientX: x, clientY: y, preventDefault() {} };
     },
     restore() { globalThis.window = previous; },
   };
 }
 
-test('test_drag_pointer_off_canvas_and_camera_pan', async () => {
+test('touch_drag_pointer_off_canvas_and_camera_pan', async () => {
   const { createInput } = await import('../src/input.js');
   // ── A ────────────────────────────────────────────────────────────────────
   const g = staged(11);

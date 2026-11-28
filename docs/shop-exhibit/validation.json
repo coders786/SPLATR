@@ -1,0 +1,20 @@
+{
+  "tests": {
+    "passed": 1427,
+    "failed": 0,
+    "command": "npm test"
+  },
+  "focused": {
+    "passed": 12,
+    "failed": 0
+  },
+  "build": "PASS \u00b7 1248.9 KiB single-file bundle",
+  "browser": "PASS \u00b7 7 layouts/motion cases, 3 buy/equip flows, 22 shelf views, zero page errors",
+  "nativeScreenshots": 91,
+  "gallery": "PASS \u00b7 1280px and 390px, all referenced screenshots exist, no document overflow",
+  "limitations": [
+    "Scripted browser review, not human comprehension testing",
+    "No FPS or physical-device performance measurement",
+    "Power comparisons are illustrative examples, not a controlled combat benchmark"
+  ]
+}

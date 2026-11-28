@@ -166,7 +166,7 @@ test('CHUNK 1: story callouts and the starter hint hang off the bottom edge', ()
   assert.ok(size >= 13, `the chip must stay legible in an embed (got ${size}px)`);
 
   assert.ok(/id="start-hint"/.test(html), 'the four-word starter hint exists');
-  assert.ok(/AIM &amp; CLICK TO CUT/.test(html), 'and says what to do');
+  assert.ok(/PULL BACK &amp; RELEASE TO CUT/.test(html), 'and says what to do');
   assert.equal(hintVisible(0, 0), true);
   assert.equal(hintVisible(1, 0), false, 'the first kill retires it');
   assert.equal(hintVisible(0, 999), false, 'and it cannot outstay its welcome');

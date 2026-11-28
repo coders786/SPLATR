@@ -1,0 +1,60 @@
+{
+  "date": "2026-11-24",
+  "fullTests": {
+    "pass": 1459,
+    "fail": 0,
+    "durationMs": 256439.654043
+  },
+  "focusedTests": 53,
+  "newTests": 4,
+  "productionBuildKiB": 1290.2,
+  "diffCheck": "PASS",
+  "normalGameplay": [
+    {
+      "width": 1280,
+      "height": 720,
+      "kills": 5,
+      "shots": 20,
+      "phase": "playing",
+      "frameErrors": [],
+      "freeEquipment": {
+        "head": "none",
+        "eyes": "ninja",
+        "body": "paper",
+        "core": "standard",
+        "tail": "ribbon",
+        "slash": "razor",
+        "dash": "dash-auto",
+        "pointer": "pointer-reticle",
+        "radar": "radar-base",
+        "trajectory": "trajectory-base",
+        "world": "twilight"
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "kills": 5,
+      "shots": 20,
+      "phase": "playing",
+      "frameErrors": [],
+      "freeEquipment": {
+        "head": "none",
+        "eyes": "ninja",
+        "body": "paper",
+        "core": "standard",
+        "tail": "ribbon",
+        "slash": "razor",
+        "dash": "dash-auto",
+        "pointer": "pointer-reticle",
+        "radar": "radar-base",
+        "trajectory": "trajectory-base",
+        "world": "twilight"
+      }
+    }
+  ],
+  "pageErrors": [],
+  "method": "Normal main.js Start Run. Bot chooses visible targets from renderer trace and clicks with Puppeteer. Debug run is read only; no health/position/enemy/phase mutations. Tutorial completion seeded solely to enter ordinary play. Actual arena canvas including HUD is recorded. Not human playtesting or device FPS certification.",
+  "scope": "Actual live combat renderer: base-kit attacks, committed dash wakes, confirmed hit/armor/damage effects and enemy anticipation accents. No shop edits or gameplay balance changes.",
+  "freshPreviewPort": 5201
+}

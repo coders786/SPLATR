@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-24",
+  "fullTests": {
+    "pass": 1453,
+    "fail": 0,
+    "durationMs": 395837.762558
+  },
+  "focusedTests": 5,
+  "items": 73,
+  "slots": 11,
+  "itemBeatCaptures": 219,
+  "mobileLayouts": 4,
+  "pageErrors": [],
+  "shopRegression": "7 layout/motion cases, 22 native shelves, 3 separate Buy/Equip flows; PASS",
+  "buildKiB": 1281.7,
+  "diffCheck": "PASS",
+  "actualStoreCanvasClipSeconds": 16.8,
+  "screenEvidence": 20,
+  "scope": "Actual store item presentation only. No gameplay or save migrations. C64 Tide remains separate.",
+  "limitations": [
+    "Automated browser and canvas coverage, not human usability testing or physical-device FPS measurements.",
+    "Shared motion primitives combine with 73 distinct authored item silhouettes and slot-specific production art; not 219 independently coded animation engines."
+  ]
+}

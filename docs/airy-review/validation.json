@@ -1,0 +1,59 @@
+{
+  "status": "PASS",
+  "fullTests": {
+    "pass": 1437,
+    "fail": 0,
+    "durationMs": 271146.326973,
+    "finalSource": true
+  },
+  "newAiryTests": 4,
+  "focusedFinalTests": 51,
+  "build": {
+    "singleFile": true,
+    "verifiedKiB": 1249.2
+  },
+  "nativeScreenshots": 207,
+  "offlineArtReferences": 80,
+  "shop": {
+    "layoutMotionCases": 7,
+    "shelfViews": 22,
+    "buyThenEquipFlows": 3,
+    "minToolTargetPx": 44,
+    "noSaveMutation": true,
+    "pageErrors": 0,
+    "results": "regression/results.json"
+  },
+  "live": {
+    "controlledRendererCases": 16,
+    "actualCoilRelay": true,
+    "readOnlyDraws": true,
+    "reducedStateTruthful": true,
+    "results": "live/live-results.json"
+  },
+  "artAudit": {
+    "combinations": 140,
+    "unchangedAttackCells": 392,
+    "baselineSHA256": "ebf4079a435a6342998cecbf958c7f113cc38d16caf252bec5d5126696f0c16a",
+    "method": "Genuine saved pre-edit module vs current production renderer, identical equipment/camera. PNGs are offline art references, not native browser screenshots. Pixel difference is not proof of recognition."
+  },
+  "gallery": {
+    "widths": [
+      1280,
+      390
+    ],
+    "horizontalOverflow": false,
+    "brokenLoadedImages": 0
+  },
+  "diffCheck": "PASS",
+  "sources": {
+    "src/art/splatr-art-engine.js": "181efd967f03e9c7ca6d77c90b2975297227f36e8d839e8a89fe1cab828455dc",
+    "src/customize.js": "52f02f4f79bf21dc3b36f632f6632f542d54fb06e6a745f9a0a979a58146a0ae",
+    "src/lab.css": "429ac90583a4cfa772116d19a361f5056569dbda63c492a29058146868a4368d"
+  },
+  "limits": [
+    "Scripted native browser checks, not recruited-player recognition testing.",
+    "Controlled real-run states, not an uncontrolled playthrough or physical-device FPS measurement.",
+    "No balance, price, save or attack-source migration; C64 Tide remains pending.",
+    "No commit or push."
+  ]
+}

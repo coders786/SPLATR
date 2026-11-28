@@ -1,0 +1,82 @@
+{
+  "tests": {
+    "full": "1..1472\n# tests 1472\n# suites 0\n# pass 1472\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 279707.429838\n",
+    "focused": "1..17\n# tests 17\n# suites 0\n# pass 17\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 6479.752022\n",
+    "build": "computing gzip size...\ndist/index.html  1,338.11 kB │ gzip: 481.24 kB\n✓ built in 12.23s\nVerified dist/index.html: one file, vector art, embedded fonts/scripts, 1306.8 KiB.\n"
+  },
+  "normalStartRun": {
+    "method": "Ordinary main.js Start Run. Real Puppeteer pointer clicks. Read-only debug/renderer trace used for aiming and timing receipts; no state, renderer or enemies injected. Tutorial flag only seeded. Canvas recorded at 30fps. Not human play or device FPS certification.",
+    "before": [
+      {
+        "width": 1280,
+        "height": 720,
+        "accepted": {
+          "shots": 12,
+          "kills": 6,
+          "hp": 3,
+          "phase": "playing"
+        },
+        "sampledFrames": 72,
+        "browserErrors": [],
+        "frameErrors": []
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "accepted": {
+          "shots": 12,
+          "kills": 5,
+          "hp": 3,
+          "phase": "playing"
+        },
+        "sampledFrames": 72,
+        "browserErrors": [],
+        "frameErrors": []
+      }
+    ],
+    "after": [
+      {
+        "width": 1280,
+        "height": 720,
+        "accepted": {
+          "shots": 11,
+          "kills": 7,
+          "hp": 3,
+          "phase": "playing"
+        },
+        "sampledFrames": 72,
+        "browserErrors": [],
+        "frameErrors": []
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "accepted": {
+          "shots": 12,
+          "kills": 4,
+          "hp": 3,
+          "phase": "playing"
+        },
+        "sampledFrames": 72,
+        "browserErrors": [],
+        "frameErrors": []
+      }
+    ],
+    "note": "Different nondeterministic gameplay paths. Kills are receipts, not evidence of improved game balance or performance."
+  },
+  "controlledElements": {
+    "method": "Controlled native createRun/createRenderer plus real dash and physics ticks. Seeded equipment, protected health, stable sentinel. Separate from ordinary Start Run recordings. No performance certification.",
+    "scenarios": 32,
+    "errors": [],
+    "allDrawsReadOnly": true,
+    "allResetCleared": true,
+    "allExpired": true
+  },
+  "visualReview": [
+    "Baseline: logo lint, ambient drift emission, competing fins, weak recovery",
+    "Revision one rejected: lingering continuous wire look",
+    "Final: separated measured wake, elemental fragments, lowered duplicate launch cloud, anchored recovery flick",
+    "Still needs human at-speed recognition and real mobile hardware profiling"
+  ],
+  "authority": "Renderer only; no gameplay, store, save or ownership changes."
+}

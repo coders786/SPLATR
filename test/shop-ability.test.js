@@ -47,7 +47,7 @@ test('sixteen studies are distinct, visibly progress and stay pixel-still under 
  const results=new Set();for(const id of SHOWCASE_IDS){const it=ITEMS.find(i=>i.id===id),eq=normalizeEquipment({[it.slot]:id}),draw=(t,motion)=>{const cv=createCanvas(640,400);drawShopItemStudy(playerCanvas(cv.getContext('2d')),640,400,{study:shopStudy(it,t,motion,eq),equipment:eq});return cv.toBuffer('image/png');};assert.deepEqual(draw(0,false),draw(9999,false),id);assert.notDeepEqual(draw(0,true),draw(3300,true),id);results.add(draw(3300,false).toString('base64'));}assert.equal(results.size,16);
 });
 test('copy explicitly excludes unreleased elemental powers and correctly describes fragile/slow/limited tradeoffs',()=>{
- assert.match(shopAbility('dash-fire').limit,/10% narrower/);assert.match(shopAbility('dash-ice').limit,/bosses resist/);assert.match(shopAbility('dash-echo').limit,/not repeated attacks/);assert.match(shopAbility('sniper').limit,/No homing or score bonus/);
+ assert.match(shopAbility('dash-fire').limit,/10% narrower/);assert.match(shopAbility('dash-ice').limit,/bosses resist/);assert.match(shopAbility('dash-echo').limit,/One pending replay/);assert.match(shopAbility('sniper').limit,/No homing or score bonus/);
  assert.match(shopAbility('glass').effect,/maximum health is 1/);assert.match(shopAbility('riot').limit,/2 maximum EDGE/);assert.match(shopAbility('crown').limit,/8% launch speed/);assert.match(shopAbility('viper').effect,/15% narrower/);assert.match(shopAbility('coil').limit,/cannot create more zaps/);
 });
 test('search can find abilities in ordinary words without inventing a new power',()=>{

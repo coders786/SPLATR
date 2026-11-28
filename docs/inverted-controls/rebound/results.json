@@ -1,0 +1,2166 @@
+{
+  "method": "Controlled actual run/physics → admitted bank event → standalone art renderer → real software WebGL. Setup near right rail and invulnerability are test fixtures, not ordinary progression. Incoming/outgoing vectors, visible output, reduced motion, Off and draw read-only verified.",
+  "rows": [
+    {
+      "element": "fire",
+      "motion": true,
+      "mode": "on",
+      "age": 0,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.8,
+          "y": 1.25
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.8846153846153847,
+          "energy": 0.28778298995019824,
+          "held": 0,
+          "heading": 2.8497887679970613,
+          "age": 0,
+          "element": "fire",
+          "body": {
+            "x": 0.9567376207875073,
+            "y": 1.0302836654487448
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 0,
+              "element": "fire"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "fire",
+      "motion": true,
+      "mode": "on",
+      "age": 4,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.8,
+          "y": 1.25
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.766328424908425,
+          "energy": 0.3350177520094138,
+          "held": 0,
+          "heading": 2.9042205266174417,
+          "age": 3.0754609523809524,
+          "element": "fire",
+          "body": {
+            "x": 0.8658639865560932,
+            "y": 1.0938952094107348
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 3.0754609523809524,
+              "element": "fire"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "fire",
+      "motion": true,
+      "mode": "on",
+      "age": 12,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.939223633721483,
+          "y": 1.094461981326043
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.5934382783882783,
+          "energy": 0.16561734010795054,
+          "held": 0,
+          "heading": 3.103317053619228,
+          "age": 7.570604761904763,
+          "element": "fire",
+          "body": {
+            "x": 0.939223633721483,
+            "y": 1.0425434563949618
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 7.570604761904763,
+              "element": "fire"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "fire",
+      "motion": true,
+      "mode": "on",
+      "age": 28,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.9656657509197943,
+          "y": 1.05028004967647
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.5687954945054945,
+          "energy": 0.1438431145628822,
+          "held": 0,
+          "heading": 3.103317053619228,
+          "age": 8.211317142857144,
+          "element": "fire",
+          "body": {
+            "x": 0.9656657509197943,
+            "y": 1.024033974356144
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 8.211317142857144,
+              "element": "fire"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "fire",
+      "motion": true,
+      "mode": "on",
+      "age": 52,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.9656657509197943,
+          "y": 1.05028004967647
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.5687954945054945,
+          "energy": 0.1438431145628822,
+          "held": 0,
+          "heading": 3.103317053619228,
+          "age": 8.211317142857144,
+          "element": "fire",
+          "body": {
+            "x": 0.9656657509197943,
+            "y": 1.024033974356144
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 8.211317142857144,
+              "element": "fire"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "ice",
+      "motion": true,
+      "mode": "on",
+      "age": 0,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.8,
+          "y": 1.25
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.8846153846153847,
+          "energy": 0.28778298995019824,
+          "held": 0,
+          "heading": 2.8497887679970613,
+          "age": 0,
+          "element": "ice",
+          "body": {
+            "x": 0.9567376207875073,
+            "y": 1.0302836654487448
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 0,
+              "element": "ice"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "ice",
+      "motion": true,
+      "mode": "on",
+      "age": 4,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.8,
+          "y": 1.25
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.766328424908425,
+          "energy": 0.3350177520094138,
+          "held": 0,
+          "heading": 2.9042205266174417,
+          "age": 3.0754609523809524,
+          "element": "ice",
+          "body": {
+            "x": 0.8658639865560932,
+            "y": 1.0938952094107348
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 3.0754609523809524,
+              "element": "ice"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "ice",
+      "motion": true,
+      "mode": "on",
+      "age": 12,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.939223633721483,
+          "y": 1.094461981326043
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.5934382783882783,
+          "energy": 0.16561734010795054,
+          "held": 0,
+          "heading": 3.103317053619228,
+          "age": 7.570604761904763,
+          "element": "ice",
+          "body": {
+            "x": 0.939223633721483,
+            "y": 1.0425434563949618
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 7.570604761904763,
+              "element": "ice"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "ice",
+      "motion": true,
+      "mode": "on",
+      "age": 28,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.9656657509197943,
+          "y": 1.05028004967647
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.5687954945054945,
+          "energy": 0.1438431145628822,
+          "held": 0,
+          "heading": 3.103317053619228,
+          "age": 8.211317142857144,
+          "element": "ice",
+          "body": {
+            "x": 0.9656657509197943,
+            "y": 1.024033974356144
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 8.211317142857144,
+              "element": "ice"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "ice",
+      "motion": true,
+      "mode": "on",
+      "age": 52,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.9656657509197943,
+          "y": 1.05028004967647
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.5687954945054945,
+          "energy": 0.1438431145628822,
+          "held": 0,
+          "heading": 3.103317053619228,
+          "age": 8.211317142857144,
+          "element": "ice",
+          "body": {
+            "x": 0.9656657509197943,
+            "y": 1.024033974356144
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 8.211317142857144,
+              "element": "ice"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "void",
+      "motion": true,
+      "mode": "on",
+      "age": 0,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.8,
+          "y": 1.25
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.8846153846153847,
+          "energy": 0.28778298995019824,
+          "held": 0,
+          "heading": 2.8497887679970613,
+          "age": 0,
+          "element": "void",
+          "body": {
+            "x": 0.9567376207875073,
+            "y": 1.0302836654487448
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 0,
+              "element": "void"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "void",
+      "motion": true,
+      "mode": "on",
+      "age": 4,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.8,
+          "y": 1.25
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.766328424908425,
+          "energy": 0.3350177520094138,
+          "held": 0,
+          "heading": 2.9042205266174417,
+          "age": 3.0754609523809524,
+          "element": "void",
+          "body": {
+            "x": 0.8658639865560932,
+            "y": 1.0938952094107348
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 3.0754609523809524,
+              "element": "void"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "void",
+      "motion": true,
+      "mode": "on",
+      "age": 12,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.939223633721483,
+          "y": 1.094461981326043
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.5934382783882783,
+          "energy": 0.16561734010795054,
+          "held": 0,
+          "heading": 3.103317053619228,
+          "age": 7.570604761904763,
+          "element": "void",
+          "body": {
+            "x": 0.939223633721483,
+            "y": 1.0425434563949618
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 7.570604761904763,
+              "element": "void"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "void",
+      "motion": true,
+      "mode": "on",
+      "age": 28,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.9656657509197943,
+          "y": 1.05028004967647
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.5687954945054945,
+          "energy": 0.1438431145628822,
+          "held": 0,
+          "heading": 3.103317053619228,
+          "age": 8.211317142857144,
+          "element": "void",
+          "body": {
+            "x": 0.9656657509197943,
+            "y": 1.024033974356144
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 8.211317142857144,
+              "element": "void"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "void",
+      "motion": true,
+      "mode": "on",
+      "age": 52,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.9656657509197943,
+          "y": 1.05028004967647
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.5687954945054945,
+          "energy": 0.1438431145628822,
+          "held": 0,
+          "heading": 3.103317053619228,
+          "age": 8.211317142857144,
+          "element": "void",
+          "body": {
+            "x": 0.9656657509197943,
+            "y": 1.024033974356144
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 8.211317142857144,
+              "element": "void"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "fire",
+      "motion": false,
+      "mode": "on",
+      "age": 0,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 1.2425289303073195,
+          "y": 0.8758149001251841
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0,
+          "energy": 0,
+          "held": 0,
+          "heading": 0,
+          "age": 99,
+          "element": "ink",
+          "body": {
+            "x": 1,
+            "y": 1
+          },
+          "banks": [],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0,
+            "blur": 0,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "fire",
+      "motion": false,
+      "mode": "on",
+      "age": 4,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 1.1800000000019477,
+          "y": 0.9066666666656279
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0,
+          "energy": 0,
+          "held": 0,
+          "heading": 0,
+          "age": 99,
+          "element": "ink",
+          "body": {
+            "x": 1,
+            "y": 1
+          },
+          "banks": [],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0,
+            "blur": 0,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "fire",
+      "motion": false,
+      "mode": "on",
+      "age": 12,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 1,
+          "y": 1
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0,
+          "energy": 0,
+          "held": 0,
+          "heading": 0,
+          "age": 99,
+          "element": "ink",
+          "body": {
+            "x": 1,
+            "y": 1
+          },
+          "banks": [],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0,
+            "blur": 0,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "fire",
+      "motion": false,
+      "mode": "on",
+      "age": 28,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 1,
+          "y": 1
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0,
+          "energy": 0,
+          "held": 0,
+          "heading": 0,
+          "age": 99,
+          "element": "ink",
+          "body": {
+            "x": 1,
+            "y": 1
+          },
+          "banks": [],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0,
+            "blur": 0,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "fire",
+      "motion": false,
+      "mode": "on",
+      "age": 52,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 1,
+          "y": 1
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0,
+          "energy": 0,
+          "held": 0,
+          "heading": 0,
+          "age": 99,
+          "element": "ink",
+          "body": {
+            "x": 1,
+            "y": 1
+          },
+          "banks": [],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0,
+            "blur": 0,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "shown": "block",
+        "opacity": "0"
+      }
+    },
+    {
+      "element": "fire",
+      "motion": true,
+      "mode": "off",
+      "age": 0,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.8,
+          "y": 1.25
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.8846153846153847,
+          "energy": 0.28778298995019824,
+          "held": 0,
+          "heading": 2.8497887679970613,
+          "age": 0,
+          "element": "fire",
+          "body": {
+            "x": 0.9567376207875073,
+            "y": 1.0302836654487448
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 0,
+              "element": "fire"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "off",
+          "active": false,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "opacity": ""
+      }
+    },
+    {
+      "element": "fire",
+      "motion": true,
+      "mode": "off",
+      "age": 4,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.8,
+          "y": 1.25
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.766328424908425,
+          "energy": 0.3350177520094138,
+          "held": 0,
+          "heading": 2.9042205266174417,
+          "age": 3.0754609523809524,
+          "element": "fire",
+          "body": {
+            "x": 0.8658639865560932,
+            "y": 1.0938952094107348
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 3.0754609523809524,
+              "element": "fire"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "off",
+          "active": false,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "opacity": ""
+      }
+    },
+    {
+      "element": "fire",
+      "motion": true,
+      "mode": "off",
+      "age": 12,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.939223633721483,
+          "y": 1.094461981326043
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.5934382783882783,
+          "energy": 0.16561734010795054,
+          "held": 0,
+          "heading": 3.103317053619228,
+          "age": 7.570604761904763,
+          "element": "fire",
+          "body": {
+            "x": 0.939223633721483,
+            "y": 1.0425434563949618
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 7.570604761904763,
+              "element": "fire"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "off",
+          "active": false,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "opacity": ""
+      }
+    },
+    {
+      "element": "fire",
+      "motion": true,
+      "mode": "off",
+      "age": 28,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.9656657509197943,
+          "y": 1.05028004967647
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.5687954945054945,
+          "energy": 0.1438431145628822,
+          "held": 0,
+          "heading": 3.103317053619228,
+          "age": 8.211317142857144,
+          "element": "fire",
+          "body": {
+            "x": 0.9656657509197943,
+            "y": 1.024033974356144
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 8.211317142857144,
+              "element": "fire"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "off",
+          "active": false,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "opacity": ""
+      }
+    },
+    {
+      "element": "fire",
+      "motion": true,
+      "mode": "off",
+      "age": 52,
+      "contact": {
+        "type": "bank",
+        "x": 1577,
+        "y": -405.38842372073816,
+        "nx": -1,
+        "ny": 0,
+        "speed": 35,
+        "arrivalSpeed": 42,
+        "incomingX": 39.48266207967686,
+        "incomingY": 14.363656580851682,
+        "outgoingX": -38.25869955520716,
+        "outgoingY": 11.49208576208315,
+        "side": "right",
+        "after": 40,
+        "reboundMultiplier": 1.14,
+        "hyper": false,
+        "banks": 1,
+        "paceTarget": 18,
+        "paceQualified": false,
+        "combo": false
+      },
+      "state": {
+        "body": {
+          "x": 0.9656657509197943,
+          "y": 1.05028004967647
+        },
+        "morph": {
+          "version": 1,
+          "flight": 0.5687954945054945,
+          "energy": 0.1438431145628822,
+          "held": 0,
+          "heading": 3.103317053619228,
+          "age": 8.211317142857144,
+          "element": "fire",
+          "body": {
+            "x": 0.9656657509197943,
+            "y": 1.024033974356144
+          },
+          "banks": [
+            {
+              "x": 1577,
+              "y": -405.38842372073816,
+              "nx": -1,
+              "ny": 0,
+              "outX": -38.25869955520716,
+              "outY": 11.49208576208315,
+              "force": 0.5640380297096694,
+              "age": 8.211317142857144,
+              "element": "fire"
+            }
+          ],
+          "queued": 0
+        },
+        "readOnly": true,
+        "post": {
+          "mode": "off",
+          "active": false,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.7,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "opacity": ""
+      }
+    }
+  ],
+  "errors": []
+}

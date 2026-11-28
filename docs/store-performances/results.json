@@ -1,0 +1,1386 @@
+{
+  "rows": [
+    {
+      "id": "none",
+      "slot": "head",
+      "beat": 0,
+      "painted": 10184
+    },
+    {
+      "id": "none",
+      "slot": "head",
+      "beat": 1,
+      "painted": 10294
+    },
+    {
+      "id": "none",
+      "slot": "head",
+      "beat": 2,
+      "painted": 10251
+    },
+    {
+      "id": "halo",
+      "slot": "head",
+      "beat": 0,
+      "painted": 4045
+    },
+    {
+      "id": "halo",
+      "slot": "head",
+      "beat": 1,
+      "painted": 4380
+    },
+    {
+      "id": "halo",
+      "slot": "head",
+      "beat": 2,
+      "painted": 4276
+    },
+    {
+      "id": "neko",
+      "slot": "head",
+      "beat": 0,
+      "painted": 3959
+    },
+    {
+      "id": "neko",
+      "slot": "head",
+      "beat": 1,
+      "painted": 4409
+    },
+    {
+      "id": "neko",
+      "slot": "head",
+      "beat": 2,
+      "painted": 4327
+    },
+    {
+      "id": "viper",
+      "slot": "head",
+      "beat": 0,
+      "painted": 3727
+    },
+    {
+      "id": "viper",
+      "slot": "head",
+      "beat": 1,
+      "painted": 3866
+    },
+    {
+      "id": "viper",
+      "slot": "head",
+      "beat": 2,
+      "painted": 3790
+    },
+    {
+      "id": "oni",
+      "slot": "head",
+      "beat": 0,
+      "painted": 4551
+    },
+    {
+      "id": "oni",
+      "slot": "head",
+      "beat": 1,
+      "painted": 4720
+    },
+    {
+      "id": "oni",
+      "slot": "head",
+      "beat": 2,
+      "painted": 4620
+    },
+    {
+      "id": "crown",
+      "slot": "head",
+      "beat": 0,
+      "painted": 8504
+    },
+    {
+      "id": "crown",
+      "slot": "head",
+      "beat": 1,
+      "painted": 8601
+    },
+    {
+      "id": "crown",
+      "slot": "head",
+      "beat": 2,
+      "painted": 8523
+    },
+    {
+      "id": "samurai",
+      "slot": "head",
+      "beat": 0,
+      "painted": 6192
+    },
+    {
+      "id": "samurai",
+      "slot": "head",
+      "beat": 1,
+      "painted": 6382
+    },
+    {
+      "id": "samurai",
+      "slot": "head",
+      "beat": 2,
+      "painted": 6319
+    },
+    {
+      "id": "coil",
+      "slot": "head",
+      "beat": 0,
+      "painted": 5602
+    },
+    {
+      "id": "coil",
+      "slot": "head",
+      "beat": 1,
+      "painted": 6383
+    },
+    {
+      "id": "coil",
+      "slot": "head",
+      "beat": 2,
+      "painted": 6351
+    },
+    {
+      "id": "beacon",
+      "slot": "head",
+      "beat": 0,
+      "painted": 6205
+    },
+    {
+      "id": "beacon",
+      "slot": "head",
+      "beat": 1,
+      "painted": 6480
+    },
+    {
+      "id": "beacon",
+      "slot": "head",
+      "beat": 2,
+      "painted": 6304
+    },
+    {
+      "id": "ninja",
+      "slot": "eyes",
+      "beat": 0,
+      "painted": 11076
+    },
+    {
+      "id": "ninja",
+      "slot": "eyes",
+      "beat": 1,
+      "painted": 11145
+    },
+    {
+      "id": "ninja",
+      "slot": "eyes",
+      "beat": 2,
+      "painted": 11060
+    },
+    {
+      "id": "visor",
+      "slot": "eyes",
+      "beat": 0,
+      "painted": 8894
+    },
+    {
+      "id": "visor",
+      "slot": "eyes",
+      "beat": 1,
+      "painted": 9060
+    },
+    {
+      "id": "visor",
+      "slot": "eyes",
+      "beat": 2,
+      "painted": 8867
+    },
+    {
+      "id": "blaze",
+      "slot": "eyes",
+      "beat": 0,
+      "painted": 11448
+    },
+    {
+      "id": "blaze",
+      "slot": "eyes",
+      "beat": 1,
+      "painted": 11705
+    },
+    {
+      "id": "blaze",
+      "slot": "eyes",
+      "beat": 2,
+      "painted": 11603
+    },
+    {
+      "id": "glitch",
+      "slot": "eyes",
+      "beat": 0,
+      "painted": 9325
+    },
+    {
+      "id": "glitch",
+      "slot": "eyes",
+      "beat": 1,
+      "painted": 9540
+    },
+    {
+      "id": "glitch",
+      "slot": "eyes",
+      "beat": 2,
+      "painted": 9463
+    },
+    {
+      "id": "smug",
+      "slot": "eyes",
+      "beat": 0,
+      "painted": 11060
+    },
+    {
+      "id": "smug",
+      "slot": "eyes",
+      "beat": 1,
+      "painted": 11107
+    },
+    {
+      "id": "smug",
+      "slot": "eyes",
+      "beat": 2,
+      "painted": 11078
+    },
+    {
+      "id": "hypno",
+      "slot": "eyes",
+      "beat": 0,
+      "painted": 12638
+    },
+    {
+      "id": "hypno",
+      "slot": "eyes",
+      "beat": 1,
+      "painted": 12637
+    },
+    {
+      "id": "hypno",
+      "slot": "eyes",
+      "beat": 2,
+      "painted": 12825
+    },
+    {
+      "id": "sniper",
+      "slot": "eyes",
+      "beat": 0,
+      "painted": 6974
+    },
+    {
+      "id": "sniper",
+      "slot": "eyes",
+      "beat": 1,
+      "painted": 7084
+    },
+    {
+      "id": "sniper",
+      "slot": "eyes",
+      "beat": 2,
+      "painted": 6974
+    },
+    {
+      "id": "paper",
+      "slot": "body",
+      "beat": 0,
+      "painted": 11511
+    },
+    {
+      "id": "paper",
+      "slot": "body",
+      "beat": 1,
+      "painted": 11681
+    },
+    {
+      "id": "paper",
+      "slot": "body",
+      "beat": 2,
+      "painted": 11648
+    },
+    {
+      "id": "obsidian",
+      "slot": "body",
+      "beat": 0,
+      "painted": 7862
+    },
+    {
+      "id": "obsidian",
+      "slot": "body",
+      "beat": 1,
+      "painted": 7934
+    },
+    {
+      "id": "obsidian",
+      "slot": "body",
+      "beat": 2,
+      "painted": 7912
+    },
+    {
+      "id": "hologram",
+      "slot": "body",
+      "beat": 0,
+      "painted": 7057
+    },
+    {
+      "id": "hologram",
+      "slot": "body",
+      "beat": 1,
+      "painted": 7203
+    },
+    {
+      "id": "hologram",
+      "slot": "body",
+      "beat": 2,
+      "painted": 7105
+    },
+    {
+      "id": "prism",
+      "slot": "body",
+      "beat": 0,
+      "painted": 10730
+    },
+    {
+      "id": "prism",
+      "slot": "body",
+      "beat": 1,
+      "painted": 10765
+    },
+    {
+      "id": "prism",
+      "slot": "body",
+      "beat": 2,
+      "painted": 10808
+    },
+    {
+      "id": "iron",
+      "slot": "body",
+      "beat": 0,
+      "painted": 10185
+    },
+    {
+      "id": "iron",
+      "slot": "body",
+      "beat": 1,
+      "painted": 10314
+    },
+    {
+      "id": "iron",
+      "slot": "body",
+      "beat": 2,
+      "painted": 10064
+    },
+    {
+      "id": "lava",
+      "slot": "body",
+      "beat": 0,
+      "painted": 7907
+    },
+    {
+      "id": "lava",
+      "slot": "body",
+      "beat": 1,
+      "painted": 7975
+    },
+    {
+      "id": "lava",
+      "slot": "body",
+      "beat": 2,
+      "painted": 7949
+    },
+    {
+      "id": "gold",
+      "slot": "body",
+      "beat": 0,
+      "painted": 11031
+    },
+    {
+      "id": "gold",
+      "slot": "body",
+      "beat": 1,
+      "painted": 11089
+    },
+    {
+      "id": "gold",
+      "slot": "body",
+      "beat": 2,
+      "painted": 11071
+    },
+    {
+      "id": "chamfer",
+      "slot": "body",
+      "beat": 0,
+      "painted": 10992
+    },
+    {
+      "id": "chamfer",
+      "slot": "body",
+      "beat": 1,
+      "painted": 11339
+    },
+    {
+      "id": "chamfer",
+      "slot": "body",
+      "beat": 2,
+      "painted": 11015
+    },
+    {
+      "id": "notched",
+      "slot": "body",
+      "beat": 0,
+      "painted": 10725
+    },
+    {
+      "id": "notched",
+      "slot": "body",
+      "beat": 1,
+      "painted": 10996
+    },
+    {
+      "id": "notched",
+      "slot": "body",
+      "beat": 2,
+      "painted": 10895
+    },
+    {
+      "id": "segmented",
+      "slot": "body",
+      "beat": 0,
+      "painted": 11198
+    },
+    {
+      "id": "segmented",
+      "slot": "body",
+      "beat": 1,
+      "painted": 11493
+    },
+    {
+      "id": "segmented",
+      "slot": "body",
+      "beat": 2,
+      "painted": 11309
+    },
+    {
+      "id": "standard",
+      "slot": "core",
+      "beat": 0,
+      "painted": 12519
+    },
+    {
+      "id": "standard",
+      "slot": "core",
+      "beat": 1,
+      "painted": 12523
+    },
+    {
+      "id": "standard",
+      "slot": "core",
+      "beat": 2,
+      "painted": 12548
+    },
+    {
+      "id": "time",
+      "slot": "core",
+      "beat": 0,
+      "painted": 10797
+    },
+    {
+      "id": "time",
+      "slot": "core",
+      "beat": 1,
+      "painted": 11055
+    },
+    {
+      "id": "time",
+      "slot": "core",
+      "beat": 2,
+      "painted": 11023
+    },
+    {
+      "id": "riot",
+      "slot": "core",
+      "beat": 0,
+      "painted": 10796
+    },
+    {
+      "id": "riot",
+      "slot": "core",
+      "beat": 1,
+      "painted": 10811
+    },
+    {
+      "id": "riot",
+      "slot": "core",
+      "beat": 2,
+      "painted": 9850
+    },
+    {
+      "id": "glass",
+      "slot": "core",
+      "beat": 0,
+      "painted": 12171
+    },
+    {
+      "id": "glass",
+      "slot": "core",
+      "beat": 1,
+      "painted": 12206
+    },
+    {
+      "id": "glass",
+      "slot": "core",
+      "beat": 2,
+      "painted": 12133
+    },
+    {
+      "id": "grav",
+      "slot": "core",
+      "beat": 0,
+      "painted": 9617
+    },
+    {
+      "id": "grav",
+      "slot": "core",
+      "beat": 1,
+      "painted": 10049
+    },
+    {
+      "id": "grav",
+      "slot": "core",
+      "beat": 2,
+      "painted": 9616
+    },
+    {
+      "id": "magnet",
+      "slot": "core",
+      "beat": 0,
+      "painted": 10805
+    },
+    {
+      "id": "magnet",
+      "slot": "core",
+      "beat": 1,
+      "painted": 11154
+    },
+    {
+      "id": "magnet",
+      "slot": "core",
+      "beat": 2,
+      "painted": 11059
+    },
+    {
+      "id": "echo",
+      "slot": "core",
+      "beat": 0,
+      "painted": 8248
+    },
+    {
+      "id": "echo",
+      "slot": "core",
+      "beat": 1,
+      "painted": 9533
+    },
+    {
+      "id": "echo",
+      "slot": "core",
+      "beat": 2,
+      "painted": 10195
+    },
+    {
+      "id": "ribbon",
+      "slot": "tail",
+      "beat": 0,
+      "painted": 2246
+    },
+    {
+      "id": "ribbon",
+      "slot": "tail",
+      "beat": 1,
+      "painted": 2380
+    },
+    {
+      "id": "ribbon",
+      "slot": "tail",
+      "beat": 2,
+      "painted": 2332
+    },
+    {
+      "id": "wings",
+      "slot": "tail",
+      "beat": 0,
+      "painted": 3219
+    },
+    {
+      "id": "wings",
+      "slot": "tail",
+      "beat": 1,
+      "painted": 3543
+    },
+    {
+      "id": "wings",
+      "slot": "tail",
+      "beat": 2,
+      "painted": 3292
+    },
+    {
+      "id": "ghost",
+      "slot": "tail",
+      "beat": 0,
+      "painted": 6216
+    },
+    {
+      "id": "ghost",
+      "slot": "tail",
+      "beat": 1,
+      "painted": 6306
+    },
+    {
+      "id": "ghost",
+      "slot": "tail",
+      "beat": 2,
+      "painted": 6193
+    },
+    {
+      "id": "viper-tails",
+      "slot": "tail",
+      "beat": 0,
+      "painted": 5589
+    },
+    {
+      "id": "viper-tails",
+      "slot": "tail",
+      "beat": 1,
+      "painted": 5822
+    },
+    {
+      "id": "viper-tails",
+      "slot": "tail",
+      "beat": 2,
+      "painted": 5739
+    },
+    {
+      "id": "anchor",
+      "slot": "tail",
+      "beat": 0,
+      "painted": 3716
+    },
+    {
+      "id": "anchor",
+      "slot": "tail",
+      "beat": 1,
+      "painted": 3898
+    },
+    {
+      "id": "anchor",
+      "slot": "tail",
+      "beat": 2,
+      "painted": 3785
+    },
+    {
+      "id": "thrusters",
+      "slot": "tail",
+      "beat": 0,
+      "painted": 3765
+    },
+    {
+      "id": "thrusters",
+      "slot": "tail",
+      "beat": 1,
+      "painted": 5390
+    },
+    {
+      "id": "thrusters",
+      "slot": "tail",
+      "beat": 2,
+      "painted": 3814
+    },
+    {
+      "id": "spectrum",
+      "slot": "tail",
+      "beat": 0,
+      "painted": 8148
+    },
+    {
+      "id": "spectrum",
+      "slot": "tail",
+      "beat": 1,
+      "painted": 8369
+    },
+    {
+      "id": "spectrum",
+      "slot": "tail",
+      "beat": 2,
+      "painted": 8250
+    },
+    {
+      "id": "razor",
+      "slot": "slash",
+      "beat": 0,
+      "painted": 2251
+    },
+    {
+      "id": "razor",
+      "slot": "slash",
+      "beat": 1,
+      "painted": 2540
+    },
+    {
+      "id": "razor",
+      "slot": "slash",
+      "beat": 2,
+      "painted": 2462
+    },
+    {
+      "id": "katana",
+      "slot": "slash",
+      "beat": 0,
+      "painted": 1866
+    },
+    {
+      "id": "katana",
+      "slot": "slash",
+      "beat": 1,
+      "painted": 2038
+    },
+    {
+      "id": "katana",
+      "slot": "slash",
+      "beat": 2,
+      "painted": 1976
+    },
+    {
+      "id": "laser",
+      "slot": "slash",
+      "beat": 0,
+      "painted": 2760
+    },
+    {
+      "id": "laser",
+      "slot": "slash",
+      "beat": 1,
+      "painted": 3092
+    },
+    {
+      "id": "laser",
+      "slot": "slash",
+      "beat": 2,
+      "painted": 2900
+    },
+    {
+      "id": "glitch-fx",
+      "slot": "slash",
+      "beat": 0,
+      "painted": 2267
+    },
+    {
+      "id": "glitch-fx",
+      "slot": "slash",
+      "beat": 1,
+      "painted": 2513
+    },
+    {
+      "id": "glitch-fx",
+      "slot": "slash",
+      "beat": 2,
+      "painted": 2487
+    },
+    {
+      "id": "confetti",
+      "slot": "slash",
+      "beat": 0,
+      "painted": 1404
+    },
+    {
+      "id": "confetti",
+      "slot": "slash",
+      "beat": 1,
+      "painted": 1549
+    },
+    {
+      "id": "confetti",
+      "slot": "slash",
+      "beat": 2,
+      "painted": 1538
+    },
+    {
+      "id": "comic",
+      "slot": "slash",
+      "beat": 0,
+      "painted": 1848
+    },
+    {
+      "id": "comic",
+      "slot": "slash",
+      "beat": 1,
+      "painted": 2039
+    },
+    {
+      "id": "comic",
+      "slot": "slash",
+      "beat": 2,
+      "painted": 1961
+    },
+    {
+      "id": "pixel",
+      "slot": "slash",
+      "beat": 0,
+      "painted": 1189
+    },
+    {
+      "id": "pixel",
+      "slot": "slash",
+      "beat": 1,
+      "painted": 1537
+    },
+    {
+      "id": "pixel",
+      "slot": "slash",
+      "beat": 2,
+      "painted": 1342
+    },
+    {
+      "id": "dash-auto",
+      "slot": "dash",
+      "beat": 0,
+      "painted": 7142
+    },
+    {
+      "id": "dash-auto",
+      "slot": "dash",
+      "beat": 1,
+      "painted": 7155
+    },
+    {
+      "id": "dash-auto",
+      "slot": "dash",
+      "beat": 2,
+      "painted": 6679
+    },
+    {
+      "id": "dash-ink",
+      "slot": "dash",
+      "beat": 0,
+      "painted": 7036
+    },
+    {
+      "id": "dash-ink",
+      "slot": "dash",
+      "beat": 1,
+      "painted": 7182
+    },
+    {
+      "id": "dash-ink",
+      "slot": "dash",
+      "beat": 2,
+      "painted": 6614
+    },
+    {
+      "id": "dash-fire",
+      "slot": "dash",
+      "beat": 0,
+      "painted": 6326
+    },
+    {
+      "id": "dash-fire",
+      "slot": "dash",
+      "beat": 1,
+      "painted": 6557
+    },
+    {
+      "id": "dash-fire",
+      "slot": "dash",
+      "beat": 2,
+      "painted": 6759
+    },
+    {
+      "id": "dash-lightning",
+      "slot": "dash",
+      "beat": 0,
+      "painted": 6758
+    },
+    {
+      "id": "dash-lightning",
+      "slot": "dash",
+      "beat": 1,
+      "painted": 6864
+    },
+    {
+      "id": "dash-lightning",
+      "slot": "dash",
+      "beat": 2,
+      "painted": 6873
+    },
+    {
+      "id": "dash-ice",
+      "slot": "dash",
+      "beat": 0,
+      "painted": 6523
+    },
+    {
+      "id": "dash-ice",
+      "slot": "dash",
+      "beat": 1,
+      "painted": 6667
+    },
+    {
+      "id": "dash-ice",
+      "slot": "dash",
+      "beat": 2,
+      "painted": 6698
+    },
+    {
+      "id": "dash-water",
+      "slot": "dash",
+      "beat": 0,
+      "painted": 8139
+    },
+    {
+      "id": "dash-water",
+      "slot": "dash",
+      "beat": 1,
+      "painted": 8497
+    },
+    {
+      "id": "dash-water",
+      "slot": "dash",
+      "beat": 2,
+      "painted": 7151
+    },
+    {
+      "id": "dash-void",
+      "slot": "dash",
+      "beat": 0,
+      "painted": 6486
+    },
+    {
+      "id": "dash-void",
+      "slot": "dash",
+      "beat": 1,
+      "painted": 6568
+    },
+    {
+      "id": "dash-void",
+      "slot": "dash",
+      "beat": 2,
+      "painted": 6667
+    },
+    {
+      "id": "dash-echo",
+      "slot": "dash",
+      "beat": 0,
+      "painted": 6411
+    },
+    {
+      "id": "dash-echo",
+      "slot": "dash",
+      "beat": 1,
+      "painted": 6645
+    },
+    {
+      "id": "dash-echo",
+      "slot": "dash",
+      "beat": 2,
+      "painted": 6792
+    },
+    {
+      "id": "pointer-reticle",
+      "slot": "pointer",
+      "beat": 0,
+      "painted": 689
+    },
+    {
+      "id": "pointer-reticle",
+      "slot": "pointer",
+      "beat": 1,
+      "painted": 840
+    },
+    {
+      "id": "pointer-reticle",
+      "slot": "pointer",
+      "beat": 2,
+      "painted": 827
+    },
+    {
+      "id": "pointer-diamond",
+      "slot": "pointer",
+      "beat": 0,
+      "painted": 1666
+    },
+    {
+      "id": "pointer-diamond",
+      "slot": "pointer",
+      "beat": 1,
+      "painted": 1916
+    },
+    {
+      "id": "pointer-diamond",
+      "slot": "pointer",
+      "beat": 2,
+      "painted": 1824
+    },
+    {
+      "id": "pointer-orbit",
+      "slot": "pointer",
+      "beat": 0,
+      "painted": 1058
+    },
+    {
+      "id": "pointer-orbit",
+      "slot": "pointer",
+      "beat": 1,
+      "painted": 1416
+    },
+    {
+      "id": "pointer-orbit",
+      "slot": "pointer",
+      "beat": 2,
+      "painted": 1320
+    },
+    {
+      "id": "pointer-cross",
+      "slot": "pointer",
+      "beat": 0,
+      "painted": 1024
+    },
+    {
+      "id": "pointer-cross",
+      "slot": "pointer",
+      "beat": 1,
+      "painted": 1571
+    },
+    {
+      "id": "pointer-cross",
+      "slot": "pointer",
+      "beat": 2,
+      "painted": 1379
+    },
+    {
+      "id": "radar-base",
+      "slot": "radar",
+      "beat": 0,
+      "painted": 2318
+    },
+    {
+      "id": "radar-base",
+      "slot": "radar",
+      "beat": 1,
+      "painted": 2564
+    },
+    {
+      "id": "radar-base",
+      "slot": "radar",
+      "beat": 2,
+      "painted": 2474
+    },
+    {
+      "id": "radar-1",
+      "slot": "radar",
+      "beat": 0,
+      "painted": 2801
+    },
+    {
+      "id": "radar-1",
+      "slot": "radar",
+      "beat": 1,
+      "painted": 3101
+    },
+    {
+      "id": "radar-1",
+      "slot": "radar",
+      "beat": 2,
+      "painted": 2952
+    },
+    {
+      "id": "radar-2",
+      "slot": "radar",
+      "beat": 0,
+      "painted": 2722
+    },
+    {
+      "id": "radar-2",
+      "slot": "radar",
+      "beat": 1,
+      "painted": 3050
+    },
+    {
+      "id": "radar-2",
+      "slot": "radar",
+      "beat": 2,
+      "painted": 2937
+    },
+    {
+      "id": "radar-3",
+      "slot": "radar",
+      "beat": 0,
+      "painted": 3125
+    },
+    {
+      "id": "radar-3",
+      "slot": "radar",
+      "beat": 1,
+      "painted": 3314
+    },
+    {
+      "id": "radar-3",
+      "slot": "radar",
+      "beat": 2,
+      "painted": 3165
+    },
+    {
+      "id": "trajectory-base",
+      "slot": "trajectory",
+      "beat": 0,
+      "painted": 609
+    },
+    {
+      "id": "trajectory-base",
+      "slot": "trajectory",
+      "beat": 1,
+      "painted": 793
+    },
+    {
+      "id": "trajectory-base",
+      "slot": "trajectory",
+      "beat": 2,
+      "painted": 680
+    },
+    {
+      "id": "trajectory-1",
+      "slot": "trajectory",
+      "beat": 0,
+      "painted": 754
+    },
+    {
+      "id": "trajectory-1",
+      "slot": "trajectory",
+      "beat": 1,
+      "painted": 856
+    },
+    {
+      "id": "trajectory-1",
+      "slot": "trajectory",
+      "beat": 2,
+      "painted": 775
+    },
+    {
+      "id": "trajectory-2",
+      "slot": "trajectory",
+      "beat": 0,
+      "painted": 806
+    },
+    {
+      "id": "trajectory-2",
+      "slot": "trajectory",
+      "beat": 1,
+      "painted": 992
+    },
+    {
+      "id": "trajectory-2",
+      "slot": "trajectory",
+      "beat": 2,
+      "painted": 873
+    },
+    {
+      "id": "trajectory-3",
+      "slot": "trajectory",
+      "beat": 0,
+      "painted": 1010
+    },
+    {
+      "id": "trajectory-3",
+      "slot": "trajectory",
+      "beat": 1,
+      "painted": 1147
+    },
+    {
+      "id": "trajectory-3",
+      "slot": "trajectory",
+      "beat": 2,
+      "painted": 1008
+    },
+    {
+      "id": "twilight",
+      "slot": "world",
+      "beat": 0,
+      "painted": 9835
+    },
+    {
+      "id": "twilight",
+      "slot": "world",
+      "beat": 1,
+      "painted": 9886
+    },
+    {
+      "id": "twilight",
+      "slot": "world",
+      "beat": 2,
+      "painted": 9878
+    },
+    {
+      "id": "tokyo",
+      "slot": "world",
+      "beat": 0,
+      "painted": 4883
+    },
+    {
+      "id": "tokyo",
+      "slot": "world",
+      "beat": 1,
+      "painted": 5004
+    },
+    {
+      "id": "tokyo",
+      "slot": "world",
+      "beat": 2,
+      "painted": 4958
+    },
+    {
+      "id": "foundry",
+      "slot": "world",
+      "beat": 0,
+      "painted": 7426
+    },
+    {
+      "id": "foundry",
+      "slot": "world",
+      "beat": 1,
+      "painted": 7631
+    },
+    {
+      "id": "foundry",
+      "slot": "world",
+      "beat": 2,
+      "painted": 7496
+    },
+    {
+      "id": "manga",
+      "slot": "world",
+      "beat": 0,
+      "painted": 64000
+    },
+    {
+      "id": "manga",
+      "slot": "world",
+      "beat": 1,
+      "painted": 64000
+    },
+    {
+      "id": "manga",
+      "slot": "world",
+      "beat": 2,
+      "painted": 64000
+    },
+    {
+      "id": "synth",
+      "slot": "world",
+      "beat": 0,
+      "painted": 9826
+    },
+    {
+      "id": "synth",
+      "slot": "world",
+      "beat": 1,
+      "painted": 9845
+    },
+    {
+      "id": "synth",
+      "slot": "world",
+      "beat": 2,
+      "painted": 9870
+    },
+    {
+      "id": "void",
+      "slot": "world",
+      "beat": 0,
+      "painted": 1884
+    },
+    {
+      "id": "void",
+      "slot": "world",
+      "beat": 1,
+      "painted": 2016
+    },
+    {
+      "id": "void",
+      "slot": "world",
+      "beat": 2,
+      "painted": 1958
+    }
+  ],
+  "layouts": [
+    {
+      "width": 390,
+      "height": 844,
+      "reduced": false,
+      "overflow": false,
+      "canvas": {
+        "x": 29,
+        "y": 191,
+        "width": 332,
+        "height": 482,
+        "top": 191,
+        "right": 361,
+        "bottom": 673,
+        "left": 29
+      }
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "reduced": false,
+      "overflow": false,
+      "canvas": {
+        "x": 29,
+        "y": 182,
+        "width": 262,
+        "height": 218,
+        "top": 182,
+        "right": 291,
+        "bottom": 400,
+        "left": 29
+      }
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "reduced": false,
+      "overflow": false,
+      "canvas": {
+        "x": 32,
+        "y": 97,
+        "width": 586,
+        "height": 210,
+        "top": 97,
+        "right": 618,
+        "bottom": 307,
+        "left": 32
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "reduced": true,
+      "overflow": false,
+      "canvas": {
+        "x": 29,
+        "y": 191,
+        "width": 332,
+        "height": 482,
+        "top": 191,
+        "right": 361,
+        "bottom": 673,
+        "left": 29
+      }
+    }
+  ],
+  "errors": [],
+  "method": "Actual Armory UI driven through native buttons; item crops are selected canvas screenshots, not a separate art-study page."
+}

@@ -1,0 +1,36 @@
+{
+  "baseline": "/home/user/SPLATR/.arena/action-harmony/art-before.js",
+  "cores": [
+    "standard",
+    "grav",
+    "riot",
+    "time",
+    "glass",
+    "magnet",
+    "echo"
+  ],
+  "dashes": [
+    "ink",
+    "fire",
+    "lightning",
+    "ice",
+    "water",
+    "void",
+    "echo"
+  ],
+  "unchangedLeading": 49,
+  "unchangedStillSlashes": 56,
+  "unchangedIdleCores": 7,
+  "method": "Genuine pre-pass and current production renderer, identical equipment/age/camera. Top before, bottom after. Supplemented by browser captures and native real-run checks.",
+  "files": [
+    "standard.jpg",
+    "grav.jpg",
+    "riot.jpg",
+    "time.jpg",
+    "glass.jpg",
+    "magnet.jpg",
+    "echo.jpg",
+    "all-dashes.jpg",
+    "slash-sequence.jpg"
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "status": "PASS",
+  "fullTests": {
+    "pass": 1448,
+    "fail": 0,
+    "durationMs": 372368.769686,
+    "finalProductionSource": true
+  },
+  "newBuildTests": 6,
+  "focusedTests": 26,
+  "builds": 17,
+  "stages": [
+    "summon",
+    "dash",
+    "attack",
+    "power",
+    "kill"
+  ],
+  "geometryChecks": {
+    "uniqueMonochromeBuildsPerStage": 17,
+    "stageCount": 5
+  },
+  "nativeLive": {
+    "cases": 34,
+    "viewports": [
+      [
+        1280,
+        720
+      ],
+      [
+        390,
+        844
+      ]
+    ],
+    "actualAdmittedDash": true,
+    "actualAdmittedKill": true,
+    "readOnlyDraws": true,
+    "initialCanvasPaintChecked": true,
+    "results": "live/results.json"
+  },
+  "retainedNativeLiveJPG": 110,
+  "labeledStudyJPG": 85,
+  "motionClip": {
+    "file": "build-motion.webm",
+    "nominalSeconds": 24,
+    "builds": 6,
+    "stages": 5,
+    "type": "production-art study, not gameplay footage"
+  },
+  "shopRegression": {
+    "layoutMotionCases": 7,
+    "shelfViews": 22,
+    "buyEquipFlows": 3,
+    "saveRetained": true,
+    "pageErrors": 0,
+    "results": "shop-regression.json"
+  },
+  "build": {
+    "singleFile": true,
+    "verifiedKiB": 1261.8
+  },
+  "sourceSHA256": "b5b4dab1d9bcbec528fbad42d9a6159b61f5a5bdb28360e67fb7f05149acd33b",
+  "baselineSHA256": "31f31af896ab3e1a7867927b9eab5e18c24f09f0822127b09ab9f701ac307abf",
+  "diffCheck": "PASS",
+  "limits": [
+    "Cosmetic only; no additional damage, ability, collider, charge or save migration.",
+    "Kill layer reads confirmed cut snapshots; power reads existing active/fired events.",
+    "Native cases are controlled run conditions, not normal-play or physical-device FPS evidence.",
+    "Study frames and clip are not gameplay recordings.",
+    "No recruited-player recognition validation.",
+    "C64 Tide mechanical migration remains pending.",
+    "No commit or push."
+  ]
+}

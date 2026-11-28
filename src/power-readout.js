@@ -5,6 +5,8 @@ import {equipmentRules,normalizeEquipment,ITEMS} from './equipment.js';
 /** Literal individual-part receipts. Full-build sword styles are resolved in
  * swords.js; a cosmetic part is never advertised as a standalone combat power. */
 const powers={
+ 'dash-lightning':['ϟ','ARC LANCE','LAUNCH / FIRST DIRECT HIT',['BRIEF BURST +12%','CUT −15% / 1 NEARBY ARC'],'slice'],
+ 'dash-echo':['≋','REPRISE STROKE','LEGAL LAUNCH / SLOT READY',['OLD PATH / AFTER 0.2s','UP TO 2 / 1 EXTRA HIT'],'slice'],
  'dash-void':['◉','COLLAPSE WELL','FIRST DIRECT CONTACT / READY',['PULL UP TO 3 / 0.3s','SMALL CORE: 1 EXTRA HIT'],'slice'],
  'dash-ice':['◇','RIME BREAKER','FIRST DIRECT CONTACT',['FANG FREEZE / 0.3s','HEAVY MOVEMENT −30% / 0.4s'],'slice'],
  'dash-fire':['♨','CONTACT IGNITION','FIRST DIRECT CONTACT',['2 DELAYED FIRE HITS','SHOT WIDTH −10%'],'slice'],
@@ -45,7 +47,7 @@ const powers={
  'trajectory-2':['↗','IMPACT LENS','WHILE AIMING',['LONGER PATH','TRAVEL-TIME MARKS'],'aim'],
  'trajectory-3':['↗','ORACLE LENS','WHILE AIMING',['LONGEST PATH','FLIGHT ANALYSIS'],'aim'],
 };
-const quick={'dash-void':'PULL → CORE HIT','dash-ice':'CONTACT → COLD','dash-fire':'CONTACT → BURN',sniper:'FIRST ARMOR +1',blaze:'DRIVE ENTRY +1 EDGE',hypno:'HOLD / LOCAL DAZE','viper-tails':'KEEP 15% OF LOSS',spectrum:'3 KILLS / +1 EDGE',hologram:'PHASE 1 NEEDLE',chamfer:'ARMOR SHOVE −20%',segmented:'STORE LOSS / MAX 4',halo:'FALL GRAV −15%',oni:'LAST HEALTH +50%',coil:'ZAP +1 ENEMY',beacon:'EARLY WARNING',prism:'2 WALL NEEDLES',iron:'BLOCK 1 RUSH',grav:'PULL NEARBY FANGS',echo:'GHOST EVERY 3',wings:'WALL +1 EDGE',time:'FOCUS RECOVERY ×2'};
+const quick={'dash-lightning':'BURST → CONTACT ARC','dash-echo':'OLD PATH → REPLAY','dash-void':'PULL → CORE HIT','dash-ice':'CONTACT → COLD','dash-fire':'CONTACT → BURN',sniper:'FIRST ARMOR +1',blaze:'DRIVE ENTRY +1 EDGE',hypno:'HOLD / LOCAL DAZE','viper-tails':'KEEP 15% OF LOSS',spectrum:'3 KILLS / +1 EDGE',hologram:'PHASE 1 NEEDLE',chamfer:'ARMOR SHOVE −20%',segmented:'STORE LOSS / MAX 4',halo:'FALL GRAV −15%',oni:'LAST HEALTH +50%',coil:'ZAP +1 ENEMY',beacon:'EARLY WARNING',prism:'2 WALL NEEDLES',iron:'BLOCK 1 RUSH',grav:'PULL NEARBY FANGS',echo:'GHOST EVERY 3',wings:'WALL +1 EDGE',time:'FOCUS RECOVERY ×2'};
 export function powerReadout(item,equipment=null){
  const value=typeof item==='string'?ITEMS.find(x=>x.id===item):item;
  if(!value)throw new RangeError('Unknown equipment');

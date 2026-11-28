@@ -20,7 +20,7 @@ export const TEACHING_SCENARIOS=Object.freeze([
 // The shipped lesson dialog uses THE_WATCH below: it never pauses the real run
 // behind a NEXT button.
 export const TEACHING_STEPS=Object.freeze({
- slash:[['launch','LAUNCH','Tap a target, or pull back and release. A launch briefly activates your blade.'],['cut','CUT','Cross a target before the slash ends. A cut extends the blade and returns Edge.'],['clear','FINISH','Cut all three targets. You can reset or skip a lesson at any time.']],
+ slash:[['launch','LAUNCH','Pull back, then release to launch the opposite way. Pull farther for power. Shift+click aims directly. A launch briefly activates your blade.'],['cut','CUT','Cross a target before the slash ends. A cut extends the blade and returns Edge.'],['clear','FINISH','Cut all three targets. You can reset or skip a lesson at any time.']],
  fang:[['tell','WATCH THE WARNING','The pointed lane shows where Fang will charge. Its body is safe during the warning.'],['attack','WATCH THE CHARGE','The bright chevron marks the charging body. Only this active charge hurts on contact.'],['clear','TRY IT','Dodge the lane, then launch through Fang while your blade is active.']],
  pulse:[['tell','WATCH THE WIND-UP','Look for the concentric rings gathering around Pulse.'],['attack','WATCH THE RING','The expanding rim is dangerous; the space behind it is safe.'],['clear','TRY IT','Dodge the rim or early-parry it at the start of a dash, then cut Pulse.']],
  prism:[['tell','WATCH THE SIGHTLINE','The dashed line shows the needle’s locked direction.'],['attack','WATCH THE SHOT','The moving needle hurts; the dashed warning line itself does not.'],['clear','TRY IT','Move off the line or cut toward the needle with an active blade, then cut Prism.']],
@@ -218,6 +218,6 @@ export function teachingReadout(state={},enemies=[]){
  else if(o.returning){title='RETURNING';tip='The cube returns after a miss. Try the marked target again.';}
  else if(!o.rest){title=remaining>0?'SLASH ACTIVE':'SLASH ENDED';tip=remaining>0?'Cross a target before the blade ends. A kill extends it.':'The blade has ended. Wait for the reset, then launch again.';}
  else if(o.row===2){const hp=enemies.find(e=>e.kind==='bastion')?.hp;title=hp===1?'BASTION / ONE PLATE LEFT':'BASTION / TWO PLATES';tip=(state.edge||0)<=0?'Wait for an Edge to recharge, then cut again.':'Cut the shell, then launch again to break its second plate.';}
- else {title=`RACK ${Math.min(3,o.row+1)} / 3`;tip=o.row===0?'Tap a target, or pull back and release forward. Space also launches.':'Aim across the new row. These paper-rack cuts are free and have extra reach.';}
+ else {title=`RACK ${Math.min(3,o.row+1)} / 3`;tip=o.row===0?'Pull back and release to cut. Shift+click aims directly. Space also launches.':'Aim across the new row. These paper-rack cuts are free and have extra reach.';}
  return {title,tip,remaining,parry,free:!!o.free};
 }

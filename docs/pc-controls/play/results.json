@@ -1,0 +1,306 @@
+{
+  "method": "Ordinary main.js Start Run, free equipment, real mouse input. Tutorial completion and PostFX On preference seeded. Debug/trace only read. No run/HP/actors/charges injection; equipment save unchanged. Screenshots include DOM pointer power cue; video is the WebGL canvas only. Software GPU, not device latency/FPS certification.",
+  "rows": [
+    {
+      "action": "click",
+      "before": {
+        "shots": 1,
+        "kills": 0,
+        "phase": "playing",
+        "held": false,
+        "edge": 2,
+        "shotPower": 0.7547619047619045,
+        "angle": -0.5097572999205044,
+        "overlay": "none",
+        "powerLabel": "75% · RELEASE",
+        "sourceOpacity": "0",
+        "postFX": "block",
+        "gameData": {
+          "screen": "run",
+          "dev": "false",
+          "learning": "false",
+          "tutorialReveal": "false",
+          "world": "twilight",
+          "openingGuide": "false",
+          "critical": "false"
+        },
+        "dialogs": []
+      },
+      "after": {
+        "shots": 2,
+        "kills": 0,
+        "phase": "playing",
+        "held": false,
+        "edge": 1,
+        "shotPower": 0.7547619047619047,
+        "angle": -0.7459370042000183,
+        "overlay": "none",
+        "powerLabel": "75% · RELEASE",
+        "sourceOpacity": "0",
+        "postFX": "block",
+        "gameData": {
+          "screen": "run",
+          "dev": "false",
+          "learning": "false",
+          "tutorialReveal": "false",
+          "world": "twilight",
+          "openingGuide": "false",
+          "critical": "false"
+        },
+        "dialogs": []
+      }
+    },
+    {
+      "action": "small-drag",
+      "before": {
+        "shots": 2,
+        "kills": 0,
+        "phase": "playing",
+        "held": false,
+        "edge": 1,
+        "shotPower": 0.7547619047619047,
+        "angle": -0.4684880302874206,
+        "overlay": "none",
+        "powerLabel": "75% · RELEASE",
+        "sourceOpacity": "0",
+        "postFX": "block",
+        "gameData": {
+          "screen": "run",
+          "dev": "false",
+          "learning": "false",
+          "tutorialReveal": "false",
+          "world": "twilight",
+          "openingGuide": "false",
+          "critical": "false"
+        },
+        "dialogs": []
+      },
+      "after": {
+        "shots": 3,
+        "kills": 0,
+        "phase": "playing",
+        "held": false,
+        "edge": 0,
+        "shotPower": 1,
+        "angle": 0.12881162267812954,
+        "overlay": "none",
+        "powerLabel": "100% · RELEASE",
+        "sourceOpacity": "0",
+        "postFX": "block",
+        "gameData": {
+          "screen": "run",
+          "dev": "false",
+          "learning": "false",
+          "tutorialReveal": "false",
+          "world": "twilight",
+          "openingGuide": "false",
+          "critical": "false"
+        },
+        "dialogs": []
+      }
+    },
+    {
+      "action": "retarget",
+      "before": {
+        "shots": 3,
+        "kills": 0,
+        "phase": "playing",
+        "held": false,
+        "edge": 1,
+        "shotPower": 1,
+        "angle": 3.1382379639896776,
+        "overlay": "none",
+        "powerLabel": "100% · RELEASE",
+        "sourceOpacity": "0",
+        "postFX": "block",
+        "gameData": {
+          "screen": "run",
+          "dev": "false",
+          "learning": "false",
+          "tutorialReveal": "false",
+          "world": "twilight",
+          "openingGuide": "false",
+          "critical": "false"
+        },
+        "dialogs": []
+      },
+      "after": {
+        "shots": 4,
+        "kills": 0,
+        "phase": "playing",
+        "held": false,
+        "edge": 0,
+        "shotPower": 1,
+        "angle": -2.4850779013633923,
+        "overlay": "none",
+        "powerLabel": "100% · RELEASE",
+        "sourceOpacity": "0",
+        "postFX": "block",
+        "gameData": {
+          "screen": "run",
+          "dev": "false",
+          "learning": "false",
+          "tutorialReveal": "false",
+          "world": "twilight",
+          "openingGuide": "false",
+          "critical": "false"
+        },
+        "dialogs": []
+      }
+    },
+    {
+      "action": "right-cancel",
+      "before": {
+        "shots": 4,
+        "kills": 0,
+        "phase": "playing",
+        "held": false,
+        "edge": 0,
+        "shotPower": 1,
+        "angle": -2.7010899860687387,
+        "overlay": "none",
+        "powerLabel": "100% · RELEASE",
+        "sourceOpacity": "0",
+        "postFX": "block",
+        "gameData": {
+          "screen": "run",
+          "dev": "false",
+          "learning": "false",
+          "tutorialReveal": "false",
+          "world": "twilight",
+          "openingGuide": "false",
+          "critical": "false"
+        },
+        "dialogs": []
+      },
+      "after": {
+        "shots": 4,
+        "kills": 0,
+        "phase": "playing",
+        "held": false,
+        "edge": 1,
+        "shotPower": 1,
+        "angle": -2.720120381909757,
+        "overlay": "none",
+        "powerLabel": "100% · RELEASE",
+        "sourceOpacity": "0",
+        "postFX": "block",
+        "gameData": {
+          "screen": "run",
+          "dev": "false",
+          "learning": "false",
+          "tutorialReveal": "false",
+          "world": "twilight",
+          "openingGuide": "false",
+          "critical": "false"
+        },
+        "dialogs": []
+      }
+    },
+    {
+      "action": "escape-cancel",
+      "before": {
+        "shots": 4,
+        "kills": 0,
+        "phase": "playing",
+        "held": false,
+        "edge": 1,
+        "shotPower": 1,
+        "angle": -0.12818194439787983,
+        "overlay": "none",
+        "powerLabel": "100% · RELEASE",
+        "sourceOpacity": "0",
+        "postFX": "block",
+        "gameData": {
+          "screen": "run",
+          "dev": "false",
+          "learning": "false",
+          "tutorialReveal": "false",
+          "world": "twilight",
+          "openingGuide": "false",
+          "critical": "false"
+        },
+        "dialogs": []
+      },
+      "after": {
+        "shots": 4,
+        "kills": 0,
+        "phase": "playing",
+        "held": false,
+        "edge": 1,
+        "shotPower": 1,
+        "angle": -0.03544095911717659,
+        "overlay": "none",
+        "powerLabel": "100% · RELEASE",
+        "sourceOpacity": "0",
+        "postFX": "block",
+        "gameData": {
+          "screen": "run",
+          "dev": "false",
+          "learning": "false",
+          "tutorialReveal": "false",
+          "world": "twilight",
+          "openingGuide": "false",
+          "critical": "false"
+        },
+        "dialogs": []
+      }
+    },
+    {
+      "action": "charge-release",
+      "before": {
+        "shots": 4,
+        "kills": 0,
+        "phase": "playing",
+        "held": false,
+        "edge": 2,
+        "shotPower": 1,
+        "angle": -0.023555082120558155,
+        "overlay": "none",
+        "powerLabel": "100% · RELEASE",
+        "sourceOpacity": "0",
+        "postFX": "block",
+        "gameData": {
+          "screen": "run",
+          "dev": "false",
+          "learning": "false",
+          "tutorialReveal": "false",
+          "world": "twilight",
+          "openingGuide": "false",
+          "critical": "false"
+        },
+        "dialogs": []
+      },
+      "after": {
+        "shots": 5,
+        "kills": 0,
+        "phase": "playing",
+        "held": false,
+        "edge": 1,
+        "shotPower": 1,
+        "angle": -0.8051574630984614,
+        "overlay": "none",
+        "powerLabel": "100% · RELEASE",
+        "sourceOpacity": "0",
+        "postFX": "block",
+        "gameData": {
+          "screen": "run",
+          "dev": "false",
+          "learning": "false",
+          "tutorialReveal": "false",
+          "world": "twilight",
+          "openingGuide": "false",
+          "critical": "false"
+        },
+        "dialogs": []
+      }
+    }
+  ],
+  "result": {
+    "shots": 5,
+    "kills": 0,
+    "phase": "playing",
+    "frameErrors": []
+  },
+  "errors": []
+}

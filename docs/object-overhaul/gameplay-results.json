@@ -1,0 +1,64 @@
+{
+  "rows": [
+    {
+      "width": 1280,
+      "height": 720,
+      "initial": {
+        "equipment": {
+          "head": "none",
+          "eyes": "ninja",
+          "body": "paper",
+          "core": "standard",
+          "tail": "ribbon",
+          "slash": "razor",
+          "dash": "dash-auto",
+          "pointer": "pointer-reticle",
+          "radar": "radar-base",
+          "trajectory": "trajectory-base",
+          "world": "twilight"
+        },
+        "save": "{\"version\":1,\"owned\":[\"none\",\"ninja\",\"paper\",\"standard\",\"ribbon\",\"razor\",\"twilight\",\"dash-auto\",\"pointer-reticle\",\"radar-base\",\"trajectory-base\"],\"discovered\":[],\"equipped\":{\"head\":\"none\",\"eyes\":\"ninja\",\"body\":\"paper\",\"core\":\"standard\",\"tail\":\"ribbon\",\"slash\":\"razor\",\"dash\":\"dash-auto\",\"pointer\":\"pointer-reticle\",\"radar\":\"radar-base\",\"trajectory\":\"trajectory-base\",\"world\":\"twilight\"},\"presets\":[null,null,null]}"
+      },
+      "result": {
+        "phase": "playing",
+        "kills": 11,
+        "score": 4550,
+        "hp": 3,
+        "shots": 23,
+        "frameErrors": [],
+        "save": "{\"version\":1,\"owned\":[\"none\",\"ninja\",\"paper\",\"standard\",\"ribbon\",\"razor\",\"twilight\",\"dash-auto\",\"pointer-reticle\",\"radar-base\",\"trajectory-base\"],\"discovered\":[],\"equipped\":{\"head\":\"none\",\"eyes\":\"ninja\",\"body\":\"paper\",\"core\":\"standard\",\"tail\":\"ribbon\",\"slash\":\"razor\",\"dash\":\"dash-auto\",\"pointer\":\"pointer-reticle\",\"radar\":\"radar-base\",\"trajectory\":\"trajectory-base\",\"world\":\"twilight\"},\"presets\":[null,null,null]}"
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "initial": {
+        "equipment": {
+          "head": "none",
+          "eyes": "ninja",
+          "body": "paper",
+          "core": "standard",
+          "tail": "ribbon",
+          "slash": "razor",
+          "dash": "dash-auto",
+          "pointer": "pointer-reticle",
+          "radar": "radar-base",
+          "trajectory": "trajectory-base",
+          "world": "twilight"
+        },
+        "save": "{\"version\":1,\"owned\":[\"none\",\"ninja\",\"paper\",\"standard\",\"ribbon\",\"razor\",\"twilight\",\"dash-auto\",\"pointer-reticle\",\"radar-base\",\"trajectory-base\"],\"discovered\":[],\"equipped\":{\"head\":\"none\",\"eyes\":\"ninja\",\"body\":\"paper\",\"core\":\"standard\",\"tail\":\"ribbon\",\"slash\":\"razor\",\"dash\":\"dash-auto\",\"pointer\":\"pointer-reticle\",\"radar\":\"radar-base\",\"trajectory\":\"trajectory-base\",\"world\":\"twilight\"},\"presets\":[null,null,null]}"
+      },
+      "result": {
+        "phase": "playing",
+        "kills": 7,
+        "score": 2300,
+        "hp": 3,
+        "shots": 18,
+        "frameErrors": [],
+        "save": "{\"version\":1,\"owned\":[\"none\",\"ninja\",\"paper\",\"standard\",\"ribbon\",\"razor\",\"twilight\",\"dash-auto\",\"pointer-reticle\",\"radar-base\",\"trajectory-base\"],\"discovered\":[],\"equipped\":{\"head\":\"none\",\"eyes\":\"ninja\",\"body\":\"paper\",\"core\":\"standard\",\"tail\":\"ribbon\",\"slash\":\"razor\",\"dash\":\"dash-auto\",\"pointer\":\"pointer-reticle\",\"radar\":\"radar-base\",\"trajectory\":\"trajectory-base\",\"world\":\"twilight\"},\"presets\":[null,null,null]}"
+      }
+    }
+  ],
+  "errors": [],
+  "method": "Normal main.js Start Run. Bot chooses visible targets from renderer trace and clicks with Puppeteer. Debug run is read only; no health/position/enemy/phase mutations. Tutorial completion seeded solely to enter ordinary play. Actual arena canvas including HUD is recorded. Not human playtesting or device FPS certification."
+}

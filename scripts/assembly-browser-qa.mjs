@@ -48,8 +48,10 @@ try{
   const switched=await page.$eval('.custom-view-switch',n=>getComputedStyle(n).display!=='none');
   if(switched)await click('.custom-view-switch button:first-child');
   await click('.shop-slots [data-slot="body"]');await click('[data-item="iron"]');
+  assert.equal(await page.$eval('.shop-demo-mode',n=>n.value),'story','ordinary shell browsing opens the ability, not construction');
   assert.equal((await snapshot()).equipment.equipped.body,'paper');
   if(switched)await click('.custom-view-switch button:last-child');
+  await click('.assembly-inspect');
   assert.equal(await page.$eval('.custom-lab>canvas',n=>n.dataset.assemblyBody),'iron');
   if(switched)await click('.custom-view-switch button:first-child');
   await click('.equip-part');assert.equal((await snapshot()).equipment.equipped.body,'paper','buy is not equip');

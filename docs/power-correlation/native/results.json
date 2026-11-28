@@ -1,0 +1,5429 @@
+{
+  "method": "Controlled real run/physics/renderer. Seeded equipped power and actors, admitted primary contact except Reprise (real traveled path and late actor). Actual scheduled damage callbacks, not fabricated proc events. Main entry blocked to avoid duplicate renderers. Software browser test, not device FPS certification.",
+  "rows": [
+    {
+      "width": 960,
+      "height": 540,
+      "motion": true,
+      "id": "fire",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "emberIgnite",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "storyMoment"
+        },
+        {
+          "type": "emberHit",
+          "x": -284.2364203592928,
+          "y": -392.39938889082805
+        },
+        {
+          "type": "emberHit",
+          "x": -254.9425074120649,
+          "y": -390.6537663812749
+        },
+        {
+          "type": "emberHit",
+          "x": -247.5553673676853,
+          "y": -376.36523765937585
+        },
+        {
+          "type": "emberHit",
+          "x": -217.1320526878625,
+          "y": -373.24716555655425
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 0.7,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -321.295,
+                "y": -400.00372356085666,
+                "r": 41,
+                "remaining": [
+                  0.9611111111111111,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -281.295,
+                "y": -400.00372356085666,
+                "r": 41,
+                "remaining": [
+                  0.9611111111111111,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 3,
+          "now": 2.9285714285714284,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -322.59354158655105,
+                "y": -399.7258798129276,
+                "r": 41,
+                "remaining": [
+                  0.8373015873015873,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -285.41776229434925,
+                "y": -399.979600401033,
+                "r": 41,
+                "remaining": [
+                  0.8373015873015873,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 8,
+          "now": 7.071428571428571,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -314.9725186724075,
+                "y": -398.90151371091895,
+                "r": 41,
+                "remaining": [
+                  0.6071428571428572,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -283.5198391195065,
+                "y": -397.91615935758006,
+                "r": 41,
+                "remaining": [
+                  0.6071428571428572,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 17,
+          "now": 15.75,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -291.69297680505326,
+                "y": -394.48202023961016,
+                "r": 41,
+                "remaining": [
+                  0.125,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -262.7320219070687,
+                "y": -393.03721990508274,
+                "r": 41,
+                "remaining": [
+                  0.125,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 19,
+          "now": 17.75,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -286.67118690205723,
+                "y": -393.1190886127532,
+                "r": 41,
+                "remaining": [
+                  0.013888888888888888,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -257.48309252443113,
+                "y": -391.4710228800588,
+                "r": 41,
+                "remaining": [
+                  0.013888888888888888,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 35,
+          "now": 33.75,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -252.909200067625,
+                "y": -379.29312030524744,
+                "r": 41,
+                "remaining": [
+                  0,
+                  0.125
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -222.58818428048698,
+                "y": -376.35203992217464,
+                "r": 41,
+                "remaining": [
+                  0,
+                  0.125
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -284.2364203592928,
+              "y": -392.39938889082805,
+              "kind": "fire",
+              "index": 0,
+              "age": 16,
+              "life": 24
+            },
+            {
+              "x": -254.9425074120649,
+              "y": -390.6537663812749,
+              "kind": "fire",
+              "index": 0,
+              "age": 16,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 39,
+          "now": 37.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -284.2364203592928,
+              "y": -392.39938889082805,
+              "kind": "fire",
+              "index": 0,
+              "age": 20,
+              "life": 24
+            },
+            {
+              "x": -254.9425074120649,
+              "y": -390.6537663812749,
+              "kind": "fire",
+              "index": 0,
+              "age": 20,
+              "life": 24
+            },
+            {
+              "x": -247.5553673676853,
+              "y": -376.36523765937585,
+              "kind": "fire",
+              "index": 1,
+              "age": 2,
+              "life": 24
+            },
+            {
+              "x": -217.1320526878625,
+              "y": -373.24716555655425,
+              "kind": "fire",
+              "index": 1,
+              "age": 2,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 79,
+          "now": 77.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 960,
+      "height": 540,
+      "motion": true,
+      "id": "ice",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "frostContact",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "storyMoment"
+        },
+        {
+          "type": "frostThaw",
+          "x": -276.85201412182164,
+          "y": -399.11409085834026
+        },
+        {
+          "type": "frostThaw",
+          "x": -284.20843569108706,
+          "y": -390.9562889426592
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 0.7,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -320.9065,
+                "y": -400.0026064925996,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.9708333333333333
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.9611111111111111
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 3,
+          "now": 2.9285714285714284,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -321.819246912336,
+                "y": -399.7997284352533,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.8779761904761906
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.8373015873015873
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 8,
+          "now": 7.071428571428571,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -316.4866317879555,
+                "y": -399.20259521720953,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.7053571428571429
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.6071428571428572
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 17,
+          "now": 15.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -299.96092411711754,
+                "y": -396.06268780801906,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.34375
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.125
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 19,
+          "now": 17.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -296.3494209742374,
+                "y": -395.09140725191776,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.2604166666666667
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.013888888888888888
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 35,
+          "now": 33.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -265.86729695083665,
+                "y": -382.48504757680536,
+                "r": 41,
+                "kind": "slow",
+                "active": false,
+                "immune": true,
+                "remaining": 0.8916666666666667
+              },
+              {
+                "id": "neighbor",
+                "x": -231.65297287278256,
+                "y": -381.80060217324717,
+                "r": 33,
+                "kind": "freeze",
+                "active": false,
+                "immune": true,
+                "remaining": 0.825
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 39,
+          "now": 37.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -258.57972945453605,
+                "y": -378.52768310852485,
+                "r": 41,
+                "kind": "slow",
+                "active": false,
+                "immune": true,
+                "remaining": 0.8472222222222222
+              },
+              {
+                "id": "neighbor",
+                "x": -223.67187184155756,
+                "y": -377.58875681944727,
+                "r": 33,
+                "kind": "freeze",
+                "active": false,
+                "immune": true,
+                "remaining": 0.7805555555555556
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 79,
+          "now": 77.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -230.63394133164138,
+                "y": -359.3388918732586,
+                "r": 41,
+                "kind": "slow",
+                "active": false,
+                "immune": true,
+                "remaining": 0.4027777777777778
+              },
+              {
+                "id": "neighbor",
+                "x": -193.8664201312246,
+                "y": -356.22514572993686,
+                "r": 33,
+                "kind": "freeze",
+                "active": false,
+                "immune": true,
+                "remaining": 0.33611111111111114
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 960,
+      "height": 540,
+      "motion": true,
+      "id": "lightning",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "voltHit",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "voltContact"
+        },
+        {
+          "type": "armor",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "storyMoment"
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 0.7,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": {
+              "origin": {
+                "x": -320,
+                "y": -400
+              },
+              "links": [
+                {
+                  "x": -280,
+                  "y": -400,
+                  "role": "volt"
+                }
+              ],
+              "progress": 0.11666666666666665
+            },
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 2,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 3,
+          "now": 2.9285714285714284,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": {
+              "origin": {
+                "x": -320,
+                "y": -400
+              },
+              "links": [
+                {
+                  "x": -280,
+                  "y": -400,
+                  "role": "volt"
+                }
+              ],
+              "progress": 0.4880952380952381
+            },
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 5,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 8,
+          "now": 7.071428571428571,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 10,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 17,
+          "now": 15.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 19,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 19,
+          "now": 17.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 21,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 35,
+          "now": 33.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 39,
+          "now": 37.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 79,
+          "now": 77.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 960,
+      "height": 540,
+      "motion": true,
+      "id": "void",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "voidOpen",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "storyMoment"
+        },
+        {
+          "type": "voidHit",
+          "x": -306.7765193763873,
+          "y": -396.774143327868
+        },
+        {
+          "type": "voidCollapse",
+          "x": -320,
+          "y": -400
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 0.7,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.03888888888888889,
+              "targets": [
+                {
+                  "x": -320.0505606997835,
+                  "y": -400.00014537902905
+                },
+                {
+                  "x": -282.53944443868573,
+                  "y": -400.003603840805
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 3,
+          "now": 2.9285714285714284,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.16269841269841268,
+              "targets": [
+                {
+                  "x": -320,
+                  "y": -400
+                },
+                {
+                  "x": -290.62397865666367,
+                  "y": -399.9732125281359
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 8,
+          "now": 7.071428571428571,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.39285714285714285,
+              "targets": [
+                {
+                  "x": -319.7016132223641,
+                  "y": -399.95940291900973
+                },
+                {
+                  "x": -293.6807660446472,
+                  "y": -398.2877168495087
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 17,
+          "now": 15.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.875,
+              "targets": [
+                {
+                  "x": -310.8120807625655,
+                  "y": -398.0401929830704
+                },
+                {
+                  "x": -287.33772544130943,
+                  "y": -395.29878578452633
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 19,
+          "now": 17.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.9861111111111112,
+              "targets": [
+                {
+                  "x": -308.94612985019967,
+                  "y": -397.41712140379116
+                },
+                {
+                  "x": -285.4324722498215,
+                  "y": -394.3568890056241
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 35,
+          "now": 33.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -306.7765193763873,
+              "y": -396.774143327868,
+              "kind": "void",
+              "index": 0,
+              "age": 16,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 39,
+          "now": 37.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -306.7765193763873,
+              "y": -396.774143327868,
+              "kind": "void",
+              "index": 0,
+              "age": 20,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 79,
+          "now": 77.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 960,
+      "height": 540,
+      "motion": true,
+      "id": "echo",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "repriseStored",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "storyMoment"
+        },
+        {
+          "type": "repriseHit",
+          "x": -263.22300161562407,
+          "y": -398.203528799176
+        },
+        {
+          "type": "repriseFired"
+        },
+        {
+          "type": "bank",
+          "x": 1577,
+          "y": 117.71924043405599
+        },
+        {
+          "type": "cleanBank",
+          "x": 1577,
+          "y": 117.71924043405599
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 1,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": {
+              "progress": 0.08333333333333333,
+              "path": [
+                {
+                  "x": -350,
+                  "y": -400
+                },
+                {
+                  "x": -322.0008003007651,
+                  "y": -399.81072428947317
+                },
+                {
+                  "x": -320.00000000000006,
+                  "y": -399.78571428571354
+                }
+              ]
+            }
+          },
+          "payoffs": []
+        },
+        {
+          "at": 3,
+          "now": 4,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": {
+              "progress": 0.3333333333333333,
+              "path": [
+                {
+                  "x": -350,
+                  "y": -400
+                },
+                {
+                  "x": -322.0008003007651,
+                  "y": -399.81072428947317
+                },
+                {
+                  "x": -294.00568331084565,
+                  "y": -399.29657065419724
+                },
+                {
+                  "x": -266.01850229246287,
+                  "y": -398.45474242880704
+                },
+                {
+                  "x": -238.04297165746297,
+                  "y": -397.288296337557
+                },
+                {
+                  "x": -230.00000000000023,
+                  "y": -396.8928571428463
+                }
+              ]
+            }
+          },
+          "payoffs": []
+        },
+        {
+          "at": 8,
+          "now": 9,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": {
+              "progress": 0.75,
+              "path": [
+                {
+                  "x": -350,
+                  "y": -400
+                },
+                {
+                  "x": -322.0008003007651,
+                  "y": -399.81072428947317
+                },
+                {
+                  "x": -294.00568331084565,
+                  "y": -399.29657065419724
+                },
+                {
+                  "x": -266.01850229246287,
+                  "y": -398.45474242880704
+                },
+                {
+                  "x": -238.04297165746297,
+                  "y": -397.288296337557
+                },
+                {
+                  "x": -210.0829437645459,
+                  "y": -395.79570408406954
+                }
+              ]
+            }
+          },
+          "payoffs": []
+        },
+        {
+          "at": 17,
+          "now": 17,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -263.22300161562407,
+              "y": -398.203528799176,
+              "kind": "echo",
+              "index": 0,
+              "age": 7,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 19,
+          "now": 18.95,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -263.22300161562407,
+              "y": -398.203528799176,
+              "kind": "echo",
+              "index": 0,
+              "age": 9,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 35,
+          "now": 34.95,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 39,
+          "now": 38.95,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 79,
+          "now": 78.95,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 960,
+      "height": 540,
+      "motion": false,
+      "id": "fire",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "emberIgnite",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "storyMoment"
+        },
+        {
+          "type": "emberHit",
+          "x": -284.2364203592928,
+          "y": -392.39938889082805
+        },
+        {
+          "type": "emberHit",
+          "x": -254.9425074120649,
+          "y": -390.6537663812749
+        },
+        {
+          "type": "emberHit",
+          "x": -247.5553673676853,
+          "y": -376.36523765937585
+        },
+        {
+          "type": "emberHit",
+          "x": -217.1320526878625,
+          "y": -373.24716555655425
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 0.7,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -321.295,
+                "y": -400.00372356085666,
+                "r": 41,
+                "remaining": [
+                  0.9611111111111111,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -281.295,
+                "y": -400.00372356085666,
+                "r": 41,
+                "remaining": [
+                  0.9611111111111111,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 3,
+          "now": 2.9285714285714284,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -322.59354158655105,
+                "y": -399.7258798129276,
+                "r": 41,
+                "remaining": [
+                  0.8373015873015873,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -285.41776229434925,
+                "y": -399.979600401033,
+                "r": 41,
+                "remaining": [
+                  0.8373015873015873,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 8,
+          "now": 7.071428571428571,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -314.9725186724075,
+                "y": -398.90151371091895,
+                "r": 41,
+                "remaining": [
+                  0.6071428571428572,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -283.5198391195065,
+                "y": -397.91615935758006,
+                "r": 41,
+                "remaining": [
+                  0.6071428571428572,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 17,
+          "now": 15.75,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -291.69297680505326,
+                "y": -394.48202023961016,
+                "r": 41,
+                "remaining": [
+                  0.125,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -262.7320219070687,
+                "y": -393.03721990508274,
+                "r": 41,
+                "remaining": [
+                  0.125,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 19,
+          "now": 17.75,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -286.67118690205723,
+                "y": -393.1190886127532,
+                "r": 41,
+                "remaining": [
+                  0.013888888888888888,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -257.48309252443113,
+                "y": -391.4710228800588,
+                "r": 41,
+                "remaining": [
+                  0.013888888888888888,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 35,
+          "now": 33.75,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -252.909200067625,
+                "y": -379.29312030524744,
+                "r": 41,
+                "remaining": [
+                  0,
+                  0.125
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -222.58818428048698,
+                "y": -376.35203992217464,
+                "r": 41,
+                "remaining": [
+                  0,
+                  0.125
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -284.2364203592928,
+              "y": -392.39938889082805,
+              "kind": "fire",
+              "index": 0,
+              "age": 16,
+              "life": 24
+            },
+            {
+              "x": -254.9425074120649,
+              "y": -390.6537663812749,
+              "kind": "fire",
+              "index": 0,
+              "age": 16,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 39,
+          "now": 37.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -284.2364203592928,
+              "y": -392.39938889082805,
+              "kind": "fire",
+              "index": 0,
+              "age": 20,
+              "life": 24
+            },
+            {
+              "x": -254.9425074120649,
+              "y": -390.6537663812749,
+              "kind": "fire",
+              "index": 0,
+              "age": 20,
+              "life": 24
+            },
+            {
+              "x": -247.5553673676853,
+              "y": -376.36523765937585,
+              "kind": "fire",
+              "index": 1,
+              "age": 2,
+              "life": 24
+            },
+            {
+              "x": -217.1320526878625,
+              "y": -373.24716555655425,
+              "kind": "fire",
+              "index": 1,
+              "age": 2,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 79,
+          "now": 77.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 960,
+      "height": 540,
+      "motion": false,
+      "id": "ice",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "frostContact",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "storyMoment"
+        },
+        {
+          "type": "frostThaw",
+          "x": -276.85201412182164,
+          "y": -399.11409085834026
+        },
+        {
+          "type": "frostThaw",
+          "x": -284.20843569108706,
+          "y": -390.9562889426592
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 0.7,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -320.9065,
+                "y": -400.0026064925996,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.9708333333333333
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.9611111111111111
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 3,
+          "now": 2.9285714285714284,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -321.819246912336,
+                "y": -399.7997284352533,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.8779761904761906
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.8373015873015873
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 8,
+          "now": 7.071428571428571,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -316.4866317879555,
+                "y": -399.20259521720953,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.7053571428571429
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.6071428571428572
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 17,
+          "now": 15.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -299.96092411711754,
+                "y": -396.06268780801906,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.34375
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.125
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 19,
+          "now": 17.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -296.3494209742374,
+                "y": -395.09140725191776,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.2604166666666667
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.013888888888888888
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 35,
+          "now": 33.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -265.86729695083665,
+                "y": -382.48504757680536,
+                "r": 41,
+                "kind": "slow",
+                "active": false,
+                "immune": true,
+                "remaining": 0.8916666666666667
+              },
+              {
+                "id": "neighbor",
+                "x": -231.65297287278256,
+                "y": -381.80060217324717,
+                "r": 33,
+                "kind": "freeze",
+                "active": false,
+                "immune": true,
+                "remaining": 0.825
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 39,
+          "now": 37.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -258.57972945453605,
+                "y": -378.52768310852485,
+                "r": 41,
+                "kind": "slow",
+                "active": false,
+                "immune": true,
+                "remaining": 0.8472222222222222
+              },
+              {
+                "id": "neighbor",
+                "x": -223.67187184155756,
+                "y": -377.58875681944727,
+                "r": 33,
+                "kind": "freeze",
+                "active": false,
+                "immune": true,
+                "remaining": 0.7805555555555556
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 79,
+          "now": 77.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -230.63394133164138,
+                "y": -359.3388918732586,
+                "r": 41,
+                "kind": "slow",
+                "active": false,
+                "immune": true,
+                "remaining": 0.4027777777777778
+              },
+              {
+                "id": "neighbor",
+                "x": -193.8664201312246,
+                "y": -356.22514572993686,
+                "r": 33,
+                "kind": "freeze",
+                "active": false,
+                "immune": true,
+                "remaining": 0.33611111111111114
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 960,
+      "height": 540,
+      "motion": false,
+      "id": "lightning",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "voltHit",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "voltContact"
+        },
+        {
+          "type": "armor",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "storyMoment"
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 0.7,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": {
+              "origin": {
+                "x": -320,
+                "y": -400
+              },
+              "links": [
+                {
+                  "x": -280,
+                  "y": -400,
+                  "role": "volt"
+                }
+              ],
+              "progress": 0.11666666666666665
+            },
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 2,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 3,
+          "now": 2.9285714285714284,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": {
+              "origin": {
+                "x": -320,
+                "y": -400
+              },
+              "links": [
+                {
+                  "x": -280,
+                  "y": -400,
+                  "role": "volt"
+                }
+              ],
+              "progress": 0.4880952380952381
+            },
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 5,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 8,
+          "now": 7.071428571428571,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 10,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 17,
+          "now": 15.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 19,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 19,
+          "now": 17.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 21,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 35,
+          "now": 33.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 39,
+          "now": 37.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 79,
+          "now": 77.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 960,
+      "height": 540,
+      "motion": false,
+      "id": "void",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "voidOpen",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "storyMoment"
+        },
+        {
+          "type": "voidHit",
+          "x": -306.7765193763873,
+          "y": -396.774143327868
+        },
+        {
+          "type": "voidCollapse",
+          "x": -320,
+          "y": -400
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 0.7,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.03888888888888889,
+              "targets": [
+                {
+                  "x": -320.0505606997835,
+                  "y": -400.00014537902905
+                },
+                {
+                  "x": -282.53944443868573,
+                  "y": -400.003603840805
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 3,
+          "now": 2.9285714285714284,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.16269841269841268,
+              "targets": [
+                {
+                  "x": -320,
+                  "y": -400
+                },
+                {
+                  "x": -290.62397865666367,
+                  "y": -399.9732125281359
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 8,
+          "now": 7.071428571428571,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.39285714285714285,
+              "targets": [
+                {
+                  "x": -319.7016132223641,
+                  "y": -399.95940291900973
+                },
+                {
+                  "x": -293.6807660446472,
+                  "y": -398.2877168495087
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 17,
+          "now": 15.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.875,
+              "targets": [
+                {
+                  "x": -310.8120807625655,
+                  "y": -398.0401929830704
+                },
+                {
+                  "x": -287.33772544130943,
+                  "y": -395.29878578452633
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 19,
+          "now": 17.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.9861111111111112,
+              "targets": [
+                {
+                  "x": -308.94612985019967,
+                  "y": -397.41712140379116
+                },
+                {
+                  "x": -285.4324722498215,
+                  "y": -394.3568890056241
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 35,
+          "now": 33.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -306.7765193763873,
+              "y": -396.774143327868,
+              "kind": "void",
+              "index": 0,
+              "age": 16,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 39,
+          "now": 37.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -306.7765193763873,
+              "y": -396.774143327868,
+              "kind": "void",
+              "index": 0,
+              "age": 20,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 79,
+          "now": 77.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 960,
+      "height": 540,
+      "motion": false,
+      "id": "echo",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "repriseStored",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "storyMoment"
+        },
+        {
+          "type": "repriseHit",
+          "x": -263.22300161562407,
+          "y": -398.203528799176
+        },
+        {
+          "type": "repriseFired"
+        },
+        {
+          "type": "bank",
+          "x": 1577,
+          "y": 117.71924043405599
+        },
+        {
+          "type": "cleanBank",
+          "x": 1577,
+          "y": 117.71924043405599
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 1,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": {
+              "progress": 0.08333333333333333,
+              "path": [
+                {
+                  "x": -350,
+                  "y": -400
+                },
+                {
+                  "x": -322.0008003007651,
+                  "y": -399.81072428947317
+                },
+                {
+                  "x": -320.00000000000006,
+                  "y": -399.78571428571354
+                }
+              ]
+            }
+          },
+          "payoffs": []
+        },
+        {
+          "at": 3,
+          "now": 4,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": {
+              "progress": 0.3333333333333333,
+              "path": [
+                {
+                  "x": -350,
+                  "y": -400
+                },
+                {
+                  "x": -322.0008003007651,
+                  "y": -399.81072428947317
+                },
+                {
+                  "x": -294.00568331084565,
+                  "y": -399.29657065419724
+                },
+                {
+                  "x": -266.01850229246287,
+                  "y": -398.45474242880704
+                },
+                {
+                  "x": -238.04297165746297,
+                  "y": -397.288296337557
+                },
+                {
+                  "x": -230.00000000000023,
+                  "y": -396.8928571428463
+                }
+              ]
+            }
+          },
+          "payoffs": []
+        },
+        {
+          "at": 8,
+          "now": 9,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": {
+              "progress": 0.75,
+              "path": [
+                {
+                  "x": -350,
+                  "y": -400
+                },
+                {
+                  "x": -322.0008003007651,
+                  "y": -399.81072428947317
+                },
+                {
+                  "x": -294.00568331084565,
+                  "y": -399.29657065419724
+                },
+                {
+                  "x": -266.01850229246287,
+                  "y": -398.45474242880704
+                },
+                {
+                  "x": -238.04297165746297,
+                  "y": -397.288296337557
+                },
+                {
+                  "x": -210.0829437645459,
+                  "y": -395.79570408406954
+                }
+              ]
+            }
+          },
+          "payoffs": []
+        },
+        {
+          "at": 17,
+          "now": 17,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -263.22300161562407,
+              "y": -398.203528799176,
+              "kind": "echo",
+              "index": 0,
+              "age": 7,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 19,
+          "now": 18.95,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -263.22300161562407,
+              "y": -398.203528799176,
+              "kind": "echo",
+              "index": 0,
+              "age": 9,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 35,
+          "now": 34.95,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 39,
+          "now": 38.95,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 79,
+          "now": 78.95,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": true,
+      "id": "fire",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "emberIgnite",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "storyMoment"
+        },
+        {
+          "type": "emberHit",
+          "x": -284.2364203592928,
+          "y": -392.39938889082805
+        },
+        {
+          "type": "emberHit",
+          "x": -254.9425074120649,
+          "y": -390.6537663812749
+        },
+        {
+          "type": "emberHit",
+          "x": -247.5553673676853,
+          "y": -376.36523765937585
+        },
+        {
+          "type": "emberHit",
+          "x": -217.1320526878625,
+          "y": -373.24716555655425
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 0.7,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -321.295,
+                "y": -400.00372356085666,
+                "r": 41,
+                "remaining": [
+                  0.9611111111111111,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -281.295,
+                "y": -400.00372356085666,
+                "r": 41,
+                "remaining": [
+                  0.9611111111111111,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 3,
+          "now": 2.9285714285714284,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -322.59354158655105,
+                "y": -399.7258798129276,
+                "r": 41,
+                "remaining": [
+                  0.8373015873015873,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -285.41776229434925,
+                "y": -399.979600401033,
+                "r": 41,
+                "remaining": [
+                  0.8373015873015873,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 8,
+          "now": 7.071428571428571,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -314.9725186724075,
+                "y": -398.90151371091895,
+                "r": 41,
+                "remaining": [
+                  0.6071428571428572,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -283.5198391195065,
+                "y": -397.91615935758006,
+                "r": 41,
+                "remaining": [
+                  0.6071428571428572,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 17,
+          "now": 15.75,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -291.69297680505326,
+                "y": -394.48202023961016,
+                "r": 41,
+                "remaining": [
+                  0.125,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -262.7320219070687,
+                "y": -393.03721990508274,
+                "r": 41,
+                "remaining": [
+                  0.125,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 19,
+          "now": 17.75,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -286.67118690205723,
+                "y": -393.1190886127532,
+                "r": 41,
+                "remaining": [
+                  0.013888888888888888,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -257.48309252443113,
+                "y": -391.4710228800588,
+                "r": 41,
+                "remaining": [
+                  0.013888888888888888,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 35,
+          "now": 33.75,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -252.909200067625,
+                "y": -379.29312030524744,
+                "r": 41,
+                "remaining": [
+                  0,
+                  0.125
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -222.58818428048698,
+                "y": -376.35203992217464,
+                "r": 41,
+                "remaining": [
+                  0,
+                  0.125
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -284.2364203592928,
+              "y": -392.39938889082805,
+              "kind": "fire",
+              "index": 0,
+              "age": 16,
+              "life": 24
+            },
+            {
+              "x": -254.9425074120649,
+              "y": -390.6537663812749,
+              "kind": "fire",
+              "index": 0,
+              "age": 16,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 39,
+          "now": 37.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -284.2364203592928,
+              "y": -392.39938889082805,
+              "kind": "fire",
+              "index": 0,
+              "age": 20,
+              "life": 24
+            },
+            {
+              "x": -254.9425074120649,
+              "y": -390.6537663812749,
+              "kind": "fire",
+              "index": 0,
+              "age": 20,
+              "life": 24
+            },
+            {
+              "x": -247.5553673676853,
+              "y": -376.36523765937585,
+              "kind": "fire",
+              "index": 1,
+              "age": 2,
+              "life": 24
+            },
+            {
+              "x": -217.1320526878625,
+              "y": -373.24716555655425,
+              "kind": "fire",
+              "index": 1,
+              "age": 2,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 79,
+          "now": 77.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": true,
+      "id": "ice",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "frostContact",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "storyMoment"
+        },
+        {
+          "type": "frostThaw",
+          "x": -276.85201412182164,
+          "y": -399.11409085834026
+        },
+        {
+          "type": "frostThaw",
+          "x": -284.20843569108706,
+          "y": -390.9562889426592
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 0.7,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -320.9065,
+                "y": -400.0026064925996,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.9708333333333333
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.9611111111111111
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 3,
+          "now": 2.9285714285714284,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -321.819246912336,
+                "y": -399.7997284352533,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.8779761904761906
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.8373015873015873
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 8,
+          "now": 7.071428571428571,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -316.4866317879555,
+                "y": -399.20259521720953,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.7053571428571429
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.6071428571428572
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 17,
+          "now": 15.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -299.96092411711754,
+                "y": -396.06268780801906,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.34375
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.125
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 19,
+          "now": 17.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -296.3494209742374,
+                "y": -395.09140725191776,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.2604166666666667
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.013888888888888888
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 35,
+          "now": 33.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -265.86729695083665,
+                "y": -382.48504757680536,
+                "r": 41,
+                "kind": "slow",
+                "active": false,
+                "immune": true,
+                "remaining": 0.8916666666666667
+              },
+              {
+                "id": "neighbor",
+                "x": -231.65297287278256,
+                "y": -381.80060217324717,
+                "r": 33,
+                "kind": "freeze",
+                "active": false,
+                "immune": true,
+                "remaining": 0.825
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 39,
+          "now": 37.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -258.57972945453605,
+                "y": -378.52768310852485,
+                "r": 41,
+                "kind": "slow",
+                "active": false,
+                "immune": true,
+                "remaining": 0.8472222222222222
+              },
+              {
+                "id": "neighbor",
+                "x": -223.67187184155756,
+                "y": -377.58875681944727,
+                "r": 33,
+                "kind": "freeze",
+                "active": false,
+                "immune": true,
+                "remaining": 0.7805555555555556
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 79,
+          "now": 77.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -230.63394133164138,
+                "y": -359.3388918732586,
+                "r": 41,
+                "kind": "slow",
+                "active": false,
+                "immune": true,
+                "remaining": 0.4027777777777778
+              },
+              {
+                "id": "neighbor",
+                "x": -193.8664201312246,
+                "y": -356.22514572993686,
+                "r": 33,
+                "kind": "freeze",
+                "active": false,
+                "immune": true,
+                "remaining": 0.33611111111111114
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": true,
+      "id": "lightning",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "voltHit",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "voltContact"
+        },
+        {
+          "type": "armor",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "storyMoment"
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 0.7,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": {
+              "origin": {
+                "x": -320,
+                "y": -400
+              },
+              "links": [
+                {
+                  "x": -280,
+                  "y": -400,
+                  "role": "volt"
+                }
+              ],
+              "progress": 0.11666666666666665
+            },
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 2,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 3,
+          "now": 2.9285714285714284,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": {
+              "origin": {
+                "x": -320,
+                "y": -400
+              },
+              "links": [
+                {
+                  "x": -280,
+                  "y": -400,
+                  "role": "volt"
+                }
+              ],
+              "progress": 0.4880952380952381
+            },
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 5,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 8,
+          "now": 7.071428571428571,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 10,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 17,
+          "now": 15.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 19,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 19,
+          "now": 17.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 21,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 35,
+          "now": 33.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 39,
+          "now": 37.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 79,
+          "now": 77.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": true,
+      "id": "void",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "voidOpen",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "storyMoment"
+        },
+        {
+          "type": "voidHit",
+          "x": -306.7765193763873,
+          "y": -396.774143327868
+        },
+        {
+          "type": "voidCollapse",
+          "x": -320,
+          "y": -400
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 0.7,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.03888888888888889,
+              "targets": [
+                {
+                  "x": -320.0505606997835,
+                  "y": -400.00014537902905
+                },
+                {
+                  "x": -282.53944443868573,
+                  "y": -400.003603840805
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 3,
+          "now": 2.9285714285714284,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.16269841269841268,
+              "targets": [
+                {
+                  "x": -320,
+                  "y": -400
+                },
+                {
+                  "x": -290.62397865666367,
+                  "y": -399.9732125281359
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 8,
+          "now": 7.071428571428571,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.39285714285714285,
+              "targets": [
+                {
+                  "x": -319.7016132223641,
+                  "y": -399.95940291900973
+                },
+                {
+                  "x": -293.6807660446472,
+                  "y": -398.2877168495087
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 17,
+          "now": 15.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.875,
+              "targets": [
+                {
+                  "x": -310.8120807625655,
+                  "y": -398.0401929830704
+                },
+                {
+                  "x": -287.33772544130943,
+                  "y": -395.29878578452633
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 19,
+          "now": 17.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.9861111111111112,
+              "targets": [
+                {
+                  "x": -308.94612985019967,
+                  "y": -397.41712140379116
+                },
+                {
+                  "x": -285.4324722498215,
+                  "y": -394.3568890056241
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 35,
+          "now": 33.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -306.7765193763873,
+              "y": -396.774143327868,
+              "kind": "void",
+              "index": 0,
+              "age": 16,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 39,
+          "now": 37.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -306.7765193763873,
+              "y": -396.774143327868,
+              "kind": "void",
+              "index": 0,
+              "age": 20,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 79,
+          "now": 77.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": true,
+      "id": "echo",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "repriseStored",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "storyMoment"
+        },
+        {
+          "type": "repriseHit",
+          "x": -263.22300161562407,
+          "y": -398.203528799176
+        },
+        {
+          "type": "repriseFired"
+        },
+        {
+          "type": "bank",
+          "x": 1577,
+          "y": 117.71924043405599
+        },
+        {
+          "type": "cleanBank",
+          "x": 1577,
+          "y": 117.71924043405599
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 1,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": {
+              "progress": 0.08333333333333333,
+              "path": [
+                {
+                  "x": -350,
+                  "y": -400
+                },
+                {
+                  "x": -322.0008003007651,
+                  "y": -399.81072428947317
+                },
+                {
+                  "x": -320.00000000000006,
+                  "y": -399.78571428571354
+                }
+              ]
+            }
+          },
+          "payoffs": []
+        },
+        {
+          "at": 3,
+          "now": 4,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": {
+              "progress": 0.3333333333333333,
+              "path": [
+                {
+                  "x": -350,
+                  "y": -400
+                },
+                {
+                  "x": -322.0008003007651,
+                  "y": -399.81072428947317
+                },
+                {
+                  "x": -294.00568331084565,
+                  "y": -399.29657065419724
+                },
+                {
+                  "x": -266.01850229246287,
+                  "y": -398.45474242880704
+                },
+                {
+                  "x": -238.04297165746297,
+                  "y": -397.288296337557
+                },
+                {
+                  "x": -230.00000000000023,
+                  "y": -396.8928571428463
+                }
+              ]
+            }
+          },
+          "payoffs": []
+        },
+        {
+          "at": 8,
+          "now": 9,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": {
+              "progress": 0.75,
+              "path": [
+                {
+                  "x": -350,
+                  "y": -400
+                },
+                {
+                  "x": -322.0008003007651,
+                  "y": -399.81072428947317
+                },
+                {
+                  "x": -294.00568331084565,
+                  "y": -399.29657065419724
+                },
+                {
+                  "x": -266.01850229246287,
+                  "y": -398.45474242880704
+                },
+                {
+                  "x": -238.04297165746297,
+                  "y": -397.288296337557
+                },
+                {
+                  "x": -210.0829437645459,
+                  "y": -395.79570408406954
+                }
+              ]
+            }
+          },
+          "payoffs": []
+        },
+        {
+          "at": 17,
+          "now": 17,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -263.22300161562407,
+              "y": -398.203528799176,
+              "kind": "echo",
+              "index": 0,
+              "age": 7,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 19,
+          "now": 18.95,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -263.22300161562407,
+              "y": -398.203528799176,
+              "kind": "echo",
+              "index": 0,
+              "age": 9,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 35,
+          "now": 34.95,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 39,
+          "now": 38.95,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 79,
+          "now": 78.95,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": false,
+      "id": "fire",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "emberIgnite",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "storyMoment"
+        },
+        {
+          "type": "emberHit",
+          "x": -284.2364203592928,
+          "y": -392.39938889082805
+        },
+        {
+          "type": "emberHit",
+          "x": -254.9425074120649,
+          "y": -390.6537663812749
+        },
+        {
+          "type": "emberHit",
+          "x": -247.5553673676853,
+          "y": -376.36523765937585
+        },
+        {
+          "type": "emberHit",
+          "x": -217.1320526878625,
+          "y": -373.24716555655425
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 0.7,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -321.295,
+                "y": -400.00372356085666,
+                "r": 41,
+                "remaining": [
+                  0.9611111111111111,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -281.295,
+                "y": -400.00372356085666,
+                "r": 41,
+                "remaining": [
+                  0.9611111111111111,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 3,
+          "now": 2.9285714285714284,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -322.59354158655105,
+                "y": -399.7258798129276,
+                "r": 41,
+                "remaining": [
+                  0.8373015873015873,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -285.41776229434925,
+                "y": -399.979600401033,
+                "r": 41,
+                "remaining": [
+                  0.8373015873015873,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 8,
+          "now": 7.071428571428571,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -314.9725186724075,
+                "y": -398.90151371091895,
+                "r": 41,
+                "remaining": [
+                  0.6071428571428572,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -283.5198391195065,
+                "y": -397.91615935758006,
+                "r": 41,
+                "remaining": [
+                  0.6071428571428572,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 17,
+          "now": 15.75,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -291.69297680505326,
+                "y": -394.48202023961016,
+                "r": 41,
+                "remaining": [
+                  0.125,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -262.7320219070687,
+                "y": -393.03721990508274,
+                "r": 41,
+                "remaining": [
+                  0.125,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 19,
+          "now": 17.75,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -286.67118690205723,
+                "y": -393.1190886127532,
+                "r": 41,
+                "remaining": [
+                  0.013888888888888888,
+                  1
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -257.48309252443113,
+                "y": -391.4710228800588,
+                "r": 41,
+                "remaining": [
+                  0.013888888888888888,
+                  1
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 35,
+          "now": 33.75,
+          "projection": {
+            "burn": [
+              {
+                "id": "center",
+                "x": -252.909200067625,
+                "y": -379.29312030524744,
+                "r": 41,
+                "remaining": [
+                  0,
+                  0.125
+                ],
+                "hit": 0
+              },
+              {
+                "id": "neighbor",
+                "x": -222.58818428048698,
+                "y": -376.35203992217464,
+                "r": 41,
+                "remaining": [
+                  0,
+                  0.125
+                ],
+                "hit": 0
+              }
+            ],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -284.2364203592928,
+              "y": -392.39938889082805,
+              "kind": "fire",
+              "index": 0,
+              "age": 16,
+              "life": 24
+            },
+            {
+              "x": -254.9425074120649,
+              "y": -390.6537663812749,
+              "kind": "fire",
+              "index": 0,
+              "age": 16,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 39,
+          "now": 37.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -284.2364203592928,
+              "y": -392.39938889082805,
+              "kind": "fire",
+              "index": 0,
+              "age": 20,
+              "life": 24
+            },
+            {
+              "x": -254.9425074120649,
+              "y": -390.6537663812749,
+              "kind": "fire",
+              "index": 0,
+              "age": 20,
+              "life": 24
+            },
+            {
+              "x": -247.5553673676853,
+              "y": -376.36523765937585,
+              "kind": "fire",
+              "index": 1,
+              "age": 2,
+              "life": 24
+            },
+            {
+              "x": -217.1320526878625,
+              "y": -373.24716555655425,
+              "kind": "fire",
+              "index": 1,
+              "age": 2,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 79,
+          "now": 77.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": false,
+      "id": "ice",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "frostContact",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "storyMoment"
+        },
+        {
+          "type": "frostThaw",
+          "x": -276.85201412182164,
+          "y": -399.11409085834026
+        },
+        {
+          "type": "frostThaw",
+          "x": -284.20843569108706,
+          "y": -390.9562889426592
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 0.7,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -320.9065,
+                "y": -400.0026064925996,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.9708333333333333
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.9611111111111111
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 3,
+          "now": 2.9285714285714284,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -321.819246912336,
+                "y": -399.7997284352533,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.8779761904761906
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.8373015873015873
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 8,
+          "now": 7.071428571428571,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -316.4866317879555,
+                "y": -399.20259521720953,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.7053571428571429
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.6071428571428572
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 17,
+          "now": 15.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -299.96092411711754,
+                "y": -396.06268780801906,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.34375
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.125
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 19,
+          "now": 17.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -296.3494209742374,
+                "y": -395.09140725191776,
+                "r": 41,
+                "kind": "slow",
+                "active": true,
+                "immune": false,
+                "remaining": 0.2604166666666667
+              },
+              {
+                "id": "neighbor",
+                "x": -280,
+                "y": -400,
+                "r": 33,
+                "kind": "freeze",
+                "active": true,
+                "immune": false,
+                "remaining": 0.013888888888888888
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 35,
+          "now": 33.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -265.86729695083665,
+                "y": -382.48504757680536,
+                "r": 41,
+                "kind": "slow",
+                "active": false,
+                "immune": true,
+                "remaining": 0.8916666666666667
+              },
+              {
+                "id": "neighbor",
+                "x": -231.65297287278256,
+                "y": -381.80060217324717,
+                "r": 33,
+                "kind": "freeze",
+                "active": false,
+                "immune": true,
+                "remaining": 0.825
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 39,
+          "now": 37.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -258.57972945453605,
+                "y": -378.52768310852485,
+                "r": 41,
+                "kind": "slow",
+                "active": false,
+                "immune": true,
+                "remaining": 0.8472222222222222
+              },
+              {
+                "id": "neighbor",
+                "x": -223.67187184155756,
+                "y": -377.58875681944727,
+                "r": 33,
+                "kind": "freeze",
+                "active": false,
+                "immune": true,
+                "remaining": 0.7805555555555556
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 79,
+          "now": 77.75,
+          "projection": {
+            "burn": [],
+            "cold": [
+              {
+                "id": "center",
+                "x": -230.63394133164138,
+                "y": -359.3388918732586,
+                "r": 41,
+                "kind": "slow",
+                "active": false,
+                "immune": true,
+                "remaining": 0.4027777777777778
+              },
+              {
+                "id": "neighbor",
+                "x": -193.8664201312246,
+                "y": -356.22514572993686,
+                "r": 33,
+                "kind": "freeze",
+                "active": false,
+                "immune": true,
+                "remaining": 0.33611111111111114
+              }
+            ],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": false,
+      "id": "lightning",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "voltHit",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "voltContact"
+        },
+        {
+          "type": "armor",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "storyMoment"
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 0.7,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": {
+              "origin": {
+                "x": -320,
+                "y": -400
+              },
+              "links": [
+                {
+                  "x": -280,
+                  "y": -400,
+                  "role": "volt"
+                }
+              ],
+              "progress": 0.11666666666666665
+            },
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 2,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 3,
+          "now": 2.9285714285714284,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": {
+              "origin": {
+                "x": -320,
+                "y": -400
+              },
+              "links": [
+                {
+                  "x": -280,
+                  "y": -400,
+                  "role": "volt"
+                }
+              ],
+              "progress": 0.4880952380952381
+            },
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 5,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 8,
+          "now": 7.071428571428571,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 10,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 17,
+          "now": 15.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 19,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 19,
+          "now": 17.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -280,
+              "y": -400,
+              "kind": "lightning",
+              "index": 0,
+              "age": 21,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 35,
+          "now": 33.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 39,
+          "now": 37.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 79,
+          "now": 77.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": false,
+      "id": "void",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "voidOpen",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -320,
+          "y": -400
+        },
+        {
+          "type": "armor",
+          "x": -280,
+          "y": -400
+        },
+        {
+          "type": "storyMoment"
+        },
+        {
+          "type": "voidHit",
+          "x": -306.7765193763873,
+          "y": -396.774143327868
+        },
+        {
+          "type": "voidCollapse",
+          "x": -320,
+          "y": -400
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 0.7,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.03888888888888889,
+              "targets": [
+                {
+                  "x": -320.0505606997835,
+                  "y": -400.00014537902905
+                },
+                {
+                  "x": -282.53944443868573,
+                  "y": -400.003603840805
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 3,
+          "now": 2.9285714285714284,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.16269841269841268,
+              "targets": [
+                {
+                  "x": -320,
+                  "y": -400
+                },
+                {
+                  "x": -290.62397865666367,
+                  "y": -399.9732125281359
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 8,
+          "now": 7.071428571428571,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.39285714285714285,
+              "targets": [
+                {
+                  "x": -319.7016132223641,
+                  "y": -399.95940291900973
+                },
+                {
+                  "x": -293.6807660446472,
+                  "y": -398.2877168495087
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 17,
+          "now": 15.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.875,
+              "targets": [
+                {
+                  "x": -310.8120807625655,
+                  "y": -398.0401929830704
+                },
+                {
+                  "x": -287.33772544130943,
+                  "y": -395.29878578452633
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 19,
+          "now": 17.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": {
+              "x": -320,
+              "y": -400,
+              "core": 28,
+              "progress": 0.9861111111111112,
+              "targets": [
+                {
+                  "x": -308.94612985019967,
+                  "y": -397.41712140379116
+                },
+                {
+                  "x": -285.4324722498215,
+                  "y": -394.3568890056241
+                }
+              ]
+            },
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 35,
+          "now": 33.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -306.7765193763873,
+              "y": -396.774143327868,
+              "kind": "void",
+              "index": 0,
+              "age": 16,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 39,
+          "now": 37.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -306.7765193763873,
+              "y": -396.774143327868,
+              "kind": "void",
+              "index": 0,
+              "age": 20,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 79,
+          "now": 77.75,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": false,
+      "id": "echo",
+      "errors": [],
+      "accepted": true,
+      "events": [
+        {
+          "type": "waveStart"
+        },
+        {
+          "type": "repriseStored",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "dash",
+          "x": -350,
+          "y": -400
+        },
+        {
+          "type": "tier"
+        },
+        {
+          "type": "storyMoment"
+        },
+        {
+          "type": "repriseHit",
+          "x": -263.22300161562407,
+          "y": -398.203528799176
+        },
+        {
+          "type": "repriseFired"
+        },
+        {
+          "type": "bank",
+          "x": 1577,
+          "y": 117.71924043405599
+        },
+        {
+          "type": "cleanBank",
+          "x": 1577,
+          "y": 117.71924043405599
+        }
+      ],
+      "states": [
+        {
+          "at": 0,
+          "now": 1,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": {
+              "progress": 0.08333333333333333,
+              "path": [
+                {
+                  "x": -350,
+                  "y": -400
+                },
+                {
+                  "x": -322.0008003007651,
+                  "y": -399.81072428947317
+                },
+                {
+                  "x": -320.00000000000006,
+                  "y": -399.78571428571354
+                }
+              ]
+            }
+          },
+          "payoffs": []
+        },
+        {
+          "at": 3,
+          "now": 4,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": {
+              "progress": 0.3333333333333333,
+              "path": [
+                {
+                  "x": -350,
+                  "y": -400
+                },
+                {
+                  "x": -322.0008003007651,
+                  "y": -399.81072428947317
+                },
+                {
+                  "x": -294.00568331084565,
+                  "y": -399.29657065419724
+                },
+                {
+                  "x": -266.01850229246287,
+                  "y": -398.45474242880704
+                },
+                {
+                  "x": -238.04297165746297,
+                  "y": -397.288296337557
+                },
+                {
+                  "x": -230.00000000000023,
+                  "y": -396.8928571428463
+                }
+              ]
+            }
+          },
+          "payoffs": []
+        },
+        {
+          "at": 8,
+          "now": 9,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": {
+              "progress": 0.75,
+              "path": [
+                {
+                  "x": -350,
+                  "y": -400
+                },
+                {
+                  "x": -322.0008003007651,
+                  "y": -399.81072428947317
+                },
+                {
+                  "x": -294.00568331084565,
+                  "y": -399.29657065419724
+                },
+                {
+                  "x": -266.01850229246287,
+                  "y": -398.45474242880704
+                },
+                {
+                  "x": -238.04297165746297,
+                  "y": -397.288296337557
+                },
+                {
+                  "x": -210.0829437645459,
+                  "y": -395.79570408406954
+                }
+              ]
+            }
+          },
+          "payoffs": []
+        },
+        {
+          "at": 17,
+          "now": 17,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -263.22300161562407,
+              "y": -398.203528799176,
+              "kind": "echo",
+              "index": 0,
+              "age": 7,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 19,
+          "now": 18.95,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": [
+            {
+              "x": -263.22300161562407,
+              "y": -398.203528799176,
+              "kind": "echo",
+              "index": 0,
+              "age": 9,
+              "life": 24
+            }
+          ]
+        },
+        {
+          "at": 35,
+          "now": 34.95,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 39,
+          "now": 38.95,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        },
+        {
+          "at": 79,
+          "now": 78.95,
+          "projection": {
+            "burn": [],
+            "cold": [],
+            "volt": null,
+            "well": null,
+            "reprise": null
+          },
+          "payoffs": []
+        }
+      ],
+      "readOnly": true,
+      "reset": true
+    }
+  ]
+}
