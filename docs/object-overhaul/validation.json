@@ -1,0 +1,53 @@
+{
+  "scope": {
+    "equipment": 73,
+    "runCards": 40,
+    "enemySpecies": 9,
+    "total": 122,
+    "legacyWaveBuffs": "11 share IDs with run cards; not counted again"
+  },
+  "tests": {
+    "full": "1..1465\n# tests 1465\n# suites 0\n# pass 1465\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 269314.468177\n",
+    "focused": "1..49\n# tests 49\n# suites 0\n# pass 49\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 9164.614819\n",
+    "build": "computing gzip size...\ndist/index.html  1,333.46 kB │ gzip: 479.67 kB\n✓ built in 4.75s\nVerified dist/index.html: one file, vector art, embedded fonts/scripts, 1302.2 KiB.\n"
+  },
+  "normalGameplay": [
+    {
+      "width": 1280,
+      "height": 720,
+      "phase": "playing",
+      "kills": 11,
+      "score": 4550,
+      "hp": 3,
+      "shots": 23,
+      "frameErrors": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "phase": "playing",
+      "kills": 7,
+      "score": 2300,
+      "hp": 3,
+      "shots": 18,
+      "frameErrors": []
+    }
+  ],
+  "controlledFixtures": {
+    "count": 122,
+    "errors": [],
+    "method": "Controlled native createRun/createRenderer fixtures, seeded equipment; run card offers supplied as a fixture then admitted by chooseWaveBuff; native dash/contact; 45 presentation ticks sampled after contact. Separate from normal Start Run recordings. Not human or device performance testing."
+  },
+  "limits": {
+    "maxStoredEchoes": 24,
+    "maxDrawnEchoes": 8,
+    "maxDashMarks": 28,
+    "maxShownRunCards": 6
+  },
+  "limitsOfEvidence": [
+    "Bot play, not human playtesting",
+    "Desktop browser at portrait size, not a mobile hardware FPS claim",
+    "Coverage and contour uniqueness do not prove all items recognizable at combat speed",
+    "Existing powers/build harmony retained, not 122 new mechanics"
+  ]
+}

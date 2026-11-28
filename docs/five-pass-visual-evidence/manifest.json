@@ -1,0 +1,149 @@
+{
+  "method": "Native Chromium shop interactions; controlled animation clock for comparable images. Real training handoff captured separately. No human or physical-device usability claim.",
+  "frames": [
+    {
+      "name": "armory",
+      "file": "armory-1440x900.jpg",
+      "width": 1440,
+      "height": 900,
+      "touch": false,
+      "reduced": false
+    },
+    {
+      "name": "coil-ability",
+      "file": "coil-ability-1440x900.jpg",
+      "width": 1440,
+      "height": 900,
+      "touch": false,
+      "reduced": false
+    },
+    {
+      "name": "compare",
+      "file": "compare-1440x900.jpg",
+      "width": 1440,
+      "height": 900,
+      "touch": false,
+      "reduced": false
+    },
+    {
+      "name": "world-twilight",
+      "file": "world-twilight-1440x900.jpg",
+      "width": 1440,
+      "height": 900,
+      "touch": false,
+      "reduced": false
+    },
+    {
+      "name": "world-tokyo",
+      "file": "world-tokyo-1440x900.jpg",
+      "width": 1440,
+      "height": 900,
+      "touch": false,
+      "reduced": false
+    },
+    {
+      "name": "world-foundry",
+      "file": "world-foundry-1440x900.jpg",
+      "width": 1440,
+      "height": 900,
+      "touch": false,
+      "reduced": false
+    },
+    {
+      "name": "world-manga",
+      "file": "world-manga-1440x900.jpg",
+      "width": 1440,
+      "height": 900,
+      "touch": false,
+      "reduced": false
+    },
+    {
+      "name": "world-synth",
+      "file": "world-synth-1440x900.jpg",
+      "width": 1440,
+      "height": 900,
+      "touch": false,
+      "reduced": false
+    },
+    {
+      "name": "world-void",
+      "file": "world-void-1440x900.jpg",
+      "width": 1440,
+      "height": 900,
+      "touch": false,
+      "reduced": false
+    },
+    {
+      "name": "armory",
+      "file": "armory-390x844.jpg",
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "reduced": false
+    },
+    {
+      "name": "coil-ability",
+      "file": "coil-ability-390x844.jpg",
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "reduced": false
+    },
+    {
+      "name": "compare",
+      "file": "compare-390x844.jpg",
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "reduced": false
+    },
+    {
+      "name": "armory",
+      "file": "armory-640x360.jpg",
+      "width": 640,
+      "height": 360,
+      "touch": false,
+      "reduced": false
+    },
+    {
+      "name": "coil-ability",
+      "file": "coil-ability-640x360.jpg",
+      "width": 640,
+      "height": 360,
+      "touch": false,
+      "reduced": false
+    },
+    {
+      "name": "compare",
+      "file": "compare-640x360.jpg",
+      "width": 640,
+      "height": 360,
+      "touch": false,
+      "reduced": false
+    },
+    {
+      "name": "armory",
+      "file": "armory-390x844-reduced.jpg",
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "reduced": true
+    },
+    {
+      "name": "coil-ability",
+      "file": "coil-ability-390x844-reduced.jpg",
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "reduced": true
+    },
+    {
+      "name": "compare",
+      "file": "compare-390x844-reduced.jpg",
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "reduced": true
+    }
+  ]
+}

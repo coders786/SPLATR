@@ -600,15 +600,16 @@ test('the dash deformations are MOVING THE PIXELS, not just the pose', () => {
     `and grow taller: ${rest.h.toFixed(1)} -> ${w.h.toFixed(1)}`,
   );
 
-  // SPLAT against the floor: flat, and wide.
+  // Floor splat stays visibly compressed/wide, but the COMPOSED body
+  // now obeys the readable 0.80–1.25 envelope instead of flattening to 34%.
   const flat = shot(0, 0, -1, { age: 1, nx: 0, ny: 1 });
   assert.ok(
-    flat.h < rest.h * 0.55,
-    `the wall splat never reached the glass: ${rest.h.toFixed(1)} -> ${flat.h.toFixed(1)} (this is what the wrong normal field looked like)`,
+    flat.h >= rest.h * 0.78 && flat.h < rest.h * 0.90,
+    `the wall compression must be visible AND bounded: ${rest.h.toFixed(1)} -> ${flat.h.toFixed(1)}`,
   );
   assert.ok(
-    flat.w > rest.w * 1.2,
-    `and it must spread along the wall: ${rest.w.toFixed(1)} -> ${flat.w.toFixed(1)}`,
+    flat.w > rest.w * 1.2 && flat.w <= rest.w * 1.27,
+    `and it must spread within the body envelope: ${rest.w.toFixed(1)} -> ${flat.w.toFixed(1)}`,
   );
 });
 

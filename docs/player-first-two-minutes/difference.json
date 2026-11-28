@@ -1,0 +1,1954 @@
+{
+  "definition": "Consecutive captured full viewports, downsampled to640x360. A pixel counts as changed when summed absolute RGB difference exceeds45. This is an explicit metric, not a perception score. No frames discarded to meet20%.",
+  "stats": {
+    "frames": 216,
+    "comparisons": 215,
+    "atLeast20Percent": 11,
+    "below20Percent": 204,
+    "mean": 6.126744186046509,
+    "min": 0,
+    "max": 98.97829861111111
+  },
+  "frames": [
+    {
+      "frame": 1,
+      "at": 2,
+      "file": "frames/001.jpg"
+    },
+    {
+      "frame": 2,
+      "at": 551,
+      "file": "frames/002.jpg",
+      "difference": {
+        "fullPercent": 0.9691840277777778,
+        "arenaPercent": 1.406561011867268
+      }
+    },
+    {
+      "frame": 3,
+      "at": 1100,
+      "file": "frames/003.jpg",
+      "difference": {
+        "fullPercent": 0.7734375,
+        "arenaPercent": 1.1224772607019577
+      }
+    },
+    {
+      "frame": 4,
+      "at": 1651,
+      "file": "frames/004.jpg",
+      "difference": {
+        "fullPercent": 0.6575520833333334,
+        "arenaPercent": 0.9542946408324725
+      }
+    },
+    {
+      "frame": 5,
+      "at": 2200,
+      "file": "frames/005.jpg",
+      "difference": {
+        "fullPercent": 0.31510416666666663,
+        "arenaPercent": 0.4573055506563531
+      }
+    },
+    {
+      "frame": 6,
+      "at": 2750,
+      "file": "frames/006.jpg",
+      "difference": {
+        "fullPercent": 0.013454861111111112,
+        "arenaPercent": 0.01952682103353574
+      }
+    },
+    {
+      "frame": 7,
+      "at": 3300,
+      "file": "frames/007.jpg",
+      "difference": {
+        "fullPercent": 0.22960069444444442,
+        "arenaPercent": 0.333215752475497
+      }
+    },
+    {
+      "frame": 8,
+      "at": 3851,
+      "file": "frames/008.jpg",
+      "difference": {
+        "fullPercent": 0.6011284722222222,
+        "arenaPercent": 0.8724079719821612
+      }
+    },
+    {
+      "frame": 9,
+      "at": 4401,
+      "file": "frames/009.jpg",
+      "difference": {
+        "fullPercent": 0.8337673611111112,
+        "arenaPercent": 1.2100330066265212
+      }
+    },
+    {
+      "frame": 10,
+      "at": 5069,
+      "file": "frames/010.jpg",
+      "difference": {
+        "fullPercent": 58.87803819444445,
+        "arenaPercent": 69.51296328957646
+      }
+    },
+    {
+      "frame": 11,
+      "at": 5500,
+      "file": "frames/011.jpg",
+      "difference": {
+        "fullPercent": 0.10112847222222222,
+        "arenaPercent": 0.14676610647786542
+      }
+    },
+    {
+      "frame": 12,
+      "at": 6051,
+      "file": "frames/012.jpg",
+      "difference": {
+        "fullPercent": 0.12065972222222222,
+        "arenaPercent": 0.17511149184912697
+      }
+    },
+    {
+      "frame": 13,
+      "at": 6601,
+      "file": "frames/013.jpg",
+      "difference": {
+        "fullPercent": 0.12022569444444443,
+        "arenaPercent": 0.17448159439643227
+      }
+    },
+    {
+      "frame": 14,
+      "at": 7151,
+      "file": "frames/014.jpg",
+      "difference": {
+        "fullPercent": 0.1328125,
+        "arenaPercent": 0.1927486205245786
+      }
+    },
+    {
+      "frame": 15,
+      "at": 7719,
+      "file": "frames/015.jpg",
+      "difference": {
+        "fullPercent": 0.08940972222222222,
+        "arenaPercent": 0.12975887525510849
+      }
+    },
+    {
+      "frame": 16,
+      "at": 8251,
+      "file": "frames/016.jpg",
+      "difference": {
+        "fullPercent": 12.904513888888888,
+        "arenaPercent": 16.31245433243468
+      }
+    },
+    {
+      "frame": 17,
+      "at": 8800,
+      "file": "frames/017.jpg",
+      "difference": {
+        "fullPercent": 16.870225694444443,
+        "arenaPercent": 19.26793318047822
+      }
+    },
+    {
+      "frame": 18,
+      "at": 9350,
+      "file": "frames/018.jpg",
+      "difference": {
+        "fullPercent": 13.080729166666666,
+        "arenaPercent": 16.891959988913804
+      }
+    },
+    {
+      "frame": 19,
+      "at": 9901,
+      "file": "frames/019.jpg",
+      "difference": {
+        "fullPercent": 15.440104166666666,
+        "arenaPercent": 18.786691526619467
+      }
+    },
+    {
+      "frame": 20,
+      "at": 10451,
+      "file": "frames/020.jpg",
+      "difference": {
+        "fullPercent": 15.321614583333334,
+        "arenaPercent": 18.704804857769155
+      }
+    },
+    {
+      "frame": 21,
+      "at": 11000,
+      "file": "frames/021.jpg",
+      "difference": {
+        "fullPercent": 14.301215277777779,
+        "arenaPercent": 18.008138275088818
+      }
+    },
+    {
+      "frame": 22,
+      "at": 11714,
+      "file": "frames/022.jpg",
+      "difference": {
+        "fullPercent": 7.909722222222222,
+        "arenaPercent": 10.552672024994331
+      }
+    },
+    {
+      "frame": 23,
+      "at": 12100,
+      "file": "frames/023.jpg",
+      "difference": {
+        "fullPercent": 5.3359375,
+        "arenaPercent": 7.011388545944721
+      }
+    },
+    {
+      "frame": 24,
+      "at": 12651,
+      "file": "frames/024.jpg",
+      "difference": {
+        "fullPercent": 15.16579861111111,
+        "arenaPercent": 18.797399783315278
+      }
+    },
+    {
+      "frame": 25,
+      "at": 13293,
+      "file": "frames/025.jpg",
+      "difference": {
+        "fullPercent": 13.251736111111112,
+        "arenaPercent": 14.395046486432008
+      }
+    },
+    {
+      "frame": 26,
+      "at": 13750,
+      "file": "frames/026.jpg",
+      "difference": {
+        "fullPercent": 16.66015625,
+        "arenaPercent": 16.30930484517121
+      }
+    },
+    {
+      "frame": 27,
+      "at": 14301,
+      "file": "frames/027.jpg",
+      "difference": {
+        "fullPercent": 9.108072916666666,
+        "arenaPercent": 12.164579606440071
+      }
+    },
+    {
+      "frame": 28,
+      "at": 14946,
+      "file": "frames/028.jpg",
+      "difference": {
+        "fullPercent": 17.15407986111111,
+        "arenaPercent": 18.76149562851168
+      }
+    },
+    {
+      "frame": 29,
+      "at": 15401,
+      "file": "frames/029.jpg",
+      "difference": {
+        "fullPercent": 25.010850694444443,
+        "arenaPercent": 28.38443901332863
+      }
+    },
+    {
+      "frame": 30,
+      "at": 15951,
+      "file": "frames/030.jpg",
+      "difference": {
+        "fullPercent": 13.200086805555555,
+        "arenaPercent": 15.719090931996272
+      }
+    },
+    {
+      "frame": 31,
+      "at": 16500,
+      "file": "frames/031.jpg",
+      "difference": {
+        "fullPercent": 25.203125,
+        "arenaPercent": 28.210587316384895
+      }
+    },
+    {
+      "frame": 32,
+      "at": 17051,
+      "file": "frames/032.jpg",
+      "difference": {
+        "fullPercent": 15.931423611111112,
+        "arenaPercent": 17.565950263297136
+      }
+    },
+    {
+      "frame": 33,
+      "at": 17601,
+      "file": "frames/033.jpg",
+      "difference": {
+        "fullPercent": 15.111545138888888,
+        "arenaPercent": 16.62866285368742
+      }
+    },
+    {
+      "frame": 34,
+      "at": 18151,
+      "file": "frames/034.jpg",
+      "difference": {
+        "fullPercent": 16.375,
+        "arenaPercent": 19.186046511627907
+      }
+    },
+    {
+      "frame": 35,
+      "at": 18700,
+      "file": "frames/035.jpg",
+      "difference": {
+        "fullPercent": 14.503472222222221,
+        "arenaPercent": 17.523117236513897
+      }
+    },
+    {
+      "frame": 36,
+      "at": 19260,
+      "file": "frames/036.jpg",
+      "difference": {
+        "fullPercent": 18.16970486111111,
+        "arenaPercent": 18.03963314772355
+      }
+    },
+    {
+      "frame": 37,
+      "at": 19800,
+      "file": "frames/037.jpg",
+      "difference": {
+        "fullPercent": 24.006510416666664,
+        "arenaPercent": 26.977248104008666
+      }
+    },
+    {
+      "frame": 38,
+      "at": 20350,
+      "file": "frames/038.jpg",
+      "difference": {
+        "fullPercent": 20.97439236111111,
+        "arenaPercent": 23.242586106981783
+      }
+    },
+    {
+      "frame": 39,
+      "at": 20900,
+      "file": "frames/039.jpg",
+      "difference": {
+        "fullPercent": 23.953125,
+        "arenaPercent": 23.74587417168485
+      }
+    },
+    {
+      "frame": 40,
+      "at": 21450,
+      "file": "frames/040.jpg",
+      "difference": {
+        "fullPercent": 5.038628472222222,
+        "arenaPercent": 3.703167124392149
+      }
+    },
+    {
+      "frame": 41,
+      "at": 22000,
+      "file": "frames/041.jpg",
+      "difference": {
+        "fullPercent": 16.725260416666668,
+        "arenaPercent": 19.336592002821938
+      }
+    },
+    {
+      "frame": 42,
+      "at": 22551,
+      "file": "frames/042.jpg",
+      "difference": {
+        "fullPercent": 5.327690972222222,
+        "arenaPercent": 6.586207765375797
+      }
+    },
+    {
+      "frame": 43,
+      "at": 23333,
+      "file": "frames/043.jpg",
+      "difference": {
+        "fullPercent": 17.18967013888889,
+        "arenaPercent": 17.082189019627606
+      }
+    },
+    {
+      "frame": 44,
+      "at": 23650,
+      "file": "frames/044.jpg",
+      "difference": {
+        "fullPercent": 23.20355902777778,
+        "arenaPercent": 26.605608606918796
+      }
+    },
+    {
+      "frame": 45,
+      "at": 24201,
+      "file": "frames/045.jpg",
+      "difference": {
+        "fullPercent": 18.57421875,
+        "arenaPercent": 21.451157751518053
+      }
+    },
+    {
+      "frame": 46,
+      "at": 24814,
+      "file": "frames/046.jpg",
+      "difference": {
+        "fullPercent": 13.176649305555554,
+        "arenaPercent": 11.673259593338205
+      }
+    },
+    {
+      "frame": 47,
+      "at": 25301,
+      "file": "frames/047.jpg",
+      "difference": {
+        "fullPercent": 23.63454861111111,
+        "arenaPercent": 20.903146967673663
+      }
+    },
+    {
+      "frame": 48,
+      "at": 25850,
+      "file": "frames/048.jpg",
+      "difference": {
+        "fullPercent": 13.20095486111111,
+        "arenaPercent": 11.961122729219683
+      }
+    },
+    {
+      "frame": 49,
+      "at": 26400,
+      "file": "frames/049.jpg",
+      "difference": {
+        "fullPercent": 9.991319444444445,
+        "arenaPercent": 10.632669001486558
+      }
+    },
+    {
+      "frame": 50,
+      "at": 26951,
+      "file": "frames/050.jpg",
+      "difference": {
+        "fullPercent": 16.63237847222222,
+        "arenaPercent": 15.800347703393887
+      }
+    },
+    {
+      "frame": 51,
+      "at": 27501,
+      "file": "frames/051.jpg",
+      "difference": {
+        "fullPercent": 16.51345486111111,
+        "arenaPercent": 18.2241931013631
+      }
+    },
+    {
+      "frame": 52,
+      "at": 28051,
+      "file": "frames/052.jpg",
+      "difference": {
+        "fullPercent": 1.4357638888888888,
+        "arenaPercent": 1.870795434503263
+      }
+    },
+    {
+      "frame": 53,
+      "at": 28600,
+      "file": "frames/053.jpg",
+      "difference": {
+        "fullPercent": 0.4223090277777778,
+        "arenaPercent": 0.6128902214719444
+      }
+    },
+    {
+      "frame": 54,
+      "at": 29151,
+      "file": "frames/054.jpg",
+      "difference": {
+        "fullPercent": 0.43750000000000006,
+        "arenaPercent": 0.6349366323162589
+      }
+    },
+    {
+      "frame": 55,
+      "at": 29701,
+      "file": "frames/055.jpg",
+      "difference": {
+        "fullPercent": 1.46484375,
+        "arenaPercent": 1.278061931517549
+      }
+    },
+    {
+      "frame": 56,
+      "at": 30250,
+      "file": "frames/056.jpg",
+      "difference": {
+        "fullPercent": 1.3042534722222223,
+        "arenaPercent": 0.9561843331905566
+      }
+    },
+    {
+      "frame": 57,
+      "at": 30801,
+      "file": "frames/057.jpg",
+      "difference": {
+        "fullPercent": 0.9787326388888888,
+        "arenaPercent": 1.3082970092468946
+      }
+    },
+    {
+      "frame": 58,
+      "at": 31351,
+      "file": "frames/058.jpg",
+      "difference": {
+        "fullPercent": 1.261284722222222,
+        "arenaPercent": 1.3826249086648694
+      }
+    },
+    {
+      "frame": 59,
+      "at": 31900,
+      "file": "frames/059.jpg",
+      "difference": {
+        "fullPercent": 1.0594618055555556,
+        "arenaPercent": 1.4437249615762553
+      }
+    },
+    {
+      "frame": 60,
+      "at": 32451,
+      "file": "frames/060.jpg",
+      "difference": {
+        "fullPercent": 1.0859375,
+        "arenaPercent": 1.4834085010960216
+      }
+    },
+    {
+      "frame": 61,
+      "at": 33001,
+      "file": "frames/061.jpg",
+      "difference": {
+        "fullPercent": 1.11328125,
+        "arenaPercent": 1.505454911940336
+      }
+    },
+    {
+      "frame": 62,
+      "at": 33551,
+      "file": "frames/062.jpg",
+      "difference": {
+        "fullPercent": 1.162326388888889,
+        "arenaPercent": 1.5338002973115976
+      }
+    },
+    {
+      "frame": 63,
+      "at": 34100,
+      "file": "frames/063.jpg",
+      "difference": {
+        "fullPercent": 1.19921875,
+        "arenaPercent": 1.6175766585199929
+      }
+    },
+    {
+      "frame": 64,
+      "at": 34734,
+      "file": "frames/064.jpg",
+      "difference": {
+        "fullPercent": 98.97829861111111,
+        "arenaPercent": 99.58993675829575
+      }
+    },
+    {
+      "frame": 65,
+      "at": 35201,
+      "file": "frames/065.jpg",
+      "difference": {
+        "fullPercent": 16.15017361111111,
+        "arenaPercent": 19.49217667363753
+      }
+    },
+    {
+      "frame": 66,
+      "at": 35750,
+      "file": "frames/066.jpg",
+      "difference": {
+        "fullPercent": 96.15277777777777,
+        "arenaPercent": 98.16573861775304
+      }
+    },
+    {
+      "frame": 67,
+      "at": 36301,
+      "file": "frames/067.jpg",
+      "difference": {
+        "fullPercent": 96.0234375,
+        "arenaPercent": 98.21046133689435
+      }
+    },
+    {
+      "frame": 68,
+      "at": 36851,
+      "file": "frames/068.jpg",
+      "difference": {
+        "fullPercent": 0,
+        "arenaPercent": 0
+      }
+    },
+    {
+      "frame": 69,
+      "at": 37401,
+      "file": "frames/069.jpg",
+      "difference": {
+        "fullPercent": 0.53515625,
+        "arenaPercent": 0.7766635591725667
+      }
+    },
+    {
+      "frame": 70,
+      "at": 37950,
+      "file": "frames/070.jpg",
+      "difference": {
+        "fullPercent": 5.321614583333333,
+        "arenaPercent": 6.074101136335005
+      }
+    },
+    {
+      "frame": 71,
+      "at": 38500,
+      "file": "frames/071.jpg",
+      "difference": {
+        "fullPercent": 4.174045138888889,
+        "arenaPercent": 4.381566680944342
+      }
+    },
+    {
+      "frame": 72,
+      "at": 39051,
+      "file": "frames/072.jpg",
+      "difference": {
+        "fullPercent": 2.2196180555555554,
+        "arenaPercent": 2.7091889440399104
+      }
+    },
+    {
+      "frame": 73,
+      "at": 39765,
+      "file": "frames/073.jpg",
+      "difference": {
+        "fullPercent": 2.7543402777777777,
+        "arenaPercent": 2.3759731915644133
+      }
+    },
+    {
+      "frame": 74,
+      "at": 40150,
+      "file": "frames/074.jpg",
+      "difference": {
+        "fullPercent": 3.201822916666667,
+        "arenaPercent": 2.5838393509536646
+      }
+    },
+    {
+      "frame": 75,
+      "at": 40701,
+      "file": "frames/075.jpg",
+      "difference": {
+        "fullPercent": 3.8441840277777777,
+        "arenaPercent": 3.9425281564161354
+      }
+    },
+    {
+      "frame": 76,
+      "at": 41251,
+      "file": "frames/076.jpg",
+      "difference": {
+        "fullPercent": 3.5928819444444446,
+        "arenaPercent": 4.141575751467661
+      }
+    },
+    {
+      "frame": 77,
+      "at": 41801,
+      "file": "frames/077.jpg",
+      "difference": {
+        "fullPercent": 2.9270833333333335,
+        "arenaPercent": 3.5582907102723675
+      }
+    },
+    {
+      "frame": 78,
+      "at": 42351,
+      "file": "frames/078.jpg",
+      "difference": {
+        "fullPercent": 1.4453125,
+        "arenaPercent": 1.5829322986217844
+      }
+    },
+    {
+      "frame": 79,
+      "at": 42901,
+      "file": "frames/079.jpg",
+      "difference": {
+        "fullPercent": 1.937934027777778,
+        "arenaPercent": 2.072992516818262
+      }
+    },
+    {
+      "frame": 80,
+      "at": 43451,
+      "file": "frames/080.jpg",
+      "difference": {
+        "fullPercent": 2.4830729166666665,
+        "arenaPercent": 2.8962684874902367
+      }
+    },
+    {
+      "frame": 81,
+      "at": 44001,
+      "file": "frames/081.jpg",
+      "difference": {
+        "fullPercent": 6.142361111111111,
+        "arenaPercent": 7.902693441507723
+      }
+    },
+    {
+      "frame": 82,
+      "at": 44815,
+      "file": "frames/082.jpg",
+      "difference": {
+        "fullPercent": 6.268229166666667,
+        "arenaPercent": 8.430547506865882
+      }
+    },
+    {
+      "frame": 83,
+      "at": 45113,
+      "file": "frames/083.jpg",
+      "difference": {
+        "fullPercent": 3.504340277777778,
+        "arenaPercent": 4.292121242661694
+      }
+    },
+    {
+      "frame": 84,
+      "at": 45651,
+      "file": "frames/084.jpg",
+      "difference": {
+        "fullPercent": 3.0425347222222223,
+        "arenaPercent": 3.662223789966993
+      }
+    },
+    {
+      "frame": 85,
+      "at": 46201,
+      "file": "frames/085.jpg",
+      "difference": {
+        "fullPercent": 2.8480902777777777,
+        "arenaPercent": 3.772455844188566
+      }
+    },
+    {
+      "frame": 86,
+      "at": 46750,
+      "file": "frames/086.jpg",
+      "difference": {
+        "fullPercent": 2.43359375,
+        "arenaPercent": 3.3315276273022754
+      }
+    },
+    {
+      "frame": 87,
+      "at": 47302,
+      "file": "frames/087.jpg",
+      "difference": {
+        "fullPercent": 2.6328125,
+        "arenaPercent": 3.6502557383657943
+      }
+    },
+    {
+      "frame": 88,
+      "at": 47850,
+      "file": "frames/088.jpg",
+      "difference": {
+        "fullPercent": 1.916232638888889,
+        "arenaPercent": 2.5202197082314997
+      }
+    },
+    {
+      "frame": 89,
+      "at": 48401,
+      "file": "frames/089.jpg",
+      "difference": {
+        "fullPercent": 2.5442708333333335,
+        "arenaPercent": 3.3491647559777267
+      }
+    },
+    {
+      "frame": 90,
+      "at": 48950,
+      "file": "frames/090.jpg",
+      "difference": {
+        "fullPercent": 1.8936631944444444,
+        "arenaPercent": 2.3904608329763914
+      }
+    },
+    {
+      "frame": 91,
+      "at": 49690,
+      "file": "frames/091.jpg",
+      "difference": {
+        "fullPercent": 2.57421875,
+        "arenaPercent": 2.9548489505908435
+      }
+    },
+    {
+      "frame": 92,
+      "at": 50050,
+      "file": "frames/092.jpg",
+      "difference": {
+        "fullPercent": 2.892361111111111,
+        "arenaPercent": 3.2559399329789107
+      }
+    },
+    {
+      "frame": 93,
+      "at": 50600,
+      "file": "frames/093.jpg",
+      "difference": {
+        "fullPercent": 2.0668402777777777,
+        "arenaPercent": 2.272670009322482
+      }
+    },
+    {
+      "frame": 94,
+      "at": 51150,
+      "file": "frames/094.jpg",
+      "difference": {
+        "fullPercent": 1.8250868055555556,
+        "arenaPercent": 1.7970974325379827
+      }
+    },
+    {
+      "frame": 95,
+      "at": 51700,
+      "file": "frames/095.jpg",
+      "difference": {
+        "fullPercent": 2.1041666666666665,
+        "arenaPercent": 2.409987654009927
+      }
+    },
+    {
+      "frame": 96,
+      "at": 52251,
+      "file": "frames/096.jpg",
+      "difference": {
+        "fullPercent": 2.279513888888889,
+        "arenaPercent": 2.763360124971655
+      }
+    },
+    {
+      "frame": 97,
+      "at": 52800,
+      "file": "frames/097.jpg",
+      "difference": {
+        "fullPercent": 2.2743055555555554,
+        "arenaPercent": 2.7293456625261405
+      }
+    },
+    {
+      "frame": 98,
+      "at": 53351,
+      "file": "frames/098.jpg",
+      "difference": {
+        "fullPercent": 2.4184027777777777,
+        "arenaPercent": 2.800524074680642
+      }
+    },
+    {
+      "frame": 99,
+      "at": 53901,
+      "file": "frames/099.jpg",
+      "difference": {
+        "fullPercent": 2.313368055555556,
+        "arenaPercent": 2.391720627881781
+      }
+    },
+    {
+      "frame": 100,
+      "at": 54659,
+      "file": "frames/100.jpg",
+      "difference": {
+        "fullPercent": 2.8745659722222223,
+        "arenaPercent": 3.085237723298647
+      }
+    },
+    {
+      "frame": 101,
+      "at": 55000,
+      "file": "frames/101.jpg",
+      "difference": {
+        "fullPercent": 2.7230902777777777,
+        "arenaPercent": 2.8698127944770593
+      }
+    },
+    {
+      "frame": 102,
+      "at": 55550,
+      "file": "frames/102.jpg",
+      "difference": {
+        "fullPercent": 2.475260416666667,
+        "arenaPercent": 2.7917055103429163
+      }
+    },
+    {
+      "frame": 103,
+      "at": 56101,
+      "file": "frames/103.jpg",
+      "difference": {
+        "fullPercent": 2.311631944444444,
+        "arenaPercent": 2.5164403235153316
+      }
+    },
+    {
+      "frame": 104,
+      "at": 56651,
+      "file": "frames/104.jpg",
+      "difference": {
+        "fullPercent": 2.09375,
+        "arenaPercent": 2.2386555468769687
+      }
+    },
+    {
+      "frame": 105,
+      "at": 57200,
+      "file": "frames/105.jpg",
+      "difference": {
+        "fullPercent": 2.2842881944444446,
+        "arenaPercent": 2.6789538663105645
+      }
+    },
+    {
+      "frame": 106,
+      "at": 57750,
+      "file": "frames/106.jpg",
+      "difference": {
+        "fullPercent": 2.096788194444444,
+        "arenaPercent": 2.3262112928015317
+      }
+    },
+    {
+      "frame": 107,
+      "at": 58301,
+      "file": "frames/107.jpg",
+      "difference": {
+        "fullPercent": 2.420138888888889,
+        "arenaPercent": 2.779737458741717
+      }
+    },
+    {
+      "frame": 108,
+      "at": 58851,
+      "file": "frames/108.jpg",
+      "difference": {
+        "fullPercent": 2.4956597222222223,
+        "arenaPercent": 2.8326488447680718
+      }
+    },
+    {
+      "frame": 109,
+      "at": 59790,
+      "file": "frames/109.jpg",
+      "difference": {
+        "fullPercent": 2.6979166666666665,
+        "arenaPercent": 3.0474438761369647
+      }
+    },
+    {
+      "frame": 110,
+      "at": 59997,
+      "file": "frames/110.jpg",
+      "difference": {
+        "fullPercent": 2.4453125,
+        "arenaPercent": 2.986343823225579
+      }
+    },
+    {
+      "frame": 111,
+      "at": 60501,
+      "file": "frames/111.jpg",
+      "difference": {
+        "fullPercent": 2.419704861111111,
+        "arenaPercent": 2.665726019803976
+      }
+    },
+    {
+      "frame": 112,
+      "at": 61050,
+      "file": "frames/112.jpg",
+      "difference": {
+        "fullPercent": 2.6927083333333335,
+        "arenaPercent": 3.0461840812315755
+      }
+    },
+    {
+      "frame": 113,
+      "at": 61601,
+      "file": "frames/113.jpg",
+      "difference": {
+        "fullPercent": 2.216579861111111,
+        "arenaPercent": 2.510141348988385
+      }
+    },
+    {
+      "frame": 114,
+      "at": 62150,
+      "file": "frames/114.jpg",
+      "difference": {
+        "fullPercent": 2.2803819444444446,
+        "arenaPercent": 2.749502381012371
+      }
+    },
+    {
+      "frame": 115,
+      "at": 62699,
+      "file": "frames/115.jpg",
+      "difference": {
+        "fullPercent": 1.9717881944444446,
+        "arenaPercent": 2.461639245130893
+      }
+    },
+    {
+      "frame": 116,
+      "at": 63250,
+      "file": "frames/116.jpg",
+      "difference": {
+        "fullPercent": 2.6171875,
+        "arenaPercent": 3.1343697246088333
+      }
+    },
+    {
+      "frame": 117,
+      "at": 63801,
+      "file": "frames/117.jpg",
+      "difference": {
+        "fullPercent": 2.607638888888889,
+        "arenaPercent": 2.815641613545315
+      }
+    },
+    {
+      "frame": 118,
+      "at": 64511,
+      "file": "frames/118.jpg",
+      "difference": {
+        "fullPercent": 2.59765625,
+        "arenaPercent": 2.97311597671899
+      }
+    },
+    {
+      "frame": 119,
+      "at": 64900,
+      "file": "frames/119.jpg",
+      "difference": {
+        "fullPercent": 2.4926215277777777,
+        "arenaPercent": 2.8792612562674798
+      }
+    },
+    {
+      "frame": 120,
+      "at": 65451,
+      "file": "frames/120.jpg",
+      "difference": {
+        "fullPercent": 2.4856770833333335,
+        "arenaPercent": 2.9328025397465294
+      }
+    },
+    {
+      "frame": 121,
+      "at": 66001,
+      "file": "frames/121.jpg",
+      "difference": {
+        "fullPercent": 2.302951388888889,
+        "arenaPercent": 2.66761571216206
+      }
+    },
+    {
+      "frame": 122,
+      "at": 66551,
+      "file": "frames/122.jpg",
+      "difference": {
+        "fullPercent": 2.275607638888889,
+        "arenaPercent": 2.6096651465141476
+      }
+    },
+    {
+      "frame": 123,
+      "at": 67101,
+      "file": "frames/123.jpg",
+      "difference": {
+        "fullPercent": 1.9874131944444446,
+        "arenaPercent": 2.1517296984050995
+      }
+    },
+    {
+      "frame": 124,
+      "at": 67651,
+      "file": "frames/124.jpg",
+      "difference": {
+        "fullPercent": 2.39453125,
+        "arenaPercent": 2.68777243064829
+      }
+    },
+    {
+      "frame": 125,
+      "at": 68200,
+      "file": "frames/125.jpg",
+      "difference": {
+        "fullPercent": 2.2842881944444446,
+        "arenaPercent": 2.588878530575222
+      }
+    },
+    {
+      "frame": 126,
+      "at": 68750,
+      "file": "frames/126.jpg",
+      "difference": {
+        "fullPercent": 2.4131944444444446,
+        "arenaPercent": 2.7696590994986017
+      }
+    },
+    {
+      "frame": 127,
+      "at": 69764,
+      "file": "frames/127.jpg",
+      "difference": {
+        "fullPercent": 2.6770833333333335,
+        "arenaPercent": 3.306331729194487
+      }
+    },
+    {
+      "frame": 128,
+      "at": 70045,
+      "file": "frames/128.jpg",
+      "difference": {
+        "fullPercent": 2.4140625,
+        "arenaPercent": 3.117362493386077
+      }
+    },
+    {
+      "frame": 129,
+      "at": 70400,
+      "file": "frames/129.jpg",
+      "difference": {
+        "fullPercent": 2.27734375,
+        "arenaPercent": 2.4345536546650206
+      }
+    },
+    {
+      "frame": 130,
+      "at": 70951,
+      "file": "frames/130.jpg",
+      "difference": {
+        "fullPercent": 2.7421875,
+        "arenaPercent": 3.1318501347980545
+      }
+    },
+    {
+      "frame": 131,
+      "at": 71501,
+      "file": "frames/131.jpg",
+      "difference": {
+        "fullPercent": 2.2860243055555554,
+        "arenaPercent": 2.758320945350097
+      }
+    },
+    {
+      "frame": 132,
+      "at": 72051,
+      "file": "frames/132.jpg",
+      "difference": {
+        "fullPercent": 2.603732638888889,
+        "arenaPercent": 3.2981430623094563
+      }
+    },
+    {
+      "frame": 133,
+      "at": 72601,
+      "file": "frames/133.jpg",
+      "difference": {
+        "fullPercent": 2.48828125,
+        "arenaPercent": 2.8414674091057974
+      }
+    },
+    {
+      "frame": 134,
+      "at": 73151,
+      "file": "frames/134.jpg",
+      "difference": {
+        "fullPercent": 2.467013888888889,
+        "arenaPercent": 2.7488724835596763
+      }
+    },
+    {
+      "frame": 135,
+      "at": 73852,
+      "file": "frames/135.jpg",
+      "difference": {
+        "fullPercent": 2.7821180555555554,
+        "arenaPercent": 3.4512081433142683
+      }
+    },
+    {
+      "frame": 136,
+      "at": 74250,
+      "file": "frames/136.jpg",
+      "difference": {
+        "fullPercent": 2.6119791666666665,
+        "arenaPercent": 3.346015268714253
+      }
+    },
+    {
+      "frame": 137,
+      "at": 74805,
+      "file": "frames/137.jpg",
+      "difference": {
+        "fullPercent": 1.974392361111111,
+        "arenaPercent": 2.35140719090932
+      }
+    },
+    {
+      "frame": 138,
+      "at": 75350,
+      "file": "frames/138.jpg",
+      "difference": {
+        "fullPercent": 2.7808159722222223,
+        "arenaPercent": 2.7060394567764368
+      }
+    },
+    {
+      "frame": 139,
+      "at": 75901,
+      "file": "frames/139.jpg",
+      "difference": {
+        "fullPercent": 2.3893229166666665,
+        "arenaPercent": 2.7935952027010003
+      }
+    },
+    {
+      "frame": 140,
+      "at": 76450,
+      "file": "frames/140.jpg",
+      "difference": {
+        "fullPercent": 2.5125868055555554,
+        "arenaPercent": 2.907606641638741
+      }
+    },
+    {
+      "frame": 141,
+      "at": 77000,
+      "file": "frames/141.jpg",
+      "difference": {
+        "fullPercent": 2.3589409722222223,
+        "arenaPercent": 2.720527098188415
+      }
+    },
+    {
+      "frame": 142,
+      "at": 77550,
+      "file": "frames/142.jpg",
+      "difference": {
+        "fullPercent": 2.083333333333333,
+        "arenaPercent": 2.367784524679382
+      }
+    },
+    {
+      "frame": 143,
+      "at": 78101,
+      "file": "frames/143.jpg",
+      "difference": {
+        "fullPercent": 2.2408854166666665,
+        "arenaPercent": 2.574390889163244
+      }
+    },
+    {
+      "frame": 144,
+      "at": 79161,
+      "file": "frames/144.jpg",
+      "difference": {
+        "fullPercent": 2.958767361111111,
+        "arenaPercent": 3.6867897906220866
+      }
+    },
+    {
+      "frame": 145,
+      "at": 79386,
+      "file": "frames/145.jpg",
+      "difference": {
+        "fullPercent": 2.525607638888889,
+        "arenaPercent": 3.212477008742977
+      }
+    },
+    {
+      "frame": 146,
+      "at": 79774,
+      "file": "frames/146.jpg",
+      "difference": {
+        "fullPercent": 2.4917534722222223,
+        "arenaPercent": 2.705409559323742
+      }
+    },
+    {
+      "frame": 147,
+      "at": 80301,
+      "file": "frames/147.jpg",
+      "difference": {
+        "fullPercent": 2.6966145833333335,
+        "arenaPercent": 3.1923202902567462
+      }
+    },
+    {
+      "frame": 148,
+      "at": 80850,
+      "file": "frames/148.jpg",
+      "difference": {
+        "fullPercent": 1.6193576388888888,
+        "arenaPercent": 2.1328327748242586
+      }
+    },
+    {
+      "frame": 149,
+      "at": 81400,
+      "file": "frames/149.jpg",
+      "difference": {
+        "fullPercent": 2.482204861111111,
+        "arenaPercent": 3.345385371261558
+      }
+    },
+    {
+      "frame": 150,
+      "at": 81951,
+      "file": "frames/150.jpg",
+      "difference": {
+        "fullPercent": 2.76171875,
+        "arenaPercent": 3.4178235783214497
+      }
+    },
+    {
+      "frame": 151,
+      "at": 82501,
+      "file": "frames/151.jpg",
+      "difference": {
+        "fullPercent": 2.487413194444444,
+        "arenaPercent": 2.78414674091058
+      }
+    },
+    {
+      "frame": 152,
+      "at": 83342,
+      "file": "frames/152.jpg",
+      "difference": {
+        "fullPercent": 2.497829861111111,
+        "arenaPercent": 2.9850840283201894
+      }
+    },
+    {
+      "frame": 153,
+      "at": 83599,
+      "file": "frames/153.jpg",
+      "difference": {
+        "fullPercent": 2.501736111111111,
+        "arenaPercent": 3.1217717755549397
+      }
+    },
+    {
+      "frame": 154,
+      "at": 84151,
+      "file": "frames/154.jpg",
+      "difference": {
+        "fullPercent": 2.4262152777777777,
+        "arenaPercent": 2.675804379047091
+      }
+    },
+    {
+      "frame": 155,
+      "at": 84700,
+      "file": "frames/155.jpg",
+      "difference": {
+        "fullPercent": 2.2960069444444446,
+        "arenaPercent": 2.560533145203961
+      }
+    },
+    {
+      "frame": 156,
+      "at": 85251,
+      "file": "frames/156.jpg",
+      "difference": {
+        "fullPercent": 2.220920138888889,
+        "arenaPercent": 2.4855753483332914
+      }
+    },
+    {
+      "frame": 157,
+      "at": 85800,
+      "file": "frames/157.jpg",
+      "difference": {
+        "fullPercent": 2.1827256944444446,
+        "arenaPercent": 2.4893547330494594
+      }
+    },
+    {
+      "frame": 158,
+      "at": 86351,
+      "file": "frames/158.jpg",
+      "difference": {
+        "fullPercent": 1.64453125,
+        "arenaPercent": 1.9841769759883092
+      }
+    },
+    {
+      "frame": 159,
+      "at": 86901,
+      "file": "frames/159.jpg",
+      "difference": {
+        "fullPercent": 2.486545138888889,
+        "arenaPercent": 3.007130439164504
+      }
+    },
+    {
+      "frame": 160,
+      "at": 87450,
+      "file": "frames/160.jpg",
+      "difference": {
+        "fullPercent": 2.3033854166666665,
+        "arenaPercent": 2.4471516037189147
+      }
+    },
+    {
+      "frame": 161,
+      "at": 88250,
+      "file": "frames/161.jpg",
+      "difference": {
+        "fullPercent": 2.355902777777778,
+        "arenaPercent": 2.406208269293759
+      }
+    },
+    {
+      "frame": 162,
+      "at": 88550,
+      "file": "frames/162.jpg",
+      "difference": {
+        "fullPercent": 2.161892361111111,
+        "arenaPercent": 2.3520370883620147
+      }
+    },
+    {
+      "frame": 163,
+      "at": 89101,
+      "file": "frames/163.jpg",
+      "difference": {
+        "fullPercent": 2.1610243055555554,
+        "arenaPercent": 2.50951145153569
+      }
+    },
+    {
+      "frame": 164,
+      "at": 89651,
+      "file": "frames/164.jpg",
+      "difference": {
+        "fullPercent": 2.436631944444444,
+        "arenaPercent": 2.8055632543021995
+      }
+    },
+    {
+      "frame": 165,
+      "at": 90200,
+      "file": "frames/165.jpg",
+      "difference": {
+        "fullPercent": 2.193576388888889,
+        "arenaPercent": 2.528408375116531
+      }
+    },
+    {
+      "frame": 166,
+      "at": 90750,
+      "file": "frames/166.jpg",
+      "difference": {
+        "fullPercent": 2.3172743055555554,
+        "arenaPercent": 2.7576910478974024
+      }
+    },
+    {
+      "frame": 167,
+      "at": 91301,
+      "file": "frames/167.jpg",
+      "difference": {
+        "fullPercent": 2.460503472222222,
+        "arenaPercent": 2.866033409760891
+      }
+    },
+    {
+      "frame": 168,
+      "at": 91851,
+      "file": "frames/168.jpg",
+      "difference": {
+        "fullPercent": 2.309895833333333,
+        "arenaPercent": 2.6537579682027768
+      }
+    },
+    {
+      "frame": 169,
+      "at": 92400,
+      "file": "frames/169.jpg",
+      "difference": {
+        "fullPercent": 2.392795138888889,
+        "arenaPercent": 2.7507621759177607
+      }
+    },
+    {
+      "frame": 170,
+      "at": 93218,
+      "file": "frames/170.jpg",
+      "difference": {
+        "fullPercent": 2.899305555555556,
+        "arenaPercent": 3.502229836982539
+      }
+    },
+    {
+      "frame": 171,
+      "at": 93499,
+      "file": "frames/171.jpg",
+      "difference": {
+        "fullPercent": 2.5651041666666665,
+        "arenaPercent": 3.233893522134596
+      }
+    },
+    {
+      "frame": 172,
+      "at": 94051,
+      "file": "frames/172.jpg",
+      "difference": {
+        "fullPercent": 2.3511284722222223,
+        "arenaPercent": 2.5643125299201293
+      }
+    },
+    {
+      "frame": 173,
+      "at": 94601,
+      "file": "frames/173.jpg",
+      "difference": {
+        "fullPercent": 2.6449652777777777,
+        "arenaPercent": 2.988863413036358
+      }
+    },
+    {
+      "frame": 174,
+      "at": 95151,
+      "file": "frames/174.jpg",
+      "difference": {
+        "fullPercent": 2.458767361111111,
+        "arenaPercent": 2.870442691929754
+      }
+    },
+    {
+      "frame": 175,
+      "at": 95700,
+      "file": "frames/175.jpg",
+      "difference": {
+        "fullPercent": 2.357204861111111,
+        "arenaPercent": 2.8792612562674798
+      }
+    },
+    {
+      "frame": 176,
+      "at": 96251,
+      "file": "frames/176.jpg",
+      "difference": {
+        "fullPercent": 1.8524305555555554,
+        "arenaPercent": 2.309204061578775
+      }
+    },
+    {
+      "frame": 177,
+      "at": 96800,
+      "file": "frames/177.jpg",
+      "difference": {
+        "fullPercent": 2.7157118055555554,
+        "arenaPercent": 3.294363677593288
+      }
+    },
+    {
+      "frame": 178,
+      "at": 97351,
+      "file": "frames/178.jpg",
+      "difference": {
+        "fullPercent": 2.4696180555555554,
+        "arenaPercent": 2.796744689964474
+      }
+    },
+    {
+      "frame": 179,
+      "at": 98105,
+      "file": "frames/179.jpg",
+      "difference": {
+        "fullPercent": 2.2239583333333335,
+        "arenaPercent": 2.445891808813525
+      }
+    },
+    {
+      "frame": 180,
+      "at": 98451,
+      "file": "frames/180.jpg",
+      "difference": {
+        "fullPercent": 2.2964409722222223,
+        "arenaPercent": 2.8055632543021995
+      }
+    },
+    {
+      "frame": 181,
+      "at": 99000,
+      "file": "frames/181.jpg",
+      "difference": {
+        "fullPercent": 2.518663194444444,
+        "arenaPercent": 2.9516994633273703
+      }
+    },
+    {
+      "frame": 182,
+      "at": 99550,
+      "file": "frames/182.jpg",
+      "difference": {
+        "fullPercent": 2.143663194444444,
+        "arenaPercent": 2.455340270603946
+      }
+    },
+    {
+      "frame": 183,
+      "at": 100100,
+      "file": "frames/183.jpg",
+      "difference": {
+        "fullPercent": 2.1883680555555554,
+        "arenaPercent": 2.4685681171105345
+      }
+    },
+    {
+      "frame": 184,
+      "at": 100651,
+      "file": "frames/184.jpg",
+      "difference": {
+        "fullPercent": 2.2178819444444446,
+        "arenaPercent": 2.3589659603416564
+      }
+    },
+    {
+      "frame": 185,
+      "at": 101201,
+      "file": "frames/185.jpg",
+      "difference": {
+        "fullPercent": 2.279513888888889,
+        "arenaPercent": 2.5006928871979643
+      }
+    },
+    {
+      "frame": 186,
+      "at": 101750,
+      "file": "frames/186.jpg",
+      "difference": {
+        "fullPercent": 2.231770833333333,
+        "arenaPercent": 2.4509309884350827
+      }
+    },
+    {
+      "frame": 187,
+      "at": 102301,
+      "file": "frames/187.jpg",
+      "difference": {
+        "fullPercent": 2.313368055555556,
+        "arenaPercent": 2.592028017838696
+      }
+    },
+    {
+      "frame": 188,
+      "at": 103020,
+      "file": "frames/188.jpg",
+      "difference": {
+        "fullPercent": 2.4518229166666665,
+        "arenaPercent": 3.024137670387261
+      }
+    },
+    {
+      "frame": 189,
+      "at": 103400,
+      "file": "frames/189.jpg",
+      "difference": {
+        "fullPercent": 2.436631944444444,
+        "arenaPercent": 3.114842903575298
+      }
+    },
+    {
+      "frame": 190,
+      "at": 103951,
+      "file": "frames/190.jpg",
+      "difference": {
+        "fullPercent": 2.555989583333333,
+        "arenaPercent": 2.765249817329739
+      }
+    },
+    {
+      "frame": 191,
+      "at": 104500,
+      "file": "frames/191.jpg",
+      "difference": {
+        "fullPercent": 2.7217881944444446,
+        "arenaPercent": 3.0209881831237873
+      }
+    },
+    {
+      "frame": 192,
+      "at": 105051,
+      "file": "frames/192.jpg",
+      "difference": {
+        "fullPercent": 2.48046875,
+        "arenaPercent": 2.5321877598326994
+      }
+    },
+    {
+      "frame": 193,
+      "at": 105600,
+      "file": "frames/193.jpg",
+      "difference": {
+        "fullPercent": 2.4348958333333335,
+        "arenaPercent": 2.7135982262087732
+      }
+    },
+    {
+      "frame": 194,
+      "at": 106151,
+      "file": "frames/194.jpg",
+      "difference": {
+        "fullPercent": 2.2842881944444446,
+        "arenaPercent": 2.6947013026279323
+      }
+    },
+    {
+      "frame": 195,
+      "at": 106701,
+      "file": "frames/195.jpg",
+      "difference": {
+        "fullPercent": 2.266493055555556,
+        "arenaPercent": 2.5227392980422785
+      }
+    },
+    {
+      "frame": 196,
+      "at": 107251,
+      "file": "frames/196.jpg",
+      "difference": {
+        "fullPercent": 2.233940972222222,
+        "arenaPercent": 2.2739298042278717
+      }
+    },
+    {
+      "frame": 197,
+      "at": 108095,
+      "file": "frames/197.jpg",
+      "difference": {
+        "fullPercent": 3.0247395833333335,
+        "arenaPercent": 3.443019476429237
+      }
+    },
+    {
+      "frame": 198,
+      "at": 108350,
+      "file": "frames/198.jpg",
+      "difference": {
+        "fullPercent": 2.4769965277777777,
+        "arenaPercent": 2.7558013555393184
+      }
+    },
+    {
+      "frame": 199,
+      "at": 108901,
+      "file": "frames/199.jpg",
+      "difference": {
+        "fullPercent": 2.3368055555555554,
+        "arenaPercent": 2.412507243820706
+      }
+    },
+    {
+      "frame": 200,
+      "at": 109451,
+      "file": "frames/200.jpg",
+      "difference": {
+        "fullPercent": 2.3411458333333335,
+        "arenaPercent": 2.5271485802111417
+      }
+    },
+    {
+      "frame": 201,
+      "at": 110001,
+      "file": "frames/201.jpg",
+      "difference": {
+        "fullPercent": 2.1067708333333335,
+        "arenaPercent": 2.1580286729320464
+      }
+    },
+    {
+      "frame": 202,
+      "at": 110550,
+      "file": "frames/202.jpg",
+      "difference": {
+        "fullPercent": 2.314670138888889,
+        "arenaPercent": 2.7104487389452996
+      }
+    },
+    {
+      "frame": 203,
+      "at": 111100,
+      "file": "frames/203.jpg",
+      "difference": {
+        "fullPercent": 2.3862847222222223,
+        "arenaPercent": 2.709818841492605
+      }
+    },
+    {
+      "frame": 204,
+      "at": 111651,
+      "file": "frames/204.jpg",
+      "difference": {
+        "fullPercent": 2.423177083333333,
+        "arenaPercent": 2.7406838166746454
+      }
+    },
+    {
+      "frame": 205,
+      "at": 112201,
+      "file": "frames/205.jpg",
+      "difference": {
+        "fullPercent": 2.358506944444444,
+        "arenaPercent": 2.623522890473431
+      }
+    },
+    {
+      "frame": 206,
+      "at": 112965,
+      "file": "frames/206.jpg",
+      "difference": {
+        "fullPercent": 2.9375,
+        "arenaPercent": 3.3989266547406083
+      }
+    },
+    {
+      "frame": 207,
+      "at": 113300,
+      "file": "frames/207.jpg",
+      "difference": {
+        "fullPercent": 2.635416666666667,
+        "arenaPercent": 3.2823956259920886
+      }
+    },
+    {
+      "frame": 208,
+      "at": 113850,
+      "file": "frames/208.jpg",
+      "difference": {
+        "fullPercent": 2.4513888888888893,
+        "arenaPercent": 2.720527098188415
+      }
+    },
+    {
+      "frame": 209,
+      "at": 114400,
+      "file": "frames/209.jpg",
+      "difference": {
+        "fullPercent": 2.1197916666666665,
+        "arenaPercent": 2.38353196099675
+      }
+    },
+    {
+      "frame": 210,
+      "at": 114951,
+      "file": "frames/210.jpg",
+      "difference": {
+        "fullPercent": 2.143663194444444,
+        "arenaPercent": 2.335029857139258
+      }
+    },
+    {
+      "frame": 211,
+      "at": 115501,
+      "file": "frames/211.jpg",
+      "difference": {
+        "fullPercent": 2.400173611111111,
+        "arenaPercent": 2.9391015142734767
+      }
+    },
+    {
+      "frame": 212,
+      "at": 116050,
+      "file": "frames/212.jpg",
+      "difference": {
+        "fullPercent": 1.9075520833333335,
+        "arenaPercent": 2.3545566781727936
+      }
+    },
+    {
+      "frame": 213,
+      "at": 116600,
+      "file": "frames/213.jpg",
+      "difference": {
+        "fullPercent": 2.408420138888889,
+        "arenaPercent": 2.6430497115069667
+      }
+    },
+    {
+      "frame": 214,
+      "at": 117151,
+      "file": "frames/214.jpg",
+      "difference": {
+        "fullPercent": 2.3081597222222223,
+        "arenaPercent": 2.4251051928746
+      }
+    },
+    {
+      "frame": 215,
+      "at": 117921,
+      "file": "frames/215.jpg",
+      "difference": {
+        "fullPercent": 2.635416666666667,
+        "arenaPercent": 2.809342639018368
+      }
+    },
+    {
+      "frame": 216,
+      "at": 118250,
+      "file": "frames/216.jpg",
+      "difference": {
+        "fullPercent": 2.2899305555555554,
+        "arenaPercent": 2.408097961651843
+      }
+    }
+  ]
+}

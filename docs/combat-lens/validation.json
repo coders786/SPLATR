@@ -1,0 +1,67 @@
+{
+  "tests": {
+    "full": "1..1498\n# tests 1498\n# suites 0\n# pass 1498\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 440364.394978\n",
+    "focused": "1..22\n# tests 22\n# suites 0\n# pass 22\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 1352.757657\n",
+    "build": "computing gzip size...\ndist/index.html  1,358.16 kB │ gzip: 489.03 kB\n✓ built in 4.93s\nVerified dist/index.html: one file, vector art, embedded fonts/scripts, 1326.3 KiB.\n",
+    "diffWhitespace": "PASS"
+  },
+  "gpu": {
+    "method": "Controlled createRun/createRenderer. Real focus/dash APIs and admitted primary contacts; no fabricated chain scalar. Software WebGL exercises the real shader, screenshots include its output. Setup and contacts are test fixtures, not ordinary progression or device FPS certification.",
+    "backingScale": 1,
+    "cases": 4,
+    "stageChecks": 20,
+    "allWebGLActive": true,
+    "allOffFallbacks": true,
+    "allReadOnly": true,
+    "allCleanup": true,
+    "allReducedMotionSharp": true,
+    "errors": []
+  },
+  "ordinary": {
+    "method": "Normal main.js Start Run, default free equipment, pointer clicks and Shift focus. Debug state/trace read only. Tutorial flag and PostFX On preference seeded. Captures the actual postfx canvas, not raw source; screenshot includes DOM HUD. Automated software-GPU browser test, not mobile FPS certification.",
+    "rows": [
+      {
+        "width": 960,
+        "height": 540,
+        "phase": "playing",
+        "shots": 7,
+        "kills": 3,
+        "errors": [],
+        "focusSamples": 3,
+        "webGLVisibleSamples": 8,
+        "pageErrors": []
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "phase": "playing",
+        "shots": 6,
+        "kills": 2,
+        "errors": [],
+        "focusSamples": 3,
+        "webGLVisibleSamples": 8,
+        "pageErrors": []
+      }
+    ]
+  },
+  "limits": {
+    "chromaticMaxBackingPixels": 1.8,
+    "blurControlMax": 0.72,
+    "baselineContrast": 1.085,
+    "sourceReads": 3,
+    "protectedActors": 8
+  },
+  "reviewed": [
+    "960-motion-idle.jpg",
+    "960-motion-focus.jpg",
+    "960-motion-streak.jpg",
+    "play/390-focus-4.jpg"
+  ],
+  "limitations": [
+    "Software GPU validation is not hardware FPS certification",
+    "Eight actor masks plus danger-color heuristics do not guarantee every possible warning pixel is untouched",
+    "DOM HUD is outside the pass; canvas minimap remains scene-graded",
+    "Controlled native focus/chain fixtures are not ordinary progression",
+    "Initial fixture harness ran the main shell and fixture renderer together; isolated main entry for the final full-resolution GPU matrix. Ordinary main.js checks remain separate."
+  ]
+}

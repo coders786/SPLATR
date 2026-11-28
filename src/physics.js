@@ -1,4 +1,5 @@
 import { MOVEMENT } from './movement-model.js';
+import {sideRebound} from './rebound-response.js';
 import Matter from 'matter-js';
 import { PLAYER_SIZE } from './levels.js';
 
@@ -588,44 +589,23 @@ function railBounce(world) {
   // which is also why a cube grazing a wall could re-collide on the next
   // substep and buzz along the boundary.
   const wallIgnore = world.wallIgnore || (world.wallIgnore = { left: 0, right: 0 });
-  if (p.x < x0) {
-    clampX = x0;
-    if (v.x < 0) {
-      if (!(wallIgnore.left > world.clock)) {
-        if (-v.x < ARRIVE) v.x = 0;
-        else {
-          v.x = -v.x * (SHATTERED ? SHATTER_RESTITUTION : WALL_KEEP);
-          // The hop is a LIFT, so it only ever adds upward speed. A cube already
-          // climbing keeps its own -- adding a fixed number here would make a
-          // fast climb even faster and break the ascent cap's assumptions.
-          v.y = Math.min(v.y, -WALL_HOP);
-          if (SHATTERED) { capPinball(v, world); world.bumped = true; }
-          wallIgnore.left = world.clock + WALL_IGNORE;
-          // Tells run.js that this wall already applied its own fixed
-          // reduction, so the generic cushion damper must not apply a second.
-          world.wallBounced = 2;
-          side = 'left';
-          nx = 1;
-        }
-      }
-    }
-  } else if (p.x > x1) {
-    clampX = x1;
-    if (v.x > 0) {
-      if (!(wallIgnore.right > world.clock)) {
-        if (v.x < ARRIVE) v.x = 0;
-        else {
-          v.x = -v.x * (SHATTERED ? SHATTER_RESTITUTION : WALL_KEEP);
-          v.y = Math.min(v.y, -WALL_HOP);
-          if (SHATTERED) { capPinball(v, world); world.bumped = true; }
-          wallIgnore.right = world.clock + WALL_IGNORE;
-          world.wallBounced = 2;
-          side = 'right';
-          nx = -1;
-        }
-      }
-    }
-  }
+  // Ignore is a REWARD debounce, not permission to trap an outward launch
+  // against the clamp. Even a second real arrival reflects physically; only
+  // the first may publish/pay a contact inside this short window.
+  const sideArrival=(name,inward)=>{
+    const closing=-v.x*inward;
+    if(closing<=0)return;
+    if(closing<ARRIVE){v.x=0;return;}
+    const out=sideRebound(v,inward,{shattered:SHATTERED,restitution:SHATTER_RESTITUTION});
+    v.x=out.x;v.y=out.y;world.wallBounced=2;
+    if(v.y<0)world.banked=true;
+    if(SHATTERED){capPinball(v,world);world.bumped=true;}
+    if(wallIgnore[name]>world.clock)return;
+    wallIgnore[name]=world.clock+WALL_IGNORE;
+    side=name;nx=inward;
+  };
+  if(p.x<x0){clampX=x0;sideArrival('left',1);}
+  else if(p.x>x1){clampX=x1;sideArrival('right',-1);}
   if (p.y < y0) {
     clampY = y0;
     world.railRest = { side: 'ceiling' };
@@ -785,11 +765,12 @@ function railBounce(world) {
   Body.setPosition(world.player, { x: p.x, y: p.y });
   Body.setVelocity(world.player, { x: v.x, y: v.y });
   // The rail is a bank, not a wall: publish the contact so the run can pay it.
+  const normalLength=Math.hypot(nx,ny)||1;
   world.contact = {
     x: p.x,
     y: p.y,
-    nx,
-    ny,
+    nx:nx/normalLength,
+    ny:ny/normalLength,
     depth: 0,
     surface: 'rail',
     side,
@@ -799,7 +780,7 @@ function railBounce(world) {
   world.struck = world.contact;
 }
 
-export function stepPhysics(world, beforeStep, pace=1) {
+export function stepPhysics(world, beforeStep, pace=1, onTravel=null) {
   const a = world.arena;
   // ── A CONTACT IS AN EVENT; `world.contact` IS THE MEMORY ────────────────
   //
@@ -831,7 +812,8 @@ export function stepPhysics(world, beforeStep, pace=1) {
   advanceTiming(world,pace);
   const scale = world.engine.timing.timeScale;
   beforeStep?.(scale); // enemy timing and gravity wells share this exact step
-  const fastest = snapshot(world.player, world.playerCeiling || MAX_SPEED);
+  const travelCeiling=()=>{const base=world.playerCeiling||MAX_SPEED,extra=Math.max(0,world.playerBurstAllowance||0);return extra>0?Math.min(MAX_PINBALL_SPEED,base+extra):base;};
+  const fastest = snapshot(world.player, travelCeiling());
   const steps = Math.max(1, Math.ceil(((fastest + 0.5) * scale) / MAX_TRAVEL));
   world.substeps = steps;
   // The speed the cube ARRIVES with. Matter resolves an impact inside
@@ -846,10 +828,16 @@ export function stepPhysics(world, beforeStep, pace=1) {
     if(world.playerGravityMultiplier != null && world.playerGravityMultiplier !== 1) {
       p.force.y -= p.mass * world.engine.gravity.y * world.engine.gravity.scale * (1-world.playerGravityMultiplier);
     }
+    const priorStrike=onTravel?world.struck:null;
     Engine.update(world.engine, STEP_MS / steps);
     catchCrossing(world, x, y, incoming);
     railBounce(world);
-    capVelocity(p, world.playerCeiling || MAX_SPEED);
+    const beforeCap=onTravel?p.speed:0;
+    capVelocity(p, travelCeiling());
+    // Opt-in observation only. SAT may stop a thin-wall impact before the
+    // continuous guard emits struck: that still transfers velocity ownership.
+    const staticContact=onTravel&&world.engine.pairs.list.some(pair=>pair.isActive&&((pair.bodyA===p&&pair.bodyB.isStatic)||(pair.bodyB===p&&pair.bodyA.isStatic)));
+    if(onTravel)onTravel({from:{x,y},to:{x:p.position.x,y:p.position.y},start:world.clock+scale*i/steps,end:world.clock+scale*(i+1)/steps,discontinuity:world.struck!==priorStrike||!!staticContact,velocityScale:beforeCap>0?Math.min(1,p.speed/beforeCap):1});
   }
   // ── RE-ASSERT THE FLOOR'S KICK ─────────────────────────────────────────
   //

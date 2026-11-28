@@ -3007,3 +3007,14 @@ body:has(#panel[open]) #hud {
 #tail-ability{display:block;color:#c8c4aa;font:700 8px/1.35 monospace;letter-spacing:.02em;margin-top:3px;white-space:nowrap}
 #tail-ability[hidden]{display:none}
 @media(max-width:420px){#tail-ability{font-size:7px}}
+
+/* The first-time handoff is playable, not a movie pretending to be a tutorial. */
+.opening-guide{position:absolute;z-index:12;left:50%;top:7%;transform:translateX(-50%);width:min(610px,calc(100% - 36px));text-align:center;pointer-events:none;color:#f4efdb;text-shadow:0 2px 8px #000}
+.opening-guide small{display:block;color:#edca86;font:700 10px Mono,monospace;letter-spacing:.2em;margin-bottom:10px}
+.opening-guide h2{font:800 clamp(24px,4vw,42px)/1.05 Riot,sans-serif;margin:0;text-wrap:balance}
+.opening-guide p{display:inline-block;font:13px/1.4 Body,sans-serif;background:#101d29ed;border:1px solid #849779;padding:10px 18px;border-radius:4px;color:#e2f3c8;margin-top:13px}
+#game[data-opening-guide=true] :is(#hud,.wave-hud,#hybrid-title,#story-chip,.boss-charge){visibility:hidden!important}
+#game[data-opening-guide=true] #arena{cursor:crosshair}
+@media(max-width:600px){.opening-guide{top:8%}.opening-guide small{font-size:8px;letter-spacing:.13em}.opening-guide p{font-size:12px;max-width:280px;padding:9px 12px}}
+@media(max-height:470px){.opening-guide{top:4%}.opening-guide small{margin-bottom:4px}.opening-guide h2{font-size:24px}.opening-guide p{margin-top:6px;padding:5px 12px;font-size:11px}}
+#game[data-opening-guide=true] #fracture-hud{visibility:hidden!important}

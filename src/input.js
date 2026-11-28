@@ -1,13 +1,13 @@
 import {dragArrowVisual,pointerVisual} from './art/splatr-art-engine.js';
-import {readGesture} from './gesture.js';
+import {MOUSE_AIM,mousePull,mousePoint} from './mouse-control.js';
 import { MAX_SPEED } from './physics.js';
 import {beginPull,movePull,resolvePull} from './pull-control.js';
 import { clamp } from './levels.js';
 import { magnetize } from './aim.js';
 
-/** Exactly one captured primary pointer. A hold remembers what was under the
- * finger at press, so camera motion doesn't steal a target before release.
- * Drag direction follows the pointer in display pixels, independent of zoom. */
+/** One captured primary pointer. Mouse: inverted spring, or explicit Shift
+ * direct shot selected on press. Touch retains its tap/pull model. Drawing,
+ * release and the ballistic preview all use the same committed vector. */
 export function createInput(canvas, { get, active, point, assist, engage, commit, lock, onPointerMove = null }) {
   const listeners=[];let disposed=false;
   const listen=(target,type,handler,options)=>{target.addEventListener(type,handler,options);listeners.push(()=>target.removeEventListener?.(type,handler,options));};
@@ -15,8 +15,24 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
   // A deliberately marked escape must not magnetise back toward the Rift.
   const aimAssist=()=>assist()&&!(get()?.state?.visualTutorial?.stage===2&&!get()?.state?.visualTutorial?.dodged&&get()?.state?.visualTutorial?.guide?.kind==='dodge');
   const overlay=canvas.ownerDocument?.createElementNS('http://www.w3.org/2000/svg','svg');
-  if(overlay){overlay.setAttribute('aria-hidden','true');overlay.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:100;display:none;overflow:visible';overlay.innerHTML='<circle fill="none" stroke-width="1.5"/><g class="pointer-origin"><path fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g><g class="drag-design"><path class="drag-tether" fill="none" stroke="#aaa0b5" stroke-width="1.2" stroke-dasharray="3 5"/><path class="drag-shaft" stroke="#15121e" stroke-width="1.2"/><path class="drag-head" stroke="#15121e" stroke-width="1.2"/><path class="drag-accent" fill="none" stroke-width="1.2"/></g>';canvas.parentElement?.append(overlay);}
+  if(overlay){overlay.setAttribute('aria-hidden','true');overlay.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:100;display:none;overflow:visible';overlay.innerHTML='<circle fill="none" stroke-width="1.5"/><text class="mouse-power" text-anchor="middle" fill="#e6ecc6" stroke="#151a25" stroke-width="3" paint-order="stroke" font-family="monospace" font-size="10"/><g class="pointer-origin"><path fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g><g class="drag-design"><path class="drag-tether" fill="none" stroke="#aaa0b5" stroke-width="1.2" stroke-dasharray="3 5"/><path class="drag-shaft" stroke="#15121e" stroke-width="1.2"/><path class="drag-head" stroke="#15121e" stroke-width="1.2"/><path class="drag-accent" fill="none" stroke-width="1.2"/></g>';canvas.parentElement?.append(overlay);}
   function showGesture(){if(!overlay||!pointer)return;
+   if(pointer.type!=='touch'){
+    const aim=pointerAim(),ring=overlay.querySelector('circle'),origin=overlay.querySelector('.pointer-origin'),group=overlay.querySelector('.drag-design');
+    const direct=pointer.mode==='direct',x=direct?pointer.toX:pointer.x,y=direct?pointer.toY:pointer.y,power=aim?.power||0;
+    const hint=overlay.querySelector('.mouse-power');hint.style.display='';hint.setAttribute('x',x);hint.setAttribute('y',y+30);hint.textContent=direct?'SHIFT · RELEASE':power?`${Math.round(power*100)}% · RELEASE`:'PULL BACK';
+    overlay.style.display='block';overlay.dataset.control='mouse';overlay.dataset.mode=pointer.mode;overlay.dataset.power=String(power);
+    ring.setAttribute('cx',x);ring.setAttribute('cy',y);ring.setAttribute('r',direct?10:MOUSE_AIM.deadZone+power*6);ring.setAttribute('stroke',power?'#d7e8ac':'#a99abb');
+    const mark=pointerVisual({equipment:get()?.state?.equipment||{},power});origin.setAttribute('transform',`translate(${x} ${y})`);origin.firstElementChild.setAttribute('d',mark.path);origin.firstElementChild.setAttribute('stroke',mark.color);
+    group.style.display=!direct&&power?'':'none';if(direct||!power)return;
+    const design=dragArrowVisual({dx:aim.x,dy:aim.y,power,equipment:get()?.state?.equipment||{},sword:get()?.state?.sword});
+    overlay.dataset.element=design.element;group.setAttribute('transform',`translate(${x} ${y}) rotate(${design.angle*180/Math.PI})`);
+    // The tether follows the actual cursor, not a fabricated opposite endpoint.
+    const angle=design.angle,dx=pointer.toX-x,dy=pointer.toY-y;
+    overlay.querySelector('.drag-tether').setAttribute('d',`M ${dx*Math.cos(angle)+dy*Math.sin(angle)} ${-dx*Math.sin(angle)+dy*Math.cos(angle)} Q -16 ${12*power} 0 0`);
+    for(const [name,path]of [['shaft',design.shaftPath],['head',design.headPath],['accent',design.accentPath]]){const node=overlay.querySelector('.drag-'+name);node.setAttribute('d',path);node.setAttribute(name==='accent'?'stroke':'fill',name==='accent'?design.light:design.color);}return;
+   }
+   overlay.dataset.control='touch';overlay.querySelector('.mouse-power').style.display='none';
    const {gesture:g,vector}=resolvePull(pointer),ring=overlay.querySelector('circle'),group=overlay.querySelector('.drag-design');overlay.style.display='block';
    const actual=g.kind==='pull'?pointerAim():null;
    const design=dragArrowVisual({dx:actual?.x??g.dx,dy:actual?.y??g.dy,power:actual?.power??vector?.power??0,equipment:get()?.state?.equipment||{},sword:get()?.state?.sword});overlay.dataset.element=design.element;
@@ -35,6 +51,7 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
   const keys = new Set();
   function cancel() {
     buffered = null;
+    get()?.cancelBufferedDash?.();
     const old = pointer;
     pointer = keyboard = null;
     shift = false;
@@ -112,10 +129,19 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
   function pointerAim() {
     const r = get(), p = pointer;
     if (!r || !p) return null;
+    if(p.type!=='touch'){
+      if(p.mode==='direct'){
+        const local=mousePoint(p),world=point(local.x,local.y);
+        if(!world||![world.x,world.y].every(Number.isFinite))return null;
+        return {...magnetic(r.aimAt(world,aimAssist(),MOUSE_AIM.baseSpeed),true),control:'direct'};
+      }
+      const vector=mousePull(p);if(!vector)return null;
+      return {...magnetic(r.adjust(vector,aimAssist()),true),anchor:{...p.world},control:'pull'};
+    }
     const {gesture,vector}=resolvePull(p);
     if(gesture.kind==='cancel')return null;
     const v=vector||{x:0,y:0,power:0};
-    // While a finger or mouse is down the cube is in focus, which also
+    // While a finger is down the cube is in focus, which also
     // widens the corridor a little: an intentional aim is a declared shot.
     if (v.power) {
       const shot = magnetic(r.adjust(v, aimAssist()), true);
@@ -131,11 +157,13 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
     return aimed;
   }
   listen(canvas, 'pointerdown', (e) => {
+    if(enabled()&&pointer&&e.button===2){e.preventDefault();cancel();return;}
     if (!enabled() || pointer || !e.isPrimary || e.button !== 0) return;
     e.preventDefault();
     canvas.focus({ preventScroll: true });
     engage(e.pointerType==='touch'?'touch':'mouse');
     buffered = null;
+    get()?.cancelBufferedDash?.();
     keyboard = null;
     shift = false;
     keys.clear();
@@ -163,15 +191,18 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
       scaleX,
       scaleY,
       travel,
+      mode:e.shiftKey?'direct':'pull',left:rect.left,top:rect.top,
       world,
-      target: r.aimAt(world, aimAssist()).target,
+      target: e.pointerType==='touch'?r.aimAt(world, aimAssist()).target:null,
     });
     showGesture();
     try { canvas.setPointerCapture?.(e.pointerId); } catch { /* capture is a convenience, never a requirement */ }
-    canvas.style.cursor = 'grabbing';
+    canvas.style.cursor = e.pointerType==='touch'?'grabbing':e.shiftKey?'crosshair':'grab';
     r.focus(true);
   });
   listen(window, 'pointermove', (e) => {
+    // Additional mouse buttons arrive as pointermove while LMB is captured.
+    if(pointer&&pointer.type!=='touch'&&(e.buttons&2)){e.preventDefault();cancel();return;}
     // CHUNK 1: the shell owns the drawn reticle (the OS cursor is hidden over
     // the arena), so every move is reported — not only the ones that belong to
     // a captured pull. Canvas-local CSS px, the same space the ring is drawn in.
@@ -189,7 +220,7 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
   // ends over the HUD, outside the element, or mid capture-loss always runs
   // the same release path: no stuck aim, no "holding" state that never ends.
   listen(window, 'pointerup', (e) => {
-    if (pointer?.id !== e.pointerId) return;
+    if (pointer?.id !== e.pointerId || e.button!==0) return;
     if (!enabled()) {
       cancel();
       return;
@@ -205,7 +236,8 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
       if (pointer?.id === e.pointerId) cancel();
     }, true);
   }
-  listen(canvas, 'contextmenu', (e) => e.preventDefault());
+  listen(canvas, 'contextmenu', (e) => {e.preventDefault();if(pointer&&pointer.type!=='touch')cancel();});
+  listen(window, 'resize', cancel);
   listen(window, 'orientationchange', cancel);
   listen(window, 'blur', cancel);
   // Eight directions or fine steering in focus. Only the first un-aimed Space
@@ -235,6 +267,7 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
       );
   }
   listen(window, 'keydown', (e) => {
+    if(enabled()&&pointer&&e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation?.();cancel();return;}
     if (!enabled() || e.target?.closest?.('button') || pointer || e.altKey || e.ctrlKey || e.metaKey)
       return;
     const k = e.key.toLowerCase(),
@@ -284,6 +317,7 @@ export function createInput(canvas, { get, active, point, assist, engage, commit
       return v?.power ? magnetic(v, true) : v;
     },
     tick() {
+      if(pointer&&enabled())showGesture();
       if (!shift || !keyboard || !enabled()) return;
       const turn =
         Number(keys.has('d') || keys.has('arrowright')) -

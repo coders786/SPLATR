@@ -1,0 +1,157 @@
+{
+  "scope": "Combat-art additions for Ember/Frost/Volt/Void/Reprise; no gameplay/save/ownership changes. Tide mechanical migration untouched.",
+  "fullTests": {
+    "tests": 1510,
+    "pass": 1510,
+    "fail": 0,
+    "duration_ms": 385745.070519
+  },
+  "focusedTests": {
+    "tests": 157,
+    "pass": 157,
+    "fail": 0,
+    "duration_ms": 7905.578083
+  },
+  "newTestCount": 12,
+  "build": {
+    "passed": true,
+    "singleFileKiB": 1333.8
+  },
+  "diffCheck": "passed",
+  "native": {
+    "scenarios": 20,
+    "powers": [
+      "fire",
+      "ice",
+      "lightning",
+      "void",
+      "echo"
+    ],
+    "viewports": [
+      [
+        960,
+        540
+      ],
+      [
+        390,
+        844
+      ]
+    ],
+    "motionModes": [
+      true,
+      false
+    ],
+    "allRequiredRealCallbacks": true,
+    "allReadOnlyAndReset": true,
+    "allPageErrorFree": true,
+    "evidence": "native/results.json",
+    "method": "Controlled real run/physics/renderer. Seeded equipped power and actors, admitted primary contact except Reprise (real traveled path and late actor). Actual scheduled damage callbacks, not fabricated proc events. Main entry blocked to avoid duplicate renderers. Software browser test, not device FPS certification."
+  },
+  "normalMainGameplay": [
+    {
+      "directory": "play",
+      "width": 960,
+      "height": 540,
+      "seededLoadout": null,
+      "equipped": "dash-auto",
+      "powerObserved": {
+        "burn": 0,
+        "cold": 0,
+        "volt": 0,
+        "well": 0,
+        "pending": 0,
+        "replay": 0
+      },
+      "phase": "playing",
+      "shots": 7,
+      "kills": 3,
+      "errors": [],
+      "heldFocusSamples": 3,
+      "pageErrors": [],
+      "equipmentSaveUnchangedDuringPlay": true
+    },
+    {
+      "directory": "play",
+      "width": 390,
+      "height": 844,
+      "seededLoadout": null,
+      "equipped": "dash-auto",
+      "powerObserved": {
+        "burn": 0,
+        "cold": 0,
+        "volt": 0,
+        "well": 0,
+        "pending": 0,
+        "replay": 0
+      },
+      "phase": "playing",
+      "shots": 8,
+      "kills": 4,
+      "errors": [],
+      "heldFocusSamples": 3,
+      "pageErrors": [],
+      "equipmentSaveUnchangedDuringPlay": true
+    },
+    {
+      "directory": "play-fire",
+      "width": 960,
+      "height": 540,
+      "seededLoadout": "fire",
+      "equipped": "dash-fire",
+      "powerObserved": {
+        "burn": 0,
+        "cold": 0,
+        "volt": 0,
+        "well": 0,
+        "pending": 0,
+        "replay": 0
+      },
+      "phase": "playing",
+      "shots": 14,
+      "kills": 8,
+      "errors": [],
+      "heldFocusSamples": 5,
+      "pageErrors": [],
+      "equipmentSaveUnchangedDuringPlay": true
+    },
+    {
+      "directory": "play-echo",
+      "width": 960,
+      "height": 540,
+      "seededLoadout": "echo",
+      "equipped": "dash-echo",
+      "powerObserved": {
+        "burn": 0,
+        "cold": 0,
+        "volt": 0,
+        "well": 0,
+        "pending": 9,
+        "replay": 5
+      },
+      "phase": "playing",
+      "shots": 5,
+      "kills": 1,
+      "errors": [],
+      "heldFocusSamples": 3,
+      "pageErrors": [],
+      "equipmentSaveUnchangedDuringPlay": true
+    }
+  ],
+  "visualReview": {
+    "nativeImages": 30,
+    "corrections": [
+      "Removed crowded Frost combat labels; retained shape-coded stop/drag/timing marks.",
+      "Moved hit receipts outside bright armor and added dark backing strokes.",
+      "Added element-specific rim fragments only after real secondary damage."
+    ],
+    "limits": [
+      "Natural Ember recording did not sample any live burns; most targets died to the primary. It is not evidence of successful burn damage.",
+      "Natural Reprise recorded 9 pending and 5 replay frame observations, not 9/5 distinct procs or hits.",
+      "Native fixtures, not ordinary progression, establish all five real secondary/control timelines.",
+      "Automated software Chromium, not human playtesting or hardware FPS certification.",
+      "Packed actor overlap and dense portrait HUD remain readability constraints."
+    ]
+  },
+  "committed": false,
+  "pushed": false
+}

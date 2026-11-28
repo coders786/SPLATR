@@ -1,0 +1,245 @@
+{
+  "method": "Native shop UI. 16 items × 3 held visual beats, four small-layout/motion transaction cases, and two real-clock canvas recordings. Scripted checks, not a human comprehension study.",
+  "rows": [
+    {
+      "id": "coil",
+      "step": 0,
+      "file": "coil-0.jpg"
+    },
+    {
+      "id": "coil",
+      "step": 1,
+      "file": "coil-1.jpg"
+    },
+    {
+      "id": "coil",
+      "step": 2,
+      "file": "coil-2.jpg"
+    },
+    {
+      "id": "crown",
+      "step": 0,
+      "file": "crown-0.jpg"
+    },
+    {
+      "id": "crown",
+      "step": 1,
+      "file": "crown-1.jpg"
+    },
+    {
+      "id": "crown",
+      "step": 2,
+      "file": "crown-2.jpg"
+    },
+    {
+      "id": "halo",
+      "step": 0,
+      "file": "halo-0.jpg"
+    },
+    {
+      "id": "halo",
+      "step": 1,
+      "file": "halo-1.jpg"
+    },
+    {
+      "id": "halo",
+      "step": 2,
+      "file": "halo-2.jpg"
+    },
+    {
+      "id": "oni",
+      "step": 0,
+      "file": "oni-0.jpg"
+    },
+    {
+      "id": "oni",
+      "step": 1,
+      "file": "oni-1.jpg"
+    },
+    {
+      "id": "oni",
+      "step": 2,
+      "file": "oni-2.jpg"
+    },
+    {
+      "id": "riot",
+      "step": 0,
+      "file": "riot-0.jpg"
+    },
+    {
+      "id": "riot",
+      "step": 1,
+      "file": "riot-1.jpg"
+    },
+    {
+      "id": "riot",
+      "step": 2,
+      "file": "riot-2.jpg"
+    },
+    {
+      "id": "time",
+      "step": 0,
+      "file": "time-0.jpg"
+    },
+    {
+      "id": "time",
+      "step": 1,
+      "file": "time-1.jpg"
+    },
+    {
+      "id": "time",
+      "step": 2,
+      "file": "time-2.jpg"
+    },
+    {
+      "id": "grav",
+      "step": 0,
+      "file": "grav-0.jpg"
+    },
+    {
+      "id": "grav",
+      "step": 1,
+      "file": "grav-1.jpg"
+    },
+    {
+      "id": "grav",
+      "step": 2,
+      "file": "grav-2.jpg"
+    },
+    {
+      "id": "echo",
+      "step": 0,
+      "file": "echo-0.jpg"
+    },
+    {
+      "id": "echo",
+      "step": 1,
+      "file": "echo-1.jpg"
+    },
+    {
+      "id": "echo",
+      "step": 2,
+      "file": "echo-2.jpg"
+    },
+    {
+      "id": "iron",
+      "step": 0,
+      "file": "iron-0.jpg"
+    },
+    {
+      "id": "iron",
+      "step": 1,
+      "file": "iron-1.jpg"
+    },
+    {
+      "id": "iron",
+      "step": 2,
+      "file": "iron-2.jpg"
+    },
+    {
+      "id": "notched",
+      "step": 0,
+      "file": "notched-0.jpg"
+    },
+    {
+      "id": "notched",
+      "step": 1,
+      "file": "notched-1.jpg"
+    },
+    {
+      "id": "notched",
+      "step": 2,
+      "file": "notched-2.jpg"
+    },
+    {
+      "id": "dash-fire",
+      "step": 0,
+      "file": "dash-fire-0.jpg"
+    },
+    {
+      "id": "dash-fire",
+      "step": 1,
+      "file": "dash-fire-1.jpg"
+    },
+    {
+      "id": "dash-fire",
+      "step": 2,
+      "file": "dash-fire-2.jpg"
+    },
+    {
+      "id": "dash-echo",
+      "step": 0,
+      "file": "dash-echo-0.jpg"
+    },
+    {
+      "id": "dash-echo",
+      "step": 1,
+      "file": "dash-echo-1.jpg"
+    },
+    {
+      "id": "dash-echo",
+      "step": 2,
+      "file": "dash-echo-2.jpg"
+    },
+    {
+      "id": "wings",
+      "step": 0,
+      "file": "wings-0.jpg"
+    },
+    {
+      "id": "wings",
+      "step": 1,
+      "file": "wings-1.jpg"
+    },
+    {
+      "id": "wings",
+      "step": 2,
+      "file": "wings-2.jpg"
+    },
+    {
+      "id": "hypno",
+      "step": 0,
+      "file": "hypno-0.jpg"
+    },
+    {
+      "id": "hypno",
+      "step": 1,
+      "file": "hypno-1.jpg"
+    },
+    {
+      "id": "hypno",
+      "step": 2,
+      "file": "hypno-2.jpg"
+    },
+    {
+      "id": "radar-2",
+      "step": 0,
+      "file": "radar-2-0.jpg"
+    },
+    {
+      "id": "radar-2",
+      "step": 1,
+      "file": "radar-2-1.jpg"
+    },
+    {
+      "id": "radar-2",
+      "step": 2,
+      "file": "radar-2-2.jpg"
+    },
+    {
+      "id": "dash-ice",
+      "step": 0,
+      "file": "dash-ice-0.jpg"
+    },
+    {
+      "id": "dash-ice",
+      "step": 1,
+      "file": "dash-ice-1.jpg"
+    },
+    {
+      "id": "dash-ice",
+      "step": 2,
+      "file": "dash-ice-2.jpg"
+    }
+  ]
+}

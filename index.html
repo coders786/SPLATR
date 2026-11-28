@@ -90,7 +90,7 @@
         id="arena"
         tabindex="-1"
         aria-describedby="story-alt"
-        aria-label="Shape Riot arena. Tap a shape or pull back and release forward to slash. Hold airborne to focus. Arrows or WASD aim, Space slashes, Escape pauses."
+        aria-label="Shape Riot arena. Mouse: drag back and release to launch the opposite way; distance sets power. Shift+click shoots at the cursor. Right-click cancels. Touch: tap or pull back and release. Hold airborne to focus. Arrows or WASD aim, Space slashes, Escape cancels a held aim or pauses."
       ></canvas>
       <section id="title-screen" aria-labelledby="brand-title">
         <div class="title-stack">
@@ -123,7 +123,7 @@
             ><span class="subtitle"><b>//</b> Shape Riot</span>
           </h1>
           <nav id="main-nav" aria-label="Main menu">
-            <p class="first-run-cue">Pull back. Release forward.<br><small>Clear the wave → land on the glowing platform → choose an upgrade.</small></p>
+            <p class="first-run-cue">Pull back → release. Shift+click to aim directly.<br><small>Clear the wave → land on the glowing platform → choose an upgrade.</small></p>
             <button id="start-btn" class="choice primary">
               <svg class="icon"><use href="#i-play" /></svg><span>Start run</span
               ><kbd>↵</kbd></button
@@ -268,7 +268,7 @@
       <!-- CHUNK 1: one red frame-edge flash on the tick health drops. -->
       <div id="damage-rim" aria-hidden="true"></div>
       <!-- CHUNK 1: the four-word starter hint, retired by the first kill. -->
-      <div id="start-hint" aria-hidden="true" hidden>AIM &amp; CLICK TO CUT</div>
+      <div id="start-hint" aria-hidden="true" hidden>PULL BACK &amp; RELEASE TO CUT · SHIFT+CLICK DIRECT</div>
       <!-- CHUNK 2: the three-colour law, taught once on the bottom ticker.
            Three words, three colours, retired after three cuts. -->
       <div id="law-hint" aria-hidden="true" hidden>

@@ -1,0 +1,3770 @@
+{
+  "base": "http://127.0.0.1:5188",
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "method": "Fresh browser profile, real wall clock, normal UI/input only. Scripted player-lens walkthrough, NOT a blind human participant. Targets derived from visible screenshot colors; no game-state inspection. All captures retained, including repeated/quiet scenes.",
+  "duration": 118401,
+  "frames": [
+    {
+      "frame": 1,
+      "at": 2,
+      "file": "frames/001.jpg",
+      "text": "WAVE SLASH ACTION\n// SHAPE RIOT\nSTART RUN\n↵\nPRACTICE & HELP\nOPTIONS\nSHOP\nNEXT BOSS EVENT\n0%\nCALM\nBuilds with every cut · carries between runs\nPERSONAL BEST\n000000",
+      "buttons": [
+        {
+          "id": "start-btn",
+          "text": "START RUN\n↵",
+          "label": null
+        },
+        {
+          "id": "manual-btn",
+          "text": "PRACTICE & HELP",
+          "label": null
+        },
+        {
+          "id": "options-btn",
+          "text": "OPTIONS",
+          "label": null
+        },
+        {
+          "id": "customize-btn",
+          "text": "SHOP",
+          "label": null
+        },
+        {
+          "id": "",
+          "text": "",
+          "label": "Mute audio"
+        },
+        {
+          "id": "",
+          "text": "",
+          "label": "Toggle fullscreen"
+        }
+      ],
+      "sha256": "5efb0534205f92158adb146194d576ff1caa5dd8b31dda095c519ee5aa82681c"
+    },
+    {
+      "frame": 2,
+      "at": 551,
+      "file": "frames/002.jpg",
+      "text": "WAVE SLASH ACTION\n// SHAPE RIOT\nSTART RUN\n↵\nPRACTICE & HELP\nOPTIONS\nSHOP\nNEXT BOSS EVENT\n0%\nCALM\nBuilds with every cut · carries between runs\nPERSONAL BEST\n000000",
+      "buttons": [
+        {
+          "id": "start-btn",
+          "text": "START RUN\n↵",
+          "label": null
+        },
+        {
+          "id": "manual-btn",
+          "text": "PRACTICE & HELP",
+          "label": null
+        },
+        {
+          "id": "options-btn",
+          "text": "OPTIONS",
+          "label": null
+        },
+        {
+          "id": "customize-btn",
+          "text": "SHOP",
+          "label": null
+        },
+        {
+          "id": "",
+          "text": "",
+          "label": "Mute audio"
+        },
+        {
+          "id": "",
+          "text": "",
+          "label": "Toggle fullscreen"
+        }
+      ],
+      "sha256": "0b2d025a6ded5c7ca22a68809847701531d4bb0ecb1f21fd5d4c65a789907b24"
+    },
+    {
+      "frame": 3,
+      "at": 1100,
+      "file": "frames/003.jpg",
+      "text": "WAVE SLASH ACTION\n// SHAPE RIOT\nSTART RUN\n↵\nPRACTICE & HELP\nOPTIONS\nSHOP\nNEXT BOSS EVENT\n0%\nCALM\nBuilds with every cut · carries between runs\nPERSONAL BEST\n000000",
+      "buttons": [
+        {
+          "id": "start-btn",
+          "text": "START RUN\n↵",
+          "label": null
+        },
+        {
+          "id": "manual-btn",
+          "text": "PRACTICE & HELP",
+          "label": null
+        },
+        {
+          "id": "options-btn",
+          "text": "OPTIONS",
+          "label": null
+        },
+        {
+          "id": "customize-btn",
+          "text": "SHOP",
+          "label": null
+        },
+        {
+          "id": "",
+          "text": "",
+          "label": "Mute audio"
+        },
+        {
+          "id": "",
+          "text": "",
+          "label": "Toggle fullscreen"
+        }
+      ],
+      "sha256": "43982fc9220c762bcf51a10f33e06254671da5cd5eea51b84dca7bbac4eb40a9"
+    },
+    {
+      "frame": 4,
+      "at": 1651,
+      "file": "frames/004.jpg",
+      "text": "WAVE SLASH ACTION\n// SHAPE RIOT\nSTART RUN\n↵\nPRACTICE & HELP\nOPTIONS\nSHOP\nNEXT BOSS EVENT\n0%\nCALM\nBuilds with every cut · carries between runs\nPERSONAL BEST\n000000",
+      "buttons": [
+        {
+          "id": "start-btn",
+          "text": "START RUN\n↵",
+          "label": null
+        },
+        {
+          "id": "manual-btn",
+          "text": "PRACTICE & HELP",
+          "label": null
+        },
+        {
+          "id": "options-btn",
+          "text": "OPTIONS",
+          "label": null
+        },
+        {
+          "id": "customize-btn",
+          "text": "SHOP",
+          "label": null
+        },
+        {
+          "id": "",
+          "text": "",
+          "label": "Mute audio"
+        },
+        {
+          "id": "",
+          "text": "",
+          "label": "Toggle fullscreen"
+        }
+      ],
+      "sha256": "b5a340e4902937efd792621c7cd86753990bba7dd85d7f1afb20e84d19e7277e"
+    },
+    {
+      "frame": 5,
+      "at": 2200,
+      "file": "frames/005.jpg",
+      "text": "WAVE SLASH ACTION\n// SHAPE RIOT\nSTART RUN\n↵\nPRACTICE & HELP\nOPTIONS\nSHOP\nNEXT BOSS EVENT\n0%\nCALM\nBuilds with every cut · carries between runs\nPERSONAL BEST\n000000",
+      "buttons": [
+        {
+          "id": "start-btn",
+          "text": "START RUN\n↵",
+          "label": null
+        },
+        {
+          "id": "manual-btn",
+          "text": "PRACTICE & HELP",
+          "label": null
+        },
+        {
+          "id": "options-btn",
+          "text": "OPTIONS",
+          "label": null
+        },
+        {
+          "id": "customize-btn",
+          "text": "SHOP",
+          "label": null
+        },
+        {
+          "id": "",
+          "text": "",
+          "label": "Mute audio"
+        },
+        {
+          "id": "",
+          "text": "",
+          "label": "Toggle fullscreen"
+        }
+      ],
+      "sha256": "e7606794a90a68610025cb937439c066b73fa9e0562fffcc07cb55b28a5fe792"
+    },
+    {
+      "frame": 6,
+      "at": 2750,
+      "file": "frames/006.jpg",
+      "text": "WAVE SLASH ACTION\n// SHAPE RIOT\nSTART RUN\n↵\nPRACTICE & HELP\nOPTIONS\nSHOP\nNEXT BOSS EVENT\n0%\nCALM\nBuilds with every cut · carries between runs\nPERSONAL BEST\n000000",
+      "buttons": [
+        {
+          "id": "start-btn",
+          "text": "START RUN\n↵",
+          "label": null
+        },
+        {
+          "id": "manual-btn",
+          "text": "PRACTICE & HELP",
+          "label": null
+        },
+        {
+          "id": "options-btn",
+          "text": "OPTIONS",
+          "label": null
+        },
+        {
+          "id": "customize-btn",
+          "text": "SHOP",
+          "label": null
+        },
+        {
+          "id": "",
+          "text": "",
+          "label": "Mute audio"
+        },
+        {
+          "id": "",
+          "text": "",
+          "label": "Toggle fullscreen"
+        }
+      ],
+      "sha256": "8a783b2bdd5cbe5dfc84240b720884d959b1543f9ef2b6c4e85d28896931009b"
+    },
+    {
+      "frame": 7,
+      "at": 3300,
+      "file": "frames/007.jpg",
+      "text": "WAVE SLASH ACTION\n// SHAPE RIOT\nSTART RUN\n↵\nPRACTICE & HELP\nOPTIONS\nSHOP\nNEXT BOSS EVENT\n0%\nCALM\nBuilds with every cut · carries between runs\nPERSONAL BEST\n000000",
+      "buttons": [
+        {
+          "id": "start-btn",
+          "text": "START RUN\n↵",
+          "label": null
+        },
+        {
+          "id": "manual-btn",
+          "text": "PRACTICE & HELP",
+          "label": null
+        },
+        {
+          "id": "options-btn",
+          "text": "OPTIONS",
+          "label": null
+        },
+        {
+          "id": "customize-btn",
+          "text": "SHOP",
+          "label": null
+        },
+        {
+          "id": "",
+          "text": "",
+          "label": "Mute audio"
+        },
+        {
+          "id": "",
+          "text": "",
+          "label": "Toggle fullscreen"
+        }
+      ],
+      "sha256": "6148058b19cea4d0ec4c459beb04d6ee001dce8703b061259934583e35a8ed32"
+    },
+    {
+      "frame": 8,
+      "at": 3851,
+      "file": "frames/008.jpg",
+      "text": "WAVE SLASH ACTION\n// SHAPE RIOT\nSTART RUN\n↵\nPRACTICE & HELP\nOPTIONS\nSHOP\nNEXT BOSS EVENT\n0%\nCALM\nBuilds with every cut · carries between runs\nPERSONAL BEST\n000000",
+      "buttons": [
+        {
+          "id": "start-btn",
+          "text": "START RUN\n↵",
+          "label": null
+        },
+        {
+          "id": "manual-btn",
+          "text": "PRACTICE & HELP",
+          "label": null
+        },
+        {
+          "id": "options-btn",
+          "text": "OPTIONS",
+          "label": null
+        },
+        {
+          "id": "customize-btn",
+          "text": "SHOP",
+          "label": null
+        },
+        {
+          "id": "",
+          "text": "",
+          "label": "Mute audio"
+        },
+        {
+          "id": "",
+          "text": "",
+          "label": "Toggle fullscreen"
+        }
+      ],
+      "sha256": "ef627d6b6201acc3ab4cc459936bd08585b4b46220f3972e9e3f40f768d5a17d"
+    },
+    {
+      "frame": 9,
+      "at": 4401,
+      "file": "frames/009.jpg",
+      "text": "WAVE SLASH ACTION\n// SHAPE RIOT\nSTART RUN\n↵\nPRACTICE & HELP\nOPTIONS\nSHOP\nNEXT BOSS EVENT\n0%\nCALM\nBuilds with every cut · carries between runs\nPERSONAL BEST\n000000",
+      "buttons": [
+        {
+          "id": "start-btn",
+          "text": "START RUN\n↵",
+          "label": null
+        },
+        {
+          "id": "manual-btn",
+          "text": "PRACTICE & HELP",
+          "label": null
+        },
+        {
+          "id": "options-btn",
+          "text": "OPTIONS",
+          "label": null
+        },
+        {
+          "id": "customize-btn",
+          "text": "SHOP",
+          "label": null
+        },
+        {
+          "id": "",
+          "text": "",
+          "label": "Mute audio"
+        },
+        {
+          "id": "",
+          "text": "",
+          "label": "Toggle fullscreen"
+        }
+      ],
+      "sha256": "b7e3ab87312f3b4ecab06e04047f204078ceca593c929d940ed4dc48ad640fc5"
+    },
+    {
+      "frame": 10,
+      "at": 5069,
+      "file": "frames/010.jpg",
+      "text": "CLICK A SHAPE · 3 LEFT\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nCLICK A SHAPE · 3 LEFT",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "35d0ec1e44bc32e16f82c78586902b22cddbd655d27e2a230723eb14b6b78ff0"
+    },
+    {
+      "frame": 11,
+      "at": 5500,
+      "file": "frames/011.jpg",
+      "text": "CLICK A SHAPE · 3 LEFT\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nCLICK A SHAPE · 3 LEFT",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "f786ba5439a6f91fb178e3a81547a46461aa22bbb4601ea30dad40e499043432"
+    },
+    {
+      "frame": 12,
+      "at": 6051,
+      "file": "frames/012.jpg",
+      "text": "CLICK A SHAPE · 3 LEFT\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nCLICK A SHAPE · 3 LEFT",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "36ea2456d9dc11e6b1ee1eec909d343a275066b21d62961a93374d362611c285"
+    },
+    {
+      "frame": 13,
+      "at": 6601,
+      "file": "frames/013.jpg",
+      "text": "CLICK A SHAPE · 3 LEFT\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nCLICK A SHAPE · 3 LEFT",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "6a123eecb75f99f1238ecc23ad394eea60fe54e920c9dd54da23d9245331edb7"
+    },
+    {
+      "frame": 14,
+      "at": 7151,
+      "file": "frames/014.jpg",
+      "text": "CLICK A SHAPE · 3 LEFT\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nCLICK A SHAPE · 3 LEFT",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "dd6073728459479960416d8a825e0c3ad11c21603b6240418aa2bd908f6889db"
+    },
+    {
+      "frame": 15,
+      "at": 7719,
+      "file": "frames/015.jpg",
+      "text": "CLICK A SHAPE · 3 LEFT\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nCLICK A SHAPE · 3 LEFT",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "805a8766d4c2cbf0ad8251b208a60388bb0909e4dd35882e618ef119ececb5f2"
+    },
+    {
+      "frame": 16,
+      "at": 8251,
+      "file": "frames/016.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "b394dc22ce4f2a43652290b002a7660d26fc506a2da49d5ba36392916a8f42dd"
+    },
+    {
+      "frame": 17,
+      "at": 8800,
+      "file": "frames/017.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "78791ffeada50511894b2b4b067a229ae5f783e00cdd372fa9e7a452b94b4c25"
+    },
+    {
+      "frame": 18,
+      "at": 9350,
+      "file": "frames/018.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "50dbfcc8636a110d4dd92b5f2560ea9f5e109fb0c650b18165701cbb5005b995"
+    },
+    {
+      "frame": 19,
+      "at": 9901,
+      "file": "frames/019.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "03e0743e77ab026cb0d958e786e9c9decf2b518ff124ffc8100e01d109ba13ea"
+    },
+    {
+      "frame": 20,
+      "at": 10451,
+      "file": "frames/020.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "54f25d8962ec7e92a22bab7f7c02ef445d069b66b4690f2d5975059a9ee10035"
+    },
+    {
+      "frame": 21,
+      "at": 11000,
+      "file": "frames/021.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "0e16333daf1a5164bfaa6deebdaa63b2db2f2b0dc2b0601632701b8936a6cc58"
+    },
+    {
+      "frame": 22,
+      "at": 11714,
+      "file": "frames/022.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "5e9ec791c525e433f1d7181fb214c58ef35d87d6141fe7620d4383aa8a83dc2a"
+    },
+    {
+      "frame": 23,
+      "at": 12100,
+      "file": "frames/023.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "29c09b31b4150f8a7db444b7da88fee9908ba269cd2665ab39aaf9f9a4cceeec"
+    },
+    {
+      "frame": 24,
+      "at": 12651,
+      "file": "frames/024.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "e4b893bd5f63fd003965d78736953c1a2e7dca13b5e8857e1b2e3d094f8962fe"
+    },
+    {
+      "frame": 25,
+      "at": 13293,
+      "file": "frames/025.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "789a1e953e03c8efcc9a3aae5a090aafb7c844202511dd0473f55f2d7ddf2e09"
+    },
+    {
+      "frame": 26,
+      "at": 13750,
+      "file": "frames/026.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "abf2c4f5eda28740cc651d4a4731c2cd9d5720d96f6deaed2076738fbfe86e6f"
+    },
+    {
+      "frame": 27,
+      "at": 14301,
+      "file": "frames/027.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "49928464b522a42d99319cd7d2f99f287666894768eb3c2c962c06ef265df17a"
+    },
+    {
+      "frame": 28,
+      "at": 14946,
+      "file": "frames/028.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe blade is short. Let the shapes come to you — cut all three.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "1d6437bef23e909c263215a883cb526bdf421cd9c181dc937df3a63650b1290b"
+    },
+    {
+      "frame": 29,
+      "at": 15401,
+      "file": "frames/029.jpg",
+      "text": "BOUNCE OFF THE GLOWING RIGHT WALL\nThe bank sets up everything after it. Aim for the wall, not the room.\nSKIP\nBOUNCE OFF THE GLOWING RIGHT WALL",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "e1ebf8fd569360e0da32d9bfd1cbabafaeb52e5c2649b199d0c7d2e73c2bc630"
+    },
+    {
+      "frame": 30,
+      "at": 15951,
+      "file": "frames/030.jpg",
+      "text": "SLICE THE GLOWING GATE\nThe bank is the mechanic. The rest of the game is more of this.\nSKIP\nSLICE THE GLOWING GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "33566dcd9006cbc2bf3feaf887e5d078e8afaae8a9adaa740466ba81d1e71902"
+    },
+    {
+      "frame": 31,
+      "at": 16500,
+      "file": "frames/031.jpg",
+      "text": "SLICE THE GLOWING GATE\nThe bank is the mechanic. The rest of the game is more of this.\nSKIP\nSLICE THE GLOWING GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "abc0446396d3605b9e22e9a0a12332384379686579944e5deecfc4c903e65b0a"
+    },
+    {
+      "frame": 32,
+      "at": 17051,
+      "file": "frames/032.jpg",
+      "text": "SLICE THE GLOWING GATE\nThe bank is the mechanic. The rest of the game is more of this.\nSKIP\nSLICE THE GLOWING GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "da15ba4dd852a45f7bd61112b38868a7feb7159962ddc7c27115b1f084a65465"
+    },
+    {
+      "frame": 33,
+      "at": 17601,
+      "file": "frames/033.jpg",
+      "text": "SLICE THE GLOWING GATE\nThe bank is the mechanic. The rest of the game is more of this.\nSKIP\nSLICE THE GLOWING GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "1a39453784e9da2a679aced5725cf202b6915131d76b92bf423cc6c56e8851e6"
+    },
+    {
+      "frame": 34,
+      "at": 18151,
+      "file": "frames/034.jpg",
+      "text": "SLICE THE GLOWING GATE\nThe bank is the mechanic. The rest of the game is more of this.\nSKIP\nSLICE THE GLOWING GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "c8b7de15a2549f2f98b13925af9b14a4a690f6415d468390f42e6a0d42bb2059"
+    },
+    {
+      "frame": 35,
+      "at": 18700,
+      "file": "frames/035.jpg",
+      "text": "SLICE THE GLOWING GATE\nThe bank is the mechanic. The rest of the game is more of this.\nSKIP\nSLICE THE GLOWING GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "8984b51974f4dbf4e43aa610ba17312b712976eb15fd0bb1c654c126f73176c9"
+    },
+    {
+      "frame": 36,
+      "at": 19260,
+      "file": "frames/036.jpg",
+      "text": "SLICE THE GLOWING GATE\nThe bank is the mechanic. The rest of the game is more of this.\nSKIP\nSLICE THE GLOWING GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "b0fe8cb67a7fd398ed46ef0a61567c4d27676b4f726acf54b1ab1dd894fd18e4"
+    },
+    {
+      "frame": 37,
+      "at": 19800,
+      "file": "frames/037.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe bank is the mechanic. The rest of the game is more of this.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "0bbd127012ab6f23ea13f029b543ce863f5237c52d026f439042fc233ca33e0a"
+    },
+    {
+      "frame": 38,
+      "at": 20350,
+      "file": "frames/038.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe bank is the mechanic. The rest of the game is more of this.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "edd65dab3ab6ce5ebdc5ddda0688bc8f85dd77c8652a0f236c5c8d1ac9d90280"
+    },
+    {
+      "frame": 39,
+      "at": 20900,
+      "file": "frames/039.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe bank is the mechanic. The rest of the game is more of this.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "76975a1534ace221773c8ed2be8bea382712ca768efaaaa965b6376d2979bb43"
+    },
+    {
+      "frame": 40,
+      "at": 21450,
+      "file": "frames/040.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe bank is the mechanic. The rest of the game is more of this.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "b4f848930208c347bd74c70e696585ecc0dc07580796983a04fa36e2bf8766ff"
+    },
+    {
+      "frame": 41,
+      "at": 22000,
+      "file": "frames/041.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe bank is the mechanic. The rest of the game is more of this.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "cde0fe02d34ebc8fc7c048883b1301a2ad92d1f6bfff6d726906352276bc42c0"
+    },
+    {
+      "frame": 42,
+      "at": 22551,
+      "file": "frames/042.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe bank is the mechanic. The rest of the game is more of this.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "fef1f1114cfa28a890c54b00ca5992aa4b769da49cc4c65a5c2dd473b85be9ac"
+    },
+    {
+      "frame": 43,
+      "at": 23333,
+      "file": "frames/043.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe bank is the mechanic. The rest of the game is more of this.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "d678bd2e19b3a2cdd171489f983d902e88e9986697062e6ed35bbf27b3ffffaf"
+    },
+    {
+      "frame": 44,
+      "at": 23650,
+      "file": "frames/044.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe bank is the mechanic. The rest of the game is more of this.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "338cdf3feeb4a7b207a774c870ae356d0f1558b536681be7f0a4aa08cbf1e94b"
+    },
+    {
+      "frame": 45,
+      "at": 24201,
+      "file": "frames/045.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe bank is the mechanic. The rest of the game is more of this.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "d325c6f2104d4f79c3bbe5a2463f6c223a01335e8ef96e9690605ec0eac5b617"
+    },
+    {
+      "frame": 46,
+      "at": 24814,
+      "file": "frames/046.jpg",
+      "text": "GO THROUGH THE OPEN GATE\nThe bank is the mechanic. The rest of the game is more of this.\nSKIP\nGO THROUGH THE OPEN GATE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "be7760b7d7d964a9cc200fff3e19c6eb1ed880697f1fd110cc3e5fba20c96d31"
+    },
+    {
+      "frame": 47,
+      "at": 25301,
+      "file": "frames/047.jpg",
+      "text": "1/3 · WAIT FOR THE RED CIRCLE\nIt sleeps beyond its ring. Stepping closer WAKES it — that is the lesson.\nSKIP\n1/3 · WAIT FOR THE RED CIRCLE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "4f194dab82f2d9d8ccebb49c9121e70d608aac6a0e944f0b1c47db9915a12817"
+    },
+    {
+      "frame": 48,
+      "at": 25850,
+      "file": "frames/048.jpg",
+      "text": "1/3 · WAIT FOR THE RED CIRCLE\nIt sleeps beyond its ring. Stepping closer WAKES it — that is the lesson.\nSKIP\n1/3 · WAIT FOR THE RED CIRCLE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "038229f9ff74accd9aab7657eb6d464ddcf8f3d2d46d5011eac487806f503ead"
+    },
+    {
+      "frame": 49,
+      "at": 26400,
+      "file": "frames/049.jpg",
+      "text": "1/3 · WAIT FOR THE RED CIRCLE\nIt sleeps beyond its ring. Stepping closer WAKES it — that is the lesson.\nSKIP\n1/3 · WAIT FOR THE RED CIRCLE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "b3c3c901c8f9e5dd4fb5b0fa7f7f5ea1cd6a1d13a28add3197100a06f9e68913"
+    },
+    {
+      "frame": 50,
+      "at": 26951,
+      "file": "frames/050.jpg",
+      "text": "1/3 · WAIT FOR THE NEXT RED CIRCLE\nThe red circle is its one dangerous moment. Be outside it.\nSKIP\n1/3 · WAIT FOR THE NEXT RED CIRCLE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "08792c5fc282607af261f4c14287308942cb261ec42f8c2bde31d2f1084fbc3f"
+    },
+    {
+      "frame": 51,
+      "at": 27501,
+      "file": "frames/051.jpg",
+      "text": "1/3 · WAIT FOR THE NEXT RED CIRCLE\nThe red circle is its one dangerous moment. Be outside it.\nSKIP\n1/3 · WAIT FOR THE NEXT RED CIRCLE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "94d073470520fb695d3fb3ba5e4e35e23de1b7b070ab30e93f558164753225a4"
+    },
+    {
+      "frame": 52,
+      "at": 28051,
+      "file": "frames/052.jpg",
+      "text": "1/3 · WAIT FOR THE NEXT RED CIRCLE\nThe red circle is its one dangerous moment. Be outside it.\nSKIP\n1/3 · WAIT FOR THE NEXT RED CIRCLE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "bdef7fe913e0e1bfbf98316e5bb9a608142db7a1acc4b3f588f8ad232f091e28"
+    },
+    {
+      "frame": 53,
+      "at": 28600,
+      "file": "frames/053.jpg",
+      "text": "1/3 · WAIT FOR THE NEXT RED CIRCLE\nThe red circle is its one dangerous moment. Be outside it.\nSKIP\n1/3 · WAIT FOR THE NEXT RED CIRCLE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "aa06e8e5ac49633e9b12e8ee24d5e4d6d5ef72090d3a915e25d731716168d44e"
+    },
+    {
+      "frame": 54,
+      "at": 29151,
+      "file": "frames/054.jpg",
+      "text": "1/3 · WAIT FOR THE NEXT RED CIRCLE\nThe red circle is its one dangerous moment. Be outside it.\nSKIP\n1/3 · WAIT FOR THE NEXT RED CIRCLE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "067dde14030484ba1d00d0070e7109bb078c360c3cfed81143234ce729244405"
+    },
+    {
+      "frame": 55,
+      "at": 29701,
+      "file": "frames/055.jpg",
+      "text": "MISSED · WAIT FOR THE NEXT RED CIRCLE\nIt just struck. Wait for the next circle — then be outside it.\nSKIP\nMISSED · WAIT FOR THE NEXT RED CIRCLE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "69e77f3db206226a9ea599d577d57992477db10b7d1aecbe6bad62e51706ad82"
+    },
+    {
+      "frame": 56,
+      "at": 30250,
+      "file": "frames/056.jpg",
+      "text": "MISSED · WAIT FOR THE NEXT RED CIRCLE\nIt sleeps beyond its ring. Stepping closer WAKES it — that is the lesson.\nSKIP\nMISSED · WAIT FOR THE NEXT RED CIRCLE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "35eaf6f260457c71a76b1bd418368e14367c0f941ea576fb2ed0ba79fcf5980a"
+    },
+    {
+      "frame": 57,
+      "at": 30801,
+      "file": "frames/057.jpg",
+      "text": "MISSED · WAIT FOR THE NEXT RED CIRCLE\nIt sleeps beyond its ring. Stepping closer WAKES it — that is the lesson.\nSKIP\nMISSED · WAIT FOR THE NEXT RED CIRCLE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "618aaf50dcbe78416151e280e09c658b29ee616b73ccd22c74106604314beefc"
+    },
+    {
+      "frame": 58,
+      "at": 31351,
+      "file": "frames/058.jpg",
+      "text": "1/3 · WAIT FOR THE RED CIRCLE\nIt sleeps beyond its ring. Stepping closer WAKES it — that is the lesson.\nSKIP\n1/3 · WAIT FOR THE RED CIRCLE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "ac16cf9bc5a4bbe3201cb5297985a610767109d67b20714ee042e70f9818ad7c"
+    },
+    {
+      "frame": 59,
+      "at": 31900,
+      "file": "frames/059.jpg",
+      "text": "1/3 · WAIT FOR THE RED CIRCLE\nIt sleeps beyond its ring. Stepping closer WAKES it — that is the lesson.\nSKIP\n1/3 · WAIT FOR THE RED CIRCLE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "d64f5f51dd5fd53a7435c8d0f0f75dd71a2335816fd56f1efbd498a2728418b7"
+    },
+    {
+      "frame": 60,
+      "at": 32451,
+      "file": "frames/060.jpg",
+      "text": "1/3 · WAIT FOR THE RED CIRCLE\nIt sleeps beyond its ring. Stepping closer WAKES it — that is the lesson.\nSKIP\n1/3 · WAIT FOR THE RED CIRCLE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "77b9ae5399e4899b4b5073a8fb8907e5bfe8800b496138c0b13ae7214bffa305"
+    },
+    {
+      "frame": 61,
+      "at": 33001,
+      "file": "frames/061.jpg",
+      "text": "1/3 · WAIT FOR THE RED CIRCLE\nIt sleeps beyond its ring. Stepping closer WAKES it — that is the lesson.\nSKIP\n1/3 · WAIT FOR THE RED CIRCLE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "bef10b8740a11f63ce6622f8d3b3ca6e7a23cab8f81cfc22047ca9163f50d2d1"
+    },
+    {
+      "frame": 62,
+      "at": 33551,
+      "file": "frames/062.jpg",
+      "text": "1/3 · WAIT FOR THE RED CIRCLE\nIt sleeps beyond its ring. Stepping closer WAKES it — that is the lesson.\nSKIP\n1/3 · WAIT FOR THE RED CIRCLE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "eec2e1df37410d48ea5fe1e6db35a22c3501968116a9abc04d5c804dfdb4828e"
+    },
+    {
+      "frame": 63,
+      "at": 34100,
+      "file": "frames/063.jpg",
+      "text": "1/3 · WAIT FOR THE RED CIRCLE\nIt sleeps beyond its ring. Stepping closer WAKES it — that is the lesson.\nSKIP\n1/3 · WAIT FOR THE RED CIRCLE",
+      "buttons": [
+        {
+          "id": "rack-skip",
+          "text": "SKIP",
+          "label": "Skip tutorial"
+        }
+      ],
+      "sha256": "090f417d9aa1ff476b1a48639e202a73951a88944bf73b2bd1539d2764c57200"
+    },
+    {
+      "frame": 64,
+      "at": 34734,
+      "file": "frames/064.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nW01 · 0\n1/3 · WAIT FOR THE RED CIRCLE",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "6bdce4ae776405b4f863ace2f92c351509db555b993a00877309aafb7b20f888"
+    },
+    {
+      "frame": 65,
+      "at": 35201,
+      "file": "frames/065.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nW01 · 2\n1/3 · WAIT FOR THE RED CIRCLE",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "420ecf62d9c14eddc394ee20d8e15f3fb0aafec20c1c4287ad72cdd2f9e63fc7"
+    },
+    {
+      "frame": 66,
+      "at": 35750,
+      "file": "frames/066.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nW01 · 2\n1/3 · WAIT FOR THE RED CIRCLE",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "d96ced1c1cecba5e38512d75fd50448aaf790b86a760dfcfbee408f35dbb3ca7"
+    },
+    {
+      "frame": 67,
+      "at": 36301,
+      "file": "frames/067.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nWE CUT TOGETHER.\nW01 · 2\nFrame errors are repeating — see console",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "6299fdf337cdf4ae46da7c646ea11a2939441bf9414066e9b3d8965ae9fdf050"
+    },
+    {
+      "frame": 68,
+      "at": 36851,
+      "file": "frames/068.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nWE CUT TOGETHER.\nW01 · 2\nFrame errors are repeating — see console",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "6299fdf337cdf4ae46da7c646ea11a2939441bf9414066e9b3d8965ae9fdf050"
+    },
+    {
+      "frame": 69,
+      "at": 37401,
+      "file": "frames/069.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nWE CUT TOGETHER.\nW01 · 2\nFrame errors are repeating — see console",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "b743a658c2b02ab7acfe1e20814e72c753ee51ee0ab77f45df661f4bca97f538"
+    },
+    {
+      "frame": 70,
+      "at": 37950,
+      "file": "frames/070.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nGREEN CUTS RED HURTS GOLD PAYS\nWE CUT TOGETHER.\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "49d89ee12ab8cab8e6b88236254145b4b5456e790ecbc05dc252a4f286445b07"
+    },
+    {
+      "frame": 71,
+      "at": 38500,
+      "file": "frames/071.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "3b4d917e60b4cc4fe8e79a7d64e9848ba7b7da27a42c0a07103ae7efc9e66d79"
+    },
+    {
+      "frame": 72,
+      "at": 39051,
+      "file": "frames/072.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "bc3dd77149fdcd8d19da5ff7cc49331044dfa41221f75ba35feeace863df142f"
+    },
+    {
+      "frame": 73,
+      "at": 39765,
+      "file": "frames/073.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "e17609c46cab28593a389f3b4609294212d0ede8a84b06fb5abdd9b12c5b783c"
+    },
+    {
+      "frame": 74,
+      "at": 40150,
+      "file": "frames/074.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "63157550a4960e0c824269b4938a01218f641f4cd85d451a6e82446d37e718ab"
+    },
+    {
+      "frame": 75,
+      "at": 40701,
+      "file": "frames/075.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "dede912e9cd235f63480cfb26186b610d00bc2073286654a288534e526ead9f3"
+    },
+    {
+      "frame": 76,
+      "at": 41251,
+      "file": "frames/076.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "ee65db05e34663c9237b9ca10bbb657c8383e011ab460d693da90fb3f3696dd4"
+    },
+    {
+      "frame": 77,
+      "at": 41801,
+      "file": "frames/077.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "29870bf07b02225878cafcd7af05757d4c5180e744b38ef16a66584c8695193a"
+    },
+    {
+      "frame": 78,
+      "at": 42351,
+      "file": "frames/078.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "c8c69032cfa2fe105f1f8c4f068abc56858e98b85ca81d3f84033b5877726d58"
+    },
+    {
+      "frame": 79,
+      "at": 42901,
+      "file": "frames/079.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 1\nSURGE · ×3",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "ab4823837b2708547bdac5d9b141fe9bf10b45f7c408f3b2939caf6c8d5ca99c"
+    },
+    {
+      "frame": 80,
+      "at": 43451,
+      "file": "frames/080.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 1\nSURGE · ×3",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "7a2561e61cf763cbee2c92d5925af8b40b08a44a9e0d41875c1933b3fc3e5e90"
+    },
+    {
+      "frame": 81,
+      "at": 44001,
+      "file": "frames/081.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 1\nSURGE · ×3",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "65edcd70367bd84dbfc995312c1d2622f1e0ca47d9d40f51c522aab2c0385343"
+    },
+    {
+      "frame": 82,
+      "at": 44815,
+      "file": "frames/082.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "21df2c72b576d86fcd0385a66785fd0903d58395ea3293554882c925ce5818b7"
+    },
+    {
+      "frame": 83,
+      "at": 45113,
+      "file": "frames/083.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "2c4a55d3f3e0f4194ba708aa630b96af71d57ec071be3cd9ec1392625da3e5a6"
+    },
+    {
+      "frame": 84,
+      "at": 45651,
+      "file": "frames/084.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "163008f234e155357268be2709ec03cab95bba41eee5fe3f24e3c5450993068d"
+    },
+    {
+      "frame": 85,
+      "at": 46201,
+      "file": "frames/085.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nSURGE · ×3",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "8446dae4a3ebe5bb6c8539aea60b963f8f0ada9fe618fe419c1bb3cf79843a0a"
+    },
+    {
+      "frame": 86,
+      "at": 46750,
+      "file": "frames/086.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nSURGE · ×3",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "a93954a4f838d7a7f376aeb2ff08d931554920ca3c325eae24668cc6bf8cff84"
+    },
+    {
+      "frame": 87,
+      "at": 47302,
+      "file": "frames/087.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nSURGE · ×3",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "d2724fd17becef473950d53775dd1f913693d3d4f59b8454a3ea36bcfa703143"
+    },
+    {
+      "frame": 88,
+      "at": 47850,
+      "file": "frames/088.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "2802e17461a200d005c1acce550c9944f75f358fb42994e7988f2aa0fbef1e84"
+    },
+    {
+      "frame": 89,
+      "at": 48401,
+      "file": "frames/089.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "09ead4dd7a22ae434f50ee1e7c294a527e77818a7e84f55442d94a268099e0a8"
+    },
+    {
+      "frame": 90,
+      "at": 48950,
+      "file": "frames/090.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "59d309de3f518c98a2612ffe7a5338b8a5ede290e08f9ff1e794174f0f14390b"
+    },
+    {
+      "frame": 91,
+      "at": 49690,
+      "file": "frames/091.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "cfd18f433c8d17b787fa0148cd2293c5d29a29bc7f0ba8bb6474eb0cb685197b"
+    },
+    {
+      "frame": 92,
+      "at": 50050,
+      "file": "frames/092.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "300226a496920dc4ec094ece502fa722c0a471619d861c41dfaacae2111c8818"
+    },
+    {
+      "frame": 93,
+      "at": 50600,
+      "file": "frames/093.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "4ad8c78bd0a44c5fc6069e46deaebadababb41da94e96bd7724e76782231a495"
+    },
+    {
+      "frame": 94,
+      "at": 51150,
+      "file": "frames/094.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "c4dcf84416116a55126f730249bc6241f063e5ff2ece27d8f79b4afa5ccc2ac0"
+    },
+    {
+      "frame": 95,
+      "at": 51700,
+      "file": "frames/095.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "95770985ce33fa2e9d0313e9cd5e002cf62a45daaf0e72768b79c7f27f53188a"
+    },
+    {
+      "frame": 96,
+      "at": 52251,
+      "file": "frames/096.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "329540becc3219e6ced4eb3c0013f8a12914e1b674350f81aef997568b223797"
+    },
+    {
+      "frame": 97,
+      "at": 52800,
+      "file": "frames/097.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "fb76fc33a5c0a100bdcb4de2c96261a061f589e178ad94a92cc9966fb0f24f3a"
+    },
+    {
+      "frame": 98,
+      "at": 53351,
+      "file": "frames/098.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "53c2f62528126cf3cecec7f317d96ef71ec66a61884f320a16ed0f791091502a"
+    },
+    {
+      "frame": 99,
+      "at": 53901,
+      "file": "frames/099.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "8a116f8a90e35377cc980fa72bd09e499436667e7d758f96f10eccd7ab7e2931"
+    },
+    {
+      "frame": 100,
+      "at": 54659,
+      "file": "frames/100.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "66c9654d88ce44d195533849b23a14b316af99f815c0224022abc8dee41c347b"
+    },
+    {
+      "frame": 101,
+      "at": 55000,
+      "file": "frames/101.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "72c4d357f98868cef030a177eed727a38b65b5dac98797ab27a995f7ec3c5932"
+    },
+    {
+      "frame": 102,
+      "at": 55550,
+      "file": "frames/102.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "a61d24b144504423255b2adc21d2753ec75a731d694b811e7bf4accb7f5de997"
+    },
+    {
+      "frame": 103,
+      "at": 56101,
+      "file": "frames/103.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "0369ee840165ad729709f9d305830cc81ac8e6a29bc813e8dc16ce9bce8cd414"
+    },
+    {
+      "frame": 104,
+      "at": 56651,
+      "file": "frames/104.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "05d235b682cfef4f973f835c1b7f2d9184c91c7c753a3cd56a546579bab4dad3"
+    },
+    {
+      "frame": 105,
+      "at": 57200,
+      "file": "frames/105.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "7a724d3077274d83950a8d33cdc04532e6dd18bd8da73badd61bbe8f833ddc2a"
+    },
+    {
+      "frame": 106,
+      "at": 57750,
+      "file": "frames/106.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "5acd70ac9e8a82b36401505869b9166b36bfc6a3c23c1a00b703966073fa2a72"
+    },
+    {
+      "frame": 107,
+      "at": 58301,
+      "file": "frames/107.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "5196423bbc40d6312aeca01beeb8281872b81096cf20e7f1dff8105c27f9913c"
+    },
+    {
+      "frame": 108,
+      "at": 58851,
+      "file": "frames/108.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "49cf9e9fd12aa5888a5e9992cf737f436c8b0ebf66559a5a3d9e67232e662f39"
+    },
+    {
+      "frame": 109,
+      "at": 59790,
+      "file": "frames/109.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "2f9c1d629fd643e864d62c38901a24be8f3ff6a274a36d45e410309f3b7f69af"
+    },
+    {
+      "frame": 110,
+      "at": 59997,
+      "file": "frames/110.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "640bbd2ab45fa0802b63855b6692d243f185c01001ea60f020afb34e0b5a1b9b"
+    },
+    {
+      "frame": 111,
+      "at": 60501,
+      "file": "frames/111.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "10cbbf5e2e7f1651be1b2fac22d27c7883923b8b8dd421ed6a999e46ffec404f"
+    },
+    {
+      "frame": 112,
+      "at": 61050,
+      "file": "frames/112.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "85c0c49ec38a167916500bd1d82e6dc14894152944e5f2627ab9168226529431"
+    },
+    {
+      "frame": 113,
+      "at": 61601,
+      "file": "frames/113.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "001195b72dde90ae1305b33c33c5993bbedd198310ec4543b9a0e257175ae245"
+    },
+    {
+      "frame": 114,
+      "at": 62150,
+      "file": "frames/114.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "b7064482a0a1285a5be55cd75553b572bc652339174a91c6dc111b5d713d43ee"
+    },
+    {
+      "frame": 115,
+      "at": 62699,
+      "file": "frames/115.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "a26491659b62ec0d03c1dc1357a2333f98f75a9129e71586ffebde52e82a4d06"
+    },
+    {
+      "frame": 116,
+      "at": 63250,
+      "file": "frames/116.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "171b7ebdc832f55c84540e05688dfb0b22fc356295d2c744fe30c33244327801"
+    },
+    {
+      "frame": 117,
+      "at": 63801,
+      "file": "frames/117.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "38a623765d1dddd416182d8e40fd9d1ace78c86a629e8b7c0aed2f4e69b5b396"
+    },
+    {
+      "frame": 118,
+      "at": 64511,
+      "file": "frames/118.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nEDGE · ×4",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "8d2306697f95507274fe927cbdafb30cac72644c31665b874b54e55804f3b897"
+    },
+    {
+      "frame": 119,
+      "at": 64900,
+      "file": "frames/119.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "5d19e896675c12999a01b4fddd63789ca5a48a4f60a8f283ecf29add79d68af8"
+    },
+    {
+      "frame": 120,
+      "at": 65451,
+      "file": "frames/120.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "cf9aa72f3b14efef8a8873d9e6c2ddb2f61ad75f0bf095c50cbc6c9872915358"
+    },
+    {
+      "frame": 121,
+      "at": 66001,
+      "file": "frames/121.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "3ac7fe1020a94abbe590046e1da22f2cbc4b11e4b31e8edfcfc9e88879788430"
+    },
+    {
+      "frame": 122,
+      "at": 66551,
+      "file": "frames/122.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "09aa6796f29320a97981acc058e0d7f6880e103056e4dadae2a9dadfb2a473e0"
+    },
+    {
+      "frame": 123,
+      "at": 67101,
+      "file": "frames/123.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "eb9df7c5c1b2476083b76e7c6cbdd2bea0b7a9f888c648996c387af075606a92"
+    },
+    {
+      "frame": 124,
+      "at": 67651,
+      "file": "frames/124.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "7c29006b7077ab0383ed01f51c3497d7c2e624ff3ea11835e87a1f98200465fa"
+    },
+    {
+      "frame": 125,
+      "at": 68200,
+      "file": "frames/125.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "409969c65d10dd25d4de39d8ba6dc56fd2f575b83e6af601d8d14c05ae40f04e"
+    },
+    {
+      "frame": 126,
+      "at": 68750,
+      "file": "frames/126.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "6d5eb0d9d5aceee3f9c8ea1f23b3e332c0080d6cba7d5464af5000e7fe9dfa22"
+    },
+    {
+      "frame": 127,
+      "at": 69764,
+      "file": "frames/127.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "21390b03734f9a59056a0bf060961cb0e5e20dcb55ced7d367a71a06401a8de2"
+    },
+    {
+      "frame": 128,
+      "at": 70045,
+      "file": "frames/128.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "f6fcbf4572243cf68ed47f13f0b705811987664cf3403de80e82a72f3865dd53"
+    },
+    {
+      "frame": 129,
+      "at": 70400,
+      "file": "frames/129.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "6dbb417afe3281825e86648943941c31756f67a1f4a0f7c5c4ac6d3a6104841d"
+    },
+    {
+      "frame": 130,
+      "at": 70951,
+      "file": "frames/130.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "d4284d759f286c063de4df576b15ff6a1610f8d9f191049356c65e3c3f1904a6"
+    },
+    {
+      "frame": 131,
+      "at": 71501,
+      "file": "frames/131.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "1ccca683abb31befb0137399eed863bee39cec0b9d208d870fbf1cdd113835db"
+    },
+    {
+      "frame": 132,
+      "at": 72051,
+      "file": "frames/132.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "383c429c638f97101bcaf173e58c6474a1872ed87b440b9f8c75655674360542"
+    },
+    {
+      "frame": 133,
+      "at": 72601,
+      "file": "frames/133.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "1df3205ba8d2040c4fcdcff26360c189365fe1185aad902cdba0521329ee5bf0"
+    },
+    {
+      "frame": 134,
+      "at": 73151,
+      "file": "frames/134.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "cbfb2ab62b779a6d89ed58946fe69118347950e48e3b9b461604b10c3470fa16"
+    },
+    {
+      "frame": 135,
+      "at": 73852,
+      "file": "frames/135.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "942fd5ca086f714a98905a140f5f5b788835e1a9fc54d69aba101a0320b4bfa3"
+    },
+    {
+      "frame": 136,
+      "at": 74250,
+      "file": "frames/136.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "006f7ab388c3bbb5e8f393d9639f30fe28bf251fa55d6b99ffdc6ad03f46b296"
+    },
+    {
+      "frame": 137,
+      "at": 74805,
+      "file": "frames/137.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "f220b7055c4bd5e81d709c38686ef2cb4a1dc4c14d6ac6b187a0091bfbd9a04a"
+    },
+    {
+      "frame": 138,
+      "at": 75350,
+      "file": "frames/138.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "f669d4a58c54b985123dfd21c143365a8d64960bccd51667c8740d5b8d54a720"
+    },
+    {
+      "frame": 139,
+      "at": 75901,
+      "file": "frames/139.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "886bfd362c25bf51e0bb6ceeb48d2a29bd7b145ae9547e1224311fb385c5c473"
+    },
+    {
+      "frame": 140,
+      "at": 76450,
+      "file": "frames/140.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "4b06f3b8af2660f3c3cd7dcae083376844d4ae20044014d347ef20ececeae85c"
+    },
+    {
+      "frame": 141,
+      "at": 77000,
+      "file": "frames/141.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "e258961d5c9ebb15aaa122fdebf8b6c912d620eafc8781e85b49033ef26716a5"
+    },
+    {
+      "frame": 142,
+      "at": 77550,
+      "file": "frames/142.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "a4a5c9fd72b98162f8dd27570a9fe43bcd5d0a5115f972c38a1111bfd22315a0"
+    },
+    {
+      "frame": 143,
+      "at": 78101,
+      "file": "frames/143.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "1b1fe023534695a067769bd99f3d38036d32a15e4c4454a6884e6dc2c4b824f3"
+    },
+    {
+      "frame": 144,
+      "at": 79161,
+      "file": "frames/144.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "80ba4c0ebbe51433747fb36b5d6d996e3ba395a1f8f87288d9e81a91ca9a4a2c"
+    },
+    {
+      "frame": 145,
+      "at": 79386,
+      "file": "frames/145.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "2da77cd1bb259c57cffbec026d897eb7dd8765f91e5f185f5ef3e9c13ac2cf37"
+    },
+    {
+      "frame": 146,
+      "at": 79774,
+      "file": "frames/146.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "d2ce4dc1451e047ce102c02502eade961ab4a33239e59424ddf5357c6d006fca"
+    },
+    {
+      "frame": 147,
+      "at": 80301,
+      "file": "frames/147.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "a29f1680584b797802b52a02e5ce6ebacb50fb9d9def0759887d5d0ecb7365ba"
+    },
+    {
+      "frame": 148,
+      "at": 80850,
+      "file": "frames/148.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "b3bf152350b3d5e4a4579cf6e7aea197497277b9222a395656e6bfc7b57ecce3"
+    },
+    {
+      "frame": 149,
+      "at": 81400,
+      "file": "frames/149.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "74960a0e02ceb7cca6002f6a45e07e586bd6a2198a43478c13e3a3ae51f12513"
+    },
+    {
+      "frame": 150,
+      "at": 81951,
+      "file": "frames/150.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "09b0a16cc6e37b198913754b9ea1b78ce841a4bb75c2ed686d1a654d223a624d"
+    },
+    {
+      "frame": 151,
+      "at": 82501,
+      "file": "frames/151.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "4d620b92fbee23037553e153227b2661bf3692b94120ce141d95994e24f2e6b3"
+    },
+    {
+      "frame": 152,
+      "at": 83342,
+      "file": "frames/152.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "385a76c87f33610563a7e1975e00af5d2b683cb1a62ccaca63f7a03832c4e15e"
+    },
+    {
+      "frame": 153,
+      "at": 83599,
+      "file": "frames/153.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "dca6e82aef74c11ee5ce63c1c9ff502155d4d78a7fd3306f67e525484768887c"
+    },
+    {
+      "frame": 154,
+      "at": 84151,
+      "file": "frames/154.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "52888bbc2a4934f20fa69c3f7179c20ab7766613b743c3539f416834d7424408"
+    },
+    {
+      "frame": 155,
+      "at": 84700,
+      "file": "frames/155.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "ea93cbe70e96fca3f5ee2581d37717a8338901b7227f12c9dfcb5b661e9a4417"
+    },
+    {
+      "frame": 156,
+      "at": 85251,
+      "file": "frames/156.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "fc30d4150ee6832fa2af811925ad9aaab18421eb5740002562738090d798f4c4"
+    },
+    {
+      "frame": 157,
+      "at": 85800,
+      "file": "frames/157.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "02e260d1445ffef9e6333029440a142268c6c54964ae225aa2add8cb81a95f13"
+    },
+    {
+      "frame": 158,
+      "at": 86351,
+      "file": "frames/158.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "4d30c23747d058112d8d6e297409a211f1a768e6cc721a4424f75b794860274e"
+    },
+    {
+      "frame": 159,
+      "at": 86901,
+      "file": "frames/159.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "59179ffb4345700c5b5961048636d65ad433bf43fdafae9c744f06219f9551c2"
+    },
+    {
+      "frame": 160,
+      "at": 87450,
+      "file": "frames/160.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "32c5e55304bb9450978e63ea7cb4c67970e4f26ee989e18076cc53e82f6e0a6c"
+    },
+    {
+      "frame": 161,
+      "at": 88250,
+      "file": "frames/161.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nEDGE · ×4",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "77d58e0e5572fd5aaab7cbeb7d967b3297c58dec78787f3a33d2a77c5dce0f85"
+    },
+    {
+      "frame": 162,
+      "at": 88550,
+      "file": "frames/162.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "9ab5d157b5c7c72e8b178ce1c18fcd954332db0dc08141e38cdf06bbf029a333"
+    },
+    {
+      "frame": 163,
+      "at": 89101,
+      "file": "frames/163.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "6dbc5f230737e5956c071c02c4811a99312c545c7d3b6d9d92ef6f55c0a6da11"
+    },
+    {
+      "frame": 164,
+      "at": 89651,
+      "file": "frames/164.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "96438771dd7148b0c75db8aab161c0450a450865ff274050023fd1f6ea000223"
+    },
+    {
+      "frame": 165,
+      "at": 90200,
+      "file": "frames/165.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "f140e0e81261b503e073d268c3999ab61e2d4036fd47aed3882abf0ef14dc4ea"
+    },
+    {
+      "frame": 166,
+      "at": 90750,
+      "file": "frames/166.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "8556aa0e6b62170a24397fc39c32ee1cb2f4602d431bebfd4e492cd7ea35d54d"
+    },
+    {
+      "frame": 167,
+      "at": 91301,
+      "file": "frames/167.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "0b82de5cbba921a31b84386daf7aa2e4df800b043e3af070e3f237152f17cd77"
+    },
+    {
+      "frame": 168,
+      "at": 91851,
+      "file": "frames/168.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "795b6ee6f8f7de87abac36038df81e3bf118ad0d92b6b3a38ae17f1a3a004e73"
+    },
+    {
+      "frame": 169,
+      "at": 92400,
+      "file": "frames/169.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "ba81102bff91011ee66ebf57bb495cbef19f4b14a8fd8ee3cd002d8ea3aea52f"
+    },
+    {
+      "frame": 170,
+      "at": 93218,
+      "file": "frames/170.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "246506715e59485ccccc98bb7af1628d9afe1f359e752f9c987619ee0b071b08"
+    },
+    {
+      "frame": 171,
+      "at": 93499,
+      "file": "frames/171.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "6b604da9bc6372d708852aa43d90e83d1987454fc85879efa107919fa94fa9e5"
+    },
+    {
+      "frame": 172,
+      "at": 94051,
+      "file": "frames/172.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "a46957767718ad9716d4a5de301c400b5cd6b292870612168190b767887b912d"
+    },
+    {
+      "frame": 173,
+      "at": 94601,
+      "file": "frames/173.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "db3ad9913d46c66bae38dca7e72d955ff4a3ea36fe08547968ca5819de02074b"
+    },
+    {
+      "frame": 174,
+      "at": 95151,
+      "file": "frames/174.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "b109ef7de0e26826f98341c728fac57efbc1a4b6751176945ae7a7dea0a306f7"
+    },
+    {
+      "frame": 175,
+      "at": 95700,
+      "file": "frames/175.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "fb61f0783a373fdceaf69cbba828e9c8a90a37210f476bff4fe5162d86ddefb0"
+    },
+    {
+      "frame": 176,
+      "at": 96251,
+      "file": "frames/176.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "233e2304823539e8d8d5474a9c82cb2f592b32b6642d93a4c8acfc69026213ba"
+    },
+    {
+      "frame": 177,
+      "at": 96800,
+      "file": "frames/177.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "20906592ec959356d26cf6cab0621ed60008d0400bf8c6dac3bf7bf044f92eba"
+    },
+    {
+      "frame": 178,
+      "at": 97351,
+      "file": "frames/178.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "315ed85a7141f5107fafae359321d0b560e83a79c5d074f7c60f1d043c73f8e1"
+    },
+    {
+      "frame": 179,
+      "at": 98105,
+      "file": "frames/179.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nEDGE · ×4",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "8d26065f15dfb566ebc1609c5a82d738bf0a4c5e261e78db5e19c68c02368f27"
+    },
+    {
+      "frame": 180,
+      "at": 98451,
+      "file": "frames/180.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "3b4a138b8df3a59be9344e6f66495f205f31a1e525a20efd02593b6b2ca547f4"
+    },
+    {
+      "frame": 181,
+      "at": 99000,
+      "file": "frames/181.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "b6464572d68537d3435da7a441707c3cf2977e772bc8493fd766e2a329fda358"
+    },
+    {
+      "frame": 182,
+      "at": 99550,
+      "file": "frames/182.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "753fb726f03c384a7d220d3bd656ca7365aecf3c00177456533d1b039c794dcb"
+    },
+    {
+      "frame": 183,
+      "at": 100100,
+      "file": "frames/183.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "5ba6d0f8ea0a5adbc50518ba16fdd5edcba233dbec018665f161b675aea51c9e"
+    },
+    {
+      "frame": 184,
+      "at": 100651,
+      "file": "frames/184.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "737d5a78de2ade02fd9fdd0aeefaf0938d668852c26242c9d24840cef18fc034"
+    },
+    {
+      "frame": 185,
+      "at": 101201,
+      "file": "frames/185.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "d192a48080a700e396acb29ab8aeaa787b4c3f14fd518bc9aada00ed0126060b"
+    },
+    {
+      "frame": 186,
+      "at": 101750,
+      "file": "frames/186.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "39a4ba19e28dfd94b03ce427f8532249cb9cc69d4544a15fb5e9bcedb390a333"
+    },
+    {
+      "frame": 187,
+      "at": 102301,
+      "file": "frames/187.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "1164c4cf3adfea3ecbe03dc9b5f28d311f075989176b62e1088a56514b46f739"
+    },
+    {
+      "frame": 188,
+      "at": 103020,
+      "file": "frames/188.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "f2b6e3f5ffcded49f5ba7340db606fa40fb20ca68a2801b53f6cc4c764414c41"
+    },
+    {
+      "frame": 189,
+      "at": 103400,
+      "file": "frames/189.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "565b7755d1cac5dbbb177c7ebeddb4ac6626533e66accbc45ffbe6f88951f484"
+    },
+    {
+      "frame": 190,
+      "at": 103951,
+      "file": "frames/190.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "33dfea6170a00bbe2e770b707661b3f25decdd9b3f791812278fb06adf0cc7b2"
+    },
+    {
+      "frame": 191,
+      "at": 104500,
+      "file": "frames/191.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "634c87a71eae7a5fbd7e92cbe2f16f19e0ef09f1b93679be44bed41432dad1c7"
+    },
+    {
+      "frame": 192,
+      "at": 105051,
+      "file": "frames/192.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "65068ad14cc582de0982346260dfd111bfd9e0a257c9e590e6eb3a0f86738b4d"
+    },
+    {
+      "frame": 193,
+      "at": 105600,
+      "file": "frames/193.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "c87059292cbe5fa58ce3a3316ef0ed17de47f7ed4e7ed2868978f97551d05011"
+    },
+    {
+      "frame": 194,
+      "at": 106151,
+      "file": "frames/194.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "3d5e99da25219c7d951e588a38160b9332ca81b9a3fbe1a4b22d0bb2f58dc1d3"
+    },
+    {
+      "frame": 195,
+      "at": 106701,
+      "file": "frames/195.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "60b3a611f025d57b00e945578be9d885c347ae3a59e3509264e6e01e135e6524"
+    },
+    {
+      "frame": 196,
+      "at": 107251,
+      "file": "frames/196.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "1597bfb5fbf7d0a270127f74b7456b5fd88fdd22a697ac61ca18b7e6ddc42ee9"
+    },
+    {
+      "frame": 197,
+      "at": 108095,
+      "file": "frames/197.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nEDGE · ×4",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "9c5ded763afc4a108e1c7c428b2c038088088399b0013c41a17845e3dc3216fa"
+    },
+    {
+      "frame": 198,
+      "at": 108350,
+      "file": "frames/198.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nEDGE · ×4",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "06ad6de77e2dae10c45dfa5b01739b38725cd75dfe7265288b69e98780785230"
+    },
+    {
+      "frame": 199,
+      "at": 108901,
+      "file": "frames/199.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nEDGE · ×4",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "59774e4eee748d60a1e5bac227a5f255a816cb979d53c079b4c1d5635ec47ee6"
+    },
+    {
+      "frame": 200,
+      "at": 109451,
+      "file": "frames/200.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nEDGE · ×4",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "1bde72c716fc0dd6d61405856d50f12d6d4a76798069e9270c92792cdabc1ce1"
+    },
+    {
+      "frame": 201,
+      "at": 110001,
+      "file": "frames/201.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nEDGE · ×4",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "ba45fd8ad5e39388e54c04a8c55e9e0ac1ef4a0f9bb6e41cb913fa1b7f152ba7"
+    },
+    {
+      "frame": 202,
+      "at": 110550,
+      "file": "frames/202.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nEDGE · ×4",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "6036c5009fd90bbc6a1d610a1e02f2a20e23ad8a5b1857922e031f48dfe09f58"
+    },
+    {
+      "frame": 203,
+      "at": 111100,
+      "file": "frames/203.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nEDGE · ×4",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "a480c43750e77976884317661962ea270e6d2a6c47dddfa6f38d94b8424660b0"
+    },
+    {
+      "frame": 204,
+      "at": 111651,
+      "file": "frames/204.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nEDGE · ×4",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "c2e743815f0db91f67314b3c16f3ce308ec25ea2d3e69ff68d6692bd37b8baa3"
+    },
+    {
+      "frame": 205,
+      "at": 112201,
+      "file": "frames/205.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "dcaab32c4170e9198edbb52f4c5eb15d21658df0d236333991d4baffd13b4f3e"
+    },
+    {
+      "frame": 206,
+      "at": 112965,
+      "file": "frames/206.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "9520276db7addd77501877a464ca248c2fda8a146fc7b7bd5ba23ca2281b32d9"
+    },
+    {
+      "frame": 207,
+      "at": 113300,
+      "file": "frames/207.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "d9dafe4b16ee0fd7d8834f91049951c2e29cbac3e5a561e2b2cdc79c19c62052"
+    },
+    {
+      "frame": 208,
+      "at": 113850,
+      "file": "frames/208.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "f84d7557a880f91bdfb523edb8654c237b83a87be83ea38e9512e81cac93425e"
+    },
+    {
+      "frame": 209,
+      "at": 114400,
+      "file": "frames/209.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "b6ca36de5762187f81ca922dd7c23e3e2e2478f6c9b16d76871e265d39a68b34"
+    },
+    {
+      "frame": 210,
+      "at": 114951,
+      "file": "frames/210.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "261479e4c434650e4de0e5ae8e5c7e0127238be4e4b768dd412c8f8f8c57d267"
+    },
+    {
+      "frame": 211,
+      "at": 115501,
+      "file": "frames/211.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "4e1ab256b48f63f71d9bf03fb51675645a91dca1b0beb20cd81964a84931eb7f"
+    },
+    {
+      "frame": 212,
+      "at": 116050,
+      "file": "frames/212.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "30e0130934fd649a300cc1dc2abb31dac6a7a9ac21291c6a30ee7cd716f6f2c6"
+    },
+    {
+      "frame": 213,
+      "at": 116600,
+      "file": "frames/213.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "3b8468daa7148e238de1f4d63944f5bb33e660749f28288218747693805cb882"
+    },
+    {
+      "frame": 214,
+      "at": 117151,
+      "file": "frames/214.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nCRUISE · ×2",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "df92c1357f844e1c7e9dc53e037020f37880cd11bf76f73848977c0488c683f4"
+    },
+    {
+      "frame": 215,
+      "at": 117921,
+      "file": "frames/215.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nEDGE · ×4",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "9f62971a16b5a395bea72da9a30844c07f4bea57ac1b0278d512e0db3f40e6b3"
+    },
+    {
+      "frame": 216,
+      "at": 118250,
+      "file": "frames/216.jpg",
+      "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5",
+      "buttons": [
+        {
+          "id": "pause-btn",
+          "text": "",
+          "label": "Pause run"
+        }
+      ],
+      "sha256": "1813a5e7100446553af61567c20af841adfe390894694e19c31891d56d1e3ac2"
+    }
+  ],
+  "actions": [
+    {
+      "at": 5067,
+      "what": "Click START RUN"
+    },
+    {
+      "at": 7872,
+      "what": "Click visible pink shape",
+      "target": {
+        "x": 476,
+        "y": 530,
+        "n": 10
+      }
+    },
+    {
+      "at": 11713,
+      "what": "Try pull-back and release toward visible threat",
+      "target": null
+    },
+    {
+      "at": 13291,
+      "what": "Try pull-back and release toward visible threat",
+      "target": null
+    },
+    {
+      "at": 14944,
+      "what": "Try pull-back and release toward visible threat",
+      "target": null
+    },
+    {
+      "at": 19259,
+      "what": "Try pull-back and release toward visible threat",
+      "target": null
+    },
+    {
+      "at": 23331,
+      "what": "Try pull-back and release toward visible threat",
+      "target": null
+    },
+    {
+      "at": 24813,
+      "what": "Try pull-back and release toward visible threat",
+      "target": null
+    },
+    {
+      "at": 34733,
+      "what": "Skip tutorial after repeated attempts; do not force completion"
+    },
+    {
+      "at": 35942,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 29
+      }
+    },
+    {
+      "at": 37638,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 577,
+        "y": 421,
+        "n": 6
+      }
+    },
+    {
+      "at": 39763,
+      "what": "Slingshot toward a screen-visible threat",
+      "target": {
+        "x": 611,
+        "y": 633,
+        "n": 15
+      }
+    },
+    {
+      "at": 40912,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 611,
+        "y": 633,
+        "n": 15
+      }
+    },
+    {
+      "at": 42572,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 611,
+        "y": 632,
+        "n": 22
+      }
+    },
+    {
+      "at": 44813,
+      "what": "Slingshot toward a screen-visible threat",
+      "target": {
+        "x": 611,
+        "y": 632,
+        "n": 22
+      }
+    },
+    {
+      "at": 45873,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 29
+      }
+    },
+    {
+      "at": 47566,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    },
+    {
+      "at": 49688,
+      "what": "Slingshot toward a screen-visible threat",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    },
+    {
+      "at": 50798,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 29
+      }
+    },
+    {
+      "at": 52540,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 200,
+        "y": 132,
+        "n": 22
+      }
+    },
+    {
+      "at": 54658,
+      "what": "Slingshot toward a screen-visible threat",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    },
+    {
+      "at": 55794,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 29
+      }
+    },
+    {
+      "at": 57414,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 200,
+        "y": 132,
+        "n": 22
+      }
+    },
+    {
+      "at": 59789,
+      "what": "Slingshot toward a screen-visible threat",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    },
+    {
+      "at": 60734,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 29
+      }
+    },
+    {
+      "at": 62400,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 200,
+        "y": 132,
+        "n": 22
+      }
+    },
+    {
+      "at": 64509,
+      "what": "Slingshot toward a screen-visible threat",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 22
+      }
+    },
+    {
+      "at": 65728,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 29
+      }
+    },
+    {
+      "at": 67347,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 200,
+        "y": 132,
+        "n": 22
+      }
+    },
+    {
+      "at": 69763,
+      "what": "Slingshot toward a screen-visible threat",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    },
+    {
+      "at": 70288,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 29
+      }
+    },
+    {
+      "at": 71775,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 200,
+        "y": 132,
+        "n": 22
+      }
+    },
+    {
+      "at": 73851,
+      "what": "Slingshot toward a screen-visible threat",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    },
+    {
+      "at": 75119,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 29
+      }
+    },
+    {
+      "at": 76696,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    },
+    {
+      "at": 79160,
+      "what": "Slingshot toward a screen-visible threat",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    },
+    {
+      "at": 79773,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 29
+      }
+    },
+    {
+      "at": 81096,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    },
+    {
+      "at": 83340,
+      "what": "Slingshot toward a screen-visible threat",
+      "target": {
+        "x": 200,
+        "y": 132,
+        "n": 22
+      }
+    },
+    {
+      "at": 84407,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 29
+      }
+    },
+    {
+      "at": 86073,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    },
+    {
+      "at": 88249,
+      "what": "Slingshot toward a screen-visible threat",
+      "target": {
+        "x": 200,
+        "y": 132,
+        "n": 22
+      }
+    },
+    {
+      "at": 89336,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 29
+      }
+    },
+    {
+      "at": 90969,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    },
+    {
+      "at": 93217,
+      "what": "Slingshot toward a screen-visible threat",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    },
+    {
+      "at": 94319,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 29
+      }
+    },
+    {
+      "at": 96021,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    },
+    {
+      "at": 98104,
+      "what": "Slingshot toward a screen-visible threat",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    },
+    {
+      "at": 99292,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 29
+      }
+    },
+    {
+      "at": 100936,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 200,
+        "y": 132,
+        "n": 22
+      }
+    },
+    {
+      "at": 103013,
+      "what": "Slingshot toward a screen-visible threat",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    },
+    {
+      "at": 104206,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 29
+      }
+    },
+    {
+      "at": 105951,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 200,
+        "y": 132,
+        "n": 22
+      }
+    },
+    {
+      "at": 108094,
+      "what": "Slingshot toward a screen-visible threat",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    },
+    {
+      "at": 109162,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 29
+      }
+    },
+    {
+      "at": 110759,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 200,
+        "y": 132,
+        "n": 22
+      }
+    },
+    {
+      "at": 112964,
+      "what": "Slingshot toward a screen-visible threat",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    },
+    {
+      "at": 114071,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 29
+      }
+    },
+    {
+      "at": 115753,
+      "what": "Click screen-visible shape",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    },
+    {
+      "at": 117919,
+      "what": "Slingshot toward a screen-visible threat",
+      "target": {
+        "x": 201,
+        "y": 132,
+        "n": 23
+      }
+    }
+  ],
+  "errors": [],
+  "distSha256": "f069f473662b72c970e673a5e5a28c21cfeb1be6ca659590adee1d9507186230"
+}

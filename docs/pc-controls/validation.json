@@ -1,0 +1,107 @@
+{
+  "scope": "Desktop direct cursor aiming and stronger protected chromatic optics; touch retains reverse pull.",
+  "tests": {
+    "full": {
+      "command": "npm test",
+      "passed": 1527,
+      "failed": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "focused": {
+      "passed": 75,
+      "failed": 0
+    },
+    "desktopBrowser": {
+      "beforeObservations": 9,
+      "afterCasesPassed": 10,
+      "includes": "7px/9px jitter, live retarget, return-to-origin, camera pan, Escape, right cancel, off-canvas release, capture loss, full-power label and preview/release equality"
+    },
+    "webGL": {
+      "beforeScenariosPassed": 20,
+      "afterScenariosPassed": 20,
+      "method": "Controlled actual software WebGL: desktop/portrait, motion/reduced, Off/idle/focus/release/native-earned-chain; read-only state and cleanup assertions."
+    }
+  },
+  "ordinaryStartRun": {
+    "passed": true,
+    "cases": [
+      {
+        "action": "click",
+        "shotsBefore": 1,
+        "shotsAfter": 2,
+        "powerAfter": 0.7547619047619047,
+        "postFXVisible": true,
+        "paused": false
+      },
+      {
+        "action": "small-drag",
+        "shotsBefore": 2,
+        "shotsAfter": 3,
+        "powerAfter": 1,
+        "postFXVisible": true,
+        "paused": false
+      },
+      {
+        "action": "retarget",
+        "shotsBefore": 3,
+        "shotsAfter": 4,
+        "powerAfter": 1,
+        "postFXVisible": true,
+        "paused": false
+      },
+      {
+        "action": "right-cancel",
+        "shotsBefore": 4,
+        "shotsAfter": 4,
+        "powerAfter": 1,
+        "postFXVisible": true,
+        "paused": false
+      },
+      {
+        "action": "escape-cancel",
+        "shotsBefore": 4,
+        "shotsAfter": 4,
+        "powerAfter": 1,
+        "postFXVisible": true,
+        "paused": false
+      },
+      {
+        "action": "charge-release",
+        "shotsBefore": 4,
+        "shotsAfter": 5,
+        "powerAfter": 1,
+        "postFXVisible": true,
+        "paused": false
+      }
+    ],
+    "final": {
+      "shots": 5,
+      "kills": 0,
+      "phase": "playing",
+      "frameErrors": []
+    },
+    "pageErrors": [],
+    "equipmentSaveUnchanged": true,
+    "injections": "Only tutorial-completion, motion and PostFX On preferences. No run, HP, actor, charge or renderer-state injection. Debug state and draw trace are read-only.",
+    "limitations": "Short scripted ordinary interaction run, not a human usability study. Latest recording has zero kills: launch/cancel success is not proof of hit success. Software GPU, no hardware FPS/latency certification. Video records WebGL canvas, not DOM HUD/pointer label."
+  },
+  "build": {
+    "command": "npm run build",
+    "passed": true,
+    "singleFileKiB": 1337.3,
+    "gzipKB": 493.05
+  },
+  "diffCheckPassed": true,
+  "evidence": {
+    "review": "review.md",
+    "ordinaryResults": "play/results.json",
+    "ordinaryVideo": "play/pc-gameplay.webm",
+    "desktopBefore": "before/controls.json",
+    "desktopAfter": "after/controls.json",
+    "lensBefore": "lens-before/browser-results.json",
+    "lensAfter": "lens-after/browser-results.json"
+  },
+  "git": "No commit or push. Prior working-tree changes preserved.",
+  "historicalNotice": "Superseded by docs/inverted-controls/validation.json. This file records the previous direct-aim experiment, not current acceptance criteria."
+}

@@ -1,0 +1,1174 @@
+{
+  "backingScale": 1,
+  "method": "Controlled createRun/createRenderer. Real focus/dash APIs and admitted primary contacts; no fabricated chain scalar. Software WebGL exercises the real shader, screenshots include its output. Setup and contacts are test fixtures, not ordinary progression or device FPS certification.",
+  "rows": [
+    {
+      "width": 960,
+      "height": 540,
+      "motion": true,
+      "stages": [
+        {
+          "name": "off",
+          "backing": [
+            960,
+            540
+          ],
+          "fx": {
+            "mode": "off",
+            "active": false,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0,
+              "streak": 0,
+              "beat": 0,
+              "release": 0,
+              "chromatic": 0.32,
+              "blur": 0.14,
+              "contrast": 1.085,
+              "saturation": 1.025,
+              "vignette": 0.075,
+              "bloom": 0.1,
+              "tint": 0,
+              "grain": 0.002
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": null,
+          "chain": 0,
+          "held": false,
+          "shots": 0,
+          "kills": 0,
+          "sourceOpacity": "",
+          "events": [
+            "waveStart"
+          ]
+        },
+        {
+          "name": "idle",
+          "backing": [
+            960,
+            540
+          ],
+          "fx": {
+            "mode": "on",
+            "active": true,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0,
+              "streak": 0,
+              "beat": 0,
+              "release": 0,
+              "chromatic": 0.32,
+              "blur": 0.14,
+              "contrast": 1.085,
+              "saturation": 1.025,
+              "vignette": 0.075,
+              "bloom": 0.1,
+              "tint": 0,
+              "grain": 0.002
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": [
+            62,
+            62,
+            69,
+            255
+          ],
+          "chain": 0,
+          "held": false,
+          "shots": 0,
+          "kills": 0,
+          "sourceOpacity": "0",
+          "outputVisible": "block",
+          "events": [
+            "waveStart"
+          ]
+        },
+        {
+          "name": "focus",
+          "backing": [
+            960,
+            540
+          ],
+          "fx": {
+            "mode": "on",
+            "active": true,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0.9891618904294261,
+              "streak": 0,
+              "beat": 0,
+              "release": 0,
+              "chromatic": 0.9332803720662441,
+              "blur": 0.5554479939803589,
+              "contrast": 1.1097290472607355,
+              "saturation": 1.025,
+              "vignette": 0.15907876068650123,
+              "bloom": 0.1,
+              "tint": -0.024729047260735656,
+              "grain": 0.002
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": [
+            60,
+            61,
+            70,
+            255
+          ],
+          "chain": 0,
+          "held": true,
+          "shots": 0,
+          "kills": 0,
+          "sourceOpacity": "0",
+          "outputVisible": "block",
+          "events": [
+            "waveStart"
+          ]
+        },
+        {
+          "name": "release",
+          "backing": [
+            960,
+            540
+          ],
+          "fx": {
+            "mode": "on",
+            "active": true,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0.8902457013864835,
+              "streak": 0,
+              "beat": 0,
+              "release": 1,
+              "chromatic": 1.2519523348596198,
+              "blur": 0.5139031945823231,
+              "contrast": 1.107256142534662,
+              "saturation": 1.025,
+              "vignette": 0.1506708846178511,
+              "bloom": 0.1,
+              "tint": -0.02225614253466209,
+              "grain": 0.002
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": [
+            60,
+            61,
+            70,
+            255
+          ],
+          "chain": 0,
+          "held": false,
+          "shots": 1,
+          "kills": 0,
+          "sourceOpacity": "0",
+          "outputVisible": "block",
+          "events": [
+            "waveStart",
+            "dash"
+          ]
+        },
+        {
+          "name": "streak",
+          "backing": [
+            960,
+            540
+          ],
+          "fx": {
+            "mode": "on",
+            "active": true,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0.1484678931936949,
+              "streak": 0.3125285204677672,
+              "beat": 0.15042534576119812,
+              "release": 0.05161166420987536,
+              "chromatic": 0.5830498268672437,
+              "blur": 0.22735879677877327,
+              "contrast": 1.0996501955462141,
+              "saturation": 1.0390637834210494,
+              "vignette": 0.10480883954719127,
+              "bloom": 0.12714188353438566,
+              "tint": 0.007226800886529479,
+              "grain": 0.002
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": [
+            62,
+            62,
+            68,
+            255
+          ],
+          "chain": 5,
+          "held": false,
+          "shots": 1,
+          "kills": 5,
+          "sourceOpacity": "0",
+          "outputVisible": "block",
+          "events": [
+            "waveStart",
+            "dash",
+            "tier",
+            "fractureGain",
+            "cut",
+            "fractureGain",
+            "cut",
+            "shear",
+            "fractureGain",
+            "cut",
+            "fractureGain",
+            "cut",
+            "fractureGain",
+            "cut",
+            "hyper"
+          ]
+        }
+      ],
+      "cleanup": {
+        "state": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.32,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "removed": true,
+        "opacity": ""
+      },
+      "errors": []
+    },
+    {
+      "width": 960,
+      "height": 540,
+      "motion": false,
+      "stages": [
+        {
+          "name": "off",
+          "backing": [
+            960,
+            540
+          ],
+          "fx": {
+            "mode": "off",
+            "active": false,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0,
+              "streak": 0,
+              "beat": 0,
+              "release": 0,
+              "chromatic": 0,
+              "blur": 0,
+              "contrast": 1.085,
+              "saturation": 1.025,
+              "vignette": 0.075,
+              "bloom": 0.1,
+              "tint": 0,
+              "grain": 0
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": null,
+          "chain": 0,
+          "held": false,
+          "shots": 0,
+          "kills": 0,
+          "sourceOpacity": "",
+          "events": [
+            "waveStart"
+          ]
+        },
+        {
+          "name": "idle",
+          "backing": [
+            960,
+            540
+          ],
+          "fx": {
+            "mode": "on",
+            "active": true,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0,
+              "streak": 0,
+              "beat": 0,
+              "release": 0,
+              "chromatic": 0,
+              "blur": 0,
+              "contrast": 1.085,
+              "saturation": 1.025,
+              "vignette": 0.075,
+              "bloom": 0.1,
+              "tint": 0,
+              "grain": 0
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": [
+            62,
+            62,
+            69,
+            255
+          ],
+          "chain": 0,
+          "held": false,
+          "shots": 0,
+          "kills": 0,
+          "sourceOpacity": "0",
+          "outputVisible": "block",
+          "events": [
+            "waveStart"
+          ]
+        },
+        {
+          "name": "focus",
+          "backing": [
+            960,
+            540
+          ],
+          "fx": {
+            "mode": "on",
+            "active": true,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0,
+              "streak": 0,
+              "beat": 0,
+              "release": 0,
+              "chromatic": 0,
+              "blur": 0,
+              "contrast": 1.085,
+              "saturation": 1.025,
+              "vignette": 0.075,
+              "bloom": 0.1,
+              "tint": 0,
+              "grain": 0
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": [
+            62,
+            62,
+            69,
+            255
+          ],
+          "chain": 0,
+          "held": true,
+          "shots": 0,
+          "kills": 0,
+          "sourceOpacity": "0",
+          "outputVisible": "block",
+          "events": [
+            "waveStart"
+          ]
+        },
+        {
+          "name": "release",
+          "backing": [
+            960,
+            540
+          ],
+          "fx": {
+            "mode": "on",
+            "active": true,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0,
+              "streak": 0,
+              "beat": 0,
+              "release": 0,
+              "chromatic": 0,
+              "blur": 0,
+              "contrast": 1.085,
+              "saturation": 1.025,
+              "vignette": 0.075,
+              "bloom": 0.1,
+              "tint": 0,
+              "grain": 0
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": [
+            62,
+            62,
+            69,
+            255
+          ],
+          "chain": 0,
+          "held": false,
+          "shots": 1,
+          "kills": 0,
+          "sourceOpacity": "0",
+          "outputVisible": "block",
+          "events": [
+            "waveStart",
+            "dash"
+          ]
+        },
+        {
+          "name": "streak",
+          "backing": [
+            960,
+            540
+          ],
+          "fx": {
+            "mode": "on",
+            "active": true,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0,
+              "streak": 0,
+              "beat": 0,
+              "release": 0,
+              "chromatic": 0,
+              "blur": 0,
+              "contrast": 1.085,
+              "saturation": 1.025,
+              "vignette": 0.075,
+              "bloom": 0.1,
+              "tint": 0,
+              "grain": 0
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": [
+            62,
+            62,
+            69,
+            255
+          ],
+          "chain": 5,
+          "held": false,
+          "shots": 1,
+          "kills": 5,
+          "sourceOpacity": "0",
+          "outputVisible": "block",
+          "events": [
+            "waveStart",
+            "dash",
+            "tier",
+            "fractureGain",
+            "cut",
+            "fractureGain",
+            "cut",
+            "shear",
+            "fractureGain",
+            "cut",
+            "fractureGain",
+            "cut",
+            "fractureGain",
+            "cut",
+            "hyper"
+          ]
+        }
+      ],
+      "cleanup": {
+        "state": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0,
+            "blur": 0,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "removed": true,
+        "opacity": ""
+      },
+      "errors": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": true,
+      "stages": [
+        {
+          "name": "off",
+          "backing": [
+            390,
+            844
+          ],
+          "fx": {
+            "mode": "off",
+            "active": false,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0,
+              "streak": 0,
+              "beat": 0,
+              "release": 0,
+              "chromatic": 0.32,
+              "blur": 0.14,
+              "contrast": 1.085,
+              "saturation": 1.025,
+              "vignette": 0.075,
+              "bloom": 0.1,
+              "tint": 0,
+              "grain": 0.002
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": null,
+          "chain": 0,
+          "held": false,
+          "shots": 0,
+          "kills": 0,
+          "sourceOpacity": "",
+          "events": [
+            "waveStart"
+          ]
+        },
+        {
+          "name": "idle",
+          "backing": [
+            390,
+            844
+          ],
+          "fx": {
+            "mode": "on",
+            "active": true,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0,
+              "streak": 0,
+              "beat": 0,
+              "release": 0,
+              "chromatic": 0.32,
+              "blur": 0.14,
+              "contrast": 1.085,
+              "saturation": 1.025,
+              "vignette": 0.075,
+              "bloom": 0.1,
+              "tint": 0,
+              "grain": 0.002
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": [
+            54,
+            55,
+            67,
+            255
+          ],
+          "chain": 0,
+          "held": false,
+          "shots": 0,
+          "kills": 0,
+          "sourceOpacity": "0",
+          "outputVisible": "block",
+          "events": [
+            "waveStart"
+          ]
+        },
+        {
+          "name": "focus",
+          "backing": [
+            390,
+            844
+          ],
+          "fx": {
+            "mode": "on",
+            "active": true,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0.9891618904294261,
+              "streak": 0,
+              "beat": 0,
+              "release": 0,
+              "chromatic": 0.9332803720662441,
+              "blur": 0.5554479939803589,
+              "contrast": 1.1097290472607355,
+              "saturation": 1.025,
+              "vignette": 0.15907876068650123,
+              "bloom": 0.1,
+              "tint": -0.024729047260735656,
+              "grain": 0.002
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": [
+            52,
+            53,
+            67,
+            255
+          ],
+          "chain": 0,
+          "held": true,
+          "shots": 0,
+          "kills": 0,
+          "sourceOpacity": "0",
+          "outputVisible": "block",
+          "events": [
+            "waveStart"
+          ]
+        },
+        {
+          "name": "release",
+          "backing": [
+            390,
+            844
+          ],
+          "fx": {
+            "mode": "on",
+            "active": true,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0.8902457013864835,
+              "streak": 0,
+              "beat": 0,
+              "release": 1,
+              "chromatic": 1.2519523348596198,
+              "blur": 0.5139031945823231,
+              "contrast": 1.107256142534662,
+              "saturation": 1.025,
+              "vignette": 0.1506708846178511,
+              "bloom": 0.1,
+              "tint": -0.02225614253466209,
+              "grain": 0.002
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": [
+            52,
+            53,
+            67,
+            255
+          ],
+          "chain": 0,
+          "held": false,
+          "shots": 1,
+          "kills": 0,
+          "sourceOpacity": "0",
+          "outputVisible": "block",
+          "events": [
+            "waveStart",
+            "dash"
+          ]
+        },
+        {
+          "name": "streak",
+          "backing": [
+            390,
+            844
+          ],
+          "fx": {
+            "mode": "on",
+            "active": true,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0.1484678931936949,
+              "streak": 0.3125285204677672,
+              "beat": 0.15042534576119812,
+              "release": 0.05161166420987536,
+              "chromatic": 0.5830498268672437,
+              "blur": 0.22735879677877327,
+              "contrast": 1.0996501955462141,
+              "saturation": 1.0390637834210494,
+              "vignette": 0.10480883954719127,
+              "bloom": 0.12714188353438566,
+              "tint": 0.007226800886529479,
+              "grain": 0.002
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": [
+            53,
+            54,
+            66,
+            255
+          ],
+          "chain": 5,
+          "held": false,
+          "shots": 1,
+          "kills": 5,
+          "sourceOpacity": "0",
+          "outputVisible": "block",
+          "events": [
+            "waveStart",
+            "dash",
+            "tier",
+            "fractureGain",
+            "cut",
+            "fractureGain",
+            "cut",
+            "shear",
+            "fractureGain",
+            "cut",
+            "fractureGain",
+            "cut",
+            "fractureGain",
+            "cut",
+            "hyper"
+          ]
+        }
+      ],
+      "cleanup": {
+        "state": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0.32,
+            "blur": 0.14,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0.002
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "removed": true,
+        "opacity": ""
+      },
+      "errors": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "motion": false,
+      "stages": [
+        {
+          "name": "off",
+          "backing": [
+            390,
+            844
+          ],
+          "fx": {
+            "mode": "off",
+            "active": false,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0,
+              "streak": 0,
+              "beat": 0,
+              "release": 0,
+              "chromatic": 0,
+              "blur": 0,
+              "contrast": 1.085,
+              "saturation": 1.025,
+              "vignette": 0.075,
+              "bloom": 0.1,
+              "tint": 0,
+              "grain": 0
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": null,
+          "chain": 0,
+          "held": false,
+          "shots": 0,
+          "kills": 0,
+          "sourceOpacity": "",
+          "events": [
+            "waveStart"
+          ]
+        },
+        {
+          "name": "idle",
+          "backing": [
+            390,
+            844
+          ],
+          "fx": {
+            "mode": "on",
+            "active": true,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0,
+              "streak": 0,
+              "beat": 0,
+              "release": 0,
+              "chromatic": 0,
+              "blur": 0,
+              "contrast": 1.085,
+              "saturation": 1.025,
+              "vignette": 0.075,
+              "bloom": 0.1,
+              "tint": 0,
+              "grain": 0
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": [
+            54,
+            55,
+            67,
+            255
+          ],
+          "chain": 0,
+          "held": false,
+          "shots": 0,
+          "kills": 0,
+          "sourceOpacity": "0",
+          "outputVisible": "block",
+          "events": [
+            "waveStart"
+          ]
+        },
+        {
+          "name": "focus",
+          "backing": [
+            390,
+            844
+          ],
+          "fx": {
+            "mode": "on",
+            "active": true,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0,
+              "streak": 0,
+              "beat": 0,
+              "release": 0,
+              "chromatic": 0,
+              "blur": 0,
+              "contrast": 1.085,
+              "saturation": 1.025,
+              "vignette": 0.075,
+              "bloom": 0.1,
+              "tint": 0,
+              "grain": 0
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": [
+            54,
+            55,
+            67,
+            255
+          ],
+          "chain": 0,
+          "held": true,
+          "shots": 0,
+          "kills": 0,
+          "sourceOpacity": "0",
+          "outputVisible": "block",
+          "events": [
+            "waveStart"
+          ]
+        },
+        {
+          "name": "release",
+          "backing": [
+            390,
+            844
+          ],
+          "fx": {
+            "mode": "on",
+            "active": true,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0,
+              "streak": 0,
+              "beat": 0,
+              "release": 0,
+              "chromatic": 0,
+              "blur": 0,
+              "contrast": 1.085,
+              "saturation": 1.025,
+              "vignette": 0.075,
+              "bloom": 0.1,
+              "tint": 0,
+              "grain": 0
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": [
+            54,
+            55,
+            67,
+            255
+          ],
+          "chain": 0,
+          "held": false,
+          "shots": 1,
+          "kills": 0,
+          "sourceOpacity": "0",
+          "outputVisible": "block",
+          "events": [
+            "waveStart",
+            "dash"
+          ]
+        },
+        {
+          "name": "streak",
+          "backing": [
+            390,
+            844
+          ],
+          "fx": {
+            "mode": "on",
+            "active": true,
+            "lost": false,
+            "uniforms": {
+              "impact": 0,
+              "glitch": 0,
+              "chromatic": 0
+            },
+            "combat": {
+              "focus": 0,
+              "streak": 0,
+              "beat": 0,
+              "release": 0,
+              "chromatic": 0,
+              "blur": 0,
+              "contrast": 1.085,
+              "saturation": 1.025,
+              "vignette": 0.075,
+              "bloom": 0.1,
+              "tint": 0,
+              "grain": 0
+            },
+            "failed": false,
+            "failureReason": null
+          },
+          "readOnly": true,
+          "pixels": [
+            54,
+            55,
+            67,
+            255
+          ],
+          "chain": 5,
+          "held": false,
+          "shots": 1,
+          "kills": 5,
+          "sourceOpacity": "0",
+          "outputVisible": "block",
+          "events": [
+            "waveStart",
+            "dash",
+            "tier",
+            "fractureGain",
+            "cut",
+            "fractureGain",
+            "cut",
+            "shear",
+            "fractureGain",
+            "cut",
+            "fractureGain",
+            "cut",
+            "fractureGain",
+            "cut",
+            "hyper"
+          ]
+        }
+      ],
+      "cleanup": {
+        "state": {
+          "mode": "on",
+          "active": true,
+          "lost": false,
+          "uniforms": {
+            "impact": 0,
+            "glitch": 0,
+            "chromatic": 0
+          },
+          "combat": {
+            "focus": 0,
+            "streak": 0,
+            "beat": 0,
+            "release": 0,
+            "chromatic": 0,
+            "blur": 0,
+            "contrast": 1.085,
+            "saturation": 1.025,
+            "vignette": 0.075,
+            "bloom": 0.1,
+            "tint": 0,
+            "grain": 0
+          },
+          "failed": false,
+          "failureReason": null
+        },
+        "removed": true,
+        "opacity": ""
+      },
+      "errors": []
+    }
+  ]
+}

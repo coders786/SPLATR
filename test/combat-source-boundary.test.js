@@ -16,13 +16,13 @@ for (const name of BOUNDARY_SCENARIOS) {
   });
 }
 
-test('legacy routes plus explicit Ember/Void scheduled-secondary routes have frozen exact compatibility semantics', () => {
+test('legacy routes plus explicit Ember/Void/Reprise/Volt scheduled-secondary routes have frozen exact compatibility semantics', () => {
   const expected = {
     'primary-blade': [false, false, null], 'prism-needle': [true, true, null],
     'core-echo': [true, true, null], 'upgrade-echo': [true, true, null],
     'coil-relay': [true, true, null], 'anchor-floor': [true, true, null],
     'legacy-shear': [true, false, null], 'sword-echo': [true, true, 'attack'],
-    'sword-pulse': [true, true, 'attack'], 'unknown-sword': [true, true, 'attack'], 'ember-burn': [true, true, null], 'void-collapse': [true, true, null],
+    'sword-pulse': [true, true, 'attack'], 'unknown-sword': [true, true, 'attack'], 'ember-burn': [true, true, null], 'void-collapse': [true, true, null], 'dash-reprise': [true, true, null], 'volt-conduction': [true, true, null],
   };
   assert.deepEqual(Object.keys(COMBAT_SOURCE_CONTEXTS), Object.keys(expected));
   assert.ok(Object.isFrozen(COMBAT_SOURCE_CONTEXTS));
@@ -53,7 +53,7 @@ test('every live damage call names its route; the legacy resolver is entered onl
   const run = readFileSync(new URL('../src/run.js', import.meta.url), 'utf8');
   const code = run.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
   const callers = [...code.matchAll(/(?<!function )\bcut\(([^;\n]+)/g)].map(m => m[1]);
-  assert.equal(callers.length, 9, 'primary, needle, shared echo, relay, shear, floor, sword, scheduled burn, Void collapse');
+  assert.equal(callers.length, 11, 'primary, needle, shared echo, relay, shear, floor, sword, scheduled burn, Void collapse, Dash reprise, Volt conduction');
   for (const caller of callers) assert.match(caller, /^[^,]+,(?:'[^']+'|echo\.upgradeEcho\?|swordContactKind\()/);
   assert.doesNotMatch(code, /cutEquipmentSource|cut\(\w+,\s*(?:true|false)\b|cut\(\w+\)/);
   assert.equal([...code.matchAll(/\bresolveCut\(/g)].length, 3, 'definition plus observed/unobserved dispatch only');

@@ -1,0 +1,389 @@
+{
+  "rows": [
+    {
+      "width": 1280,
+      "height": 720,
+      "head": "halo",
+      "state": {
+        "kind": "halo",
+        "active": true
+      },
+      "data": {
+        "hp": 3,
+        "chain": 0,
+        "blade": 0,
+        "velocity": {
+          "x": 0,
+          "y": 3
+        }
+      },
+      "drawReadOnly": true,
+      "reduced": {
+        "kind": "halo",
+        "active": true
+      },
+      "errors": []
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "head": "neko",
+      "state": {
+        "kind": "neko",
+        "active": true
+      },
+      "data": {
+        "hp": 3,
+        "chain": 3,
+        "blade": 0,
+        "velocity": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "drawReadOnly": true,
+      "reduced": {
+        "kind": "neko",
+        "active": true
+      },
+      "errors": []
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "head": "viper",
+      "state": {
+        "kind": "viper",
+        "active": true
+      },
+      "data": {
+        "hp": 3,
+        "chain": 0,
+        "blade": 22.261904761904763,
+        "velocity": {
+          "x": 36,
+          "y": 0
+        }
+      },
+      "drawReadOnly": true,
+      "reduced": {
+        "kind": "viper",
+        "active": true
+      },
+      "errors": []
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "head": "oni",
+      "state": {
+        "kind": "oni",
+        "active": true
+      },
+      "data": {
+        "hp": 1,
+        "chain": 0,
+        "blade": 0,
+        "velocity": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "drawReadOnly": true,
+      "reduced": {
+        "kind": "oni",
+        "active": true
+      },
+      "errors": []
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "head": "crown",
+      "state": {
+        "kind": "crown",
+        "active": true
+      },
+      "data": {
+        "hp": 3,
+        "chain": 0,
+        "blade": 29.03726708074534,
+        "velocity": {
+          "x": 27.600000000000023,
+          "y": 0
+        }
+      },
+      "drawReadOnly": true,
+      "reduced": {
+        "kind": "crown",
+        "active": true
+      },
+      "errors": []
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "head": "samurai",
+      "state": {
+        "kind": "samurai",
+        "active": true
+      },
+      "data": {
+        "hp": 3,
+        "chain": 0,
+        "blade": 26.714285714285715,
+        "velocity": {
+          "x": 30,
+          "y": 0
+        }
+      },
+      "drawReadOnly": true,
+      "reduced": {
+        "kind": "samurai",
+        "active": true
+      },
+      "errors": []
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "head": "coil",
+      "state": {
+        "kind": "coil",
+        "active": true
+      },
+      "data": {
+        "hp": 3,
+        "chain": 0,
+        "blade": 25.714285714285715,
+        "velocity": {
+          "x": 23,
+          "y": 0
+        }
+      },
+      "drawReadOnly": true,
+      "reduced": {
+        "kind": "coil",
+        "active": true
+      },
+      "errors": []
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "head": "beacon",
+      "state": {
+        "kind": "beacon",
+        "active": true
+      },
+      "data": {
+        "hp": 3,
+        "chain": 0,
+        "blade": 0,
+        "velocity": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "drawReadOnly": true,
+      "reduced": {
+        "kind": "beacon",
+        "active": true
+      },
+      "errors": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "head": "halo",
+      "state": {
+        "kind": "halo",
+        "active": true
+      },
+      "data": {
+        "hp": 3,
+        "chain": 0,
+        "blade": 0,
+        "velocity": {
+          "x": 0,
+          "y": 3
+        }
+      },
+      "drawReadOnly": true,
+      "reduced": {
+        "kind": "halo",
+        "active": true
+      },
+      "errors": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "head": "neko",
+      "state": {
+        "kind": "neko",
+        "active": true
+      },
+      "data": {
+        "hp": 3,
+        "chain": 3,
+        "blade": 0,
+        "velocity": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "drawReadOnly": true,
+      "reduced": {
+        "kind": "neko",
+        "active": true
+      },
+      "errors": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "head": "viper",
+      "state": {
+        "kind": "viper",
+        "active": true
+      },
+      "data": {
+        "hp": 3,
+        "chain": 0,
+        "blade": 22.261904761904763,
+        "velocity": {
+          "x": 36,
+          "y": 0
+        }
+      },
+      "drawReadOnly": true,
+      "reduced": {
+        "kind": "viper",
+        "active": true
+      },
+      "errors": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "head": "oni",
+      "state": {
+        "kind": "oni",
+        "active": true
+      },
+      "data": {
+        "hp": 1,
+        "chain": 0,
+        "blade": 0,
+        "velocity": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "drawReadOnly": true,
+      "reduced": {
+        "kind": "oni",
+        "active": true
+      },
+      "errors": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "head": "crown",
+      "state": {
+        "kind": "crown",
+        "active": true
+      },
+      "data": {
+        "hp": 3,
+        "chain": 0,
+        "blade": 29.03726708074534,
+        "velocity": {
+          "x": 27.600000000000023,
+          "y": 0
+        }
+      },
+      "drawReadOnly": true,
+      "reduced": {
+        "kind": "crown",
+        "active": true
+      },
+      "errors": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "head": "samurai",
+      "state": {
+        "kind": "samurai",
+        "active": true
+      },
+      "data": {
+        "hp": 3,
+        "chain": 0,
+        "blade": 26.714285714285715,
+        "velocity": {
+          "x": 30,
+          "y": 0
+        }
+      },
+      "drawReadOnly": true,
+      "reduced": {
+        "kind": "samurai",
+        "active": true
+      },
+      "errors": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "head": "coil",
+      "state": {
+        "kind": "coil",
+        "active": true
+      },
+      "data": {
+        "hp": 3,
+        "chain": 0,
+        "blade": 25.714285714285715,
+        "velocity": {
+          "x": 23,
+          "y": 0
+        }
+      },
+      "drawReadOnly": true,
+      "reduced": {
+        "kind": "coil",
+        "active": true
+      },
+      "errors": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "head": "beacon",
+      "state": {
+        "kind": "beacon",
+        "active": true
+      },
+      "data": {
+        "hp": 3,
+        "chain": 0,
+        "blade": 0,
+        "velocity": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "drawReadOnly": true,
+      "reduced": {
+        "kind": "beacon",
+        "active": true
+      },
+      "errors": []
+    }
+  ],
+  "method": "Controlled real-run state + native production renderer at desktop/portrait. Coil uses actual primary contact/relay admission. Other states deliberately isolate aim, chain, health, launch, angle and threat. Not a normal playthrough or FPS benchmark."
+}

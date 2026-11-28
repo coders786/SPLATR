@@ -116,6 +116,8 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
  // Read by the HUD every frame: {goal, fraction, met, text}. Cheap and
  // side-effect free so the presentation layer can call it as often as it likes.
  function goalReadout(){
+  // No sector goal exists before the first real gate has been cut.
+  if(story.intro||!wave.goal)return null;
   const m=goalMetrics(),p=goalProgress(wave.goal,m);
   return {goal:wave.goal,fraction:p.fraction,met:p.met,value:p.value,target:p.target,line:p.met?`${wave.goal.label} ✓`:wave.goal.line};
  }
@@ -259,6 +261,7 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
   if(wave.phase==='choose')return;
   const active=state.phase==='playing',directorActive=active&&wave.entry<=0;
   if(story.intro)story.introAge+=t;
+  if(story.openingBurst){story.openingBurst.age+=t;if(story.openingBurst.age>100)story.openingBurst=null;}
   if(story.reaction){story.reaction.age+=t;if(story.reaction.age>=48)story.reaction=null;}
   if(story.lockBursts.length){
    for(const burst of story.lockBursts)burst.age+=t;
@@ -322,7 +325,7 @@ export function createContinuousDirector({seed,world,combat,state,emit=()=>{},in
    const tip={x:p.x+Math.cos(a)*span,y:p.y+Math.sin(a)*span};
    const bladeHits=objects=>{const hits=rayHits(objects,p,tip,width);if(rules.closeWidth>1){const near=objects.filter(o=>Math.hypot(o.x-p.x,o.y-p.y)<=100);hits.push(...rayHits(near,p,tip,width*rules.closeWidth));}return hits;};
    if(story.intro&&bladeHits([story.fracture]).length){
-    story.intro=false;story.fracture=null;state.edge=state.edgeMax;state.focus=1;
+    story.intro=false;story.openingBurst={x:story.fracture.x,y:story.fracture.y,age:0};story.fracture=null;state.edge=state.edgeMax;state.focus=1;
     // The real opening Fangs remain in the field when Sector 01 begins.
     startSector();emit('lockdownBreak',{x:p.x,y:p.y});
    }else if(!story.intro){

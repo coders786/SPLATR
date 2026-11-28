@@ -1,0 +1,75 @@
+{
+  "method": "Scripted player tasks in Chromium with controlled animation time. Touch emulation where marked, not a human/physical-phone study.",
+  "results": [
+    {
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "reduced": false,
+      "file": "after-comparison-390x844.jpg",
+      "boughtFile": "after-bought-390x844.jpg",
+      "equippedFile": "after-equipped-390x844.jpg",
+      "emptyFile": "after-shortfall-390x844.jpg",
+      "errors": [],
+      "readOnly": true,
+      "buyDidNotEquip": true,
+      "equipDidNotChargeAgain": true
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "touch": true,
+      "reduced": false,
+      "file": "after-comparison-320x568.jpg",
+      "boughtFile": "after-bought-320x568.jpg",
+      "equippedFile": "after-equipped-320x568.jpg",
+      "emptyFile": "after-shortfall-320x568.jpg",
+      "errors": [],
+      "readOnly": true,
+      "buyDidNotEquip": true,
+      "equipDidNotChargeAgain": true
+    },
+    {
+      "width": 640,
+      "height": 360,
+      "touch": false,
+      "reduced": false,
+      "file": "after-comparison-640x360.jpg",
+      "boughtFile": "after-bought-640x360.jpg",
+      "equippedFile": "after-equipped-640x360.jpg",
+      "emptyFile": "after-shortfall-640x360.jpg",
+      "errors": [],
+      "readOnly": true,
+      "buyDidNotEquip": true,
+      "equipDidNotChargeAgain": true
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "touch": false,
+      "reduced": false,
+      "file": "after-comparison-1440x900.jpg",
+      "boughtFile": "after-bought-1440x900.jpg",
+      "equippedFile": "after-equipped-1440x900.jpg",
+      "emptyFile": "after-shortfall-1440x900.jpg",
+      "errors": [],
+      "readOnly": true,
+      "buyDidNotEquip": true,
+      "equipDidNotChargeAgain": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "reduced": true,
+      "file": "after-comparison-390x844-reduced.jpg",
+      "boughtFile": "after-bought-390x844-reduced.jpg",
+      "equippedFile": "after-equipped-390x844-reduced.jpg",
+      "emptyFile": "after-shortfall-390x844-reduced.jpg",
+      "errors": [],
+      "readOnly": true,
+      "buyDidNotEquip": true,
+      "equipDidNotChargeAgain": true
+    }
+  ]
+}

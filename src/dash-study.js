@@ -1,3 +1,5 @@
+import {voltStudy} from './volt-study.js';
+import {repriseStudy} from './reprise-study.js';
 import {voidStudy} from './void-study.js';
 import {frostStudy} from './frost-study.js';
 import {emberStudy} from './ember-burn.js';
@@ -17,6 +19,8 @@ export function dashStudy(item,elapsed=0,motion=true,equipment={}){
   ...(item.id==='dash-fire'?{ember:emberStudy(progress,phase>0)}:{}),
   ...(item.id==='dash-ice'?{frost:frostStudy(elapsed,motion)}:{}),
   ...(item.id==='dash-void'?{void:voidStudy(elapsed,motion)}:{}),
+  ...(item.id==='dash-echo'?{reprise:repriseStudy(elapsed,motion)}:{}),
+  ...(item.id==='dash-lightning'?{volt:voltStudy(elapsed,motion)}:{}),
   width:withWidth,farGain:withWidth.far.total/withoutWidth.far.total,nearGain:withWidth.near.total/withoutWidth.near.total,
   blade:r.bladeExtra-b.bladeExtra,grace:r.chainGrace-b.chainGrace,drain:r.focusDrain/b.focusDrain,
   recovery:Math.round((r.focusRegen-b.focusRegen)*100),focus,without,score,baseScore,scorePoints:Math.round((score-baseScore)*100)});

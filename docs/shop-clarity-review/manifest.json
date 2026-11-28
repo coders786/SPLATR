@@ -1,0 +1,2041 @@
+{
+  "method": "Scripted player-perspective walkthrough, not human participant research. Native home → Shop navigation; fresh save with training completed and 0 credits in four layouts. Separate funded transaction fixture is explicitly identified. RAF advanced deterministically for comparable stills. Application source and UI styles unchanged.",
+  "errors": [],
+  "rows": [
+    {
+      "file": "1440x900-01-entry.jpg",
+      "task": "Open Shop from the normal post-training-completed home; no item deep link; fresh 0-credit save.",
+      "viewport": {
+        "w": 1440,
+        "h": 900
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "false",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "equipped",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "ink"
+      },
+      "canvas": {
+        "x": 685.09375,
+        "y": 192,
+        "w": 706.90625,
+        "h": 550
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 35,
+        "y": 129,
+        "w": 621.09375,
+        "h": 712
+      },
+      "preview": {
+        "x": 672.09375,
+        "y": 129,
+        "w": 732.90625,
+        "h": 712
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nMIX PARTS\nDISCOVERIES\nPRACTICE\nBACK\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nBare Head\n✓\nAll items\nOwned\nCan afford\nChallenges\nBare Head\n✓\nGold Halo\n250\nCyber Ears\n200\nViper Horns\n300\nBroken Oni\n—\nCube Crown\n600\nSamurai Crest\n350\nLightning Coil\n400\nDanger Beacon\n250\n\nTRY-ON IS FREE / Select a part. Buying and equipping are separate actions."
+    },
+    {
+      "file": "1440x900-02-selected.jpg",
+      "task": "Select Lightning Coil. What is selected, owned, or affordable?",
+      "viewport": {
+        "w": 1440,
+        "h": 900
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 685.09375,
+        "y": 192,
+        "w": 706.90625,
+        "h": 550
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 35,
+        "y": 129,
+        "w": 621.09375,
+        "h": 712
+      },
+      "preview": {
+        "x": 672.09375,
+        "y": 129,
+        "w": 732.90625,
+        "h": 712
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nMIX PARTS\nDISCOVERIES\nPRACTICE\nBACK\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nLightning Coil\n0 / 400\nAll items\nOwned\nCan afford\nChallenges\nBare Head\n✓\nGold Halo\n250\nCyber Ears\n200\nViper Horns\n300\nBroken Oni\n—\nCube Crown\n600\nSamurai Crest\n350\nLightning Coil\n400\nDanger Beacon\n250\n\nPREVIEW / Lightning Coil. ZAP +1 ENEMY · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "1440x900-03-watch.jpg",
+      "task": "Watch the selected item. Can I still see the item name, category, ownership and next action?",
+      "viewport": {
+        "w": 1440,
+        "h": 900
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 685.09375,
+        "y": 192,
+        "w": 706.90625,
+        "h": 550
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 35,
+        "y": 129,
+        "w": 621.09375,
+        "h": 712
+      },
+      "preview": {
+        "x": 672.09375,
+        "y": 129,
+        "w": 732.90625,
+        "h": 712
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nMIX PARTS\nDISCOVERIES\nPRACTICE\nBACK\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nLightning Coil\n0 / 400\nAll items\nOwned\nCan afford\nChallenges\nBare Head\n✓\nGold Halo\n250\nCyber Ears\n200\nViper Horns\n300\nBroken Oni\n—\nCube Crown\n600\nSamurai Crest\n350\nLightning Coil\n400\nDanger Beacon\n250\n\nPREVIEW / Lightning Coil. ZAP +1 ENEMY · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "1440x900-04-details.jpg",
+      "task": "Open optional details. Are the effect and trade-off easier to find?",
+      "viewport": {
+        "w": 1440,
+        "h": 900
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 685.09375,
+        "y": 192,
+        "w": 706.90625,
+        "h": 550
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 35,
+        "y": 129,
+        "w": 621.09375,
+        "h": 712
+      },
+      "preview": {
+        "x": 672.09375,
+        "y": 129,
+        "w": 732.90625,
+        "h": 712
+      },
+      "infoOpen": true,
+      "text": "THE ARMORY\n0\nMIX PARTS\nDISCOVERIES\nPRACTICE\nBACK\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nLightning Coil\n0 / 400\nAll items\nOwned\nCan afford\nChallenges\nBare Head\n✓\nGold Halo\n250\nCyber Ears\n200\nViper Horns\n300\nBroken Oni\n—\nCube Crown\n600\nSamurai Crest\n350\nLightning Coil\n400\nDanger Beacon\n250\n\nPREVIEW / Lightning Coil. ZAP +1 ENEMY · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "1440x900-05-compare.jpg",
+      "task": "Compare the item with what I wear. How much UI must I decode?",
+      "viewport": {
+        "w": 1440,
+        "h": 900
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "preview",
+        "film": "false",
+        "compare": "true",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "false",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 685.09375,
+        "y": 192,
+        "w": 706.90625,
+        "h": 636
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 35,
+        "y": 129,
+        "w": 621.09375,
+        "h": 712
+      },
+      "preview": {
+        "x": 672.09375,
+        "y": 129,
+        "w": 732.90625,
+        "h": 712
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nMIX PARTS\nDISCOVERIES\nPRACTICE\nBACK\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nLightning Coil\n0 / 400\nAll items\nOwned\nCan afford\nChallenges\nBare Head\n✓\nGold Halo\n250\nCyber Ears\n200\nViper Horns\n300\nBroken Oni\n—\nCube Crown\n600\nSamurai Crest\n350\nLightning Coil\n400\nDanger Beacon\n250\n\nPREVIEW / Lightning Coil. ZAP +1 ENEMY · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "1440x900-06-cores.jpg",
+      "task": "Browse cores. Are the meaningful differences scannable from the cards?",
+      "viewport": {
+        "w": 1440,
+        "h": 900
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "false",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "core",
+        "selectionState": "equipped",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "ink"
+      },
+      "canvas": {
+        "x": 685.09375,
+        "y": 192,
+        "w": 706.90625,
+        "h": 550
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 35,
+        "y": 129,
+        "w": 621.09375,
+        "h": 712
+      },
+      "preview": {
+        "x": 672.09375,
+        "y": 129,
+        "w": 732.90625,
+        "h": 712
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nMIX PARTS\nDISCOVERIES\nPRACTICE\nBACK\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nStandard Heart\n✓\nAll items\nOwned\nCan afford\nChallenges\nStandard Heart\n✓\nTime Crystal\n400\nRiot Reactor\n500\nGlass Cannon\n—\nGrav Core\n450\nMagnet Dynamo\n350\nEcho Heart\n550\n\nCORE / Select a part to preview. Nothing is bought or equipped by browsing."
+    },
+    {
+      "file": "1440x900-07-grav.jpg",
+      "task": "Inspect an unfamiliar core after changing category.",
+      "viewport": {
+        "w": 1440,
+        "h": 900
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "core",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "void"
+      },
+      "canvas": {
+        "x": 685.09375,
+        "y": 192,
+        "w": 706.90625,
+        "h": 550
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 35,
+        "y": 129,
+        "w": 621.09375,
+        "h": 712
+      },
+      "preview": {
+        "x": 672.09375,
+        "y": 129,
+        "w": 732.90625,
+        "h": 712
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nMIX PARTS\nDISCOVERIES\nPRACTICE\nBACK\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nGrav Core\n0 / 450\nAll items\nOwned\nCan afford\nChallenges\nStandard Heart\n✓\nTime Crystal\n400\nRiot Reactor\n500\nGlass Cannon\n—\nGrav Core\n450\nMagnet Dynamo\n350\nEcho Heart\n550\n\nPREVIEW / Grav Core. PULL NEARBY FANGS · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "1440x900-08-affordable.jpg",
+      "task": "Filter by what a fresh 0-credit player can afford.",
+      "viewport": {
+        "w": 1440,
+        "h": 900
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "core",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "void"
+      },
+      "canvas": {
+        "x": 685.09375,
+        "y": 192,
+        "w": 706.90625,
+        "h": 550
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 35,
+        "y": 129,
+        "w": 621.09375,
+        "h": 712
+      },
+      "preview": {
+        "x": 672.09375,
+        "y": 129,
+        "w": 732.90625,
+        "h": 712
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nMIX PARTS\nDISCOVERIES\nPRACTICE\nBACK\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nGrav Core\n0 / 450\nAll items\nOwned\nCan afford\nChallenges\n\nNo matching parts. Clear search or choose All items.\n\nPREVIEW / Grav Core. PULL NEARBY FANGS · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "390x844-01-entry.jpg",
+      "task": "Open Shop from the normal post-training-completed home; no item deep link; fresh 0-credit save.",
+      "viewport": {
+        "w": 390,
+        "h": 844
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "false",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "equipped",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "ink"
+      },
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 19,
+        "y": 145,
+        "w": 352,
+        "h": 680
+      },
+      "preview": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nBare Head\n✓\nAll items\nOwned\nCan afford\nChallenges\nBare Head\n✓\nGold Halo\n250\nCyber Ears\n200\nViper Horns\n300\nBroken Oni\n—\nCube Crown\n600\nSamurai Crest\n350\nLightning Coil\n400\nDanger Beacon\n250\n\nTRY-ON IS FREE / Select a part. Buying and equipping are separate actions."
+    },
+    {
+      "file": "390x844-02-selected.jpg",
+      "task": "Select Lightning Coil. What is selected, owned, or affordable?",
+      "viewport": {
+        "w": 390,
+        "h": 844
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 19,
+        "y": 145,
+        "w": 352,
+        "h": 680
+      },
+      "preview": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nLightning Coil\n0 / 400\nAll items\nOwned\nCan afford\nChallenges\nBare Head\n✓\nGold Halo\n250\nCyber Ears\n200\nViper Horns\n300\nBroken Oni\n—\nCube Crown\n600\nSamurai Crest\n350\nLightning Coil\n400\nDanger Beacon\n250\n\nPREVIEW / Lightning Coil. ZAP +1 ENEMY · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "390x844-03-watch.jpg",
+      "task": "Watch the selected item. Can I still see the item name, category, ownership and next action?",
+      "viewport": {
+        "w": 390,
+        "h": 844
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "preview",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 30,
+        "y": 206,
+        "w": 330,
+        "h": 462
+      },
+      "purchase": {
+        "x": 242,
+        "y": 770,
+        "w": 116,
+        "h": 44
+      },
+      "shop": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "preview": {
+        "x": 19,
+        "y": 145,
+        "w": 352,
+        "h": 602
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nFREE PREVIEW\nLightning Coil\n\nCosts 400 credits. Earn credits by playing runs. Trying it here is free.\n\n0 / 400\n\nPREVIEW / Lightning Coil. ZAP +1 ENEMY · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "390x844-04-details.jpg",
+      "task": "Open optional details. Are the effect and trade-off easier to find?",
+      "viewport": {
+        "w": 390,
+        "h": 844
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "preview",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 30,
+        "y": 206,
+        "w": 330,
+        "h": 462
+      },
+      "purchase": {
+        "x": 242,
+        "y": 770,
+        "w": 116,
+        "h": 44
+      },
+      "shop": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "preview": {
+        "x": 19,
+        "y": 145,
+        "w": 352,
+        "h": 602
+      },
+      "infoOpen": true,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nFREE PREVIEW\nLightning Coil\n\nCosts 400 credits. Earn credits by playing runs. Trying it here is free.\n\n0 / 400\n\nPREVIEW / Lightning Coil. ZAP +1 ENEMY · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "390x844-05-compare.jpg",
+      "task": "Compare the item with what I wear. How much UI must I decode?",
+      "viewport": {
+        "w": 390,
+        "h": 844
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "preview",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "preview",
+        "film": "false",
+        "compare": "true",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "false",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 30,
+        "y": 206,
+        "w": 330,
+        "h": 530
+      },
+      "purchase": {
+        "x": 242,
+        "y": 770,
+        "w": 116,
+        "h": 44
+      },
+      "shop": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "preview": {
+        "x": 19,
+        "y": 145,
+        "w": 352,
+        "h": 602
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nFREE PREVIEW\nLightning Coil\n\nCosts 400 credits. Earn credits by playing runs. Trying it here is free.\n\n0 / 400\n\nPREVIEW / Lightning Coil. ZAP +1 ENEMY · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "390x844-06-cores.jpg",
+      "task": "Browse cores. Are the meaningful differences scannable from the cards?",
+      "viewport": {
+        "w": 390,
+        "h": 844
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "false",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "core",
+        "selectionState": "equipped",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "ink"
+      },
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 19,
+        "y": 145,
+        "w": 352,
+        "h": 680
+      },
+      "preview": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nStandard Heart\n✓\nAll items\nOwned\nCan afford\nChallenges\nStandard Heart\n✓\nTime Crystal\n400\nRiot Reactor\n500\nGlass Cannon\n—\nGrav Core\n450\nMagnet Dynamo\n350\nEcho Heart\n550\n\nCORE / Select a part to preview. Nothing is bought or equipped by browsing."
+    },
+    {
+      "file": "390x844-07-grav.jpg",
+      "task": "Inspect an unfamiliar core after changing category.",
+      "viewport": {
+        "w": 390,
+        "h": 844
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "preview",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "core",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "void"
+      },
+      "canvas": {
+        "x": 30,
+        "y": 206,
+        "w": 330,
+        "h": 462
+      },
+      "purchase": {
+        "x": 242,
+        "y": 770,
+        "w": 116,
+        "h": 44
+      },
+      "shop": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "preview": {
+        "x": 19,
+        "y": 145,
+        "w": 352,
+        "h": 602
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nFREE PREVIEW\nGrav Core\n\nCosts 450 credits. Earn credits by playing runs. Trying it here is free.\n\n0 / 450\n\nPREVIEW / Grav Core. PULL NEARBY FANGS · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "390x844-08-affordable.jpg",
+      "task": "Filter by what a fresh 0-credit player can afford.",
+      "viewport": {
+        "w": 390,
+        "h": 844
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "core",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "void"
+      },
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 19,
+        "y": 145,
+        "w": 352,
+        "h": 680
+      },
+      "preview": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nGrav Core\n0 / 450\nAll items\nOwned\nCan afford\nChallenges\n\nNo matching parts. Clear search or choose All items.\n\nPREVIEW / Grav Core. PULL NEARBY FANGS · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "320x568-01-entry.jpg",
+      "task": "Open Shop from the normal post-training-completed home; no item deep link; fresh 0-credit save.",
+      "viewport": {
+        "w": 320,
+        "h": 568
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "false",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "equipped",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "ink"
+      },
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 19,
+        "y": 136,
+        "w": 282,
+        "h": 412
+      },
+      "preview": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nBare Head\n✓\nAll items\nOwned\nCan afford\nChallenges\nBare Head\n✓\nGold Halo\n250\nCyber Ears\n200\nViper Horns\n300\nBroken Oni\n—\nCube Crown\n600\nSamurai Crest\n350\nLightning Coil\n400\nDanger Beacon\n250\n\nTRY-ON IS FREE / Select a part. Buying and equipping are separate actions."
+    },
+    {
+      "file": "320x568-02-selected.jpg",
+      "task": "Select Lightning Coil. What is selected, owned, or affordable?",
+      "viewport": {
+        "w": 320,
+        "h": 568
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 19,
+        "y": 136,
+        "w": 282,
+        "h": 412
+      },
+      "preview": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nLightning Coil\n0 / 400\nAll items\nOwned\nCan afford\nChallenges\nBare Head\n✓\nGold Halo\n250\nCyber Ears\n200\nViper Horns\n300\nBroken Oni\n—\nCube Crown\n600\nSamurai Crest\n350\nLightning Coil\n400\nDanger Beacon\n250\n\nPREVIEW / Lightning Coil. ZAP +1 ENEMY · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "320x568-03-watch.jpg",
+      "task": "Watch the selected item. Can I still see the item name, category, ownership and next action?",
+      "viewport": {
+        "w": 320,
+        "h": 568
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "preview",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 30,
+        "y": 197,
+        "w": 260,
+        "h": 198
+      },
+      "purchase": {
+        "x": 172,
+        "y": 493,
+        "w": 116,
+        "h": 44
+      },
+      "shop": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "preview": {
+        "x": 19,
+        "y": 136,
+        "w": 282,
+        "h": 338
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nFREE PREVIEW\nLightning Coil\n\nCosts 400 credits. Earn credits by playing runs. Trying it here is free.\n\n0 / 400\n\nPREVIEW / Lightning Coil. ZAP +1 ENEMY · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "320x568-04-details.jpg",
+      "task": "Open optional details. Are the effect and trade-off easier to find?",
+      "viewport": {
+        "w": 320,
+        "h": 568
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "preview",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 30,
+        "y": 197,
+        "w": 260,
+        "h": 198
+      },
+      "purchase": {
+        "x": 172,
+        "y": 493,
+        "w": 116,
+        "h": 44
+      },
+      "shop": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "preview": {
+        "x": 19,
+        "y": 136,
+        "w": 282,
+        "h": 338
+      },
+      "infoOpen": true,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nFREE PREVIEW\nLightning Coil\n\nCosts 400 credits. Earn credits by playing runs. Trying it here is free.\n\n0 / 400\n\nPREVIEW / Lightning Coil. ZAP +1 ENEMY · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "320x568-05-compare.jpg",
+      "task": "Compare the item with what I wear. How much UI must I decode?",
+      "viewport": {
+        "w": 320,
+        "h": 568
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "preview",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "preview",
+        "film": "false",
+        "compare": "true",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "false",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 30,
+        "y": 197,
+        "w": 260,
+        "h": 266
+      },
+      "purchase": {
+        "x": 172,
+        "y": 493,
+        "w": 116,
+        "h": 44
+      },
+      "shop": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "preview": {
+        "x": 19,
+        "y": 136,
+        "w": 282,
+        "h": 338
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nFREE PREVIEW\nLightning Coil\n\nCosts 400 credits. Earn credits by playing runs. Trying it here is free.\n\n0 / 400\n\nPREVIEW / Lightning Coil. ZAP +1 ENEMY · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "320x568-06-cores.jpg",
+      "task": "Browse cores. Are the meaningful differences scannable from the cards?",
+      "viewport": {
+        "w": 320,
+        "h": 568
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "false",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "core",
+        "selectionState": "equipped",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "ink"
+      },
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 19,
+        "y": 136,
+        "w": 282,
+        "h": 412
+      },
+      "preview": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nStandard Heart\n✓\nAll items\nOwned\nCan afford\nChallenges\nStandard Heart\n✓\nTime Crystal\n400\nRiot Reactor\n500\nGlass Cannon\n—\nGrav Core\n450\nMagnet Dynamo\n350\nEcho Heart\n550\n\nCORE / Select a part to preview. Nothing is bought or equipped by browsing."
+    },
+    {
+      "file": "320x568-07-grav.jpg",
+      "task": "Inspect an unfamiliar core after changing category.",
+      "viewport": {
+        "w": 320,
+        "h": 568
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "preview",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "core",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "void"
+      },
+      "canvas": {
+        "x": 30,
+        "y": 197,
+        "w": 260,
+        "h": 198
+      },
+      "purchase": {
+        "x": 172,
+        "y": 493,
+        "w": 116,
+        "h": 44
+      },
+      "shop": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "preview": {
+        "x": 19,
+        "y": 136,
+        "w": 282,
+        "h": 338
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nFREE PREVIEW\nGrav Core\n\nCosts 450 credits. Earn credits by playing runs. Trying it here is free.\n\n0 / 450\n\nPREVIEW / Grav Core. PULL NEARBY FANGS · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "320x568-08-affordable.jpg",
+      "task": "Filter by what a fresh 0-credit player can afford.",
+      "viewport": {
+        "w": 320,
+        "h": 568
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "core",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "void"
+      },
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 19,
+        "y": 136,
+        "w": 282,
+        "h": 412
+      },
+      "preview": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nGrav Core\n0 / 450\nAll items\nOwned\nCan afford\nChallenges\n\nNo matching parts. Clear search or choose All items.\n\nPREVIEW / Grav Core. PULL NEARBY FANGS · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "640x360-01-entry.jpg",
+      "task": "Open Shop from the normal post-training-completed home; no item deep link; fresh 0-credit save.",
+      "viewport": {
+        "w": 640,
+        "h": 360
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "false",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "equipped",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "ink"
+      },
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "preview": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nBare Head\n✓\nAll items\nOwned\nCan afford\nChallenges\nBare Head\n✓\nGold Halo\n250\nCyber Ears\n200\nViper Horns\n300\nBroken Oni\n—\nCube Crown\n600\nSamurai Crest\n350\nLightning Coil\n400\nDanger Beacon\n250\n\nTRY-ON IS FREE / Select a part. Buying and equipping are separate actions."
+    },
+    {
+      "file": "640x360-02-selected.jpg",
+      "task": "Select Lightning Coil. What is selected, owned, or affordable?",
+      "viewport": {
+        "w": 640,
+        "h": 360
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "preview": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nLightning Coil\n0 / 400\nAll items\nOwned\nCan afford\nChallenges\nBare Head\n✓\nGold Halo\n250\nCyber Ears\n200\nViper Horns\n300\nBroken Oni\n—\nCube Crown\n600\nSamurai Crest\n350\nLightning Coil\n400\nDanger Beacon\n250\n\nPREVIEW / Lightning Coil. ZAP +1 ENEMY · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "640x360-03-watch.jpg",
+      "task": "Watch the selected item. Can I still see the item name, category, ownership and next action?",
+      "viewport": {
+        "w": 640,
+        "h": 360
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "preview",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 27,
+        "y": 114,
+        "w": 495.984375,
+        "h": 160
+      },
+      "purchase": {
+        "x": 494,
+        "y": 297,
+        "w": 116,
+        "h": 36
+      },
+      "shop": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "preview": {
+        "x": 19,
+        "y": 106,
+        "w": 601.984375,
+        "h": 176
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nFREE PREVIEW\nLightning Coil\n\nCosts 400 credits. Earn credits by playing runs. Trying it here is free.\n\n0 / 400\n\nPREVIEW / Lightning Coil. ZAP +1 ENEMY · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "640x360-04-details.jpg",
+      "task": "Open optional details. Are the effect and trade-off easier to find?",
+      "viewport": {
+        "w": 640,
+        "h": 360
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "preview",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 27,
+        "y": 114,
+        "w": 495.984375,
+        "h": 160
+      },
+      "purchase": {
+        "x": 494,
+        "y": 297,
+        "w": 116,
+        "h": 36
+      },
+      "shop": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "preview": {
+        "x": 19,
+        "y": 106,
+        "w": 601.984375,
+        "h": 176
+      },
+      "infoOpen": true,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nFREE PREVIEW\nLightning Coil\n\nCosts 400 credits. Earn credits by playing runs. Trying it here is free.\n\n0 / 400\n\nPREVIEW / Lightning Coil. ZAP +1 ENEMY · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "640x360-05-compare.jpg",
+      "task": "Compare the item with what I wear. How much UI must I decode?",
+      "viewport": {
+        "w": 640,
+        "h": 360
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "preview",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "preview",
+        "film": "false",
+        "compare": "true",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "false",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 27,
+        "y": 114,
+        "w": 531.984375,
+        "h": 160
+      },
+      "purchase": {
+        "x": 494,
+        "y": 297,
+        "w": 116,
+        "h": 36
+      },
+      "shop": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "preview": {
+        "x": 19,
+        "y": 106,
+        "w": 601.984375,
+        "h": 176
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nFREE PREVIEW\nLightning Coil\n\nCosts 400 credits. Earn credits by playing runs. Trying it here is free.\n\n0 / 400\n\nPREVIEW / Lightning Coil. ZAP +1 ENEMY · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "640x360-06-cores.jpg",
+      "task": "Browse cores. Are the meaningful differences scannable from the cards?",
+      "viewport": {
+        "w": 640,
+        "h": 360
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "false",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "core",
+        "selectionState": "equipped",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "ink"
+      },
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "preview": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nStandard Heart\n✓\nAll items\nOwned\nCan afford\nChallenges\nStandard Heart\n✓\nTime Crystal\n400\nRiot Reactor\n500\nGlass Cannon\n—\nGrav Core\n450\nMagnet Dynamo\n350\nEcho Heart\n550\n\nCORE / Select a part to preview. Nothing is bought or equipped by browsing."
+    },
+    {
+      "file": "640x360-07-grav.jpg",
+      "task": "Inspect an unfamiliar core after changing category.",
+      "viewport": {
+        "w": 640,
+        "h": 360
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "preview",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "core",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "void"
+      },
+      "canvas": {
+        "x": 27,
+        "y": 114,
+        "w": 495.984375,
+        "h": 160
+      },
+      "purchase": {
+        "x": 494,
+        "y": 297,
+        "w": 116,
+        "h": 36
+      },
+      "shop": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "preview": {
+        "x": 19,
+        "y": 106,
+        "w": 601.984375,
+        "h": 176
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nFREE PREVIEW\nGrav Core\n\nCosts 450 credits. Earn credits by playing runs. Trying it here is free.\n\n0 / 450\n\nPREVIEW / Grav Core. PULL NEARBY FANGS · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "640x360-08-affordable.jpg",
+      "task": "Filter by what a fresh 0-credit player can afford.",
+      "viewport": {
+        "w": 640,
+        "h": 360
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "core",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "void"
+      },
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "preview": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n0\nBACK\nSHOP\nPREVIEW\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nGrav Core\n0 / 450\nAll items\nOwned\nCan afford\nChallenges\n\nNo matching parts. Clear search or choose All items.\n\nPREVIEW / Grav Core. PULL NEARBY FANGS · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "funded-01-buy.jpg",
+      "task": "Controlled 1500-credit fixture, inspect an affordable part.",
+      "viewport": {
+        "w": 1440,
+        "h": 900
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "preview",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 685.09375,
+        "y": 192,
+        "w": 706.90625,
+        "h": 550
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 35,
+        "y": 129,
+        "w": 621.09375,
+        "h": 712
+      },
+      "preview": {
+        "x": 672.09375,
+        "y": 129,
+        "w": 732.90625,
+        "h": 712
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n1,500\nMIX PARTS\nDISCOVERIES\nPRACTICE\nBACK\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nLightning Coil\nBUY 400\nAll items\nOwned\nCan afford\nChallenges\nBare Head\n✓\nGold Halo\n250\nCyber Ears\n200\nViper Horns\n300\nBroken Oni\n—\nCube Crown\n600\nSamurai Crest\n350\nLightning Coil\n400\nDanger Beacon\n250\n\nPREVIEW / Lightning Coil. ZAP +1 ENEMY · Try-on only. Buy to own, then equip."
+    },
+    {
+      "file": "funded-02-owned.jpg",
+      "task": "Buy the Coil: distinguish purchase from equipping.",
+      "viewport": {
+        "w": 1440,
+        "h": 900
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "true",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "owned",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 685.09375,
+        "y": 192,
+        "w": 706.90625,
+        "h": 550
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 35,
+        "y": 129,
+        "w": 621.09375,
+        "h": 712
+      },
+      "preview": {
+        "x": 672.09375,
+        "y": 129,
+        "w": 732.90625,
+        "h": 712
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n1,100\nMIX PARTS\nDISCOVERIES\nPRACTICE\nBACK\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nLightning Coil\nEQUIP\nAll items\nOwned\nCan afford\nChallenges\nBare Head\n✓\nGold Halo\n250\nCyber Ears\n200\nViper Horns\n300\nBroken Oni\n—\nCube Crown\n600\nSamurai Crest\n350\nLightning Coil\n✓\nDanger Beacon\n250\n\nLightning Coil BOUGHT / −400 CREDITS · Owned, not equipped. Equip to use next run."
+    },
+    {
+      "file": "funded-03-equipped.jpg",
+      "task": "Equip the Coil: distinguish currently worn from selected.",
+      "viewport": {
+        "w": 1440,
+        "h": 900
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "false",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "equipped",
+        "film": "true",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "true",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 685.09375,
+        "y": 192,
+        "w": 706.90625,
+        "h": 550
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 35,
+        "y": 129,
+        "w": 621.09375,
+        "h": 712
+      },
+      "preview": {
+        "x": 672.09375,
+        "y": 129,
+        "w": 732.90625,
+        "h": 712
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n1,100\nMIX PARTS\nDISCOVERIES\nPRACTICE\nBACK\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nLightning Coil\n✓\nAll items\nOwned\nCan afford\nChallenges\nBare Head\n✓\nGold Halo\n250\nCyber Ears\n200\nViper Horns\n300\nBroken Oni\n—\nCube Crown\n600\nSamurai Crest\n350\nLightning Coil\n✓\nDanger Beacon\n250\n\nEQUIPPED / Bare Head → Lightning Coil · Saved for next run."
+    },
+    {
+      "file": "advanced-01-build.jpg",
+      "task": "Open the secondary build inspector.",
+      "viewport": {
+        "w": 1440,
+        "h": 900
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "off",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "false",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "equipped",
+        "film": "false",
+        "compare": "false",
+        "world": "false",
+        "assembly": "true",
+        "mechanism": "false",
+        "reactive": "false",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 685.09375,
+        "y": 192,
+        "w": 706.90625,
+        "h": 554
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 35,
+        "y": 129,
+        "w": 621.09375,
+        "h": 712
+      },
+      "preview": {
+        "x": 672.09375,
+        "y": 129,
+        "w": 732.90625,
+        "h": 712
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n1,100\nMIX PARTS\nDISCOVERIES\nPRACTICE\nBACK\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nLightning Coil\n✓\nAll items\nOwned\nCan afford\nChallenges\nBare Head\n✓\nGold Halo\n250\nCyber Ears\n200\nViper Horns\n300\nBroken Oni\n—\nCube Crown\n600\nSamurai Crest\n350\nLightning Coil\n✓\nDanger Beacon\n250\n←\nYOUR PREVIEW · 17 BUILD EXAMPLES →\n→\n\nFOLDED PAPER · FOLDED TAB. Same construction in play; use Part in action for powers.\n\nEQUIPPED / Bare Head → Lightning Coil · Saved for next run."
+    },
+    {
+      "file": "advanced-02-practice.jpg",
+      "task": "Open secondary practice controls.",
+      "viewport": {
+        "w": 1440,
+        "h": 900
+      },
+      "root": {
+        "section": "parts",
+        "cinema": "true",
+        "tools": "on",
+        "pane": "shop",
+        "motion": "true",
+        "group": "cube",
+        "preview": "false",
+        "sword": "standard",
+        "tier": "standard",
+        "selectedSlot": "head",
+        "selectionState": "equipped",
+        "film": "false",
+        "compare": "false",
+        "world": "false",
+        "assembly": "false",
+        "mechanism": "false",
+        "reactive": "false",
+        "storyBeat": "0",
+        "previewElement": "lightning"
+      },
+      "canvas": {
+        "x": 685.09375,
+        "y": 192,
+        "w": 706.90625,
+        "h": 441.8125
+      },
+      "purchase": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "shop": {
+        "x": 35,
+        "y": 129,
+        "w": 621.09375,
+        "h": 712
+      },
+      "preview": {
+        "x": 672.09375,
+        "y": 129,
+        "w": 732.90625,
+        "h": 712
+      },
+      "infoOpen": false,
+      "text": "THE ARMORY\n1,100\nMIX PARTS\nDISCOVERIES\nPRACTICE\nBACK\nCUBE\nATTACK\nAIM & SCAN\nWORLD\nHead\nEyes\nShell\nCore\nTail\nLightning Coil\n✓\nAll items\nOwned\nCan afford\nChallenges\nBare Head\n✓\nGold Halo\n250\nCyber Ears\n200\nViper Horns\n300\nBroken Oni\n—\nCube Crown\n600\nSamurai Crest\n350\nLightning Coil\n✓\nDanger Beacon\n250\nHEAD\nEYES\nBODY\nCORE\nTAIL\nSLASH\nDASH\nPOINTER\nRADAR\nTRAJECTORY\nWORLD\nSLICE\nAIM\nDASH\nBOUNCE\nHIT\n1\n2\n3\nMIX\nSTANDARD / FIELD BLADE · MIXED LOADOUT\nYOUR DISCOVERIES\n\nEQUIPPED / Bare Head → Lightning Coil · Saved for next run."
+    }
+  ]
+}

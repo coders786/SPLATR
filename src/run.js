@@ -1,3 +1,5 @@
+import {createVoltBurst,createVoltConduction} from './volt-lance.js';
+import {createRepriseStroke} from './reprise-stroke.js';
 import {createVoidWell} from './void-well.js';
 import {createFrostControl,coldTiming} from './frost-control.js';
 import {createEmberBurn} from './ember-burn.js';
@@ -402,6 +404,8 @@ export function createRun(
   const sourceObserver = combatSourceTrace ? combatSourceTrace.startRun() : null;
   const ARENA=arena||(waveMode?(continuous?{...WAVE_ARENA}:WAVE_ARENA):DEFAULT_ARENA);
   const loadout = normalizeEquipment(equipment), rules = equipmentRules(loadout), edgeMax = rules.edgeMax;
+  const voltBurst=createVoltBurst(),voltConduction=createVoltConduction();
+  const reprise=createRepriseStroke();
   const voidWell=createVoidWell();
   const frostControl=createFrostControl();
   const emberBurn=createEmberBurn();
@@ -808,7 +812,7 @@ export function createRun(
       31.7,
     );
   }
-  function aimAt(q, assist = true) {
+  function aimAt(q, assist = true, speed = 31.7) {
     // The snap radius widens with tempo: at full speed a tap that is "close
     // enough" is the difference between steering and fighting the controls.
     const range = assistRange(s).snap;
@@ -823,7 +827,7 @@ export function createRun(
           best = d;
         }
       }
-    return { ...solution(to, 31.7), target: to.id };
+    return { ...solution(to, Number.isFinite(speed)?clamp(speed,11.76,MAX_SPEED):31.7), target: to.id };
   }
   function adjust(v, assist = true) {
     if (!v?.power) return v;
@@ -966,7 +970,7 @@ export function createRun(
   function dash(v) {
     // CHUNK 6A: the cutscene holds the world. No launches through a tear.
     if (s.inputLock) return false;
-    const pv = world.player.velocity, incomingVelocity={x:pv.x,y:pv.y},
+    const pv = rules.voltLance?voltBurst.baseVelocity(world.player.velocity):world.player.velocity, incomingVelocity={x:pv.x,y:pv.y},
       speedBeforeLaunch = Math.hypot(pv.x, pv.y);
     let angleDiff = 0;
     if (speedBeforeLaunch > 1 && v) {
@@ -999,8 +1003,16 @@ export function createRun(
       }
       return false;
     }
-    if (!eligible || pipShort || !launch(world, v, { storedSpeed: speedBeforeLaunch, retention, maxCeiling: MAX_PINBALL_SPEED }))
+    if (!eligible || pipShort) return false;
+    // Remove only our still-owned contribution on an accepted relaunch, never
+    // let a burst compound itself or mutate a refused/buffered release.
+    const priorVoltVelocity=rules.voltLance?{...world.player.velocity}:null;
+    if(priorVoltVelocity)setPlayerVelocity(world,pv.x,pv.y);
+    if(!launch(world,v,{storedSpeed:speedBeforeLaunch,retention,maxCeiling:MAX_PINBALL_SPEED})){
+      if(priorVoltVelocity)setPlayerVelocity(world,priorVoltVelocity.x,priorVoltVelocity.y);
       return false;
+    }
+    if(rules.voltLance){voltBurst.clear();world.playerBurstAllowance=0;}
     if(rules.viperRetention&&retention>normalRetention){
       const ordinary=Math.min(Math.max(Math.min(Math.hypot(v.x,v.y),MAX_SPEED),speedBeforeLaunch*normalRetention),MAX_PINBALL_SPEED);
       const gain=Math.max(0,Math.hypot(world.player.velocity.x,world.player.velocity.y)-ordinary);
@@ -1038,6 +1050,10 @@ export function createRun(
     if(s.breakthrough&&['combat','breach','monolith'].includes(s.wave?.phase)){
       const surge=launchSurge(s.breakthrough);s.breakthrough=surge.state;
       if(surge.boost){if(!s.hyper){const vv=world.player.velocity,sp=Math.hypot(vv.x,vv.y),next=Math.min(BREAKTHROUGH.ceiling,sp*BREAKTHROUGH.surgeFactor);world.playerCeiling=Math.max(world.playerCeiling,next);if(sp>0)setPlayerVelocity(world,vv.x*next/sp,vv.y*next/sp);}emit('hyperSurge',{...world.player.position});}
+    }
+    if(rules.voltLance&&repriseActive()){
+      const boosted=voltBurst.launch(world.player.velocity,{now:world.clock,limit:MAX_SPEED*s.dashSpeed,hyper:s.hyper});
+      setPlayerVelocity(world,boosted.x,boosted.y);world.playerBurstAllowance=voltBurst.view(world.clock).amount;
     }
     const sword=effectiveSword(s.sword,upgradeBuff());
     const launchSource=sourceObserver?.primary(s.shots+1,s.elapsed,world.clock,true);
@@ -1104,9 +1120,18 @@ export function createRun(
     s.stroke = beginStroke(world.player.position, s.slashAngle, s.shots);
     s.stroke.equipment = loadout;
     s.stroke.power = Math.min(1, Math.hypot(v.x,v.y) / MAX_SPEED);
+    if(rules.voltLance)voltConduction.launch(s.shots);
     if(rules.emberBurn)emberBurn.launch(s.shots);
     if(rules.frostControl)frostControl.launch(s.shots);
     if(rules.voidWell)voidWell.launch(s.shots);
+    if(rules.reprise){
+      reprise.seal('relaunch');
+      if(repriseActive()){
+        const admitted=reprise.admit({shot:s.shots,now:world.clock,point:world.player.position,
+          makeSource:()=>sourceObserver?.create('dash-reprise',s.shots,s.elapsed,world.clock,sourceObserver.primary(s.shots,s.elapsed,world.clock,true)?.sourceId)});
+        emit(admitted?'repriseStored':'repriseBusy',{shot:s.shots,x:world.player.position.x,y:world.player.position.y});
+      }else reprise.clear();
+    }
     s.precisionShot = precisionShot(loadout.eyes,s.stroke.power,s.shots);
     s.precisionReceipt = null;
     s.inkCutScale = rules.inkWidth;
@@ -1244,7 +1269,7 @@ export function createRun(
     s.phase = 'dying';
     clearArmorShell();
     clearFocusRecovery();
-    clearNeedlePhase();clearTailAbility();clearEyes();emberBurn.clear();frostControl.clear();voidWell.clear();s.voidWell=null;
+    clearNeedlePhase();clearTailAbility();clearEyes();emberBurn.clear();frostControl.clear();voidWell.clear();s.voidWell=null;reprise.clear();s.reprise=null;voltBurst.clear();voltConduction.clear();world.playerBurstAllowance=0;s.volt=null;
     focus(false);
     s.death = 27;
     s.hp = 0;
@@ -1358,7 +1383,7 @@ export function createRun(
       throw new TypeError('Sword contact requires its attack object');
     // Legacy routes keep their resolver; bounded scheduled units share an
     // explicit resource-isolated authority, never primary bookkeeping.
-    if (!sourceObserver) return ['ember-burn','void-collapse'].includes(kind)?resolveScheduledUnit(e,sourceObject,null,kind):resolveCut(e,fromShear,secondary,swordSource);
+    if (!sourceObserver) return ['ember-burn','void-collapse','dash-reprise','volt-conduction'].includes(kind)?resolveScheduledUnit(e,sourceObject,null,kind):resolveCut(e,fromShear,secondary,swordSource);
     const origin = source || (sourceObject
       ? sourceObserver.get(sourceObject,kind,s.shots,s.elapsed,world.clock)
       : kind==='primary-blade'
@@ -1367,7 +1392,7 @@ export function createRun(
     const observation=sourceObserver.begin(origin,e,s.elapsed,world.clock,s.shots,fromShear,secondary,swordSource);
     let failed=true;
     try {
-      const result=['ember-burn','void-collapse'].includes(kind)?resolveScheduledUnit(e,sourceObject,observation,kind):resolveCut(e,fromShear,secondary,swordSource,observation);
+      const result=['ember-burn','void-collapse','dash-reprise','volt-conduction'].includes(kind)?resolveScheduledUnit(e,sourceObject,observation,kind):resolveCut(e,fromShear,secondary,swordSource,observation);
       failed=false;
       return result;
     } finally {
@@ -1491,7 +1516,12 @@ export function createRun(
         makeSource:(_target,shot)=>sourceObserver?.create('ember-burn',shot,s.elapsed,world.clock,observation?.source.sourceId)});
       if(accepted.length)emit('emberIgnite',{entityId:e.id,targets:accepted.map(t=>t.id),x:e.x,y:e.y});
     }
-    if(!secondary && rules.coil && !s.opening) {
+    if(rules.voltLance&&!secondary&&!fromShear&&emberActive()){
+      if(voltConduction.contact(e,{primary:true,now:world.clock,enemies:combat.enemies,geometry:world.geometry,coil:rules.coil,
+        makeSource:shot=>sourceObserver?.create('volt-conduction',shot,s.elapsed,world.clock,observation?.source.sourceId),
+        hit:(victim,unit)=>cut(victim,'volt-conduction',unit,unit.source)}))emit('voltContact',voltConduction.view(world.clock).arc);
+    }
+    if(!rules.voltLance && !secondary && rules.coil && !s.opening) {
       const victim=nearestEquipmentTarget(combat.enemies.values(),e,160,e.id);
       if(victim){equipmentBurst(victim,'spark',e);cut(victim,'coil-relay',null,sourceObserver?.create('coil-relay',s.shots,s.elapsed,world.clock,observation?.source.sourceId));}
     }
@@ -1637,12 +1667,7 @@ export function createRun(
     s.score += points;
     // CHUNK 4: the tear's landlord pays its tribute. The biggest single
     // fracture gain in the game — second only to the tear itself.
-    if (e.kind === 'monolith') {
-      s.monoliths = (s.monoliths || 0) + 1;
-      refreshUpgradeState();
-      gainFracture(s, FRACTURE_PER_MONOLITH, emit);
-      emit('monolithDown', { x: e.x, y: e.y, monoliths: s.monoliths, hpMax: s.hpMax });
-    }
+    bossDefeat(e);
     // CHUNK 4: the Monolith pays like any field kill — the ledger gate is
     // 'combat' plus the boss's own phase ('monolith'), never the breach.
     recordDefeatCredits(e,points);
@@ -1713,24 +1738,33 @@ export function createRun(
   function recordDefeatCredits(e,points){
     if(s.killLedger&&['combat','monolith'].includes(s.wave?.phase)&&!s.opening&&!s.tutorialActive)s.killLedger=recordEnemyReward(s.killLedger,{kind:e.kind,small:!!e.small,paper:!!e.paper,points,creditMultiplier:upgradeMods().credits});
   }
+  function bossDefeat(e){
+    if (e.kind === 'monolith') {
+      s.monoliths = (s.monoliths || 0) + 1;
+      refreshUpgradeState();
+      gainFracture(s, FRACTURE_PER_MONOLITH, emit);
+      emit('monolithDown', { x: e.x, y: e.y, monoliths: s.monoliths, hpMax: s.hpMax });
+    }
+  }
   function defeatAftermath(e){
     if(e.kind==='fork')combat.kids(e);
     if(e.kind==='crown'&&s.hp<s.hpMax){s.hp++;emit('repair',{hp:s.hp,hpMax:s.hpMax});}
   }
   function frostThaw(e,status){emit('frostThaw',{entityId:e.id,x:e.x,y:e.y,kind:status.kind,at:status.thawedAt,immuneUntil:status.immunityUntil,shot:status.shot});}
+  function repriseActive(){return s.phase==='playing'&&!s.opening&&!s.practice&&!s.visualTutorial&&!s.tutorialActive&&!s.teachingArena&&(!s.wave||['combat','monolith'].includes(s.wave.phase)&&s.wave.entry<=0);}
   function emberActive(){return s.phase==='playing'&&!s.opening&&!s.practice&&!s.visualTutorial&&!s.tutorialActive&&!s.teachingArena&&(!s.wave||s.wave.phase==='combat'&&s.wave.entry<=0);}
   /** New scheduled-secondary admission: exact unit, no primary contact/kill
    * counters, refunds, weapon charge, recursive proc, kinetic or upgrade scaling. */
   function resolveScheduledUnit(e,unit,observation=null,kind='ember-burn'){
-    if(!unit||unit.target!==e||!emberActive()||combat.enemies.get(e.id)!==e||e.hp<=0){if(observation)observation.rejection=kind==='ember-burn'?'burn-inactive':'collapse-inactive';return;}
+    if(!unit||unit.target!==e||!(kind==='dash-reprise'?repriseActive():emberActive())||combat.enemies.get(e.id)!==e||e.hp<=0){if(observation)observation.rejection=kind==='ember-burn'?'burn-inactive':kind==='dash-reprise'?'reprise-inactive':'collapse-inactive';return;}
     if(observation)observation.accepted=true;
     const hpBefore=e.hp;e.hp=Math.max(0,e.hp-1);
-    emit(kind==='ember-burn'?'emberHit':'voidHit',{entityId:e.id,x:e.x,y:e.y,hp:e.hp,index:unit.index,sourceShot:unit.shot});
+    emit(kind==='ember-burn'?'emberHit':kind==='dash-reprise'?'repriseHit':kind==='volt-conduction'?'voltHit':'voidHit',{entityId:e.id,x:e.x,y:e.y,hp:e.hp,index:unit.index,sourceShot:unit.shot});
     if(e.hp>0)return;
     removeDefeatedEnemy(e);
     const mult=Math.max(1,Math.min(8,s.chain))*(s.drive>0?2:1)+Math.min(8,s.waveMult||0),
       points=Math.floor((e.small?45:TYPES[e.kind].points)*mult*rules.scoreMultiplier*upgradeMods().score*(s.hp===1?rules.lastHullBonus:1));
-    s.score+=points;recordDefeatCredits(e,points);defeatAftermath(e);
+    s.score+=points;if(kind==='dash-reprise')bossDefeat(e);recordDefeatCredits(e,points);defeatAftermath(e);
     emit('cut',{entityId:e.id,x:e.x,y:e.y,angle:e.angle,r:e.r,kind:e.kind,cut:e.fault||0,hpBefore,
       contact:null,equipment:{...s.equipment},sword:s.sword,armorRemoved:['bastion','crown'].includes(e.kind)?hpBefore:0,
       secondary:true,sourceKind:kind,fault:e.fault,small:!!e.small,paper:false,impact:impactFor(e.kind,e.small,false,false),
@@ -1927,7 +1961,7 @@ export function createRun(
     s.phase = 'ready';
     clearArmorShell();
     clearFocusRecovery();
-    clearNeedlePhase();clearTailAbility();clearEyes();emberBurn.clear();frostControl.clear();voidWell.clear();s.voidWell=null;
+    clearNeedlePhase();clearTailAbility();clearEyes();emberBurn.clear();frostControl.clear();voidWell.clear();s.voidWell=null;reprise.clear();s.reprise=null;voltBurst.clear();voltConduction.clear();world.playerBurstAllowance=0;s.volt=null;
     if(!waveMode)stream.sync(SPAWN, s.line - origin.y);
     emit('field', { cleared });
     return true;
@@ -2194,6 +2228,13 @@ export function createRun(
         // substep after every trampoline launch. Measured: -13.5 in, -35.5 out,
         // and a 1,700px climb from a rule that promises one third of a screen.
         (dt) => {
+          if(rules.voltLance){
+            if(repriseActive()){
+              const velocity=voltBurst.advance(world.player.velocity,world.clock,dt,{hyper:s.hyper});
+              if(Math.hypot(velocity.x-world.player.velocity.x,velocity.y-world.player.velocity.y)>1e-8)setPlayerVelocity(world,velocity.x,velocity.y);
+            }else{voltBurst.clear();voltConduction.clear();}
+            world.playerBurstAllowance=voltBurst.view(world.clock).amount;
+          }
           const liveMods=upgradeMods();
           world.playerGravityMultiplier = s.held && !s.depleted && world.player.velocity.y > 0 ? Math.max(rules.aimFallGravity, liveMods.aimFallGravity) : 1;
           world.railRestitution = s.arenaMode === 'SHATTERED' && s.shatteredRailTicks > 0 ? Math.max(1.3, Math.min(1.5, liveMods.shatteredRail || 1.3)) : 1.3;
@@ -2221,6 +2262,8 @@ export function createRun(
           }
         },
         pace,
+        rules.voltLance&&repriseActive()?segment=>{voltBurst.observe(world.player.velocity,segment);world.playerBurstAllowance=voltBurst.view(world.clock).amount;}:
+        rules.reprise&&repriseActive()?segment=>reprise.record({...segment,geometry:world.geometry}):null,
       );
     else world.previousClock = world.clock;
     // ── IS THE CUBE CLEAR OF THE RAILS? (read by the contact block below) ──
@@ -2660,6 +2703,10 @@ export function createRun(
         ny: hitSurface.ny,
         speed: Math.round(speed),
         arrivalSpeed: Math.round(arrivalSpeed),
+        ...(Number.isFinite(hitSurface.incomingX)&&Number.isFinite(hitSurface.incomingY)?{
+          incomingX:hitSurface.incomingX,incomingY:hitSurface.incomingY,
+          outgoingX:world.player.velocity.x,outgoingY:world.player.velocity.y,
+          side:hitSurface.side}:{}),
         after: Math.round(Math.hypot(world.player.velocity.x, world.player.velocity.y)),
         reboundMultiplier: BOOST,
         hyper: s.hyper,
@@ -2784,6 +2831,16 @@ export function createRun(
       a=>combat.forwardHits({x:a.x,y:a.y},{x:a.tx,y:a.ty},a.width),
       (enemy,a)=>{cut(enemy,swordContactKind(a),a);emit('swordHit',{x:enemy.x,y:enemy.y,kind:a.kind});});
     tickEquipment(dt);
+    if(rules.voltLance){
+      if(!repriseActive()){voltBurst.clear();voltConduction.clear();world.playerBurstAllowance=0;}
+      s.volt={burst:voltBurst.view(world.clock),conduction:voltConduction.view(world.clock)};
+    }
+    if(rules.reprise){
+      if(repriseActive()){
+        if(reprise.fire(world.clock,combat.enemies,{geometry:world.geometry,allowBoss:s.wave?.phase==='monolith',hit:(e,unit)=>cut(e,'dash-reprise',unit,unit.source)}))emit('repriseFired',reprise.view(world.clock).replay);
+      }else reprise.clear();
+      s.reprise=reprise.view(world.clock);
+    }
     if(rules.voidWell){
       if(emberActive()){
         if(voidWell.finish(world.clock,combat.enemies,(e,unit)=>cut(e,'void-collapse',unit,unit.source),world.geometry))emit('voidCollapse',voidWell.view(world.clock));
@@ -2922,7 +2979,7 @@ export function createRun(
     hyperStep();
     const p = world.player.position;
     s.peak = Math.max(s.peak, origin.y - p.y);
-    if(waveDirector){s.dimension=stepDimensionField(s.dimension,{dt,active:!stopped&&s.phase==='playing'&&['combat','breach','monolith'].includes(s.wave.phase)&&!s.opening&&!s.tutorialActive,x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,distance:s.moved});if(!s.visualTutorial)waveDirector.tick(dt);if(s.wave.phase!=='combat'){emberBurn.clear();frostControl.clear();voidWell.clear();s.voidWell=null;s.swordFx.length=0;s.swordCharge=0;s.equipmentFx={projectiles:[],echoes:[],bursts:[]};s.drive=0;}return;}
+    if(waveDirector){s.dimension=stepDimensionField(s.dimension,{dt,active:!stopped&&s.phase==='playing'&&['combat','breach','monolith'].includes(s.wave.phase)&&!s.opening&&!s.tutorialActive,x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,distance:s.moved});if(!s.visualTutorial)waveDirector.tick(dt);if(!['combat','monolith'].includes(s.wave.phase)){reprise.clear();s.reprise=null;voltBurst.clear();voltConduction.clear();world.playerBurstAllowance=0;s.volt=null;}if(s.wave.phase!=='combat'){emberBurn.clear();frostControl.clear();voidWell.clear();s.voidWell=null;s.swordFx.length=0;s.swordCharge=0;s.equipmentFx={projectiles:[],echoes:[],bursts:[]};s.drive=0;}return;}
     s.oldLine = s.line;
     s.line = Math.min(s.line - dt * (0.38 + Math.min(6, s.band) * 0.07), origin.y - s.peak + 1180);
     // The cut-room safety net is gone with the Redline.
@@ -3042,7 +3099,7 @@ export function createRun(
     s.cause = 'Retired';
     clearArmorShell();
     clearFocusRecovery();
-    clearNeedlePhase();clearTailAbility();clearEyes();emberBurn.clear();frostControl.clear();voidWell.clear();s.voidWell=null;
+    clearNeedlePhase();clearTailAbility();clearEyes();emberBurn.clear();frostControl.clear();voidWell.clear();s.voidWell=null;reprise.clear();s.reprise=null;voltBurst.clear();voltConduction.clear();world.playerBurstAllowance=0;s.volt=null;
     focus(false);
     emit('over', {});
   }
@@ -3081,12 +3138,16 @@ export function createRun(
      * The renderer calls this on every resize, which is the only place that
      * knows the real height. It is also safe to call before the first frame.
      */
+    // Cancel only an unspent near-reload intent; never reclaim a real launch.
+    cancelBufferedDash(){s.edgeBuffer=null;},
     setView(view) {world.viewport={...view};},
     setViewport(w, h) {
       if (Number.isFinite(h) && h > 0) world.viewH = h;
       if (Number.isFinite(w) && w > 0) world.viewW = w;
       return world.viewH;
     },
+    voltStatus:()=>({burst:voltBurst.view(world.clock),conduction:voltConduction.view(world.clock)}),
+    repriseStatus:()=>reprise.view(world.clock),
     voidStatus:()=>voidWell.view(world.clock),
     frostStatus:()=>frostControl.view(),
     emberStatus:()=>emberBurn.view(),
@@ -3131,7 +3192,7 @@ export function createRun(
     dispose() {
       clearArmorShell();
       clearFocusRecovery();
-      clearNeedlePhase();clearTailAbility();clearEyes();emberBurn.clear();frostControl.clear();voidWell.clear();s.voidWell=null;
+      clearNeedlePhase();clearTailAbility();clearEyes();emberBurn.clear();frostControl.clear();voidWell.clear();s.voidWell=null;reprise.clear();s.reprise=null;voltBurst.clear();voltConduction.clear();world.playerBurstAllowance=0;s.volt=null;
       sourceObserver?.dispose();
       waveDirector?.dispose();s.swordFx.length=0;s.swordCharge=0;
       combat.dispose();

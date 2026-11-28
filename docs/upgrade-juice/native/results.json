@@ -1,0 +1,325 @@
+{
+  "rows": [
+    {
+      "width": 1440,
+      "slot": "body",
+      "id": "paper"
+    },
+    {
+      "width": 1440,
+      "slot": "body",
+      "id": "obsidian"
+    },
+    {
+      "width": 1440,
+      "slot": "body",
+      "id": "hologram"
+    },
+    {
+      "width": 1440,
+      "slot": "core",
+      "id": "standard"
+    },
+    {
+      "width": 1440,
+      "slot": "core",
+      "id": "time"
+    },
+    {
+      "width": 1440,
+      "slot": "core",
+      "id": "riot"
+    },
+    {
+      "width": 1440,
+      "slot": "core",
+      "id": "glass"
+    },
+    {
+      "width": 1440,
+      "slot": "body",
+      "id": "prism"
+    },
+    {
+      "width": 1440,
+      "slot": "body",
+      "id": "iron"
+    },
+    {
+      "width": 1440,
+      "slot": "body",
+      "id": "lava"
+    },
+    {
+      "width": 1440,
+      "slot": "body",
+      "id": "gold"
+    },
+    {
+      "width": 1440,
+      "slot": "core",
+      "id": "grav"
+    },
+    {
+      "width": 1440,
+      "slot": "core",
+      "id": "magnet"
+    },
+    {
+      "width": 1440,
+      "slot": "core",
+      "id": "echo"
+    },
+    {
+      "width": 1440,
+      "slot": "body",
+      "id": "chamfer"
+    },
+    {
+      "width": 1440,
+      "slot": "body",
+      "id": "notched"
+    },
+    {
+      "width": 1440,
+      "slot": "body",
+      "id": "segmented"
+    },
+    {
+      "width": 1440,
+      "slot": "slash",
+      "id": "razor"
+    },
+    {
+      "width": 1440,
+      "slot": "slash",
+      "id": "katana"
+    },
+    {
+      "width": 1440,
+      "slot": "slash",
+      "id": "laser"
+    },
+    {
+      "width": 1440,
+      "slot": "slash",
+      "id": "glitch-fx"
+    },
+    {
+      "width": 1440,
+      "slot": "slash",
+      "id": "confetti"
+    },
+    {
+      "width": 1440,
+      "slot": "slash",
+      "id": "comic"
+    },
+    {
+      "width": 1440,
+      "slot": "slash",
+      "id": "pixel"
+    },
+    {
+      "width": 1440,
+      "slot": "dash",
+      "id": "dash-auto"
+    },
+    {
+      "width": 1440,
+      "slot": "dash",
+      "id": "dash-ink"
+    },
+    {
+      "width": 1440,
+      "slot": "dash",
+      "id": "dash-fire"
+    },
+    {
+      "width": 1440,
+      "slot": "dash",
+      "id": "dash-lightning"
+    },
+    {
+      "width": 1440,
+      "slot": "dash",
+      "id": "dash-ice"
+    },
+    {
+      "width": 1440,
+      "slot": "dash",
+      "id": "dash-water"
+    },
+    {
+      "width": 1440,
+      "slot": "dash",
+      "id": "dash-void"
+    },
+    {
+      "width": 1440,
+      "slot": "dash",
+      "id": "dash-echo"
+    },
+    {
+      "width": 390,
+      "slot": "body",
+      "id": "paper"
+    },
+    {
+      "width": 390,
+      "slot": "body",
+      "id": "obsidian"
+    },
+    {
+      "width": 390,
+      "slot": "body",
+      "id": "hologram"
+    },
+    {
+      "width": 390,
+      "slot": "core",
+      "id": "standard"
+    },
+    {
+      "width": 390,
+      "slot": "core",
+      "id": "time"
+    },
+    {
+      "width": 390,
+      "slot": "core",
+      "id": "riot"
+    },
+    {
+      "width": 390,
+      "slot": "core",
+      "id": "glass"
+    },
+    {
+      "width": 390,
+      "slot": "body",
+      "id": "prism"
+    },
+    {
+      "width": 390,
+      "slot": "body",
+      "id": "iron"
+    },
+    {
+      "width": 390,
+      "slot": "body",
+      "id": "lava"
+    },
+    {
+      "width": 390,
+      "slot": "body",
+      "id": "gold"
+    },
+    {
+      "width": 390,
+      "slot": "core",
+      "id": "grav"
+    },
+    {
+      "width": 390,
+      "slot": "core",
+      "id": "magnet"
+    },
+    {
+      "width": 390,
+      "slot": "core",
+      "id": "echo"
+    },
+    {
+      "width": 390,
+      "slot": "body",
+      "id": "chamfer"
+    },
+    {
+      "width": 390,
+      "slot": "body",
+      "id": "notched"
+    },
+    {
+      "width": 390,
+      "slot": "body",
+      "id": "segmented"
+    },
+    {
+      "width": 390,
+      "slot": "slash",
+      "id": "razor"
+    },
+    {
+      "width": 390,
+      "slot": "slash",
+      "id": "katana"
+    },
+    {
+      "width": 390,
+      "slot": "slash",
+      "id": "laser"
+    },
+    {
+      "width": 390,
+      "slot": "slash",
+      "id": "glitch-fx"
+    },
+    {
+      "width": 390,
+      "slot": "slash",
+      "id": "confetti"
+    },
+    {
+      "width": 390,
+      "slot": "slash",
+      "id": "comic"
+    },
+    {
+      "width": 390,
+      "slot": "slash",
+      "id": "pixel"
+    },
+    {
+      "width": 390,
+      "slot": "dash",
+      "id": "dash-auto"
+    },
+    {
+      "width": 390,
+      "slot": "dash",
+      "id": "dash-ink"
+    },
+    {
+      "width": 390,
+      "slot": "dash",
+      "id": "dash-fire"
+    },
+    {
+      "width": 390,
+      "slot": "dash",
+      "id": "dash-lightning"
+    },
+    {
+      "width": 390,
+      "slot": "dash",
+      "id": "dash-ice"
+    },
+    {
+      "width": 390,
+      "slot": "dash",
+      "id": "dash-water"
+    },
+    {
+      "width": 390,
+      "slot": "dash",
+      "id": "dash-void"
+    },
+    {
+      "width": 390,
+      "slot": "dash",
+      "id": "dash-echo"
+    }
+  ],
+  "errors": []
+}

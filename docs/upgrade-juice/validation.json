@@ -1,0 +1,42 @@
+{
+  "status": "PASS",
+  "fullTests": {
+    "pass": 1442,
+    "fail": 0,
+    "durationMs": 266020.465785
+  },
+  "focusedTests": 36,
+  "newTests": 5,
+  "build": {
+    "singleFile": true,
+    "verifiedKiB": 1255.5
+  },
+  "nativeUpgradePreviews": 64,
+  "nativeLiveCases": 16,
+  "retainedScreenshots": 138,
+  "motionStudyScreenshots": 32,
+  "motionVideo": "signature-motion.webm",
+  "shopRegression": {
+    "layoutsMotionCases": 7,
+    "shelves": 22,
+    "separateBuyEquipFlows": 3,
+    "noSaveMutation": true,
+    "errors": 0
+  },
+  "productionScope": {
+    "slashes": 7,
+    "dashes": 8,
+    "cores": 7,
+    "bodies": 10,
+    "band": "pinned-knot analytical damped follow-through"
+  },
+  "baselineSHA256": "181efd967f03e9c7ca6d77c90b2975297227f36e8d839e8a89fe1cab828455dc",
+  "sourceSHA256": "31f31af896ab3e1a7867927b9eab5e18c24f09f0822127b09ab9f701ac307abf",
+  "limits": [
+    "Cosmetic only: no gameplay authority or save migration.",
+    "Production-art motion study is not gameplay footage.",
+    "Native live cases isolate actual run conditions, not an uncontrolled playthrough or physical-device FPS test.",
+    "C64 Tide migration remains pending.",
+    "No commit or push."
+  ]
+}

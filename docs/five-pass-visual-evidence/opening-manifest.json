@@ -1,0 +1,1141 @@
+{
+  "method": "Fresh isolated profiles. Four training rooms completed by the existing deterministic simulation bot without a completion flag or finishTutorial invocation. The app performs its own handoff. Then normal-clock hands-off screenshots and one native mouse drag per viewport. Portrait uses a mouse, not a physical phone. Read-only response instrumentation.",
+  "sessions": [
+    {
+      "layout": "desktop",
+      "completed": {
+        "stage": 4,
+        "finished": true,
+        "position": {
+          "x": -361.7766780953692,
+          "y": -1132.9499999624957
+        }
+      },
+      "actionAt": 9113,
+      "point": {
+        "x": 409.60059076065875,
+        "y": 561.6
+      },
+      "logs": []
+    },
+    {
+      "layout": "portrait",
+      "completed": {
+        "stage": 4,
+        "finished": true,
+        "position": {
+          "x": -361.7766780953692,
+          "y": -1132.9499999624957
+        }
+      },
+      "actionAt": 7919,
+      "point": {
+        "x": 124.80020006050317,
+        "y": 582.3599999999999
+      },
+      "logs": []
+    }
+  ],
+  "frames": [
+    {
+      "frame": 1,
+      "layout": "desktop",
+      "at": 0,
+      "part": "hands-off",
+      "file": "frames/001-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      },
+      "evidenceFile": "opening-001-desktop-hands-off.jpg"
+    },
+    {
+      "frame": 2,
+      "layout": "desktop",
+      "at": 319,
+      "part": "hands-off",
+      "file": "frames/002-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 3,
+      "layout": "desktop",
+      "at": 630,
+      "part": "hands-off",
+      "file": "frames/003-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 4,
+      "layout": "desktop",
+      "at": 902,
+      "part": "hands-off",
+      "file": "frames/004-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 5,
+      "layout": "desktop",
+      "at": 1220,
+      "part": "hands-off",
+      "file": "frames/005-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 6,
+      "layout": "desktop",
+      "at": 1538,
+      "part": "hands-off",
+      "file": "frames/006-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 7,
+      "layout": "desktop",
+      "at": 1858,
+      "part": "hands-off",
+      "file": "frames/007-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 8,
+      "layout": "desktop",
+      "at": 2184,
+      "part": "hands-off",
+      "file": "frames/008-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 9,
+      "layout": "desktop",
+      "at": 2467,
+      "part": "hands-off",
+      "file": "frames/009-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 10,
+      "layout": "desktop",
+      "at": 2791,
+      "part": "hands-off",
+      "file": "frames/010-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 11,
+      "layout": "desktop",
+      "at": 3095,
+      "part": "hands-off",
+      "file": "frames/011-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 12,
+      "layout": "desktop",
+      "at": 3358,
+      "part": "hands-off",
+      "file": "frames/012-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 13,
+      "layout": "desktop",
+      "at": 3677,
+      "part": "hands-off",
+      "file": "frames/013-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 14,
+      "layout": "desktop",
+      "at": 3981,
+      "part": "hands-off",
+      "file": "frames/014-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 15,
+      "layout": "desktop",
+      "at": 4261,
+      "part": "hands-off",
+      "file": "frames/015-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 16,
+      "layout": "desktop",
+      "at": 4577,
+      "part": "hands-off",
+      "file": "frames/016-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 17,
+      "layout": "desktop",
+      "at": 4857,
+      "part": "hands-off",
+      "file": "frames/017-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 18,
+      "layout": "desktop",
+      "at": 5130,
+      "part": "hands-off",
+      "file": "frames/018-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 19,
+      "layout": "desktop",
+      "at": 5436,
+      "part": "hands-off",
+      "file": "frames/019-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 20,
+      "layout": "desktop",
+      "at": 5761,
+      "part": "hands-off",
+      "file": "frames/020-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 21,
+      "layout": "desktop",
+      "at": 6079,
+      "part": "hands-off",
+      "file": "frames/021-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 22,
+      "layout": "desktop",
+      "at": 6402,
+      "part": "hands-off",
+      "file": "frames/022-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 23,
+      "layout": "desktop",
+      "at": 6688,
+      "part": "hands-off",
+      "file": "frames/023-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 24,
+      "layout": "desktop",
+      "at": 6974,
+      "part": "hands-off",
+      "file": "frames/024-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 25,
+      "layout": "desktop",
+      "at": 7268,
+      "part": "hands-off",
+      "file": "frames/025-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 26,
+      "layout": "desktop",
+      "at": 7580,
+      "part": "hands-off",
+      "file": "frames/026-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 27,
+      "layout": "desktop",
+      "at": 7888,
+      "part": "hands-off",
+      "file": "frames/027-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 28,
+      "layout": "desktop",
+      "at": 8178,
+      "part": "hands-off",
+      "file": "frames/028-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 29,
+      "layout": "desktop",
+      "at": 8500,
+      "part": "hands-off",
+      "file": "frames/029-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 30,
+      "layout": "desktop",
+      "at": 8789,
+      "part": "hands-off",
+      "file": "frames/030-desktop-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      },
+      "evidenceFile": "opening-030-desktop-hands-off.jpg"
+    },
+    {
+      "frame": 31,
+      "layout": "desktop",
+      "at": 9307,
+      "part": "after-first-drag",
+      "file": "frames/031-desktop-after-first-drag.jpg",
+      "state": {
+        "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n100%\nMOMENTUM\nCRUISE · ×2",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      },
+      "evidenceFile": "opening-031-desktop-after-first-drag.jpg"
+    },
+    {
+      "frame": 32,
+      "layout": "desktop",
+      "at": 9646,
+      "part": "after-first-drag",
+      "file": "frames/032-desktop-after-first-drag.jpg",
+      "state": {
+        "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n100%\nMOMENTUM\nCRUISE · ×2",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 33,
+      "layout": "desktop",
+      "at": 9931,
+      "part": "after-first-drag",
+      "file": "frames/033-desktop-after-first-drag.jpg",
+      "state": {
+        "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n100%\nMOMENTUM\nCRUISE · ×2",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 34,
+      "layout": "desktop",
+      "at": 10243,
+      "part": "after-first-drag",
+      "file": "frames/034-desktop-after-first-drag.jpg",
+      "state": {
+        "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n100%\nMOMENTUM\nCRUISE · ×2",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 35,
+      "layout": "desktop",
+      "at": 10541,
+      "part": "after-first-drag",
+      "file": "frames/035-desktop-after-first-drag.jpg",
+      "state": {
+        "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n100%\nMOMENTUM\nCRUISE · ×2",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 36,
+      "layout": "desktop",
+      "at": 10872,
+      "part": "after-first-drag",
+      "file": "frames/036-desktop-after-first-drag.jpg",
+      "state": {
+        "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n100%\nMOMENTUM\nCRUISE · ×2",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 37,
+      "layout": "desktop",
+      "at": 11171,
+      "part": "after-first-drag",
+      "file": "frames/037-desktop-after-first-drag.jpg",
+      "state": {
+        "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n100%\nMOMENTUM\nCRUISE · ×2",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 38,
+      "layout": "desktop",
+      "at": 11491,
+      "part": "after-first-drag",
+      "file": "frames/038-desktop-after-first-drag.jpg",
+      "state": {
+        "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n100%\nMOMENTUM\nCRUISE · ×2",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 39,
+      "layout": "desktop",
+      "at": 11795,
+      "part": "after-first-drag",
+      "file": "frames/039-desktop-after-first-drag.jpg",
+      "state": {
+        "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n100%\nMOMENTUM\nCRUISE · ×2",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 40,
+      "layout": "desktop",
+      "at": 12092,
+      "part": "after-first-drag",
+      "file": "frames/040-desktop-after-first-drag.jpg",
+      "state": {
+        "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nMOMENTUM\nCRUISE · ×2",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 41,
+      "layout": "desktop",
+      "at": 12400,
+      "part": "after-first-drag",
+      "file": "frames/041-desktop-after-first-drag.jpg",
+      "state": {
+        "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nMOMENTUM\nCRUISE · ×2",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 42,
+      "layout": "desktop",
+      "at": 12717,
+      "part": "after-first-drag",
+      "file": "frames/042-desktop-after-first-drag.jpg",
+      "state": {
+        "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nMOMENTUM\nCRUISE · ×2",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      },
+      "evidenceFile": "opening-042-desktop-after-first-drag.jpg"
+    },
+    {
+      "frame": 43,
+      "layout": "portrait",
+      "at": 0,
+      "part": "hands-off",
+      "file": "frames/043-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      },
+      "evidenceFile": "opening-043-portrait-hands-off.jpg"
+    },
+    {
+      "frame": 44,
+      "layout": "portrait",
+      "at": 253,
+      "part": "hands-off",
+      "file": "frames/044-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 45,
+      "layout": "portrait",
+      "at": 518,
+      "part": "hands-off",
+      "file": "frames/045-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 46,
+      "layout": "portrait",
+      "at": 792,
+      "part": "hands-off",
+      "file": "frames/046-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 47,
+      "layout": "portrait",
+      "at": 1063,
+      "part": "hands-off",
+      "file": "frames/047-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 48,
+      "layout": "portrait",
+      "at": 1317,
+      "part": "hands-off",
+      "file": "frames/048-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 49,
+      "layout": "portrait",
+      "at": 1571,
+      "part": "hands-off",
+      "file": "frames/049-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 50,
+      "layout": "portrait",
+      "at": 1836,
+      "part": "hands-off",
+      "file": "frames/050-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 51,
+      "layout": "portrait",
+      "at": 2105,
+      "part": "hands-off",
+      "file": "frames/051-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 52,
+      "layout": "portrait",
+      "at": 2368,
+      "part": "hands-off",
+      "file": "frames/052-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 53,
+      "layout": "portrait",
+      "at": 2621,
+      "part": "hands-off",
+      "file": "frames/053-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 54,
+      "layout": "portrait",
+      "at": 2886,
+      "part": "hands-off",
+      "file": "frames/054-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 55,
+      "layout": "portrait",
+      "at": 3155,
+      "part": "hands-off",
+      "file": "frames/055-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 56,
+      "layout": "portrait",
+      "at": 3430,
+      "part": "hands-off",
+      "file": "frames/056-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 57,
+      "layout": "portrait",
+      "at": 3684,
+      "part": "hands-off",
+      "file": "frames/057-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 58,
+      "layout": "portrait",
+      "at": 3958,
+      "part": "hands-off",
+      "file": "frames/058-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 59,
+      "layout": "portrait",
+      "at": 4225,
+      "part": "hands-off",
+      "file": "frames/059-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 60,
+      "layout": "portrait",
+      "at": 4518,
+      "part": "hands-off",
+      "file": "frames/060-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 61,
+      "layout": "portrait",
+      "at": 4785,
+      "part": "hands-off",
+      "file": "frames/061-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 62,
+      "layout": "portrait",
+      "at": 5052,
+      "part": "hands-off",
+      "file": "frames/062-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 63,
+      "layout": "portrait",
+      "at": 5317,
+      "part": "hands-off",
+      "file": "frames/063-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 64,
+      "layout": "portrait",
+      "at": 5568,
+      "part": "hands-off",
+      "file": "frames/064-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 65,
+      "layout": "portrait",
+      "at": 5833,
+      "part": "hands-off",
+      "file": "frames/065-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 66,
+      "layout": "portrait",
+      "at": 6091,
+      "part": "hands-off",
+      "file": "frames/066-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 67,
+      "layout": "portrait",
+      "at": 6355,
+      "part": "hands-off",
+      "file": "frames/067-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 68,
+      "layout": "portrait",
+      "at": 6619,
+      "part": "hands-off",
+      "file": "frames/068-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 69,
+      "layout": "portrait",
+      "at": 6884,
+      "part": "hands-off",
+      "file": "frames/069-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 70,
+      "layout": "portrait",
+      "at": 7134,
+      "part": "hands-off",
+      "file": "frames/070-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 71,
+      "layout": "portrait",
+      "at": 7401,
+      "part": "hands-off",
+      "file": "frames/071-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      }
+    },
+    {
+      "frame": 72,
+      "layout": "portrait",
+      "at": 7660,
+      "part": "hands-off",
+      "file": "frames/072-portrait-hands-off.jpg",
+      "state": {
+        "text": "WATCHER HOLDS THE WAY\nCUT THROUGH THE OPENING\n\nClick the glowing opening above you\n\nNew run.",
+        "completed": "1",
+        "phase": "ready",
+        "intro": true
+      },
+      "evidenceFile": "opening-072-portrait-hands-off.jpg"
+    },
+    {
+      "frame": 73,
+      "layout": "portrait",
+      "at": 8051,
+      "part": "after-first-drag",
+      "file": "frames/073-portrait-after-first-drag.jpg",
+      "state": {
+        "text": "0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n100%\nMOMENTUM\nHYPER · ×5",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      },
+      "evidenceFile": "opening-073-portrait-after-first-drag.jpg"
+    },
+    {
+      "frame": 74,
+      "layout": "portrait",
+      "at": 8420,
+      "part": "after-first-drag",
+      "file": "frames/074-portrait-after-first-drag.jpg",
+      "state": {
+        "text": "0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n100%\nMOMENTUM\nHYPER · ×5",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 75,
+      "layout": "portrait",
+      "at": 8698,
+      "part": "after-first-drag",
+      "file": "frames/075-portrait-after-first-drag.jpg",
+      "state": {
+        "text": "0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n100%\nMOMENTUM\nHYPER · ×5",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 76,
+      "layout": "portrait",
+      "at": 8983,
+      "part": "after-first-drag",
+      "file": "frames/076-portrait-after-first-drag.jpg",
+      "state": {
+        "text": "0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n100%\nMOMENTUM\nHYPER · ×5",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 77,
+      "layout": "portrait",
+      "at": 9251,
+      "part": "after-first-drag",
+      "file": "frames/077-portrait-after-first-drag.jpg",
+      "state": {
+        "text": "0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n100%\nMOMENTUM\nHYPER · ×5",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 78,
+      "layout": "portrait",
+      "at": 9513,
+      "part": "after-first-drag",
+      "file": "frames/078-portrait-after-first-drag.jpg",
+      "state": {
+        "text": "0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n100%\nMOMENTUM\nHYPER · ×5",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 79,
+      "layout": "portrait",
+      "at": 9770,
+      "part": "after-first-drag",
+      "file": "frames/079-portrait-after-first-drag.jpg",
+      "state": {
+        "text": "0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n100%\nMOMENTUM\nHYPER · ×5",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 80,
+      "layout": "portrait",
+      "at": 10039,
+      "part": "after-first-drag",
+      "file": "frames/080-portrait-after-first-drag.jpg",
+      "state": {
+        "text": "0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n100%\nMOMENTUM\nHYPER · ×5",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 81,
+      "layout": "portrait",
+      "at": 10312,
+      "part": "after-first-drag",
+      "file": "frames/081-portrait-after-first-drag.jpg",
+      "state": {
+        "text": "0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n100%\nMOMENTUM\nHYPER · ×5",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 82,
+      "layout": "portrait",
+      "at": 10589,
+      "part": "after-first-drag",
+      "file": "frames/082-portrait-after-first-drag.jpg",
+      "state": {
+        "text": "0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nRUSH\n95%\nMOMENTUM\nHYPER · ×5",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 83,
+      "layout": "portrait",
+      "at": 10876,
+      "part": "after-first-drag",
+      "file": "frames/083-portrait-after-first-drag.jpg",
+      "state": {
+        "text": "0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nMOMENTUM\nHYPER · ×5",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      }
+    },
+    {
+      "frame": 84,
+      "layout": "portrait",
+      "at": 11154,
+      "part": "after-first-drag",
+      "file": "frames/084-portrait-after-first-drag.jpg",
+      "state": {
+        "text": "0%\nNEXT BOSS · CALM\nSCORE\n000000\nHEALTH\n3/3\nKILLS 0\nROUND +10 CREDITS\nEDGE\nFOCUS\nAIM & CLICK TO CUT\nGREEN CUTS RED HURTS GOLD PAYS\nW01 · 14\nBONUS\nCUT IN 8s\nMOMENTUM\nHYPER · ×5",
+        "completed": "1",
+        "phase": "playing",
+        "intro": false
+      },
+      "evidenceFile": "opening-084-portrait-after-first-drag.jpg"
+    }
+  ]
+}

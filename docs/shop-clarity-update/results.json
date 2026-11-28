@@ -1,0 +1,293 @@
+{
+  "rows": [
+    {
+      "w": 1440,
+      "h": 900,
+      "reduced": false,
+      "firstCardY": 330,
+      "bounds": [
+        {
+          "text": "Compare",
+          "x": 1153,
+          "y": 203,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Details",
+          "x": 1271,
+          "y": 203,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Practice",
+          "x": 1153,
+          "y": 255,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Build",
+          "x": 1271,
+          "y": 255,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        }
+      ],
+      "saveRetained": true
+    },
+    {
+      "w": 960,
+      "h": 540,
+      "reduced": false,
+      "firstCardY": 276,
+      "bounds": [
+        {
+          "text": "Compare",
+          "x": 688,
+          "y": 155,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Details",
+          "x": 806,
+          "y": 155,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Practice",
+          "x": 688,
+          "y": 207,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Build",
+          "x": 806,
+          "y": 207,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        }
+      ],
+      "saveRetained": true
+    },
+    {
+      "w": 640,
+      "h": 360,
+      "reduced": false,
+      "firstCardY": 226,
+      "bounds": [
+        {
+          "text": "Compare",
+          "x": 373.984375,
+          "y": 173,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Details",
+          "x": 491.984375,
+          "y": 173,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Practice",
+          "x": 373.984375,
+          "y": 225,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Build",
+          "x": 491.984375,
+          "y": 225,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        }
+      ],
+      "saveRetained": true
+    },
+    {
+      "w": 390,
+      "h": 844,
+      "reduced": false,
+      "firstCardY": 255,
+      "bounds": [
+        {
+          "text": "Compare",
+          "x": 121,
+          "y": 201,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Details",
+          "x": 239,
+          "y": 201,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Practice",
+          "x": 121,
+          "y": 253,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Build",
+          "x": 239,
+          "y": 253,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        }
+      ],
+      "saveRetained": true
+    },
+    {
+      "w": 844,
+      "h": 390,
+      "reduced": false,
+      "firstCardY": 275,
+      "bounds": [
+        {
+          "text": "Compare",
+          "x": 572,
+          "y": 155,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Details",
+          "x": 690,
+          "y": 155,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Practice",
+          "x": 572,
+          "y": 207,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Build",
+          "x": 690,
+          "y": 207,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        }
+      ],
+      "saveRetained": true
+    },
+    {
+      "w": 320,
+      "h": 568,
+      "reduced": false,
+      "firstCardY": 247,
+      "bounds": [
+        {
+          "text": "Compare",
+          "x": 51,
+          "y": 192,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Details",
+          "x": 169,
+          "y": 192,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Practice",
+          "x": 51,
+          "y": 244,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Build",
+          "x": 169,
+          "y": 244,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        }
+      ],
+      "saveRetained": true
+    },
+    {
+      "w": 390,
+      "h": 844,
+      "reduced": true,
+      "firstCardY": 255,
+      "bounds": [
+        {
+          "text": "Compare",
+          "x": 121,
+          "y": 201,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Details",
+          "x": 239,
+          "y": 201,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Practice",
+          "x": 121,
+          "y": 253,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        },
+        {
+          "text": "Build",
+          "x": 239,
+          "y": 253,
+          "w": 110,
+          "h": 44,
+          "hit": true
+        }
+      ],
+      "saveRetained": true
+    }
+  ],
+  "errors": [],
+  "method": "Native Home → Shop browser interactions; fixed RAF for comparable screenshots. Seven layouts/motion cases plus three funded transaction flows. Scripted checks, not human comprehension validation."
+}

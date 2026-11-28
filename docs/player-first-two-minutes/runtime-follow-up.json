@@ -1,0 +1,18 @@
+{
+  "method": "Separate diagnostic follow-up, not part of first118.4seconds. Fresh normal UI, START RUN, SKIP, six ordinary drags. Read console errors; no game source edits.",
+  "messages": [
+    {
+      "type": "error",
+      "text": "[SPLATR] frame error in waveUI.update TypeError: Cannot read properties of undefined (reading 'line')"
+    },
+    {
+      "type": "error",
+      "text": "[SPLATR] frame error in waveUI.update recurs (21 so far)"
+    }
+  ],
+  "unique": [
+    "[SPLATR] frame error in waveUI.update TypeError: Cannot read properties of undefined (reading 'line')",
+    "[SPLATR] frame error in waveUI.update recurs (21 so far)"
+  ],
+  "text": "BOSS CHARGE\n0%\nNEXT BOSS · CALM\nSCORE\n000100\nHEALTH\n3/3\nBANKING\nKILLS 1\nROUND +12 CREDITS\nEDGE\nFOCUS\nW01 · 1\nHYPER · ×5"
+}

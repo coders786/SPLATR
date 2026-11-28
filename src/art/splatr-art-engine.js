@@ -1288,14 +1288,11 @@ function drawCoreChamber(c,eq,t,palette,pose2={}){
  c.save();try{
  c.translate(.075,.635);
  const outer=CORE_CARRIERS[Object.hasOwn(CORE_CARRIERS,eq.body)?eq.body:'paper'];
- panel(c,outer,material.shade,.045);
- panel(c,[[-.69,-.18],[-.56,-.265],[.56,-.265],[.67,-.15],[-.55,-.15],[-.66,-.05]],material.edge,0);
- panel(c,[[-.64,-.13],[.61,-.13],[.64,.15],[.52,.23],[-.54,.23],[-.64,.13]],material.well,.025);
- // Opaque casing, not a transparent hole through the cube.
+ panel(c,outer,material.face,.025);
+ // One opaque well; no nested rim, mounting cage or decorative screw plates.
  const well=[[-.55,-.17],[.54,-.17],[.61,-.08],[.61,.12],[.50,.22],[-.53,.22],[-.62,.11],[-.62,-.08]];
  c.save();path(c,well);c.clip();
- panel(c,well,'#10141e',0);
- panel(c,[[-.61,-.17],[.59,-.17],[.52,-.09],[-.46,-.09],[-.46,.22],[-.61,.22]],body.shadow,0);
+ panel(c,well,'#25313a',0);
  // Fixed silhouettes remain different even when energy is disabled.
  const bright=blend(material.face,palette.primary,.30*emission),edge=blend(material.edge,palette.light,.45*emission),
   energy=blend('#444554',palette.primary,emission),secondary=blend('#3e4353',palette.secondary,emission),
@@ -1370,21 +1367,29 @@ function drawCoreChamber(c,eq,t,palette,pose2={}){
   // A stationary source is NOT a fourth charge cell or a next-dash pulse.
   if(echoes>0)seam(c,[[-.46,.20],[.44,.20]],light,.04);
  }
- c.restore();
- // Seated fasteners/wall stay over internal movement. Never cut eye surfaces.
- for(const side of [-1,1]){
-  if(body.kind==='facet')panel(c,[[side*.58,-.09],[side*.69,-.03],[side*.62,.17],[side*.55,.07]],material.face,.018);
-  else if(body.kind==='fold'||eq.body==='gold'){
-   panel(c,[[side*.56,-.12],[side*.70,-.08],[side*.68,.17],[side*.57,.12]],material.face,.018);
-   seam(c,[[side*.57,-.10],[side*.66,.13]],material.edge,.025);
-  }else if(body.kind==='glass'){
-   seam(c,[[side*.59,-.11],[side*.69,-.11],[side*.69,.16],[side*.59,.16]],material.edge,.025);
-  }else{
-   panel(c,[[side*.60,-.08],[side*.69,-.08],[side*.69,.15],[side*.59,.15]],material.face,.018);
-   if(detail)seam(c,[[side*.62,-.015],[side*.66,-.015]],material.well,.027);
-  }
+ // Tiny mechanical motion stays INSIDE the cartridge. It is an idle
+ // material animation, never an inferred ability state or refill promise.
+ if(!pose2.reducedMotion){
+  c.save();c.globalAlpha*=.6*emission;
+  const phase=clock*.055;
+  if(id==='standard'){const beat=1+Math.sin(phase)*.10;c.save();c.translate(0,.025);c.scale(beat,beat);seam(c,[[-.10,0],[.10,0]],light,.025);c.restore();}
+  else if(id==='time'){const y=-.10+((clock*.004)% .26+.26)%.26;seam(c,[[-.05,y],[.05,y]],light,.022);}
+  else if(id==='riot'){for(const side of [-1,1]){const x=side*(.30+.10*(.5+.5*Math.sin(phase)));seam(c,[[x,-.09],[x,.10]],energy,.025);}}
+  else if(id==='glass'){const x=Math.sin(phase*.6)*.15;seam(c,[[x,-.08],[x+.06,-.02]],light,.022);}
+  else if(id==='magnet'){for(const side of [-1,1]){const y=.02+Math.sin(phase+side)*.07;seam(c,[[side*.34,y],[side*.48,y]],side<0?light:secondary,.025);}}
+  else if(id==='echo'){for(let i=0;i<3;i++){const y=.02+Math.sin(phase-i*.8)*.055;seam(c,[[i*.33-.42,y],[i*.33-.32,y]],bright,.018);}}
+  // Grav already has a rotating three-jaw iris.
+  c.restore();
  }
- seam(c,[[-.55,.265],[.51,.265],[.66,.18]],material.edge,.028);
+ const gesture=pose2.reducedMotion?0:Math.max(pose2.performance?.release||0,Number.isFinite(pose2.dashProgress)&&pose2.dashProgress>=0?Math.sin(Math.PI*Math.min(1,pose2.dashProgress)):0);
+ if(gesture>.01){
+  const fx=resolveCoreFx(eq);c.save();c.globalAlpha*=gesture*.72*emission;
+  for(const side of [-1,1]){const xx=side*(.42-gesture*.045);seam(c,[[xx,-.09],[xx-side*.07,.025],[xx,.15]],palette.light,.026);drawCoreMote(c,fx,xx,.025,.035,side*gesture*.3);}
+  c.restore();
+ }
+ c.restore();
+ // One shared material edge. Active mechanisms stay unobscured.
+ seam(c,[[-.54,.265],[.51,.265]],material.edge,.025);
  }finally{c.restore();}
 }
 
@@ -2221,10 +2226,12 @@ export function drawTailToolkit(c,{equipment={},pose={},radius=23}={}){
    if(q?.remaining>0)stitch([[-1.32,-.48+k*.33],[-1.08,-.29+k*.33]],'#8b869a',.03);
   }
  }else{
-  // Free kit: folded cloth, distinct hem and a real knot, no idle flutter.
-  plate([[-.83,-.53],[-1.4,-.65],[-2.08,-.31+lag],[-3.11,-.48+lag],[-2.76,-.08+lag],[-2.05,.04+lag],[-1.38,-.27],[-.83,-.12]],'#29213b',.06);
-  plate([[-1.02,-.46],[-1.47,-.52],[-2.06,-.2+lag],[-2.89,-.36+lag],[-2.73,-.18+lag],[-2.06,-.08+lag],[-1.40,-.35]],'#bbc784',0);
-  stitch([[-1.38,-.48],[-2.08,-.15+lag],[-2.75,-.26+lag]],'#e1dfb8',.025);
+  // Pinned knot, flexible middle and delayed free tip. Analytical damped
+  // motion is independent of draw frequency and freezes for reduced motion.
+  const cloth=resolveBandMotion(pose,pose.artClock||0),mid=lag*.45+cloth.mid,tip=lag+cloth.tip;
+  plate([[-.83,-.53],[-1.4,-.65],[-2.08,-.31+mid],[-3.11,-.48+tip],[-2.76,-.08+tip+cloth.twist],[-2.05,.04+mid],[-1.38,-.27],[-.83,-.12]],'#29213b',.06);
+  plate([[-1.02,-.46],[-1.47,-.52],[-2.06,-.2+mid],[-2.89,-.36+tip],[-2.73,-.18+tip],[-2.06,-.08+mid],[-1.40,-.35]],'#bbc784',0);
+  stitch([[-1.38,-.48],[-2.08,-.15+mid],[-2.75,-.26+tip]],'#e1dfb8',.025);
   plate([[-.86,-.57],[-1.12,-.64],[-1.29,-.35],[-1.1,-.09],[-.84,-.13]],mat.shade,.05);
   stitch([[-1.1,-.53],[-1.2,-.35],[-1.08,-.17]],'#bac78c',.04);
  }
@@ -2291,80 +2298,125 @@ function wings(c, eq, t, accent, ink2, intensity) {
   panel(c,[[.05,-.27],[-.16,-.35],[-.27,-.11],[-.18,.32],[.05,.24]],"#2a233a",ink2*.7);
   circle(c,-.12,-.02,.07,accent);circle(c,-.13,-.04,.023,"#fff7ee");c.restore();
 }
-function head(c, id, t, palette, ink2) {
-  if (id === "viper") {
-    for(const side of [-1,1]){
-      c.save();c.scale(side,1);
-      panel(c,[[.26,-.87],[.69,-.87],[.76,-1.04],[.27,-1.06]],"#29202d",ink2*.7);
-      c.beginPath();c.moveTo(.31,-1.03);c.quadraticCurveTo(.76,-1.31,1.02,-1.99);c.quadraticCurveTo(1.18,-1.37,.67,-.99);c.closePath();
-      c.fillStyle="#64192e";c.fill();c.strokeStyle=BLACK;c.lineWidth=ink2;c.stroke();
-      c.beginPath();c.moveTo(.35,-1.05);c.quadraticCurveTo(.73,-1.36,1.02,-1.99);c.quadraticCurveTo(.91,-1.37,.55,-1.02);c.closePath();c.fillStyle="#ff536d";c.fill();
-      seam(c,[[.58,-1.13],[.85,-1.58],[1.01,-1.94]],"#ffdacb",.033);
-      seam(c,[[.36,-.94],[.63,-.94]],palette.primary,.035);c.restore();
-    }
-  } else if (id === "oni") {
-    c.beginPath();
-    c.moveTo(-0.93, -0.65);
-    c.quadraticCurveTo(-1.55, -1.33, -1.07, -1.96);
-    c.quadraticCurveTo(-1.15, -1.48, -0.49, -1.06);
-    c.closePath();
-    c.fillStyle = "#a91f3e";
-    c.fill();
-    c.strokeStyle = BLACK;
-    c.lineWidth = ink2;
-    c.stroke();
-    seam(c, [[-1.12, -1.67], [-1.13, -1.37], [-0.79, -1.02]], "#ff7a7e", 0.07);
-  } else if (id === "neko") {
-    for (const side of [-1, 1]) {
-      panel(c, [[side * 0.25, -0.88], [side * 0.85, -1.73], [side * 1.09, -0.82]], "#302138", ink2);
-      panel(c, [[side * 0.49, -1], [side * 0.81, -1.43], [side * 0.9, -0.96]], "#f262be", 0.04);
-      seam(c,[[side*.57,-1.02],[side*.79,-1.33]],"#ffd6f2",.028);
-      circle(c,side*.43,-.94,.045,palette.primary);
-    }
-  } else if (id === "halo") {
-    c.save();
-    c.translate(0, -1.44);
-    c.rotate(-0.12 + Math.sin(t * 0.025) * 0.06);
-    c.beginPath();
-    c.ellipse(0, 0, 0.92, 0.21, 0, 0, Math.PI * 2);
-    c.lineWidth = ink2 + 0.09;
-    c.strokeStyle = BLACK;
-    c.stroke();
-    c.lineWidth = 0.105;
-    c.strokeStyle = "#ffd066";
-    c.stroke();
-    c.lineWidth = 0.025;
-    c.strokeStyle = CREAM;
-    c.stroke();
-    c.restore();
-  } else if (id === "crown") {
-    panel(c, [[-0.92, -0.82], [-1.02, -1.62], [-0.43, -1.35], [-0.07, -1.98], [0.38, -1.37], [0.94, -1.7], [0.85, -0.8]], "#bd782c", ink2);
-    panel(c, [[-0.85, -1.03], [-0.89, -1.46], [-0.39, -1.22], [-0.04, -1.75], [0.35, -1.22], [0.82, -1.52], [0.72, -1.03]], "#ffe295", 0);
-    panel(c,[[.0,-1.76],[.35,-1.22],[.82,-1.52],[.72,-1.03],[.02,-1.03]],"#94561e55",0);
-    seam(c, [[-0.78, -0.98], [0.74, -0.98]], "#fff6d5", 0.055);
-    panel(c, [[-0.03, -1.5], [0.15, -1.28], [-0.03, -1.07], [-0.2, -1.28]], "#fa328f", 0.045);
-    seam(c, [[-0.03, -1.43], [0.08, -1.29]], "#ffb6dd", 0.035);
-  } else if (id === "samurai") {
-    panel(c, [[-1, -0.84], [-1.1, -1.23], [-0.3, -1.07], [0.1, -1.18], [0.96, -1.3], [0.87, -0.83]], "#352734", ink2);
-    for (const side of [-1, 1]) panel(c, [[side * 0.15, -1], [side * 0.47, -1.39], [side * 1.29, -1.86], [side * 0.94, -1.22], [side * 0.45, -0.94]], "#ffda81", ink2 * 0.7);
-  } else if (id === "coil") {
-    for (const side of [-1, 1]) {
-      panel(c, [[side * 0.13, -0.87], [side * 0.12, -1.75], [side * 0.37, -1.92], [side * 0.48, -1.01]], "#353343", ink2);
-      panel(c, [[side * 0.22, -1.1], [side * 0.22, -1.65], [side * 0.3, -1.72], [side * 0.35, -1.1]], "#8c9caa", 0);
-    }
-    const y = -1.48 + Math.sin(t * 0.08) * 0.1;
-    seam(c, [[-0.19, y], [-0.06, y - 0.15], [0.06, y + 0.11], [0.23, y - 0.05]], "#207caa", 0.15);
-    seam(c, [[-0.19, y], [-0.06, y - 0.15], [0.06, y + 0.11], [0.23, y - 0.05]], "#b9ffff", 0.055);
-  } else if (id === "beacon") {
-    c.save();
-    c.globalAlpha = 0.16 + Math.sin(t * 0.07) * 0.04;
-    panel(c, [[-0.38, -1], [0.38, -1], [1.05, -2.03], [-1.05, -2.03]], "#ffbd68", 0);
-    c.restore();
-    panel(c, [[-0.68, -0.84], [-0.58, -1.28], [0.48, -1.3], [0.69, -0.89]], "#34303a", ink2);
-    panel(c, [[-0.45, -1.03], [-0.4, -1.14], [0.38, -1.15], [0.45, -1.03]], "#ffbf5b", 0.035);
-    seam(c, [[-0.32, -1.09], [0.29, -1.1]], "#fff4c8", 0.045);
-  }
+/** Read-only attachment receipt. No timing, target selection or power is granted
+ * here. Coil reads accepted relay art receipts; Beacon reads the SAME tell state
+ * as its existing target brackets. Off-run/teaching views cannot light hardware. */
+export function headMechanismPose(state={},enemies=[],velocity={}){
+ const id=state.equipment?.head||'none',live=state.phase==='playing'&&!state.opening&&!state.tutorialActive&&!state.visualTutorial;
+ const blade=live&&Number.isFinite(state.blade)&&state.blade>0;
+ let active=false;
+ if(live){
+  if(id==='halo')active=state.held===true&&!state.depleted&&Number.isFinite(velocity.y)&&velocity.y>0;
+  else if(id==='neko')active=Number.isFinite(state.chain)&&state.chain>0;
+  else if(id==='viper')active=blade&&Number.isFinite(state.slashAge)&&state.slashAge>=0&&state.slashAge<=10;
+  else if(id==='oni')active=state.hp===1;
+  else if(id==='crown')active=blade;
+  else if(id==='samurai')active=blade&&Number.isFinite(state.slashAngle)&&Math.abs(Math.sin(state.slashAngle))<=Math.sin(25*Math.PI/180);
+  else if(id==='coil')active=(state.equipmentFx?.bursts||[]).some(b=>b.style==='spark'&&b.ticks>24&&b.ticks<=30)||!!state.volt?.conduction?.arc?.links?.some(l=>l.role==='coil');
+  else if(id==='beacon')for(const e of enemies){if(e.kind==='fang'&&e.mode==='tell'){active=true;break;}}
+ }
+ return Object.freeze({headAbility:Object.freeze({kind:id,active})});
 }
+/** Head systems: stable product silhouettes and local state changes. Material
+ * belongs to the shell socket; identity belongs to the attachment. A colored
+ * idle lens is just glass, never an oscillating beam or counterfeit relay. */
+function head(c,id,t,palette,ink2,pose={},equipment={}){
+ if(!id||id==='none')return;
+ const q=pose.headAbility,active=q?.kind===id&&q.active===true,
+  reduced=pose.reducedMotion===true,detail=(pose.artRadius||76)>=38,
+  mat=resolveAssemblyConstruction(equipment).material,
+  trim=blend(mat.edge,palette.primary,.22),lit=active?palette.light:trim;
+ const plate=(pts,color,ink=.045)=>panel(c,pts,color,ink),edge=(pts,color,width=.035)=>seam(c,pts,color,width);
+ c.save();try{
+ // Matching sockets, not identical hats: body construction never recolors the
+ // attachment's own gold/crimson/cyan identity or changes its collision shape.
+ if(id!=='halo'){
+  plate([[-.82,-.87],[-.69,-1.06],[.68,-1.06],[.84,-.86],[.65,-.75],[-.66,-.75]],mat.shade,ink2*.65);
+  edge([[-.65,-.83],[.65,-.83]],trim,.035);
+
+ }
+ if(id==='halo'){
+  c.save();c.translate(0,active?-1.48:-1.43);c.rotate(active?0:-.16);
+  c.strokeStyle=BLACK;c.lineWidth=.21;c.beginPath();c.ellipse(0,0,.99,.235,0,0,TAU);c.stroke();
+  c.strokeStyle='#c78e43';c.lineWidth=.135;c.stroke();c.strokeStyle=active?'#fff3b6':'#ffdc88';c.lineWidth=.045;c.stroke();
+  for(const side of [-1,1]){
+   plate([[side*.71,-.14],[side*1.03,-.06],[side*.93,.17],[side*.64,.10]],'#e4b760',.035);
+   edge([[side*.73,.055],[side*.91,.09]],active?'#fff8d0':'#805e3d',.035);
+  }
+  c.restore();
+  // Three short fixed vanes flatten while aiming; no global light cone.
+  for(const x of [-.38,0,.38])edge([[x,-1.28],[x+(active?0:.05),active?-1.08:-1.17]],active?'#ffe8aa':'#716953',active?.055:.035);
+ }else if(id==='neko'){
+  for(const side of [-1,1]){
+   c.save();c.translate(side*.63,-.96);c.rotate(side*(active?.07:-.05));
+   plate([[-.42,.10],[-.17,-.89],[.47,-.03]],'#302a43',ink2*.8);
+   plate([[-.26,-.02],[-.15,-.67],[.27,-.08]],active?'#f5a3ce':'#b96f9c',.03);
+   edge([[-.20,-.11],[-.15,-.48],[.11,-.12]],'#ffdcdf',.035);
+   plate([[-.37,.06],[.32,.06],[.23,.18],[-.30,.18]],mat.face,.04);c.restore();
+  }
+  edge([[-.38,-.98],[-.19,-1.05],[0,-.98],[.19,-1.05],[.38,-.98]],active?'#ffd5ea':'#77677b',active?.065:.035);
+ }else if(id==='viper'){
+  for(const side of [-1,1]){
+   c.save();c.scale(side,1);if(active&&!reduced){c.translate(.03,-.02);c.rotate(.035);}
+   plate([[.16,-.89],[.35,-1.29],[1.13,-2.02],[.98,-1.37],[.70,-.91]],'#422333',ink2*.8);
+   plate([[.34,-1.04],[.49,-1.35],[1.02,-1.83],[.82,-1.29],[.62,-1.02]],'#d55367',.025);
+   edge([[.47,-1.16],[.72,-1.43],[1.02,-1.83]],active?'#ffddc8':'#fa9390',.045);
+   // A long recessed air channel reads as speed, not another damaging blade.
+   edge([[.44,-1.01],[.60,-1.10],[.76,-1.33]],'#2c2737',.07);c.restore();
+  }
+ }else if(id==='oni'){
+  plate([[-.97,-.83],[-1.27,-1.28],[-1.13,-1.97],[-.90,-1.72],[-.96,-1.35],[-.48,-1.03]],'#652a3d',ink2);
+  plate([[-1.09,-1.71],[-1.10,-1.32],[-.70,-1.03],[-.88,-1.08],[-1.22,-1.31]],active?'#ff927d':'#c9686d',.025);
+  edge([[-1.10,-1.72],[-1.03,-1.40],[-.74,-1.12]],active?'#ffe1bc':'#e4aaa0',.045);
+  // The broken opposite horn is deliberate, not a second complete pair.
+  plate([[.32,-.95],[.42,-1.29],[.55,-1.16],[.73,-1.25],[.81,-.94]],'#6b3445',.05);
+  edge([[.46,-1.20],[.56,-1.11],[.69,-1.18]],'#f1d0b0',.035);
+  edge([[-.34,-.96],[-.16,-.86],[.07,-.98],[.24,-.87]],active?'#ffd4b3':'#794354',active?.075:.035);
+ }else if(id==='crown'){
+  // Two forward armor jaws, not a row of unrelated magical spikes.
+  plate([[-1.04,-.86],[-1.14,-1.67],[-.72,-1.45],[-.44,-1.89],[-.17,-1.40],[.17,-1.40],[.44,-1.89],[.72,-1.45],[1.14,-1.67],[1.04,-.86]],'#936338',ink2*.85);
+  for(const side of [-1,1]){
+   plate([[side*.17,-1.03],[side*.28,-1.40],[side*.43,-1.69],[side*.64,-1.27],[side*.96,-1.47],[side*.86,-1.03]],'#ecc47c',.03);
+   edge([[side*.34,-1.13],[side*.44,-1.45]],active?'#fff3bc':'#b18249',.07);
+   plate([[side*.29,-.97],[side*.29,-1.15],[side*.69,-1.15],[side*.69,-.97]],active?'#fff0b4':'#665447',.025);
+  }
+  plate([[0,-1.37],[.17,-1.18],[0,-.99],[-.17,-1.18]],'#b04466',.04);
+  edge([[-.82,-.92],[.82,-.92]],'#fff0bc',.045);
+ }else if(id==='samurai'){
+  plate([[-1.02,-.85],[-1.08,-1.16],[-.36,-1.06],[0,-1.28],[.36,-1.06],[1.08,-1.16],[1.02,-.85]],'#40323e',ink2*.8);
+  for(const side of [-1,1]){
+   plate([[side*.08,-1.03],[side*.38,-1.48],[side*1.39,-1.82],[side*1.08,-1.30],[side*.48,-.98]],'#c69252',ink2*.65);
+   plate([[side*.35,-1.13],[side*.52,-1.38],[side*1.21,-1.66],[side*.94,-1.31]],'#ffe0a0',.025);
+   edge([[side*.45,-1.09],[side*.91,-1.31],[side*1.27,-1.67]],active?'#fff8d3':'#d0a473',active?.07:.03);
+  }
+  plate([[0,-1.37],[.21,-1.17],[0,-.93],[-.21,-1.17]],mat.shade,.045);
+  edge([[-.17,-1.17],[.17,-1.17]],active?'#fff5c8':trim,.05);
+ }else if(id==='coil'){
+  // Two wound inductors and one central bridge. Standby is solid hardware;
+  // the bridge closes ONLY for an accepted relay receipt, never an idle sine.
+  for(const side of [-1,1]){
+   plate([[side*.19,-.96],[side*.19,-1.76],[side*.48,-1.93],[side*.64,-1.06]],'#303e50',ink2*.75);
+   plate([[side*.29,-1.09],[side*.29,-1.68],[side*.43,-1.77],[side*.51,-1.10]],'#718c98',.025);
+   for(let i=0;i<4;i++)edge([[side*.26,-1.15-i*.14],[side*.52,-1.22-i*.14]],active?'#baf6f3':'#95bcc6',.055);
+   plate([[side*.24,-1.72],[side*.24,-1.83],[side*.43,-1.94],[side*.48,-1.81]],'#b0ced1',.03);
+  }
+  if(active){edge([[-.26,-1.58],[-.09,-1.70],[.05,-1.46],[.25,-1.59]],'#1f677f',.14);edge([[-.26,-1.58],[-.09,-1.70],[.05,-1.46],[.25,-1.59]],'#ddffed',.055);}
+  else edge([[-.16,-1.47],[0,-1.58],[.16,-1.47]],'#466271',.04);
+ }else if(id==='beacon'){
+  plate([[-.68,-.88],[-.52,-1.24],[-.32,-1.27],[-.32,-1.79],[.32,-1.79],[.32,-1.27],[.52,-1.24],[.68,-.88]],'#394752',ink2*.75);
+  plate([[-.25,-1.71],[.25,-1.71],[.25,-1.31],[-.25,-1.31]],active?'#ffe0a0':'#a97e50',.04);
+  edge([[0,-1.68],[0,-1.43]],active?'#fffbe0':'#e1ba79',.06);
+  for(const side of [-1,1]){
+   plate([[side*.35,-1.40],[side*.35,-1.67],[side*.65,-1.54]],'#927451',.035);
+   edge([[side*.44,-1.40],[side*.60,-1.53],[side*.44,-1.67]],active?'#ffe2a0':'#5f6667',.045);
+  }
+  if(active)edge([[-.27,-1.23],[.27,-1.23]],'#ffd994',.055);
+ }
+ // Core hue stays a small shared mounting inlay. It never becomes the item.
+ if(detail&&id!=='halo')edge([[-.38,-.80],[.38,-.80]],lit,.025);
+ }finally{c.restore();}
+}
+
 function eyes(c, id, t, pose2, palette) {
   const performance=pose2.performance||resolveCharacterPerformance(pose2,t),q=pose2.eyeAbility?.kind===id?pose2.eyeAbility:null,
     aiming=!!q?.active,hot=!!pose2.overdrive,recover=!!pose2.focusRecovering&&!pose2.aiming&&pose2.focusLevel<1,
@@ -2465,30 +2517,93 @@ var COMIC_TONE = Object.freeze(Array.from({length:72},(_,i)=>Object.freeze([
   -.78+(i%9)*.20+(Math.floor(i/9)%2)*.10, -.20+Math.floor(i/9)*.17
 ])));
 var HERO_SHELL = Object.freeze([[-1,-1],[.9,-1],[1,-.9],[1,1],[-.93,1],[-1,.91]]);
-function sculptedShell(c,eq,palette,shell,ink2) {
-  // Keep the player's physical silhouette; depth is carved INSIDE that contour.
-  const contour=SHAPE_MODIFIERS.find(x=>x.id===eq.body)?.outline||HERO_SHELL;
-  path(c,contour);c.strokeStyle=BLACK;c.lineWidth=ink2*1.9;c.stroke();
-  panel(c,contour,shell,ink2*.72);
-  const id=eq.body||"paper";
-  const top={paper:"#fffef5",obsidian:"#42445c",iron:"#a2adbd",prism:"#e6d0ff",gold:"#fff0a8",lava:"#51404b",hologram:"#83eaff55",chamfer:"#ecf4ff",notched:"#f5c7df",segmented:"#c9e7d8"}[id]||CREAM;
-  const side={paper:"#af9895",obsidian:"#10111c",iron:"#303b4b",prism:"#6844a7",gold:"#a86c20",lava:"#18121b",hologram:"#10557788",chamfer:"#58718d",notched:"#7d465f",segmented:"#385e56"}[id]||"#66546d";
-  panel(c,[[-1,-1],[.9,-1],[1,-.9],[.79,-.73],[-.77,-.73]],top,0);
-  panel(c,[[-1,-1],[-.77,-.73],[-.77,.88],[-.93,1],[-1,.91]],side,0);
-  c.save();path(c,[[-.77,-.73],[.99,-.9],[.99,1],[-.93,1],[-.77,.88]]);c.clip();
-  panel(c,[[.55,-.73],[1,-.84],[1,1],[-.3,1]],id==="paper"?"#ddc9b9":"#09081525",0);
-  panel(c,[[.94,-.3],[1,-.36],[1,1],[.1,1]],id==="paper"?"#bfa49c":"#08071355",0);
-  c.fillStyle=id==="obsidian"?palette.primary+"36":"#170d292e";c.beginPath();
-  for(const [x,y] of COMIC_TONE)if(id==="paper"&&x+y>1.35){c.moveTo(x+.014,y);c.arc(x,y,.014,0,Math.PI*2);}c.fill();
-  c.restore();
-  seam(c,[[-1,-1],[-.77,-.73],[-.77,.88]],BLACK,ink2*.6);
-  seam(c,[[-.77,-.73],[.79,-.73],[1,-.9]],BLACK,ink2*.5);
-  seam(c,[[-.72,-.68],[.75,-.68]],"#ffffffbb",.032);
-  seam(c,[[-.72,-.65],[-.72,.77]],id==="obsidian"?"#8d9abb88":"#ffffff99",.025);
-  if(id==="obsidian"&&eq.world==="void")seam(c,[[-.99,-.70],[-.99,.90],[-.92,.98],[.88,.98]],"#61616d",.035);
+/** Airy construction: one contour, two broad planes and one material gesture.
+ * Never stack another chassis, eye mask and bevel cage on the same face. */
+function sculptedShell(c,eq,palette,shell,ink2,pose={}) {
+ const a=resolveAssemblyConstruction(eq),m=a.material,id=a.body,
+  contour=SHAPE_MODIFIERS.find(x=>x.id===id)?.outline||HERO_SHELL;
+ panel(c,contour,id==='paper'?shell:m.face,0);
+ c.save();path(c,contour);c.clip();
+ panel(c,[[-1,-1],[.9,-1],[1,-.9],[.82,-.77],[-.81,-.77]],m.edge,0);
+ panel(c,[[-1,-1],[-.81,-.77],[-.81,.86],[-.93,1],[-1,.91]],m.shade,0);
+ // Deliberately leave the forehead, bridge and cheeks unmarked.
+ if(id==='paper'){
+  panel(c,[[-.80,.76],[-.39,1],[-.80,1]],'#ddcbb9',0);
+  seam(c,[[-.76,.78],[-.44,.94]],'#b7a58e',.025);
+ }else if(id==='obsidian'){
+  panel(c,[[.58,-.77],[1,-.90],[1,1],[.30,1]],'#222e40',0);
+  seam(c,[[.96,-.64],[.96,.12]],'#77889d',.03);
+ }else if(id==='hologram'){
+  // Projection stays one quiet plane; its actual phase gate is drawn later.
+  panel(c,[[.52,-.77],[1,-.9],[1,1],[.64,1]],'#1d4252',0);
+  seam(c,[[-.74,.90],[-.48,.90]],'#83cbd0',.03);
+ }else if(id==='prism'){
+  panel(c,[[.32,-.77],[1,-.9],[1,.90],[.62,.75]],'#a48cb9',0);
+  panel(c,[[-.81,.50],[-.46,.85],[-.81,.89]],'#ded4e6',0);
+ }else if(id==='iron'){
+  panel(c,[[.77,-.77],[1,-.9],[1,.98],[.77,.87]],m.shade,0);
+  for(const [x,y]of [[-.68,-.63],[.78,.83]])circle(c,x,y,.035,m.well);
+ }else if(id==='lava'){
+  panel(c,[[.56,-.77],[1,-.9],[1,1],[.57,.86]],'#332e38',0);
+  seam(c,[[.77,-.67],[.66,-.40],[.82,-.15],[.68,.14],[.83,.36]],'#d7926d',.04);
+ }else if(id==='gold'){
+  panel(c,[[.46,-.77],[.84,-.77],[.43,.88],[.11,.88]],'#f1d18a',0);
+  seam(c,[[-.69,.86],[-.45,.94]],'#fff2c0',.035);
+ }else if(id==='chamfer'){
+  panel(c,[[.78,-.71],[1,-.86],[1,.74],[.77,.95],[.61,.95],[.78,.73]],m.shade,0);
+  seam(c,[[.65,.91],[.85,.72]],m.edge,.035);
+ }else if(id==='notched'){
+  for(const side of [-1,1])panel(c,[[side*.79,.34],[side*1.01,.34],[side*.84,.59],[side*1.01,.78],[side*.79,.78]],m.well,0);
+ }else if(id==='segmented'){
+  // One seam describes the spring body; actual compression remains state-owned.
+  seam(c,[[-.76,.24],[-.57,.20]],m.well,.04);
+  panel(c,[[.80,-.76],[1,-.90],[1,.93],[.80,.84]],m.shade,0);
+ }
+ // World-matched etched surfaces: edges carry the wear; face stays clear.
+ const clock=pose.reducedMotion?0:(pose.artClock||0),detail=(pose.artRadius||23)>=38;
+ if(id==='paper'){
+  panel(c,[[.58,.29],[.97,.39],[.97,.89],[.84,.94]],'#dcc9b622',0);
+  seam(c,[[.78,.76],[.92,.85]],'#bba898',.018);
+ }else if(id==='obsidian'){
+  panel(c,[[.44,-.72],[.73,-.68],[.91,-.12],[.71,-.31]],'#505269',0);
+  seam(c,[[.66,.28],[.86,.40],[.76,.78]],'#677084',.024);
+ }else if(id==='hologram'){
+  c.save();c.globalAlpha*=.22;const y=-.52+((clock*.006)%1.28+1.28)%1.28;
+  seam(c,[[-.76,y],[.73,y]],'#a6e6e9',.025);c.restore();
+  for(const y of [.34,.41,.79])seam(c,[[.77,y],[.94,y]],'#559ba9',.02);
+ }else if(id==='prism'){
+  panel(c,[[.64,-.75],[.95,-.37],[.77,.16],[.54,-.16]],'#cbb9de',0);
+  seam(c,[[.76,.27],[.93,.49],[.78,.82]],'#e0d3ed',.024);
+ }else if(id==='iron'){
+  panel(c,[[.67,-.64],[.96,-.69],[.96,.22],[.75,.09]],'#5e6d7a',0);
+  for(const y of [.30,.43,.56])seam(c,[[.81,y],[.94,y+.03]],'#384756',.028);
+  seam(c,[[-.72,.29],[-.72,.65]],'#b3bec4',.023);
+ }else if(id==='lava'){
+  c.save();c.globalAlpha*=.65+.2*Math.sin(clock*.04);
+  seam(c,[[.77,-.67],[.66,-.40],[.82,-.15],[.68,.14],[.83,.36]],'#f8ac76',.045);
+  seam(c,[[-.73,.21],[-.64,.33],[-.76,.49]],'#dc7853',.035);c.restore();
+ }else if(id==='gold'){
+  seam(c,[[.77,-.52],[.83,-.23],[.76,.04]],'#8c774b',.026);
+  const y=-.58+((clock*.008)%1.4+1.4)%1.4;
+  seam(c,[[.54,y],[.70,y-.08]],'#fff4ca',.028);
+ }else if(id==='chamfer'){
+  panel(c,[[.73,-.67],[.95,-.69],[.95,.59],[.78,.70]],'#6c859d',0);
+  for(const y of [-.42,.30,.45])seam(c,[[.80,y],[.92,y-.04]],'#d0dbe4',.024);
+ }else if(id==='notched'){
+  for(const side of [-1,1])for(let i=0;i<3;i++)seam(c,[[side*.82,.42+i*.10],[side*.96,.39+i*.13]],'#c8a9b6',.024);
+ }else if(id==='segmented'){
+  for(const side of [-1,1]){
+   seam(c,[[side*.80,.22],[side*.94,.18]],'#34574e',.035);
+   seam(c,[[side*.81,.36],[side*.94,.33]],'#c2d8c9',.024);
+  }
+ }
+ if(detail&&id!=='paper')for(const [x,y]of [[-.72,.72],[.86,-.60]])seam(c,[[x,y],[x+.06,y-.02]],m.edge,.018);
+ c.restore();
+ // Ink last: broad planes must not erase a shaped shell’s sole contour.
+ path(c,contour);c.strokeStyle=BLACK;c.lineWidth=ink2*1.15;c.stroke();
 }
 function drawComicHero(c, x, y, r, angle = 0, t = 0, face = 1, pose2 = null) {
-  const raw=pose2||{},performance=resolveCharacterPerformance(raw,t),p={...raw,performance,artRadius:r}, eq = p.equipment || {}, palette = corePalette(eq.core), accent = p.accent || palette.primary, ink2 = Math.max(0.075, Math.min(.20, (p.inkPixels || 4) / Math.max(r,1))), energy = evolutionIntensity(p.combo, p.overdrive);
+  const raw=pose2||{},performance=resolveCharacterPerformance(raw,t),p={...raw,performance,artRadius:r,artClock:t}, eq = p.equipment || {}, palette = corePalette(eq.core), accent = p.accent || palette.primary, ink2 = Math.max(0.045, Math.min(.125, (p.inkPixels || 2.4) / Math.max(r,1))), energy = evolutionIntensity(p.combo, p.overdrive);
   c.save();
   c.translate(x, y);
   c.rotate(angle);
@@ -2501,7 +2616,8 @@ function drawComicHero(c, x, y, r, angle = 0, t = 0, face = 1, pose2 = null) {
     c.scale(1 + ((f.sx ?? 1) / (1 + Math.abs(f.dipX ?? 0) * 0.5) - 1) * g, 1 + ((f.sy ?? 1) / (1 + Math.abs(f.dipY ?? 0) * 0.5) - 1) * g);
   }
   if (p.forge?.active && p.forge.slot === "body") c.scale(p.forge.scale, p.forge.scale);
-  drawHybridAura(c, eq, t, p);
+  // The weapon carries family identity; no second ornamental shoulder rig.
+
   const seat=eq.body==='segmented'?shellCompression(p)*.06:0,
     seatX=-Math.cos(p.shellContactAngle||0)*seat,seatY=-Math.sin(p.shellContactAngle||0)*seat;
   c.save();c.translate(seatX,seatY);
@@ -2511,24 +2627,22 @@ function drawComicHero(c, x, y, r, angle = 0, t = 0, face = 1, pose2 = null) {
   c.save();
   c.translate(seatX,seatY);
   if (p.forge?.active && p.forge.slot === "head") c.scale(p.forge.scale, p.forge.scale);
-  head(c, eq.head, t, palette, ink2);
+  head(c, eq.head, t, palette, ink2,p,eq);
   c.restore();
   c.save();
   const profile=SHAPE_MODIFIERS.find(x=>x.id===eq.body);if(profile){path(c,profile.outline);c.clip();}
   const profileFill={chamfer:"#b0c4dc",notched:"#d3a6bd",segmented:"#93b8a9"}[eq.body];
   const shell = profileFill || (eq.body === "obsidian" ? "#181821" : eq.body === "hologram" ? "#163348bb" : shellMaterial(c, eq.body) || CREAM);
-  sculptedShell(c,eq,palette,shell,ink2);
-  drawAssemblyShell(c,eq,p);
-  if(eq.body!=="iron"&&(r>=29||eq.body==="lava"))shellDetails(c, eq.body, t, { ...p, palette });
-  if (p.equipment) bodyFinish(c, eq, palette, t, p);
+  sculptedShell(c,eq,palette,shell,ink2,p);
+  // Material identity is already resolved in the single shell surface.
   // Rear head silhouettes stay behind the shell. The forward mounting band
   // sits OVER its top plane, while the face remains unobscured below it.
   if(eq.head&&eq.head!=='none'&&eq.head!=='halo'){
     c.save();c.beginPath();c.rect(-2.2,-2.5,4.4,1.85);c.clip();
     if(p.forge?.active&&p.forge.slot==='head')c.scale(p.forge.scale,p.forge.scale);
-    c.translate(seatX,seatY);head(c,eq.head,t,palette,ink2);c.restore();
+    c.translate(seatX,seatY);head(c,eq.head,t,palette,ink2,p,eq);c.restore();
   }
-  drawConstructedFace(c,eq);
+  // Eye tools supply their own apertures. A second mask only closes the face.
   c.save();
   if (p.forge?.active && p.forge.slot === "eyes") c.scale(p.forge.scale, p.forge.scale);
   c.translate(.08,-.02);c.scale(.91,.96);
@@ -2545,10 +2659,11 @@ function drawComicHero(c, x, y, r, angle = 0, t = 0, face = 1, pose2 = null) {
     seam(c, [[-0.64, -1.03], [-0.55, -0.84], [-0.68, -0.7], [-0.54, -0.52]], "#492c38", 0.055);
   }
   c.restore();
-  if(p.equipment){c.save();c.translate(seatX,seatY);attachmentCollars(c,eq,t,p);c.restore();drawHybridIntegration(c,eq,t,p);drawHarmonyBindings(c,eq,t,p);}
-  drawSparkMutation(c, eq, t, "front", p);
+  // Preserve state-owned vents, recoil and spring receipts, not static cages.
+  drawNotchedVents(c,eq,p);drawArmorShellState(c,eq,p);
   drawReactiveShellState(c,eq,p);
   drawForge(c, p.forge, palette);
+  if(p.forge?.active)drawBuildHarmony(c,{equipment:eq,stage:'summon',radius:1,age:p.forge.progress*35,motion:!p.reducedMotion});
   c.restore();
 }
 
@@ -3551,7 +3666,7 @@ function drawWorldArchitecture(c,id,tier,variant,p){
  if(id==='tokyo'){
   if(tier===0){
    // Needle tower, terraced roof decks and the enormous moon behind the city.
-   disk2(c,'#75889738',740,175,105);disk2(c,p.far,760,163,92);
+   // The shared landmark painter owns the single moon.
    polygon(c,[[60,680],[60,330],[100,330],[100,280],[170,280],[170,680]],p.far);
    polygon(c,[[258,700],[258,260],[291,240],[291,188],[310,155],[329,188],[329,240],[362,260],[362,700]],p.far);
    edge([[310,78],[310,183]],p.edge,2);ring(310,275,85,18,p.edge,4);
@@ -3626,8 +3741,7 @@ function drawWorldArchitecture(c,id,tier,variant,p){
  }else if(id==='synth'){
   if(tier===0){
    // Eclipsed striped sun and angular mountain basins.
-   disk2(c,'#956b83',672,202,135);disk2(c,p.sky[1],700,170,110);
-   for(let k=0;k<7;k++)rect(p.sky[1],535,223+k*15,275,3+k);
+   // The shared landmark painter owns the single striped sunset.
    polygon(c,[[28,654],[133,433],[243,558],[375,330],[551,615],[689,405],[934,656],[934,755],[28,755]],p.far);
    edge([[133,433],[184,572],[243,558],[375,330],[417,552],[551,615]],p.edge,2);
    edge([[689,405],[748,591],[934,656]],p.edge,2);
@@ -3674,7 +3788,7 @@ function drawWorldArchitecture(c,id,tier,variant,p){
  }
 }
 function drawEquipmentWorld(c,w,h,id,t=0,camera={},bake=null){
- if(!WORLD_SCENERY[id]){drawIndustrialDistrict(c,w,h,camera,41,1,t,bake);return;}
+ if(!WORLD_SCENERY[id]){drawIndustrialDistrict(c,w,h,camera,41,1,t,bake);drawWorldIdentity(c,w,h,{world:id,time:t});return;}
  const p=WORLD_SCENERY[id],x=Number.isFinite(camera.x)?camera.x:0,y=Number.isFinite(camera.y)?camera.y:0;
  const scale=Math.max(.65,Math.min(1.3,camera.scale||1)),u=Math.max(.4,Math.min(w/740,h/720))*scale;
  c.save();try{
@@ -3697,6 +3811,7 @@ function drawEquipmentWorld(c,w,h,id,t=0,camera={},bake=null){
  if(id==='tokyo')for(let i=0;i<8;i++){const px=((i*173+t*.6-x*.025)%(w+24)+w+24)%(w+24)-12,py=((i*97+t*1.6-y*.03)%(h+26)+h+26)%(h+26)-13;line2(c,'#88a5ba24',1,px,py,px-4,py+13);}
  // One quiet value veil seats architecture below live combat, without a shader.
  const shade=c.createRadialGradient(w*.5,h*.48,0,w*.5,h*.48,Math.max(w,h)*.7);shade.addColorStop(0,id==='manga'?'#211d2310':'#080c1412');shade.addColorStop(1,id==='manga'?'#211d2330':'#080c1470');c.fillStyle=shade;c.fillRect(0,0,w,h);
+ drawWorldIdentity(c,w,h,{world:id,time:t});
  }finally{c.restore();}
 }
 function inkCrescent(c, x, y, tx, ty, width, color, bend = -.40, start = 0, end = 1) {
@@ -3707,6 +3822,241 @@ function inkCrescent(c, x, y, tx, ty, width, color, bend = -.40, start = 0, end 
     bottom.push([px + ay / d * w, py - ax / d * w]);
   }
   polygon(c, [...top, ...bottom.reverse()], color);
+}
+/** Cosmetic grammar shared by chamber, blade shed and launch wake. Frozen,
+ * deterministic, and deliberately independent of power/charge authority. */
+export function resolveCoreFx(equipment={}) {
+ const ids=['standard','grav','riot','time','glass','magnet','echo'];
+ const index=Math.max(0,ids.indexOf(equipment?.core)),id=ids[index],palette=corePalette(id);
+ return Object.freeze({id,index,primary:palette.primary,secondary:palette.secondary,light:palette.light,
+  spread:[1,.72,1.18,.82,1.08,.95,1.02][index],curl:[.12,-.65,.28,-.12,.42,.52,-.3][index]});
+}
+/** Small open marks: never a radial hit burst, projectile, halo or charge meter. */
+function drawCoreMote(c,fx,x,y,size,angle=0) {
+ c.save();try{c.translate(x,y);c.rotate(angle);c.scale(size,size);
+ c.strokeStyle=fx.primary;c.lineWidth=.65;c.lineCap='butt';c.lineJoin='miter';c.beginPath();
+ if(fx.id==='grav'){c.moveTo(-1,-.8);c.quadraticCurveTo(.9,-.8,.4,0);c.quadraticCurveTo(.9,.8,-1,.8);}
+ else if(fx.id==='riot'){c.moveTo(-1,.7);c.lineTo(0,-.6);c.lineTo(.1,.25);c.lineTo(1,-.7);}
+ else if(fx.id==='time'){c.moveTo(-1,-.6);c.lineTo(-1,.6);c.moveTo(.3,-.6);c.lineTo(.3,.6);}
+ else if(fx.id==='glass'){c.moveTo(-1,.2);c.lineTo(.1,-.8);c.lineTo(1,.4);c.lineTo(-.2,.65);}
+ else if(fx.id==='magnet'){c.moveTo(-1,-.6);c.lineTo(.5,-.6);c.moveTo(-.5,.6);c.lineTo(1,.6);}
+ else if(fx.id==='echo'){c.moveTo(-1,-.7);c.lineTo(0,-.7);c.lineTo(0,.4);c.moveTo(-.3,-.15);c.lineTo(.8,-.15);c.lineTo(.8,.9);}
+ else{c.moveTo(-1,0);c.lineTo(1,0);c.moveTo(-.6,.65);c.lineTo(.2,.65);}
+ c.stroke();}finally{c.restore();}
+}
+/** Six staggered pieces peel off the existing quadratic; no endpoint contact.
+ * Each seed is born once in normalized attack time and dies before recovery. */
+function drawSlashShed(c,x,y,tx,ty,progress,equipment) {
+ if(!Number.isFinite(progress)||progress<=0||progress>=1)return;
+ const fx=resolveCoreFx(equipment),dx=tx-x,dy=ty-y,len=Math.hypot(dx,dy);if(len<1)return;
+ const nx=-dy/len,ny=dx/len,cx=(x+tx)/2+nx*len*-.38,cy=(y+ty)/2+ny*len*-.38;
+ c.save();try{
+ for(let i=0;i<6;i++){
+  const birth=.08+i*.065,u=(progress-birth)/.48;if(u<0||u>=1)continue;
+  const q=.16+i*.135,v=1-q,side=i%2?1:-1;
+  const drift=(3+u*17)*side*fx.spread,bx=v*v*x+2*v*q*cx+q*q*tx,by=v*v*y+2*v*q*cy+q*q*ty;
+  const fade=Math.sin(Math.PI*u)*(1-u);c.save();c.globalAlpha*=fade*1.35;
+  const px=bx+nx*drift-dx/len*u*9,py=by+ny*drift-dy/len*u*9;
+  line2(c,fx.light,.8,px,py,px-dx/len*(3+u*5),py-dy/len*(3+u*5));
+  drawCoreMote(c,fx,px,py,2.2+(i%3)*.5,Math.atan2(dy,dx)+side*u*fx.curl);c.restore();
+ }
+ }finally{c.restore();}
+}
+/** At most seven local wake pieces. Same launch clock/bearing as the power;
+ * accents stay behind the shell, leaving the authoritative leading edge clear. */
+export function drawCoreDashFx(c,{x=0,y=0,vx=0,vy=0,angle=null,age=-1,radius=22,motion=true,equipment={}}={}) {
+ if(!motion||![x,y,vx,vy,age,radius].every(Number.isFinite)||age<0||age>=10||radius<=0||Math.hypot(vx,vy)<4)return;
+ const fx=resolveCoreFx(equipment),r=Math.min(30,radius),a=Number.isFinite(angle)?angle:Math.atan2(vy,vx),t=age/10;
+ c.save();try{c.translate(x,y);c.rotate(a);c.globalAlpha*=.85*(1-t)**1.4;
+ // Tapered, broken lamination follows the rear shell; no leading spear,
+ // actor duplicate or ring that could be mistaken for an attack.
+ const neutral=blend('#b6bfbc',fx.primary,.18);
+ for(const side of [-1,1]){
+  const yy=side*r*.69,L=r*(1.7+t*1.2),start=-r*.73;
+  c.save();c.globalAlpha*=.48;c.fillStyle='#101720';c.beginPath();
+  c.moveTo(start,yy-side*2);c.quadraticCurveTo(-L*.8,yy+side*6,-L-12,yy+side*2);c.lineTo(-L+3,yy-side*2);c.quadraticCurveTo(-L*.65,yy+side*1,start,yy-side*4);c.closePath();c.fill();
+  c.strokeStyle=neutral;c.lineWidth=1.7;c.beginPath();c.moveTo(start,yy-side*3);c.quadraticCurveTo(-L*.65,yy+side*2,-L-6,yy);c.stroke();c.restore();
+ }
+ // Unequal side seams connect the launch silhouette and the particle wake.
+ for(const side of [-1,1]){
+  const d=r*(.66+t*.16)*side;c.strokeStyle=fx.primary;c.lineWidth=1.1;c.beginPath();
+  c.moveTo(-r*.65,d);c.quadraticCurveTo(-r*(1.2+t),d+side*3,-r*(1.75+t*1.8),d-side*(2+t*4));c.stroke();
+ }
+ for(let i=0;i<7;i++){
+  const u=(age-i*.32)/8;if(u<0||u>=1)continue;const side=i%2?1:-1;
+  const px=-r*(1+i*.22)-u*(14+i*2),py=side*(r*(.48+(i%3)*.17)+Math.sin(u*2.2+i)*u*9*fx.spread);
+  c.save();c.globalAlpha*=Math.sin(Math.PI*Math.min(1,u*2))*(1-u);
+  drawCoreMote(c,fx,px,py,2.2+(i%3)*.4,side*(.2+u*fx.curl));c.restore();
+ }
+ }finally{c.restore();}
+}
+/** Bounded, seekable cloth response: travelling wind + damped release recoil.
+ * No simulation history, RNG or body rotation; the knot is always pinned. */
+export function resolveBandMotion(pose={},time=0){
+ if(pose.reducedMotion)return Object.freeze({mid:0,tip:0,twist:0});
+ const t=Number.isFinite(time)?time:0,speed=Math.min(1,Math.abs(pose.speed||0)/35),
+  p=Number.isFinite(pose.attackProgress)?pose.attackProgress:-1,
+  recoil=p>=0&&p<=1?Math.sin(p*13)*Math.exp(-p*4)*.24:0;
+ return Object.freeze({mid:Math.sin(t*.075)*(.018+speed*.04)+recoil*.35,
+  tip:Math.sin(t*.075-1.1)*(.035+speed*.10)+recoil,
+  twist:Math.sin(t*.075-2)*(.02+speed*.035)});
+}
+/** Style-owned debris, born along the cut rather than a fake endpoint impact.
+ * Twelve pieces maximum; analytical trajectories make replay/pausing stable. */
+function drawSignatureSlash(c,x,y,tx,ty,id,p,equipment){
+ if(!Number.isFinite(p)||p<=0||p>=1)return;
+ const dx=tx-x,dy=ty-y,L=Math.hypot(dx,dy);if(L<1)return;
+ const ux=dx/L,uy=dy/L,nx=-uy,ny=ux,fx=resolveCoreFx(equipment),
+  color={razor:'#d3efff',katana:'#e9dcc0',laser:'#72e6ff','glitch-fx':'#ff6f9f',confetti:'#edc471',comic:'#ffda72',pixel:'#ba9bff',blood:'#e85b80'}[id]||fx.light;
+ c.save();try{
+ for(let i=0;i<12;i++){
+  const birth=.035+i*.035,age=(p-birth)/.53;if(age<0||age>=1)continue;
+  const q=.10+i*.068,v=1-q,side=i%2?1:-1,
+   spread=side*(3+age*(id==='confetti'?36:id==='comic'?25:17)),
+   bx=x+dx*q+nx*L*(-.76)*v*q,by=y+dy*q+ny*L*(-.76)*v*q,
+   xx=bx+nx*spread-ux*age*11,yy=by+ny*spread-uy*age*11+(id==='confetti'?age*age*26:0);
+  c.save();c.translate(xx,yy);c.rotate(Math.atan2(dy,dx)+side*age*2.5);c.globalAlpha*=Math.sin(Math.PI*age)*(1-age)*1.6;
+  c.strokeStyle=color;c.fillStyle=color;c.lineWidth=1.1;
+  if(id==='confetti'){c.scale(1,Math.max(.18,Math.abs(Math.cos(age*9+i))));c.fillStyle=i%3?color:fx.secondary;c.fillRect(-3,-2,6,4);}
+  else if(id==='pixel'){const s=2+(i%3);c.fillRect(-s,-s,s*2,s*2);}
+  else if(id==='glitch-fx'){c.rotate(-Math.atan2(dy,dx)-side*age*2.5);c.fillStyle=i%2?color:'#74ebdf';c.fillRect(-5,-1,5+i%3*3,2);}
+  else if(id==='laser'){seam(c,[[-7,0],[5,0]],color,1.2);if(i%3===0)seam(c,[[0,-3],[0,3]],'#dcfcff',.8);}
+  else if(id==='comic'){panel(c,[[-4,0],[1,-2],[6,0],[1,2]],color,0);}
+  else if(id==='katana'){seam(c,[[-6,0],[2,0]],'#403849',1.8);seam(c,[[-4,-2],[5,-2]],color,.8);}
+  else if(id==='blood'){circle(c,0,0,1.5+i%2,color);}
+  else{panel(c,[[-5,0],[2,-1.4],[6,0],[2,1.4]],color,0);}
+  c.restore();
+ }
+ }finally{c.restore();}
+}
+/** Dash-owned finite particles. Distinct from the smaller core binding marks.
+ * Behind the shell only; no damage, orbiting shields, extra beams or contacts. */
+export function drawSignatureDash(c,{x=0,y=0,vx=0,vy=0,angle=null,age=-1,radius=22,motion=true,equipment={},element='ink'}={}){
+ if(!motion||![x,y,vx,vy,age,radius].every(Number.isFinite)||age<0||age>=16||radius<=0||Math.hypot(vx,vy)<4)return;
+ const id=equipment.dash||'dash-auto',r=Math.min(30,radius),a=Number.isFinite(angle)?angle:Math.atan2(vy,vx),
+  kind=id==='dash-auto'?element:id.slice(5),colors={fire:'#f5a068',lightning:'#97ecf2',ice:'#b4def0',water:'#89cebd',void:'#b49be0',echo:'#d6abd9',ink:'#dbd4be'},color=colors[kind]||'#dbd4be';
+ c.save();try{c.translate(x,y);c.rotate(a);
+ for(let i=0;i<9;i++){
+  const u=(age-i*.42)/13;if(u<0||u>=1)continue;const side=i%2?1:-1,
+   xx=-r*(1.05+i*.19)-u*(18+i*2),yy=side*(r*(.58+i%3*.15)+u*12);
+  c.save();c.translate(xx,yy);c.globalAlpha*=Math.sin(Math.PI*Math.min(1,u*2))*(1-u)*.8;c.strokeStyle=color;c.fillStyle=color;
+  if(kind==='fire'){c.rotate(side*.5-u);panel(c,[[-5,2],[0,-4],[3,0],[1,4]],i%3?color:'#ffe3ac',0);}
+  else if(kind==='ice'){c.rotate(side*u);panel(c,[[-5,0],[0,-2],[5,0],[0,2]],color,0);seam(c,[[-3,0],[2,0]],'#edffff',.8);}
+  else if(kind==='lightning'){seam(c,[[-5,-2],[-1,1],[1,-2],[5,1]],color,1.4);}
+  else if(kind==='water'){c.rotate(side*.5);c.beginPath();c.ellipse(0,0,4*(1-u)+1,1.7,0,0,TAU);c.strokeStyle=color;c.lineWidth=1.2;c.stroke();}
+  else if(kind==='void'){c.rotate(-side*u*3);seam(c,[[-4,-3],[0,-1],[2,3]],color,1.4);}
+  else if(kind==='echo'){c.rotate(side*.1);seam(c,[[-3,-3],[2,-3],[2,3]],color,1.1);seam(c,[[-5,-1],[0,-1],[0,4]],'#8e82ad',.8);}
+  else if(id==='dash-ink'){c.rotate(side*u);circle(c,0,0,1.5+i%3*.6,'#21202e');seam(c,[[-4,0],[2,0]],color,.9);}
+  else seam(c,[[-5,0],[3,0]],color,1.2);
+  c.restore();
+ }
+ }finally{c.restore();}
+}
+/** One frozen visual language per completed recipe. Recipe selection is shared
+ * with combat; there is deliberately no partial-build or most-recent-part FX. */
+const BUILD_GESTURES=Object.freeze({
+ wyrm:{path:[[-1,0],[-.5,-.65],[0,.3],[.5,-.4],[1,0]],motion:'serpent'},
+ ronin:{path:[[-1,.6],[.45,-.6],[1,-.55],[.2,.2]],motion:'brush'},
+ king:{path:[[-1,-.5],[-.6,.6],[0,.1],[.6,.6],[1,-.5],[0,-.1]],motion:'sink'},
+ phantom:{path:[[-1,.7],[-1,-.7],[.2,-.7],[.2,-.2],[1,-.2]],motion:'phase'},
+ reaper:{path:[[-1,.5],[-.7,-.5],[.1,-.8],[1,-.3],[.2,-.2],[0,.9]],motion:'hook'},
+ eater:{path:[[-1,-.2],[-.25,-.4],[0,-1],[.3,-.15],[1,.2],[.2,.4],[0,1],[-.3,.15],[-1,-.2]],motion:'consume'},
+ sun:{path:[[-1,.5],[-.25,-.2],[0,-1],[.25,-.2],[1,.5],[0,.2],[-1,.5]],motion:'rays'},
+ glacier:{path:[[-.8,-.8],[.8,-.8],[0,0],[.65,.9],[-.65,.9],[0,0],[-.8,-.8]],motion:'crystal'},
+ briar:{path:[[-1,.8],[-.25,0],[-.7,-.7],[.1,-.1],[.8,-.8],[.4,.2],[1,.7]],motion:'thorns'},
+ sentinel:{path:[[-1,-.8],[.5,-.8],[.5,0],[-.5,0],[-.5,.8],[1,.8]],motion:'rails'},
+ arcade:{path:[[-1,.7],[-1,0],[-.3,0],[-.3,-.7],[.3,-.7],[.3,0],[1,0],[1,.7]],motion:'steps'},
+ storm:{path:[[-.2,-1],[-1,.1],[-.15,-.1],[-.5,1],[1,-.4],[.2,-.25]],motion:'forks'},
+ forge:{path:[[-1,-.5],[-.3,-.8],[1,-.25],[.7,.6],[-.5,.85],[-1,-.5]],motion:'slag'},
+ wraith:{path:[[-1,.1],[-.6,-.65],[.45,-.8],[1,0],[.25,-.2],[.25,.6],[-.3,.9]],motion:'rewind'},
+ bulwark:{path:[[-.85,-.8],[.85,-.8],[.7,.3],[0,1],[-.7,.3],[-.85,-.8]],motion:'plates'},
+ razoredge:{path:[[-1,.8],[.6,-1],[1,-.5],[-1,.8],[.2,.05]],motion:'needles'},
+ orbit:{path:[[-1,-.1],[-.5,-.8],[.6,-.6],[1,.2],[.25,.8],[-.65,.55]],motion:'orbits'}
+});
+export function resolveBuildHarmony(equipment={},sword=null){
+ const recipe=activeHybrid(equipment||{});if(!recipe)return null;
+ const g=BUILD_GESTURES[recipe.id],index=HYBRIDS.findIndex(h=>h.id===recipe.id);
+ return Object.freeze({id:recipe.id,title:recipe.title,color:recipe.color,index,motion:g.motion,
+  path:g.path,core:resolveCoreFx(equipment).primary,life:36});
+}
+// Freeze every nested point too: callers cannot accidentally alter another run.
+for(const g of Object.values(BUILD_GESTURES)){for(const p of g.path)Object.freeze(p);Object.freeze(g.path);Object.freeze(g);}
+function buildGlyph(c,d,x,y,size,angle=0,fill=false){
+ c.save();try{c.translate(x,y);c.rotate(angle);c.scale(size,size);c.lineWidth=.29;c.lineJoin='miter';
+ c.strokeStyle=d.color;c.fillStyle=d.color;path(c,d.path);if(fill){c.globalAlpha*=.75;c.fill();}else c.stroke();
+ }finally{c.restore();}
+}
+/** Finite, seekable choreography. Call sites own the trigger: committed launch,
+ * live blade, fired secondary, confirmed cut event, or renderer build reveal.
+ * The layer never resolves a hit, chooses a target, grants charge or writes state. */
+export function drawBuildHarmony(c,{equipment={},sword=null,stage='dash',x=0,y=0,radius=23,angle=0,age=-1,span=90,motion=true}={}){
+ if(!c||!motion||![x,y,radius,angle,age,span].every(Number.isFinite)||radius<=0||age<0)return;
+ const life={dash:16,attack:12,kill:18,summon:36,power:14}[stage];if(!life||age>=life)return;
+ const d=resolveBuildHarmony(equipment,sword);if(!d)return;
+ const u=age/life,r=Math.min(60,radius),index=d.index,
+  inward=['king','eater','orbit'].includes(d.id),angular=['arcade','sentinel','storm'].includes(d.id),
+  curl=['wyrm','reaper','briar','wraith','orbit'].includes(d.id),n=stage==='kill'?10:stage==='summon'?8:6;
+ c.save();try{c.translate(x,y);c.rotate(angle);c.globalAlpha*=Math.sin(Math.PI*u)*(1-u)*1.4;
+ for(let i=0;i<n;i++){
+  const q=(i+.5)/n,side=i%2?1:-1,delay=i*.016,v=Math.max(0,(u-delay)/(1-delay));
+  let xx,yy,spin=side*v*(curl?3.5:1.1),size=r*(stage==='summon'?.18:stage==='kill'?.15:.125)*(1-v*.45);
+  if(stage==='dash'){
+   xx=-r*(1.12+q*2)-v*r*(inward?.35:1.2);
+   yy=side*r*(.7+q*.35)+(curl?Math.sin(q*6+v*5)*r*.2:side*v*r*.4);
+   if(angular){xx=Math.round(xx/4)*4;yy=Math.round(yy/4)*4;spin=0;}
+  }else if(stage==='attack'){
+   xx=r+Math.max(8,span-r)*q;yy=side*r*(.18+Math.sin(q*Math.PI)*.28+v*.25);
+   if(d.id==='ronin'||d.id==='razoredge')yy*=.5;
+  }else if(stage==='power'){
+   // Tight source-bound release, not another damaging wave or fake target.
+   const a=q*TAU+index*.19+(curl?v*1.3:0),rr=r*(.42+(inward?1-v:v)*.36);
+   xx=Math.cos(a)*rr;yy=Math.sin(a)*rr*.6;size*=.72;
+  }else{
+   const a=q*TAU+index*.23+(curl?v*1.6:0),spread=stage==='summon'?1-v:inward?1-v*.65:v;
+   const rr=r*(.65+spread*(stage==='summon'?1.1:1.45));xx=Math.cos(a)*rr;yy=Math.sin(a)*rr*.75;
+   if(d.id==='forge'||d.id==='ronin')yy+=v*v*r*.65;
+   if(d.id==='sun')size*=1.3;
+   if(angular){xx=Math.round(xx/5)*5;yy=Math.round(yy/5)*5;spin=0;}
+  }
+  if(stage==='kill'||stage==='summon'){
+   // Each recipe owns a trajectory, not just a recolored particle silhouette.
+   // Summon traverses the same material language toward its mounting point.
+   const k=stage==='summon'?1-v:v,A=q*TAU,reach=r*(.6+k*1.6),fan=(q-.5)*2;
+   switch(d.id){
+    case 'wyrm':xx=side*r*(.4+q*1.6+k*.8);yy=Math.sin(q*7+k*4)*r*(.35+k*.45);spin=side*(q+k);break;
+    case 'ronin':xx=side*r*(.4+k+q*.5);yy=fan*r*.65+k*k*r*.45;spin=-.65;size*=1.15;break;
+    case 'king':xx=Math.cos(A)*r*(2-k*1.25);yy=Math.sin(A)*r*(1.1-k*.6);spin=-side*k*.7;break;
+    case 'phantom':xx=side*r*(.8+Math.floor(k*4)/4+q*.4);yy=fan*r*.7;spin=0;break;
+    case 'reaper':xx=Math.cos(A*.72+k*1.7)*reach;yy=Math.sin(A*.72+k*1.7)*reach*.65;spin=A+k*2;break;
+    case 'eater':xx=Math.cos(A)*r*(2.2-k*1.7);yy=Math.sin(A)*r*(1.7-k*1.3);spin=-A-k*2.7;size*=1-k*.35;break;
+    case 'sun':xx=Math.cos(A)*reach*1.05;yy=Math.sin(A)*reach*.85;spin=A+Math.PI/2;break;
+    case 'glacier':xx=side*r*(.7+q*.6+k*.4);yy=fan*r*(.6+k*.6);spin=side*.2;break;
+    case 'briar':xx=side*r*(.6+q+k*.7);yy=side*Math.sin(q*4+k)*r*(.6+k*.7);spin=side*q*1.5;break;
+    case 'sentinel':xx=side*r*(.8+k*1.3);yy=fan*r*.85;spin=0;break;
+    case 'arcade':xx=Math.round(Math.cos(A)*reach/(r*.25))*r*.25;yy=Math.round(Math.sin(A)*reach*.65/(r*.25))*r*.25;spin=0;break;
+    case 'storm':xx=side*r*(.6+k*1.4+Math.sin(k*13+q)*.14);yy=fan*r*(.5+k*.6);spin=side*-.5;break;
+    case 'forge':xx=side*r*(.45+k*(.6+q));yy=-r*.3+fan*r*.35+k*k*r*1.45;spin=side*k*(1+q);size*=1.25;break;
+    case 'wraith':xx=Math.cos(A-k*1.8)*reach;yy=Math.sin(A-k*1.8)*reach*.45;spin=-k*2;break;
+    case 'bulwark':xx=side*r*(.7+k*.7);yy=fan*r*.85+k*r*.2;spin=side*k*.25;break;
+    case 'razoredge':xx=side*r*(.7+k*(1+q));yy=fan*r*(.25+k*.5);spin=side*.2;size*=1.15;break;
+    case 'orbit':xx=Math.cos(A+k*2.5)*reach;yy=Math.sin(A+k*2.5)*reach*.45;spin=A+k*2.5;break;
+   }
+  }
+  buildGlyph(c,d,xx,yy,size,spin,stage==='kill'&&['forge','sun','razoredge'].includes(d.id));
+  // One fine core-colored inlay binds the recipe; it never recolors all debris.
+  if(i%3===0){c.save();c.globalAlpha*=.5;seam(c,[[xx-2,yy+3],[xx+2,yy+3]],d.core,.8);c.restore();}
+ }
+ // Distinct linking gestures give each family a choreography, not just a hue.
+ if(stage==='dash'||stage==='attack'){
+  c.globalAlpha*=.35;c.strokeStyle=d.color;c.lineWidth=.85;
+  const length=stage==='dash'?-r*(2+u):Math.min(span,r*3),root=stage==='dash'?-r:r;
+  for(const side of [-1,1]){
+   c.beginPath();c.moveTo(root,side*r*.64);
+   if(angular){c.lineTo(length*.6,side*r*.64);c.lineTo(length*.6-5,side*r*.85);c.lineTo(length,side*r*.85);}
+   else c.quadraticCurveTo(length*.55,side*r*(curl?1.45:.8),length,side*r*.45);c.stroke();
+  }
+ }
+ }finally{c.restore();}
 }
 function drawEquipmentSlash(c,x,y,tx,ty,id,alpha=1,motion={}) {
   const reduced=motion.reducedMotion===true;
@@ -3729,16 +4079,42 @@ function drawEquipmentSlash(c,x,y,tx,ty,id,alpha=1,motion={}) {
     if(id==="blood")draw(3,"#ff718d",8,sweep.tail,Math.max(sweep.tail,sweep.head-.08));
     if(id==="glitch-fx")draw(2,h.secondary,Math.sin(Math.floor(sweep.progress*12))*7);
   }
+  // Style-specific secondary engraving stays inside the existing sweep.
+  // A restrained counter-curve gives the crescent a folded, cut-paper edge.
+  if(!reduced){
+   c.save();c.globalAlpha*=.55*(1-sweep.progress);
+   if(id==='laser'){draw(1.1,'#d6ffff',-9,sweep.tail,Math.max(sweep.tail,sweep.head-.04));draw(.8,'#51c6ef',7,sweep.tail,Math.max(sweep.tail,sweep.head-.13));}
+   else if(id==='katana'){for(let i=0;i<3;i++)draw(1+i*.35,i===1?'#9d8c7d':'#272333',4+i*3,sweep.tail,Math.max(sweep.tail,sweep.head-.07-i*.06));}
+   else if(id==='confetti'){draw(2.4,'#dba957',-8,sweep.tail,Math.max(sweep.tail,sweep.head-.12));draw(.9,'#fff1bc',-11,sweep.tail,Math.max(sweep.tail,sweep.head-.20));}
+   else if(id==='comic'){draw(3,'#201b30',-10,sweep.tail,Math.max(sweep.tail,sweep.head-.19));}
+   else if(id==='razor'){draw(.9,'#e0faff',-8,sweep.tail,Math.max(sweep.tail,sweep.head-.13));}
+   c.restore();
+  }
   // A leading edge, not a burst: follows the visible end, never implies contact.
   if(!reduced&&sweep.progress<.55&&id!=="pixel"){
     const u=sweep.head,v=1-u,cx=(x+tx)/2+nx*len*bend,cy=(y+ty)/2+ny*len*bend;
     const px=v*v*x+2*v*u*cx+u*u*tx,py=v*v*y+2*v*u*cy+u*u*ty;
     line2(c,h.light,1.5,px-nx*5*size,py-ny*5*size,px+nx*5*size,py+ny*5*size);
   }
-  if(motion.contact&&Number.isFinite(motion.contact.x)&&Number.isFinite(motion.contact.y))drawEquipmentImpact(c,motion.contact.x,motion.contact.y,id,sweep.progress);
+  // Hairline outriggers give the ribbon depth without changing its reach.
+  if(!reduced){
+    c.save();c.globalAlpha*=.42*(1-sweep.progress);
+    if(id!=='pixel'){
+      // A peeled ribbon lags the cutting edge. It shares the style's color;
+      // core tint stays on the fine binding, not over the whole attack.
+      const lagHead=Math.max(sweep.tail,sweep.head-.10),lagTail=Math.min(lagHead,sweep.tail+.06);
+      draw(5,bands[bands.length-1][1],9,lagTail,lagHead);
+      draw(1.2,h.secondary,12,lagTail,Math.max(lagTail,lagHead-.16));
+      draw(1.1,h.light,-5,sweep.tail,Math.max(sweep.tail,sweep.head-.18));
+    }
+    c.restore();drawSlashShed(c,x,y,tx,ty,sweep.progress,motion.equipment||{});
+    drawSignatureSlash(c,x,y,tx,ty,id,sweep.progress,motion.equipment||{});
+  }
+  if(motion.contact&&Number.isFinite(motion.contact.x)&&Number.isFinite(motion.contact.y))drawEquipmentImpact(c,motion.contact.x,motion.contact.y,id,sweep.progress,Infinity,motion.equipment||{});
   c.restore();
 }
-function drawEquipmentImpact(c, x, y, id, progress2, floorY = Infinity) {
+function drawEquipmentImpact(c, x, y, id, progress2, floorY = Infinity, equipment = {}) {
+  if(!Number.isFinite(progress2)||progress2<0||progress2>=1)return;
   c.save();
   c.translate(x, y);
   c.globalAlpha *= Math.max(0, 1 - progress2);
@@ -3759,13 +4135,14 @@ function drawEquipmentImpact(c, x, y, id, progress2, floorY = Infinity) {
       c.translate(px, py);
       if (id !== "pixel") c.rotate(a + progress2 * 4);
       c.fillStyle = id === "confetti" ? ["#ffeab1", "#d99b3d", "#fff7df"][i % 3] : id === "katana" ? "#14121e" : id === "razor" ? "#e2f6ff" : id === "laser" ? (i%2?"#72f4ff":"#ff80e8") : id === "blood" ? "#ff476f" : id === "pixel" ? ["#be9fff", "#e9ddff", "#7765d1"][i % 3] : i % 2 ? "#ff6b9a" : "#7ceaff";
-      c.fillRect(-2, -2, id === "confetti" ? 3 : 4, id === "confetti" ? 6 : 4);
+      if(i%4===0)drawCoreMote(c,resolveCoreFx(equipment),0,0,2.1,a);
+      else c.fillRect(-2, -2, id === "confetti" ? 3 : 4, id === "confetti" ? 6 : 4);
       c.restore();
     }
   }
   c.restore();
 }
-function drawEquipmentEffects(c, fx, t = 0, floorY = Infinity,glowBake=null) {
+function drawEquipmentEffects(c, fx, t = 0, floorY = Infinity,glowBake=null,equipment={}) {
   if (!fx) return;
   for (const b of fx.bursts) {
     const progress2 = 1 - b.ticks / 30;
@@ -3783,7 +4160,7 @@ function drawEquipmentEffects(c, fx, t = 0, floorY = Infinity,glowBake=null) {
       c.ellipse(b.x, b.y, 15 + progress2 * 155, 10 + progress2 * 40, 0, 0, TAU4);
       c.stroke();
       c.restore();
-    } else drawEquipmentImpact(c, b.x, b.y, b.style, progress2, floorY);
+    } else drawEquipmentImpact(c, b.x, b.y, b.style, progress2, floorY,equipment);
   }
   for (const p of fx.projectiles) {
     drawBakedGlow(c,glowBake,p.x,p.y,22,'#00f0ff');
@@ -3946,11 +4323,12 @@ function drawLabCard(c, w, h, eq, slot, t = 0, active = false, motion = true, sw
   if (slot === "dash") { drawShopElementDash(c,w,h,{equipment:eq,time:motion?t*16.667:0,motion}); return; }
   if (slot === "pointer") { drawDragArrowPreview(c,w,h,{equipment:eq}); return; }
   const accent = partAccent(eq, slot), palette = { ...corePalette(eq.core), primary: accent }, clock = motion ? t : 0;
-  if (slot === "world") drawEquipmentWorld(c, w, h, eq.world, clock);
+  if (slot === "world") {drawEquipmentWorld(c,w,h,eq.world,clock);}
   else {
-    c.fillStyle="#19161f";c.fillRect(0,0,w,h);
+    c.fillStyle="#182934";c.fillRect(0,0,w,h);
     // One broad neutral plane frames the item without simulating a neon light.
-    polygon(c,[[w*.34,0],[w,0],[w,h],[w*.64,h]],"#29232d");
+    polygon(c,[[w*.34,0],[w,0],[w,h],[w*.64,h]],"#263d45");
+    c.strokeStyle="#73949335";c.lineWidth=1;c.strokeRect(w*.09,h*.12,w*.82,h*.76);c.fillStyle="#d5bc8628";c.fillRect(w*.09,h*.12,w*.25,2);
     line2(c,"#a99aab16",1,w*.34,0,w*.64,h);
   }
   const pose2 = { ...livingPose(clock, { x: 0.1, y: 0 }, motion), accent, inkPixels: 6, equipment: eq, combo: active ? 4 : 0, speed: active ? 28 : 0, lift: active ? 0.7 : 0.2, aiming: active };
@@ -3997,11 +4375,11 @@ function drawLabScene(c, eq, t, mode, scene, { cursor = { x: 0, y: 0 }, motion =
   if (manual && s.impact) {
     const hit = s.impact, u = hit.age / 24;
     drawEquipmentSlash(c, hit.fromX - 50, hit.fromY + 28, hit.x + 25, hit.y - 16, eq.slash, 1 - u,{progress:u,time:t,equipment:eq,reducedMotion:!motion});
-    drawEquipmentImpact(c, hit.x, hit.y, eq.slash, u);
+    drawEquipmentImpact(c, hit.x, hit.y, eq.slash, u,Infinity,eq);
   }
   if (!manual && p.cut) {
     drawEquipmentSlash(c, p.x - 170, p.y + 65, dx + 35, dy - 24, eq.slash, Math.max(0.1, 1 - (auto.phase - 48) / 40),{progress:Math.max(0,(auto.phase-43)/40),time:t,equipment:eq,reducedMotion:!motion});
-    if(auto.phase>=48)drawEquipmentImpact(c, dx, dy, eq.slash, Math.max(0, (auto.phase - 48) / 45));
+    if(auto.phase>=48)drawEquipmentImpact(c, dx, dy, eq.slash, Math.max(0, (auto.phase - 48) / 45),Infinity,eq);
   }
   if (manual && !s.drag) drawCubeDashSmear(c,{x:p.x,y:p.y,vx:s.vx,vy:s.vy,age:s.age,radius:48,equipment:eq,motion});
   if (mode === "dash" && !manual && motion) for (let i = 3; i > 0; i--) {
@@ -4011,7 +4389,7 @@ function drawLabScene(c, eq, t, mode, scene, { cursor = { x: 0, y: 0 }, motion =
     c.restore();
   }
   cube(c, p.x, p.y, 48, -0.122 + pose2.lean + (manual ? Math.atan2(s.vy, s.vx) * 0.04 : 0), motion ? t : 0, 1, pose2);
-  if(sword){const a=manual?Math.atan2(s.drag?s.drag.y-p.y:s.vy,s.drag?s.drag.x-p.x:s.vx):-.12;drawSwordWeapon(c,{x:p.x,y:p.y,radius:48,angle:a,active:manual?!!s.impact||Math.hypot(s.vx,s.vy)>5:!!p.cut,aiming:!!s.drag||mode==='aim',sword,charge:0,motion,time:t});}
+  if(sword){const a=manual?Math.atan2(s.drag?s.drag.y-p.y:s.vy,s.drag?s.drag.x-p.x:s.vx):-.12;drawSwordWeapon(c,{x:p.x,y:p.y,radius:48,angle:a,active:manual?!!s.impact||Math.hypot(s.vx,s.vy)>5:!!p.cut,aiming:!!s.drag||mode==='aim',sword,charge:0,motion,time:t,equipment:eq,age:manual&&s.impact?s.impact.age:Math.max(0,(auto.phase-43)/3)});}
   if (s.drag) {
     c.strokeStyle = palette.primary;
     c.lineWidth = 2;
@@ -6176,8 +6554,9 @@ function createBackdrop(c,surface=null) {
     }
     c.restore();
   }
-  function world(v, seed, band, time=0) {
+  function world(v, seed, band, time=0, identity=true) {
     drawIndustrialDistrict(c,v.width,v.height,{x:v.panX*v.scale,y:v.panY*v.scale,scale:v.scale},seed,band,time,bake);
+    if(identity)drawWorldIdentity(c,v.width,v.height,{time});
   }
   function title(w, h, time) {
     const tall = w < h * 0.85;
@@ -6819,7 +7198,7 @@ export function drawTutorialGuidance(c,v,lesson,p,motion=true,device='touch'){
    c.save();c.translate(target.x,target.y);c.scale(pulse,pulse);c.fillStyle='#16251d';c.strokeStyle='#e6ff9a';c.lineWidth=3;c.beginPath();c.moveTo(0,-17);c.lineTo(17,0);c.lineTo(0,17);c.lineTo(-17,0);c.closePath();c.fill();c.stroke();
    c.strokeStyle='#e6ff9a';c.lineWidth=2;c.beginPath();c.moveTo(-5,0);c.lineTo(5,0);c.moveTo(0,-5);c.lineTo(0,5);c.stroke();c.restore();
    const direction=Math.abs(dx)>=Math.abs(dy)?(dx<0?'←':'→'):(dy<0?'↑':'↓');
-   const label=device==='keys'?`${direction} + SPACE`:device==='mouse'?'CLICK':'TAP';
+   const label=device==='keys'?`${direction} + SPACE`:device==='mouse'?'SHIFT+CLICK':'TAP';
    c.font='bold 11px monospace';c.textAlign='center';c.textBaseline='middle';const tw=c.measureText(label).width+12,ly=target.y>height-75?target.y-28:target.y+29;
    c.fillStyle='#111922ed';c.fillRect(target.x-tw/2,ly-9,tw,18);c.fillStyle='#eaffbc';c.fillText(label,target.x,ly);return;
   }
@@ -6831,7 +7210,7 @@ export function drawTutorialGuidance(c,v,lesson,p,motion=true,device='touch'){
   }
   // The opening caption teaches a tap. Illustrate that same action rather
   // than showing an unrelated pull-back gesture alongside it.
-  if(lesson.stage===0&&guide.kind==='slice'&&device!=='keys'){
+  if(lesson.stage===0&&guide.kind==='slice'&&device==='touch'){
    const down=!motion||clock>.28&&clock<.58;
    c.globalAlpha=.94;hand(c,target.x+9,target.y+8+(motion&&!down?5:0),device==='touch'?'touch':'mouse',down,.85);
    if(down){c.strokeStyle='#dfff88';c.lineWidth=2;c.beginPath();c.arc(target.x,target.y,22,Math.PI*1.08,Math.PI*1.8);c.stroke();}
@@ -7432,6 +7811,10 @@ function slashArc(c, x, y, r, age, dir, inv = 1, equipment = {}) {
       c.stroke();
     }
   }
+  for(let i=0;i<6;i++){
+    const q=i/6,aa=from+span*q,rr=r1+3+i*1.5;c.globalAlpha=alpha*smear*.45;
+    drawCoreMote(c,resolveCoreFx(equipment),Math.cos(aa)*rr,Math.sin(aa)*rr,1.8,aa+.7);
+  }
   c.globalAlpha = 1;
   c.restore();
 }
@@ -7458,8 +7841,13 @@ export function resolveDashTreatment(equipment={},sword=null,buff=null){
 }
 
 /** Local bounded geometry follows actual velocity. Age is simulation ticks, not RAF count.
- * No randomness, filters, particles, DOM, imported state, or gameplay mutations. */
+ * No randomness, filters, retained emitters, DOM, imported state, or gameplay mutations. */
 export function drawElementalDash(c,{x=0,y=0,vx=0,vy=0,angle=null,travel=0,age=-1,element='ink',radius=22,motion=true,equipment=null,sword=null,buff=null}={}){
+ drawCoreDashFx(c,{x,y,vx,vy,angle,age,radius,motion,equipment:equipment||{}});
+ drawSignatureDash(c,{x,y,vx,vy,angle,age,radius,motion,equipment:equipment||{},element});
+ if(Math.hypot(vx,vy)>=4)drawBuildHarmony(c,{equipment:equipment||{},sword,stage:'dash',x,y,radius,angle:Number.isFinite(angle)?angle:Math.atan2(vy,vx),age,motion});
+ if(equipment?.dash==='dash-lightning'){drawVoltLaunch(c,{x,y,vx,vy,angle,age,travel,radius,motion});return;}
+ if(equipment?.dash==='dash-echo'){drawRepriseLaunch(c,{x,y,vx,vy,angle,age,radius,motion});return;}
  if(equipment?.dash==='dash-void'){drawVoidLaunch(c,{x,y,vx,vy,angle,age,radius,motion});return;}
  if(equipment?.dash==='dash-ice'){drawFrostLaunch(c,{x,y,vx,vy,angle,age,radius,motion});return;}
  if(equipment?.dash==='dash-fire'){drawEmberLaunch(c,{x,y,vx,vy,angle,age,radius,motion});return;}
@@ -7672,7 +8060,14 @@ function createRenderer(c, viewport) {
   const renderCuller=createRenderCuller();
   const glowBake=viewport.surface?createArtBake({surface:viewport.surface,maxEntries:3,maxPixels:49152}):null;
   const wardBreaks=[],contactBursts=[];let cutExitSource=null;
+  let harmonyRun=null,harmonyBuild=null,harmonyAge=36;
   const dimensionImpact = createDimensionImpact();
+  const objectJuice=createLiveObjectJuice({dashWake:true});
+  const dashWake=createDashWake();
+  const dashStage=createElementalDashStage();
+  const reboundMorph=createReboundMorph();
+  let bodyEnvelope={x:1,y:1};
+  const powerPayoffs=createPowerPayoffs();
   // CHUNK 1: view-time payloads owned by the shell (main.js): the screen-space
   // aim ring and the "what hit me" reaction. Never read from the simulation.
   let hitFeedbackView = null;
@@ -7707,7 +8102,7 @@ function createRenderer(c, viewport) {
     c.lineJoin = "miter";
   }
   function reset(seed, room = false) {
-    dimensionImpact.reset();dustPool.reset();sparkPool.reset();renderCuller.reset();
+    objectJuice.reset();dashWake.reset();dashStage.reset();reboundMorph.reset();bodyEnvelope={x:1,y:1};powerPayoffs.reset();dimensionImpact.reset();dustPool.reset();sparkPool.reset();renderCuller.reset();
     scene = null;
     sceneTicks = 0;
     facing = openingFacing(seed);
@@ -7720,9 +8115,11 @@ function createRenderer(c, viewport) {
     ghosts.clear();
     ghostClock = 0;
     dashDust.length = 0;wardBreaks.length=0;contactBursts.length=0;cutExitSource=null;
+    harmonyRun=null;harmonyBuild=null;harmonyAge=36;
     dashBurstAt = -1; dashBurstSwing = null;
   }
   function event(type, d, motion) {
+    objectJuice.event(type,d,motion);dashWake.event(type,d,motion);dashStage.event(type,d,motion);reboundMorph.event(type,d,motion);powerPayoffs.event(type,d);
     dimensionImpact.event(type,d,motion && shakeLevel !== 'off');
     if(['cut','armor'].includes(type)&&!d.secondary&&d.entityId!=null)cutExitSource={id:d.entityId,x:d.x,y:d.y};
     if(["cut","armor","hurt","break","waveBlock"].includes(type)){contactBursts.push({x:d.x,y:d.y,type,kind:d.kind,r:d.r,cut:d.cut,hpBefore:d.hpBefore,hp:d.hp,fromShear:d.fromShear,entityId:d.entityId,sword:d.sword,equipment:d.equipment,upgrade:d.upgrade,armorRemoved:d.armorRemoved,secondary:d.secondary,contact:d.contact||null,attack:d.attack||null,life:type==="break"?27:18});if(contactBursts.length>12)contactBursts.shift();}
@@ -7809,7 +8206,11 @@ function createRenderer(c, viewport) {
   const hudTop = () => viewport.top ?? 32;
   const hudGutter = () => viewport.gutter ?? 20;
   function tick(run, motion) {
+    objectJuice.tick(run,motion);dashWake.tick(run,motion);dashStage.tick(run,motion);reboundMorph.tick(run,motion);powerPayoffs.tick(run.state.phase==='playing');
     const { state: s, world } = run;
+    const recipeId=s.sword?.build||null;
+    if(harmonyRun!==run||harmonyBuild!==recipeId){harmonyRun=run;harmonyBuild=recipeId;harmonyAge=0;}
+    else if(s.phase==='playing'&&!s.opening&&!s.tutorialActive)harmonyAge=Math.min(36,harmonyAge+1);
     dimensionImpact.tick(motion && shakeLevel !== 'off');
     syncScene(run, s.story ? run.nearest() : null);
     if (scene) sceneTicks++;
@@ -8143,7 +8544,7 @@ function createRenderer(c, viewport) {
       storyEmotionMotif(c,width,height,n.emotion,clock,motion,.9);
     }
     // A small independent story silhouette never intercepts input or pauses play.
-    if(n.intro||n.reaction){
+    if(n.reaction){
       const reaction=n.reaction,age=reaction?.age||0,split=reaction?.kind==='split',alarm=reaction?.kind==='alarm';
       const scale=Math.min(width,height)*.00075, x=width*.78,y=height*.15+(n.intro?(motion?Math.min(1,n.introAge/40):1)*height*.07:0);
       c.translate(x,y);c.scale(scale,scale);if(alarm){c.globalAlpha=.25;c.fillStyle='#fb3650';c.beginPath();c.arc(0,0,105,0,Math.PI*2);c.fill();c.globalAlpha=1;}
@@ -8153,14 +8554,29 @@ function createRenderer(c, viewport) {
   }
   function narrativeWorld(n, scale, time, motion){
     if(!n)return;c.save();c.lineWidth=3/scale;
-    if(n.intro&&n.fracture){const q=n.fracture;c.translate(q.x,q.y);c.strokeStyle='#332c3b';c.lineWidth=13;c.beginPath();c.moveTo(-760,0);c.lineTo(760,0);c.stroke();c.strokeStyle='#ddff89';c.lineWidth=3;c.beginPath();c.moveTo(-65,-20);c.lineTo(-23,-9);c.lineTo(-8,-22);c.lineTo(7,12);c.lineTo(24,1);c.lineTo(65,18);c.stroke();c.restore();return;}
+    if(n.intro&&n.fracture){
+      const q=n.fracture,age=motion?n.introAge:90,pulse=motion?.5+.5*Math.sin(age*.045):.65,gap=48+Math.min(1,age/65)*23;
+      c.translate(q.x,q.y);
+      // A physical-looking bulkhead, with the real sensor in its open center.
+      for(const side of [-1,1]){c.save();c.scale(side,1);c.fillStyle='#111f2b';c.strokeStyle='#647779';c.lineWidth=3;c.beginPath();c.moveTo(gap,-32);c.lineTo(760,-32);c.lineTo(760,33);c.lineTo(gap,33);c.lineTo(gap-18,0);c.closePath();c.fill();c.stroke();c.strokeStyle='#e8bc73';c.lineWidth=5;c.beginPath();c.moveTo(gap+16,-25);c.lineTo(gap,0);c.lineTo(gap+16,25);c.stroke();for(let x=gap+55;x<730;x+=100){c.fillStyle='#33444d';c.fillRect(x,-20,44,5);c.fillStyle='#d9ba6c';c.fillRect(x,15,20,4);}c.restore();}
+      // Watcher is visibly bracing against the same gate the player will cut.
+      watcherMask(c,-127,-72,.38,{glow:.35,eye:1});
+      c.strokeStyle='#efc67d';c.lineWidth=2.5;c.beginPath();c.moveTo(-108,-53);c.quadraticCurveTo(-88,-72,-gap,-17);c.moveTo(-144,-54);c.quadraticCurveTo(-179,-19,-gap,17);c.stroke();
+      c.fillStyle='#dfff8530';c.beginPath();c.ellipse(0,0,30+4*pulse,47,0,0,Math.PI*2);c.fill();c.strokeStyle='#e2ff91';c.lineWidth=3;c.beginPath();c.ellipse(0,0,31+4*pulse,46,0,0,Math.PI*2);c.stroke();
+      c.fillStyle='#f1ffc8';c.beginPath();c.moveTo(0,-22);c.lineTo(16,4);c.lineTo(5,0);c.lineTo(5,24);c.lineTo(-5,24);c.lineTo(-5,0);c.lineTo(-16,4);c.closePath();c.fill();
+      // Directional marks connect the launch pad to the actual target.
+      c.strokeStyle='#dfff85';c.lineWidth=3;for(let i=0;i<3;i++){const y=65+i*30;c.globalAlpha=.3+.25*pulse;c.beginPath();c.moveTo(-10,y+8);c.lineTo(0,y);c.lineTo(10,y+8);c.stroke();}
+      c.restore();return;
+    }
+    if(n.openingBurst){const b=n.openingBurst,u=Math.min(1,b.age/70);c.save();c.translate(b.x,b.y);c.globalAlpha=1-u;c.strokeStyle='#efcf87';c.lineWidth=5;for(const side of [-1,1]){c.save();c.translate(side*(70+u*160),-u*35);c.rotate(side*u*.35);c.strokeRect(-55,-26,110,52);c.restore();}c.strokeStyle='#e6ff9e';c.lineWidth=2;c.beginPath();c.ellipse(0,0,42+u*95,24+u*45,0,0,Math.PI*2);c.stroke();c.restore();}
+
     const seal=n.seal;if(!seal){c.restore();return;}
     c.strokeStyle=seal.ready?'#e6ff70':'#8b617b';c.lineWidth=seal.ready?9:6;c.beginPath();c.moveTo(seal.x-seal.w/2,seal.y);c.lineTo(seal.x+seal.w/2,seal.y);c.stroke();
     c.strokeStyle=seal.ready?'#fff7b0':'#403245';c.lineWidth=2;c.beginPath();c.moveTo(seal.x-seal.w/2,seal.y-6);c.lineTo(seal.x+seal.w/2,seal.y-6);c.stroke();
     for(const lock of n.locks){
       c.save();c.translate(lock.x,lock.y);c.strokeStyle=lock.broken?'#544751':'#c0a6a8';c.lineWidth=3;c.beginPath();c.moveTo(0,-34);c.lineTo(0,seal.y-lock.y);c.stroke();
       if(lock.broken){c.strokeStyle='#e7e7a0';c.beginPath();c.moveTo(-24,-8);c.lineTo(-8,4);c.moveTo(8,-4);c.lineTo(25,8);c.stroke();}
-      else{c.rotate(Math.PI/4);c.fillStyle='#352634';c.strokeStyle='#e1b878';c.lineWidth=4;c.fillRect(-25,-25,50,50);c.strokeRect(-25,-25,50,50);c.fillStyle='#f7df94';c.fillRect(-5,-5,10,10);}
+      else{c.strokeStyle='#dfb97755';c.lineWidth=2;c.beginPath();c.arc(0,0,43,0,Math.PI*2);c.stroke();for(let i=0;i<3;i++){c.fillStyle='#edd493';c.fillRect(-16+i*13,-52,7,5);}c.rotate(Math.PI/4);c.fillStyle='#352634';c.strokeStyle='#e1b878';c.lineWidth=4;c.fillRect(-25,-25,50,50);c.strokeRect(-25,-25,50,50);c.fillStyle='#f7df94';c.fillRect(-5,-5,10,10);}
       c.restore();
     }
     // A lock is a real piece of the Watcher's machinery. When the blade breaks
@@ -8844,7 +9260,7 @@ function createRenderer(c, viewport) {
     syncScene(run, nearest);
     if (s.opening) back.bench(v);
     else if (["tokyo", "foundry", "manga", "synth", "void"].includes(s.equipment?.world)) back.equipment(w,h,s.equipment.world,motion?time:0,{x:v.panX*v.scale,y:v.panY*v.scale,scale:v.scale});
-    else back.world(v, s.seed, s.band,motion?time:0);
+    else back.world(v, s.seed, s.band,motion?time:0,!s.visualTutorial);
     // CHUNK 2/3: the sky breaks before the words do. The meter is on the run;
     // once the event is spent the sky stays in shards for the rest of the run.
     if (s.arenaMode === 'SHATTERED' || s.shatter > 0) {
@@ -8871,6 +9287,7 @@ function createRenderer(c, viewport) {
       const sx=(q.x-v.x)*v.scale,sy=(q.y-v.y)*v.scale;
       if(sx<35||sx>w-35||sy<70||sy>h-35){const dx=sx-w/2,dy=sy-h/2,k=Math.min((w/2-30)/Math.max(1,Math.abs(dx)),(h/2-70)/Math.max(1,Math.abs(dy)));c.save();c.translate(w/2+dx*k,h/2+dy*k);c.rotate(Math.atan2(dy,dx));c.fillStyle=n.seal.ready?'#e6ff78':'#dfb977';c.globalAlpha=.8;c.beginPath();c.moveTo(11,0);c.lineTo(-7,-6);c.lineTo(-3,0);c.lineTo(-7,6);c.closePath();c.fill();c.restore();}
     }
+    if(s.phase==='playing')drawLiveWorldWeather(c,w,h,{world:s.equipment?.world,time,motion});
     if(s.visualTutorial){
       if(s.visualTutorial.guide?.kind!=='dodge')drawTutorialGuidance(c,v,s.visualTutorial,p,motion,device);
       // A quiet edge chevron points toward the real rail or unlocked exit when
@@ -8884,8 +9301,8 @@ function createRenderer(c, viewport) {
     if (s.held || s.panicTicks > 0 && s.phase === "playing") {
       const g = c.createRadialGradient(w / 2, h * 0.52, Math.min(w, h) * 0.16, w / 2, h * 0.52, Math.max(w, h) * 0.7);
       g.addColorStop(0, "rgba(10,8,18,0)");
-      g.addColorStop(0.58, "rgba(10,8,18,0.26)");
-      g.addColorStop(1, "rgba(7,5,12,0.72)");
+      g.addColorStop(0.58, s.held?"rgba(10,8,18,0.14)":"rgba(10,8,18,0.26)");
+      g.addColorStop(1, s.held?"rgba(7,5,12,0.42)":"rgba(7,5,12,0.72)");
       c.save();
       c.fillStyle = g;
       c.fillRect(0, 0, w, h);
@@ -8902,6 +9319,7 @@ function createRenderer(c, viewport) {
     }
     c.scale(v.scale, v.scale);
     c.translate(-v.x, -v.y);
+    if(s.phase==='playing'){objectJuice.drawUnder(c,{view:v,scale:v.scale,motion});dashWake.draw(c,{view:v,scale:v.scale,motion});dashStage.draw(c,{view:v,scale:v.scale,motion,hero:p,alpha});reboundMorph.draw(c,{hero:p,aim,scale:v.scale,motion});}
     if(s.visualTutorial)drawTutorialScene(c,s.visualTutorial,combat,p,v.scale,motion,time);
     if(s.narrative)narrativeWorld(s.narrative,v.scale,time,motion);
     if(s.dimension&&!s.visualTutorial)drawDimensionField(c,s.dimension,v,motion,{separation:shakeLevel!=='off'});
@@ -9007,6 +9425,14 @@ function createRenderer(c, viewport) {
           c.restore();
         }
     }
+    // Unconditional base-kit combat pass: no shop ownership or completed build
+    // is required to see the new launch wake and cutting crescent.
+    if(s.phase==='playing'){
+      drawStreakJuice(c,{x:p.x,y:p.y,vx:world.player.velocity.x,vy:world.player.velocity.y,chain:s.chain,remaining:s.chainTime,max:s.chainMax,time,scale:v.scale,motion});
+      if(s.slashAge>=0)drawLiveCombatDash(c,{x:p.x,y:p.y,radius:R,angle:launchAngle,age:animationAge(s.slashAge),equipment:s.equipment,motion});
+      if(s.blade>0)drawLiveCombatSlash(c,{x:p.x,y:p.y,radius:R,angle:s.slashAngle,age:12*Math.max(0,world.clock-s.swingStart)/Math.max(1,Math.max(0,world.clock-s.swingStart)+s.blade),equipment:s.equipment,motion});
+    }
+    if(harmonyBuild&&harmonyAge<36&&s.phase==='playing'&&!s.opening&&!s.tutorialActive)drawBuildHarmony(c,{equipment:s.equipment,sword:s.sword,stage:'summon',x:p.x,y:p.y,radius:R,age:harmonyAge,motion});
     if (motion) speedField(c, world, v, time, run.state, dash ? launchAngle : null);
     if (motion && s.phase === "playing") {
       // Element shapes replace the generic ribbon during a launch; no stacking.
@@ -9111,6 +9537,7 @@ function createRenderer(c, viewport) {
       c.globalAlpha = 1;
       c.restore();
     }
+    if(s.reprise)drawReprisePath(c,{ledger:s.reprise,now:world.clock,motion,scale:v.scale,layer:'pending'});
     if(s.voidWell)drawVoidField(c,{field:s.voidWell,now:world.clock,motion,scale:v.scale,layer:'outer'});
     for (const e of combat.enemies.values())
       if (inView(v, e, 870)) drawEnemyWarning(c, e, { ...pose(e, alpha), r: e.r }, time,v.scale,motion,world.arena);
@@ -9167,7 +9594,7 @@ function createRenderer(c, viewport) {
       c.fillText(m.text, 0, 0);
       c.restore();
     }
-    for(const impact of contactBursts){const age=(impact.type==='break'?27:18)-impact.life;if(['cut','armor'].includes(impact.type))drawCombatHit(c,impact,age,motion);else drawContactBurst(c,{...impact,age,motion});if(impact.type==='break'){drawPlayerFracture(c,{x:impact.x,y:impact.y,age,motion,equipment:impact.equipment,contact:impact.contact});}if(impact.type==='break'&&impact.sword){const t=motion?age:3;c.save();c.globalAlpha=impact.life/27;drawSwordWeapon(c,{x:impact.x+t*(impact.contact?.vx||0)*.18,y:impact.y+t*t*.12,radius:R,angle:(impact.contact?.angle||0)+t*.07,active:false,aiming:true,sword:impact.sword,motion:false});c.restore();}}
+    for(const impact of contactBursts){const age=(impact.type==='break'?27:18)-impact.life;drawLiveCombatImpact(c,impact,age,motion);if(impact.type==='cut')drawBuildHarmony(c,{equipment:impact.equipment,sword:impact.sword,stage:'kill',x:impact.x,y:impact.y,radius:impact.r||R,angle:impact.cut||0,age,motion});if(['cut','armor'].includes(impact.type))drawCombatHit(c,impact,age,motion);else drawContactBurst(c,{...impact,age,motion});if(impact.type==='break'){drawPlayerFracture(c,{x:impact.x,y:impact.y,age,motion,equipment:impact.equipment,contact:impact.contact});}if(impact.type==='break'&&impact.sword){const t=motion?age:3;c.save();c.globalAlpha=impact.life/27;drawSwordWeapon(c,{x:impact.x+t*(impact.contact?.vx||0)*.18,y:impact.y+t*t*.12,radius:R,angle:(impact.contact?.angle||0)+t*.07,active:false,aiming:true,sword:impact.sword,motion:false});c.restore();}}
     for(const ward of wardBreaks)drawWardFracture(c,{x:ward.x,y:ward.y,age:24-ward.life,motion,equipment:ward.equipment,sword:ward.sword,angle:ward.contact?.angle||0,strength:ward.contact?.strength||0});
     for (const m of imprints) {
       c.save();
@@ -9240,6 +9667,7 @@ function createRenderer(c, viewport) {
         c.save();
         c.filter = "grayscale(1)";
       }
+      drawLiveEnemyMaterial(c,e,q,time,v.scale,motion);
       const reaction=contactBursts.findLast(hit=>hit.type==='armor'&&hit.entityId===e.id);
       c.save();
       const anticipation=resolveFangAnticipation(e,motion);
@@ -9268,7 +9696,8 @@ function createRenderer(c, viewport) {
         lensT: e.lensT || 0,
         time:motion?(e.frostCold?.phase==='active'&&e.frostCold.kind==='freeze'?e.frostCold.born:time):0
       });
-      if(e.frostCold)drawFrostStatus(c,{x:q.x,y:q.y,radius:e.r,angle:q.angle,status:e.frostCold,now:world.clock,motion});
+      drawLiveThreatAccent(c,e,q,v.scale,motion);
+      if(e.frostCold)drawFrostStatus(c,{x:q.x,y:q.y,radius:e.r,angle:q.angle,status:e.frostCold,now:world.clock,motion,labels:false});
       if(e.emberBurn)drawEmberBurn(c,{x:q.x,y:q.y,radius:e.r,status:e.emberBurn,now:world.clock,motion});
       c.restore();
       // ── CHUNK 2: GOLD IS A PROMISE, NOT DECORATION ────────────────────
@@ -9289,7 +9718,10 @@ function createRenderer(c, viewport) {
     }
     // Core damage boundary stays visible over large enemy silhouettes, while
     // actual hazard paint below still has priority over both field layers.
+    if(s.volt)drawVoltArc(c,{conduction:s.volt.conduction,now:world.clock,motion,scale:v.scale});
+    if(s.reprise)drawReprisePath(c,{ledger:s.reprise,now:world.clock,motion,scale:v.scale,layer:'replay'});
     if(s.voidWell)drawVoidField(c,{field:s.voidWell,now:world.clock,motion,scale:v.scale,layer:'core'});
+    if(s.phase==='playing'){drawPowerClockwork(c,{state:s,enemies:combat.enemies.values(),now:world.clock,alpha,view:v,scale:v.scale,motion});powerPayoffs.draw(c,{view:v,scale:v.scale,motion});}
     // CHUNK 2: "safe to slice", drawn OVER the bodies and UNDER the hazards, so
     // a live ring is never hidden behind a bracket. Screen-space free: the view
     // array is built once per frame by the shell.
@@ -9640,14 +10072,19 @@ function createRenderer(c, viewport) {
       // position sampler below is the only remaining after-image source; it
       // records where the cube actually was instead of inventing a second
       // velocity-shaped trail.
-      const boundedBody = bodyBase && Number.isFinite(bodyBase.a) && !splat;
+      // One final body owner, including contacts during a bank cooldown.
+      // Pancake, impact squeeze and travel stretch must never multiply into
+      // a paper-thin actor. Clamp the COMPOSED pose, not its separate layers.
+      const boundedBody = bodyBase && Number.isFinite(bodyBase.a);
       if (boundedBody) {
         c.setTransform(bodyBase.a, bodyBase.b, bodyBase.c, bodyBase.d, bodyBase.e, bodyBase.f);
         const age = animationAge(s.slashAge);
         const settle = age >= 7 ? Math.max(0, 1 - (age - 7) / 5) : 1;
         const bx = dash ? 1 + (dash.sx - 1) * settle : 1;
         const by = dash ? 1 + (dash.sy - 1) * settle : 1;
-        c.scale(clamp(bx, STRETCH_ACROSS, STRETCH_ALONG), clamp(by, STRETCH_ACROSS, STRETCH_ALONG));
+        const rebound=motion?reboundMorph.bodyScale():{x:1,y:1};
+        bodyEnvelope={x:clamp(bx*rebound.x*(motion&&splat?splat.sx:1),STRETCH_ACROSS,STRETCH_ALONG),y:clamp(by*rebound.y*(motion&&splat?splat.sy:1),STRETCH_ACROSS,STRETCH_ALONG)};
+        c.scale(bodyEnvelope.x,bodyEnvelope.y);
       }
       {
         // ── CHUNK 3: THE F=m·a AURA ─────────────────────────────────────
@@ -9698,7 +10135,9 @@ function createRenderer(c, viewport) {
         recoveryAge:s.focusRecoveryAge,
         ...armorShellPose(s,p.angle),
         ...coreMechanismPose(s),
+        ...headMechanismPose(s,combat.enemies.values(),world.player.velocity),
         shellAbility:s.shellAbility,tailAbility:s.tailAbility,eyeAbility:s.eyeAbility,eyePower:aim?.power||0,tailMotion:{bend:motion&&!dash?Math.max(-.18,Math.min(.18,world.player.velocity.y/MAX_SPEED*.18)):0},
+        dashProgress:motion&&dash?Math.max(0,Math.min(1,animationAge(s.slashAge)/10)):-1,
         attackProgress:motion&&s.blade>0?1-Math.min(1,s.blade/12):-1,
         reducedMotion:!motion,
         contact:motion&&!!s.impact&&s.impactAge<3,
@@ -9759,6 +10198,7 @@ function createRenderer(c, viewport) {
         c.globalAlpha = 1;
         c.restore();
       }
+      if(s.phase==='playing')objectJuice.drawPlayer(c,{x:p.x,y:p.y,scale:v.scale,angle:launchAngle,motion});
       const upgradePhase=upgradeVisualPhase(s,motion),structural=['reach','cleaver','barrier'].includes(upgradePhase.buff?.id),visualBuff=structural?upgradePhase.buff:s.waveBuff;
       drawCombatAccent(c,{x:p.x,y:p.y,radius:R,angle:s.slashAngle||0,age:s.slashAge,blade:s.blade,buff:visualBuff?.id,shield:structural?upgradePhase.shield:s.waveShield,finish:structural?upgradePhase.amount:1,equipment:s.equipment,sword:s.sword,motion,reach:(s.reach||1)*(s.waveBuff?.reach||1),suppressWake:!!dash});
       if(s.waveBuff?.id==='guard')drawCutExit(c,{x:p.x,y:p.y,radius:R,remaining:s.cutGrace,source:combat.enemies.get(s.cutGraceFrom)||cutExitSource,sourceId:s.cutGraceFrom,equipment:s.equipment,sword:s.sword,motion});
@@ -9766,12 +10206,14 @@ function createRenderer(c, viewport) {
       if(s.sword){
         const swordReach=(s.reach||1)*s.sword.reach*(s.waveBuff?.reach||1);
         const swordAngle=s.held&&aim?Math.atan2(aim.y,aim.x):s.slashAngle;
-        drawSwordWeapon(c,{x:p.x,y:p.y,radius:R,angle:swordAngle,active:s.blade>0,aiming:s.held,sword:s.sword,reach:swordReach,charge:s.swordCharge,motion,time,buff:visualBuff,equipment:s.equipment,widthScale:(s.precisionShot?.widthScale??1)*(s.inkCutScale??1)*(s.equipment?.dash==='dash-fire'?.9:1),bladeRemaining:s.blade,finish:structural?upgradePhase.amount:1,age:s.slashAge,reveal:structural?1:s.waveBuff?Math.min(1,(s.wave?.age||0)/18):1});
-        for(const attack of s.swordFx||[])drawSwordAttack(c,attack,s.sword,!motion);
+        drawSwordWeapon(c,{x:p.x,y:p.y,radius:R,angle:swordAngle,active:s.blade>0,aiming:s.held,sword:s.sword,reach:swordReach,charge:s.swordCharge,motion,time,buff:visualBuff,equipment:s.equipment,widthScale:(s.precisionShot?.widthScale??1)*(s.inkCutScale??1)*(s.equipment?.dash==='dash-fire'?.9:s.equipment?.dash==='dash-lightning'?.85:1),bladeRemaining:s.blade,finish:structural?upgradePhase.amount:1,age:s.slashAge,reveal:structural?1:s.waveBuff?Math.min(1,(s.wave?.age||0)/18):1});
+        for(const attack of s.swordFx||[])drawSwordAttack(c,attack,s.sword,!motion,s.equipment);
       }
       if (s.equipment?.head === "oni" && s.hp === 1 && s.blade > 0) drawEquipmentSlash(c, p.x, p.y, p.x + Math.cos(s.slashAngle) * 80, p.y + Math.sin(s.slashAngle) * 80, "blood", 1,{progress:1-Math.min(1,s.blade/12),equipment:s.equipment,reducedMotion:!motion});
+      if(s.equipment?.dash==='dash-lightning'&&s.held)drawVoltReadiness(c,{x:p.x,y:p.y,radius:R,ready:s.volt?.conduction?.ready!==false});
+      if(s.equipment?.dash==='dash-echo'&&s.held)drawRepriseReadiness(c,{x:p.x,y:p.y,radius:R,ready:s.reprise?.ready!==false});
       if(s.equipment?.dash==='dash-void'&&s.held)drawVoidReadiness(c,{x:p.x,y:p.y,radius:R,readyIn:s.voidWell?.readyIn||0});
-      drawEquipmentEffects(c, motion ? s.equipmentFx : { ...s.equipmentFx, bursts: [] }, motion ? time : 0, ARENA.y + ARENA.h,motion?glowBake:null);
+      drawEquipmentEffects(c, motion ? s.equipmentFx : { ...s.equipmentFx, bursts: [] }, motion ? time : 0, ARENA.y + ARENA.h,motion?glowBake:null,s.equipment);
       if (s.equipment?.head === "beacon") {
         for (const enemy of combat.enemies.values()) if (enemy.kind === "fang" && enemy.mode === "tell") {
           const ex = clamp(enemy.x, v.x + 35, v.x + v.w - 35), ey = clamp(enemy.y, v.y + 50, v.y + v.h - 45);
@@ -9784,13 +10226,14 @@ function createRenderer(c, viewport) {
       }
       if (s.equipmentScar?.ticks > 0) {
         const q = s.equipmentScar;
-        drawEquipmentSlash(c, q.x, q.y, q.tx, q.ty, "laser", q.ticks / 30);
+        drawEquipmentSlash(c, q.x, q.y, q.tx, q.ty, "laser", q.ticks / 30,{progress:1-q.ticks/30,equipment:s.equipment,reducedMotion:!motion});
       }
       if (s.equipment?.head === "neko" && s.edgeReturn > 0 && motion) {
         for (let i = 0; i < 5; i++) disk(c, corePalette(s.equipment.core).primary, p.x - 20 - i * 8, p.y + 15 + Math.sin(time * 0.2 + i) * 12, 2);
       }
       if (s.equipment?.slash && s.equipment.slash !== "razor" && s.blade > 0) drawEquipmentSlash(c, p.x - Math.cos(s.slashAngle) * 45, p.y - Math.sin(s.slashAngle) * 45, p.x + Math.cos(s.slashAngle) * 80, p.y + Math.sin(s.slashAngle) * 80, s.equipment.slash, Math.min(1, s.blade / 12),{progress:1-Math.min(1,s.blade/12),time,equipment:s.equipment,reducedMotion:!motion});
       if (!s.sword && motion && s.slashAge >= 0) slashArc(c, p.x, p.y, R, animationAge(s.slashAge), s.slashAngle, 1 / v.scale,s.equipment);
+      drawFocusAimJuice(c,{x:p.x,y:p.y,angle:aim?Math.atan2(aim.y,aim.x):s.slashAngle||0,power:aim?.power||0,focus:s.focus,active:s.held&&!s.depleted,time,scale:v.scale,motion});
       if (s.held || aim?.power) {
         const val = s.held ? s.focus : aim.power;
         arc(
@@ -10046,8 +10489,10 @@ function createRenderer(c, viewport) {
     /** CHUNK 1: screen-space aim ring + damage reaction, supplied per frame. */
     setAimFeedback,
     // Read-only hooks for the headless camera checks.
+    // Draw-derived diagnostic is separate from fixed-update effect state.
+    bodyEnvelope:()=>({...bodyEnvelope}),
     effectState() {
-      return { ghosts: ghosts.size, trail: trail.length, beams: beams.length, dimensionImpact:dimensionImpact.snapshot() };
+      return {reboundMorph:reboundMorph.snapshot(),powerPayoffs:powerPayoffs.snapshot(),dashStage:dashStage.snapshot(),dashWake:dashWake.snapshot(),objectJuice:objectJuice.snapshot(),liveCombat:{version:2,impacts:contactBursts.length}, ghosts: ghosts.size, trail: trail.length, beams: beams.length, dimensionImpact:dimensionImpact.snapshot(),buildHarmony:{id:harmonyBuild,age:harmonyAge,remaining:Math.max(0,36-harmonyAge),confirmedKills:contactBursts.filter(h=>h.type==='cut'&&resolveBuildHarmony(h.equipment,h.sword)).length} };
     },
     mapFade() {
       return mapOpacity;
@@ -10062,7 +10507,7 @@ function createRenderer(c, viewport) {
       };
     },
     field(origin, side) {
-      dimensionImpact.reset();dustPool.reset();sparkPool.reset();renderCuller.reset();dashDust.length=0;
+      objectJuice.reset();dashWake.reset();dashStage.reset();reboundMorph.reset();bodyEnvelope={x:1,y:1};powerPayoffs.reset();dimensionImpact.reset();dustPool.reset();sparkPool.reset();renderCuller.reset();dashDust.length=0;
       camera.reset(origin, side);
       lastView = camera.view(1);
       trail.length = 0;
@@ -10158,11 +10603,11 @@ var ITEMS = Object.freeze([
   item("dash-auto", "dash", "Adaptive Dash", 0, "Build Resonance", "Dash trails follow your equipment and sword. Cosmetic only."),
   item("dash-ink", "dash", "Ink Dash", 150, "Brush Cutter", "Widens the primary cutting corridor by 12%, within the shared +35% positive-width limit. Width gains compose before Viper/Sniper narrowing; temporary width stays separate. No extra blade time, repeated hits, speed, body size or persistent ink hazard."),
   item("dash-fire", "dash", "Ember Dash", 250, "Contact Ignition", "The first eligible direct contact ignites its surviving target and up to two nonboss neighbors within 56 and clear static sight. Each takes one secondary damage at 18 and 36 world ticks. Active burns do not stack or refresh. Shot width is 10% narrower. No extra blade time, primary rewards, chain effects or boss damage from fire."),
-  item("dash-lightning", "dash", "Volt Dash", 300, "Precision Bounty", "Angular electric streaks follow your launch. Earn 10% more kill score at speed 18+. All equipment score perks together cap at +25%."),
+  item("dash-lightning", "dash", "Volt Dash", 300, "Arc Lance", "Ordinary launch gains 12% for 4 world ticks, then removes only its owned velocity contribution over 6. No stacking on relaunch, gain from zero, or boost to already faster-than-ordinary or Hyper motion; banks and unrelated velocity writers take ownership without a later clawback. Direct cuts are 15% narrower. First eligible primary contact sends one exact secondary unit to one nearest eligible nonboss neighbor within 120 and static sight. With Coil, the same contact may also hit a second distinct neighbor within 160; one shared reservation, Volt first, never two hits on one target or later-contact retries. No primary resources, recursive procs or old speed-score bonus."),
   item("dash-ice", "dash", "Frost Dash", 300, "Rime Breaker", "The first eligible direct contact chills its surviving victim and at most one nonboss neighbor within 60 and clear static sight. Fangs freeze movement and their own attack clocks for 18 world ticks. Other nonboss bodies move at 70% for 24 world ticks; their tells keep running. Actual thaw starts 90 world ticks of cold immunity. Active cold never stacks or refreshes. Bosses and protected teaching actors resist. Emitted hazards and rushing body contact remain dangerous. No extra damage, player physics change or aim-cost discount."),
   item("dash-water", "dash", "Tide Dash", 250, "Focus Return", "Sweeping water ribbons follow your launch. Passive FOCUS recovery is 10% faster when not aiming."),
   item("dash-void", "dash", "Void Dash", 350, "Collapse Well", "The first eligible direct contact creates one 18-world-tick field at its fixed origin. Up to three nearest movable nonboss survivors within 110 and static sight are selected once. Each is pulled at most 32 total units with solids and post leash respected. Only those selected targets actually within the 28-unit core and static sight at expiry take one secondary armor/health unit. One live field; cooldown 36 from admission. No refresh, eviction, early payout, boss damage, projectile absorption, player phase, primary rewards or recursive procs. Replaces the old armor-score bonus."),
-  item("dash-echo", "dash", "Echo Dash", 350, "Chain Grace", "Geometric afterimages trace your launch. Adds 12 simulation ticks to the chain expiry window after a kill."),
+  item("dash-echo", "dash", "Echo Dash", 350, "Reprise Stroke", "Records up to 140 traveled units in six samples on a 12-unit-wide lane, stopping at static solids, a bank or the first discontinuity. Replays once 12 world ticks after launch against at most two eligible targets for one secondary unit each, including a surviving primary victim. One pending slot; later legal launches cannot evict it and do not queue a replay while full. New solids clip the path again at replay. Boss chips only in its active combat phase, no bonus damage. No primary resources, recursive procs, player rewind or added chain grace."),
   item("pointer-reticle", "pointer", "Field Reticle", 0, "Clean Aim", "A segmented reticle marks the point where you press. Cosmetic only."),
   item("pointer-diamond", "pointer", "Prism Pointer", 200, "Blade Extension", "A faceted diamond marks your drag origin. Adds 1 simulation ticks to the active launch blade."),
   item("pointer-orbit", "pointer", "Orbit Pointer", 250, "Focus Return", "Broken orbital arcs frame your drag origin. Passive FOCUS recovery is 10% faster when not aiming."),
@@ -10326,6 +10771,48 @@ export function drawTrainingCard(ctx, width = 280, height = 150, {
     ctx.fillStyle = '#dfff70'; ctx.globalAlpha = .82; ctx.fillRect(w / 2 - 18, h * .82, 36, 2); ctx.globalAlpha = 1;
   } finally { ctx.restore(); }
 }
+/** Shared arena / shop landmark. Decorative only: never a collision surface. */
+export function drawWorldIdentity(c,w,h,{world='twilight',time=0,motion=true,sector=1}={}){
+ const t=motion?time:0,id=['tokyo','foundry','manga','synth','void'].includes(world)?world:'twilight';
+ const colors={twilight:['#83acb7','#d8b97e','#182c39'],tokyo:['#83b5c8','#b1e5dc','#152d42'],foundry:['#bc7154','#ffc084','#38242c'],manga:['#605a54','#665f55','#beb19a'],synth:['#aa739d','#f1b0ca','#34213f'],void:['#737cae','#b4c0ec','#141c30']}[id];
+ c.save();try{const scale=Math.min(w/740,h/650);c.translate((w-1000*scale)/2,Math.max(0,(h-650*scale)*.25));c.scale(scale,scale);const [edge,light,mass]=colors;
+ const path=(pts,color,width=2)=>{c.strokeStyle=color;c.lineWidth=width;c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.stroke();};
+ const ring=(x,y,r,color,width=2)=>{c.strokeStyle=color;c.lineWidth=width;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.stroke();};
+ const disk=(x,y,r,color)=>{c.fillStyle=color;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();};
+ c.globalAlpha=.65;
+ if(id==='twilight'){
+  // The lockworks' giant turbine is a place, not a second target reticle.
+  c.fillStyle=mass;c.fillRect(540,55,340,340);ring(710,225,145,edge,10);ring(710,225,126,'#344e5c',20);ring(710,225,100,edge,2);
+  c.save();c.translate(710,225);c.rotate(t*.0015);for(let i=0;i<9;i++){c.rotate(Math.PI*2/9);c.fillStyle='#2c4654';c.beginPath();c.moveTo(23,-9);c.lineTo(105,-32);c.lineTo(113,-7);c.lineTo(40,17);c.closePath();c.fill();}c.restore();disk(710,225,28,'#172633');ring(710,225,32,light,3);
+  for(const x of [546,866]){path([[x,0],[x,407]],'#3a515a',10);for(let i=0;i<4;i++)path([[x-5,70+i*90],[x+5,84+i*90]],light,2);}
+  path([[0,337],[190,337],[222,372],[1000,372]],'#43535e',14);path([[0,330],[193,330],[225,365],[1000,365]],light,1.5);
+ }else if(id==='tokyo'){
+  disk(692,162,110,'#94b3ba33');disk(692,162,86,'#9bb8bd');disk(715,147,80,'#263c4e');c.save();c.translate(692,162);c.rotate(-.25);c.strokeStyle=light;c.lineWidth=2;c.beginPath();c.ellipse(0,0,146,25,0,0,Math.PI*2);c.stroke();c.restore();
+  for(let i=0;i<6;i++){const x=70+i*171,y=278+(i%3)*38;c.fillStyle=mass;c.fillRect(x,y,94,330);path([[x-9,y],[x+46,y-35],[x+103,y]],edge,4);path([[x+46,y-35],[x+46,y-93]],edge,2);for(let j=0;j<5;j++){c.fillStyle=j===Math.floor(t*.01+i)%5?light:'#3c6575';c.fillRect(x+12,y+20+j*32,7,15);}}
+  path([[0,420],[1000,378]],edge,2);
+ }else if(id==='foundry'){
+  path([[405,0],[405,140]],edge,10);path([[715,0],[715,140]],edge,10);c.fillStyle=mass;c.strokeStyle=edge;c.lineWidth=7;c.beginPath();c.moveTo(340,118);c.lineTo(782,118);c.lineTo(714,268);c.lineTo(421,268);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#ee9d5b';c.fillRect(402,140,318,12);c.fillStyle='#ffdb97';c.fillRect(423,142,275,3);const width=12+Math.sin(t*.03)*2;c.fillStyle='#d47d49';c.fillRect(551-width/2,268,width,195);c.fillStyle='#ffe3a5';c.fillRect(549,268,4,195);
+  for(const x of [80,860]){path([[x,30],[x,460]],edge,23);for(let i=0;i<6;i++)path([[x-25,80+i*60],[x+25,100+i*60]],'#805b4a',5);}
+  c.strokeStyle='#cc8c62';c.lineWidth=7;c.beginPath();c.ellipse(560,474,174,26,0,0,Math.PI*2);c.stroke();
+ }else if(id==='manga'){
+  c.fillStyle='#d0c5ae';c.fillRect(575,45,285,276);disk(718,182,97,'#8a7c6b');for(let i=0;i<18;i++){const a=i*Math.PI/9;path([[718+Math.cos(a)*106,182+Math.sin(a)*106],[718+Math.cos(a)*133,182+Math.sin(a)*133]],'#645e55',2);}
+  for(const [x,y,ww,hh]of [[40,120,150,275],[235,60,275,240],[580,355,330,150]]){c.strokeStyle='#5e574f';c.lineWidth=7;c.strokeRect(x,y,ww,hh);for(let j=0;j<9;j++)path([[x+8+j*17,y+hh-35],[x+26+j*17,y+hh-8]],'#796e60',1.5);}
+  path([[0,483],[342,483],[366,452],[1000,452]],'#6d6357',9);
+ }else if(id==='synth'){
+  disk(655,205,133,'#d58ca5');for(let i=0;i<8;i++){c.fillStyle=mass;c.fillRect(510,206+i*17,290,4+i*1.6);}
+  for(let i=0;i<4;i++){const x=70+i*242,y=259-i%2*39;c.strokeStyle=i%2?'#936eac':edge;c.lineWidth=12;c.beginPath();c.moveTo(x,y+184);c.lineTo(x,y+39);c.quadraticCurveTo(x+57,y-40,x+114,y+39);c.lineTo(x+114,y+184);c.stroke();}
+  path([[0,466],[1000,466]],light,2);for(let i=0;i<9;i++)path([[500,466],[-400+i*225,650]],'#71557c',1);for(let i=0;i<6;i++)path([[0,470+i*i*6],[1000,470+i*i*6]],'#77537c',1);
+ }else{
+  disk(645,185,125,'#6877b529');ring(645,185,103,light,4);disk(660,173,102,'#080d1b');
+  c.save();c.translate(645,185);c.rotate(-.4);for(let i=0;i<4;i++){c.strokeStyle=i%2?edge:'#535c87';c.lineWidth=8;c.beginPath();c.ellipse(0,0,158+i*28,67+i*15,0,.18+i*.72,1.96+i*.72);c.stroke();}c.restore();
+  for(let i=0;i<7;i++){const x=60+i*145,y=335+(i%3)*40+(motion?Math.sin(t*.009+i)*7:0);c.save();c.translate(x,y);c.rotate((i%2?.12:-.12));c.fillStyle=mass;c.fillRect(-21,-58,42,116);path([[-21,-58],[21,-58],[21,58]],edge,3);c.restore();}
+ }
+ // Fine depth markers are never drawn in enemy red or the cuttable gold.
+ c.globalAlpha=.25;for(let i=0;i<(id==='twilight'?0:12);i++){const x=(i*193+37)%1000,y=90+(i*79)%360;c.fillStyle=edge;c.fillRect(x,y,2,2);}
+ c.restore();}catch(error){c.restore();throw error;}
+}
+
 function drawWorldBackdrop(ctx, width, height, worldId = "twilight", time = 0, camera = { x: 0, y: 0 }) {
   ctx.save();
   try {
@@ -10511,12 +10998,27 @@ function drawSwordWeapon(c, spec = {}) {
     }else{c.fillStyle=color;c.fillRect(root-R*.02,-R*.08,R*.06,R*.15);}
     if(aiming&&!active){c.globalAlpha=.45;c.setLineDash([R*.12,R*.15]);c.strokeStyle=color;c.lineWidth=R*.035;c.beginPath();c.moveTo(tip+R*.2,0);c.lineTo(tip+R*.6,0);c.stroke();c.setLineDash([]);}
     if(active&&motion){
+      drawBuildHarmony(c,{equipment:spec.equipment,sword:original,stage:'attack',radius:R,span:tip,age:spec.age,motion});
+      drawBuildHarmony(c,{equipment:spec.equipment,sword:original,stage:'power',x:root,y:0,radius:R*.65,age:spec.age,motion});
+
+      // Follow the blade's own release clock. A short laminated wake, never
+      // a new hitbox or a second sword; the sharp silhouette remains on top.
+      if(Number.isFinite(spec.age)&&spec.age>=0&&spec.age<12){
+        drawSignatureSlash(c,root,0,tip,0,spec.equipment?.slash||'razor',spec.age/12,spec.equipment||{});
+        const u=spec.age/12,fx=resolveCoreFx(spec.equipment),envelope=Math.sin(Math.PI*u);
+        c.save();c.globalAlpha=envelope*.28;c.strokeStyle=fx.secondary;c.lineWidth=R*.035;
+        c.beginPath();c.moveTo(root,width*1.1);c.quadraticCurveTo(root+span*.28,width*(2.6+u),tip-span*.12,width*.5);c.stroke();
+        for(let i=0;i<4;i++){
+          const q=.18+i*.18;c.globalAlpha=envelope*(1-q)*.65;
+          drawCoreMote(c,fx,root+span*q-u*R*.15,width*(1.7+q*2)+u*R*.12,R*.055,(i%2?1:-1)*u*fx.curl);
+        }c.restore();
+      }
       c.globalAlpha=.19;c.fillStyle=color;c.beginPath();c.moveTo(root,width*.45);c.quadraticCurveTo(root-span*.4,width*3.2,root-span*.9,width*1.2);c.quadraticCurveTo(root-span*.2,width*.9,tip,0);c.closePath();c.fill();
       c.globalAlpha=.7;c.strokeStyle='#fff6e9';c.lineWidth=R*.04;c.beginPath();c.moveTo(root+span*.25,width*.7);c.lineTo(tip,0);c.stroke();
     }
   }finally{c.restore();}
 }
-function drawSwordAttack(c, attack, sword, reducedMotion=false){
+function drawSwordAttack(c, attack, sword, reducedMotion=false,equipment={}){
   c.save();
   try{
     const pending=!attack.fired,opacity=pending?.23:Math.max(0,Math.min(1,attack.life/14));
@@ -10527,6 +11029,7 @@ function drawSwordAttack(c, attack, sword, reducedMotion=false){
     if(pending)c.setLineDash([5,8]);
     c.beginPath();c.moveTo(0,0);c.lineTo(len,0);c.stroke();c.setLineDash([]);
     if(!pending){
+      if(!reducedMotion){drawSlashShed(c,0,0,len,0,1-Math.min(1,attack.life/14),equipment);drawBuildHarmony(c,{equipment,sword,stage:'power',x:len*.3,radius:18,age:14-attack.life,motion:true});}
       const w=attack.width/2;c.fillStyle=sword.color||'#bda6ff';c.globalAlpha=opacity*.18;c.beginPath();c.moveTo(0,0);c.lineTo(len*.18,-w);c.lineTo(len,0);c.lineTo(len*.18,w);c.closePath();c.fill();
       c.globalAlpha=opacity;drawSwordWeapon(c,{x:len*.35,y:0,radius:18,active:true,sword:{...sword,family:attack.kind==='pulse'?'pulse':'rapier'},reach:len*.65/(3.6*18),motion:!reducedMotion});
     }else{
@@ -10693,11 +11196,11 @@ function drawSwordChamber(c,spec={}) {
   c.save();c.translate(320-panX*.65,235-panY*.65);c.scale(.65,.65);
   c.strokeStyle='#8a8098';c.lineWidth=2;c.beginPath();c.moveTo(-470,70);c.lineTo(470,70);c.stroke();
   for(const e of enemies){drawEnemyShape(c,{kind:e.kind,x:e.x,y:e.y,radius:e.r,angle:e.angle,options:{hp:e.hp,flash:e.flash,mode:'idle'}});c.fillStyle='#e9dfec';c.font=`${16*labelScale}px monospace`;c.textAlign='center';c.fillText(`${e.hp} HP`,e.x,e.y+e.r+28);}
-  for(const a of s.swordFx)drawSwordAttack(c,a,s.sword,!motion);
+  for(const a of s.swordFx)drawSwordAttack(c,a,s.sword,!motion,equipment);
   drawElementalDash(c,{x:p.x,y:p.y,vx:p.vx||0,vy:p.vy||0,age:s.slashAge,element:dashElement(equipment,s.sword),equipment,sword:s.sword,buff:s.waveBuff,radius:24,motion});
   if(!s.impact)drawCubeDashSmear(c,{x:p.x,y:p.y,vx:p.vx||0,vy:p.vy||0,age:s.slashAge,radius:24,equipment,motion});
-  drawCubeHero(c,{x:p.x,y:p.y,radius:24,angle:0,equipment,motion:motion,time:age,face:1,pose:{aiming:s.held,focusRecovering:s.focusRecoveryActive,focusLevel:s.focus,recoveryAge:s.focusRecoveryAge,...armorShellPose(s),...coreMechanismPose(s),shellAbility:s.shellAbility,tailAbility:s.tailAbility,eyeAbility:s.eyeAbility}});
-  drawSwordWeapon(c,{x:p.x,y:p.y,radius:24,angle:s.slashAngle,active:s.blade>0,sword:s.sword,reach:(s.reach||1)*s.sword.reach,charge:s.swordCharge,widthScale:(s.precisionShot?.widthScale??1)*(s.inkCutScale??1)*(s.equipment?.dash==='dash-fire'?.9:1),motion:motion,time:age});c.restore();
+  drawCubeHero(c,{x:p.x,y:p.y,radius:24,angle:0,equipment,motion:motion,time:age,face:1,pose:{aiming:s.held,focusRecovering:s.focusRecoveryActive,focusLevel:s.focus,recoveryAge:s.focusRecoveryAge,...armorShellPose(s),...coreMechanismPose(s),...headMechanismPose(s,enemies,{y:p.vy}),attackProgress:s.blade>0?1-Math.min(1,s.blade/12):-1,dashProgress:s.slashAge>=0?Math.min(1,s.slashAge/10):-1,shellAbility:s.shellAbility,tailAbility:s.tailAbility,eyeAbility:s.eyeAbility}});
+  drawSwordWeapon(c,{x:p.x,y:p.y,radius:24,angle:s.slashAngle,active:s.blade>0,sword:s.sword,reach:(s.reach||1)*s.sword.reach,charge:s.swordCharge,equipment,age:s.slashAge,widthScale:(s.precisionShot?.widthScale??1)*(s.inkCutScale??1)*(s.equipment?.dash==='dash-fire'?.9:s.equipment?.dash==='dash-lightning'?.85:1),motion:motion,time:age});c.restore();
   }finally{c.restore();}
 }
 
@@ -11142,7 +11645,7 @@ export function drawShopElementSlash(c,w,h,{equipment={},sword=null,time=0,motio
  if(p.contact)cutFigure(c,'fang',222,99,17,0,0,p.split*8,{hp:1});else foe(c,'fang',222,99,17,0,{hp:1});
  if(p.progress>0&&p.progress<1){drawEquipmentSlash(c,p.x+16,p.y-10,239,91,equipment.slash||'katana',.95,{progress:p.progress,equipment,reducedMotion:!motion});}
  if(!motion||p.phase==='CUT STUDY'){c.globalAlpha=.45;drawEquipmentSlash(c,p.x+16,p.y-10,239,91,equipment.slash||'katana',.65,{progress:.72,equipment,reducedMotion:true});c.globalAlpha=1;}
- drawCubeHero(c,{x:p.x,y:p.y,radius:22,equipment,motion:false,pose:{look:[1,0]}});
+ drawCubeHero(c,{x:p.x,y:p.y,radius:22,equipment,motion,pose:{blink:1,breathe:0,look:[1,0],attackProgress:p.progress>0&&p.progress<1?p.progress:-1}});
  drawSwordWeapon(c,{x:p.x,y:p.y,radius:22,sword:sword||undefined,angle:p.angle,active:true,motion:false,reach:.95});
  if(p.contact&&p.split<.2){c.strokeStyle='#f4e6bd';c.lineWidth=2;c.beginPath();c.moveTo(211,85);c.lineTo(228,109);c.stroke();}
  c.fillStyle=color;c.font='bold 10px monospace';c.textAlign='left';c.fillText((equipment.slash||'katana').toUpperCase()+' / SLASH',20,23);
@@ -11215,12 +11718,15 @@ export function drawShopElementDash(c,w,h,{equipment={},sword=null,time=0,motion
  if(pose.age>=0){
   // motion:true evaluates the production shape at a frozen age for a still
   // sample. No wall-clock/tween input survives in reduced-motion mode.
-  drawElementalDash(c,{x:pose.x,y:pose.y,vx:pose.speed,vy:0,age:pose.age,element,equipment,sword,radius:24,motion:true});
+  // The held study used age21/speed0, which silently failed the production
+  // effect gate. Hold a labelled active reference, with measured pose travel.
+  const reference=pose.phase==='DASH STUDY';
+  drawElementalDash(c,{x:pose.x,y:pose.y,vx:reference?42:pose.speed,vy:0,age:reference?2:pose.age,travel:Math.max(0,pose.x-81),element,equipment,sword,radius:24,motion:true});
  }
  const demoAge=!motion?4:time<300?Math.max(0,time/300*DASH.windup):time<530?DASH.windup+(time-300)/230*DASH.active:DASH.windup+DASH.active+Math.min(1,(time-530)/210)*DASH.recover;
  const shape=dashFor(demoAge,42,0);
  drawCubeDashSmear(c,{x:pose.x,y:pose.y,vx:42,vy:0,age:demoAge,radius:24,equipment,motion});
- c.save();c.translate(pose.x,pose.y);c.scale(shape.sx,shape.sy);drawCubeHero(c,{radius:24,equipment,motion:false,pose:{look:[1,0]}});c.restore();
+ c.save();c.translate(pose.x,pose.y);c.scale(shape.sx,shape.sy);drawCubeHero(c,{radius:24,equipment,motion,pose:{blink:1,breathe:0,look:[1,0],dashProgress:pose.age>=0?Math.min(1,pose.age/10):-1}});c.restore();
  drawSwordWeapon(c,{x:pose.x,y:pose.y,radius:24,sword:sword||undefined,equipment,active:false,motion:false});
  c.fillStyle=color;c.font='bold 11px monospace';c.textAlign='left';c.fillText(element.toUpperCase()+' / DASH',20,24);
  c.fillStyle='#a99cb6';c.font='9px monospace';c.textAlign='right';c.fillText(pose.phase,280,24);
@@ -11400,7 +11906,7 @@ export function drawAbilityShowcase(c,w,h,{equipment={},study={}}={}){
  txt('SEE THE PART. KNOW THE POWER.',24,27,'#92bbbc',11);txt(study.title||'',24,60,'#f0ecdd',26);
  for(let i=0;i<3;i++){c.fillStyle=i===q.phase?'#dced99':'#2c4249';c.fillRect(24+i*204,78,188,3);txt(['01  THE PART','02  USE IT','03  THE PAYOFF'][i],24+i*204,99,i===q.phase?'#e5edc1':'#829e9e',10);}
  c.fillStyle='#1a303a';c.fillRect(24,115,280,205);c.fillStyle='#e3dfd0';c.fillRect(316,115,300,205);
- const pose={blink:1,breathe:0,aiming:on&&['halo','grav'].includes(id),coreLive:true,corePull:id==='grav'&&on,coreRecovering:id==='time'&&on,coreFocus:v.focus,coreChain:on?(id==='echo'?3:id==='riot'?4:0):0,coreDrive:id==='riot'&&result,coreEchoes:id==='echo'&&result?1:0,coreHull:id==='glass'||id==='oni'?1:3,combo:id==='neko'&&on?3:0};
+ const pose={blink:1,breathe:0,headAbility:{kind:equipment.head,active:q.slot==='head'&&on&&(id!=='coil'||result)},aiming:on&&['halo','grav'].includes(id),coreLive:true,corePull:id==='grav'&&on,coreRecovering:id==='time'&&on,coreFocus:v.focus,coreChain:on?(id==='echo'?3:id==='riot'?4:0):0,coreDrive:id==='riot'&&result,coreEchoes:id==='echo'&&result?1:0,coreHull:id==='glass'||id==='oni'?1:3,combo:id==='neko'&&on?3:0};
  drawCubeHero(c,{x:186,y:242,radius:53,equipment,motion:q.motion,time:0,pose});
  txt('FITTED TO YOUR BUILD',39,137,'#9ab8b7',10);
  c.save();c.translate(338,144);
@@ -11809,7 +12315,7 @@ export function drawAimStudy(c,w,h,{study={},equipment={},sword=null}={}){
 /** Eight dash lessons: production trail on the left, actual rule comparison on
  * the right. These diagrams do not simulate a burn/freeze/relay/replay. */
 export function drawDashStudy(c,w,h,{study={},equipment={},sword=null}={}){
- const q=study.dash;if(!q)return;if(q.ember){drawEmberLesson(c,w,h,{study,equipment,sword});return;}if(q.frost){drawFrostLesson(c,w,h,{study,equipment,sword});return;}if(q.void){drawVoidLesson(c,w,h,{study,equipment,sword});return;}const on=q.phase>0,a=q.progress,id=q.id;
+ const q=study.dash;if(!q)return;if(q.ember){drawEmberLesson(c,w,h,{study,equipment,sword});return;}if(q.frost){drawFrostLesson(c,w,h,{study,equipment,sword});return;}if(q.void){drawVoidLesson(c,w,h,{study,equipment,sword});return;}if(q.reprise){drawRepriseLesson(c,w,h,{study,equipment,sword});return;}if(q.volt){drawVoltLesson(c,w,h,{study,equipment,sword});return;}const on=q.phase>0,a=q.progress,id=q.id;
  c.save();try{
  c.fillStyle='#10212b';c.fillRect(0,0,w,h);c.scale(w/640,h/400);
  const text=(s,x,y,color='#dce5d5',size=12)=>{c.fillStyle=color;c.font=`${size}px sans-serif`;c.textAlign='left';c.fillText(s,x,y);};
@@ -11826,18 +12332,10 @@ export function drawDashStudy(c,w,h,{study={},equipment={},sword=null}={}){
   stroke([[340,179],[340+214*a,179]],'#dfe7ce',2);stroke([[340,232],[340+214*a,232]],'#e9edb6',2);
   label('USUAL LANE',334,158);label(`FARTHER OUT: +${Math.round((q.farGain-1)*100)}% WIDTH`,334,273);
   label(q.nearGain<1.119?`CLOSE PASS: +${Math.round((q.nearGain-1)*100)}% / SHARED LIMIT`:'CLOSE PASS: SAME +12% WIDTH',334,298);
- }else if(id==='dash-lightning'){
-  label('CUT WHILE MOVING AT SPEED 18+',334,141);
-  stroke([[340,171],[412,171],[400,162],[424,171],[400,180]],green,3);
-  text(`${Math.round(100*q.baseScore)} → ${Math.round(100*(on?q.score:q.baseScore))}`,334,232,dark,32);
-  label(q.scorePoints?`SCORE BONUS +${q.scorePoints}%`:'SCORE BONUS ALREADY AT LIMIT',334,271);
-  label(id==='dash-lightning'?'NO EXTRA ZAP OR EXTRA SPEED':'NO PULL OR EXTRA ARMOR DAMAGE',334,300);
  }else if(id==='dash-water'){
   label('RELEASE AIM / FOCUS RETURNS',334,141);label('USUAL RECOVERY',334,178);bar(334,190,q.without,muted);label('WITH TIDE',334,233);bar(334,245,q.focus,green);
   label(q.recovery?`RECOVERY BONUS +${q.recovery}%`:'RECOVERY ALREADY AT ITS LIMIT',334,277);label('NO EXTRA PUSH OR REBOUND FORCE',334,301);
- }else if(id==='dash-echo'){
-  label('MORE TIME BETWEEN COMBO KILLS',334,141);label('USUAL COMBO WINDOW',334,178);bar(334,190,.65,muted);label('WITH ECHO',334,233);bar(334,245,.65+(on?q.grace/60*a:.0),green);
-  label(q.grace?`ABOUT +${Math.round(q.grace/60*100)/100}s TO KEEP THE COMBO`:'COMBO BONUS ALREADY AT LIMIT',334,277);label('AFTERIMAGES DO NOT ATTACK AGAIN',334,301);
+
  }else{
   label('YOUR FREE COMPLETE BASELINE',334,141);drawCubeHero(c,{x:449,y:214,radius:32,equipment,motion:false,time:0,pose:{blink:1}});
   stroke([[344,272],[566,272]],green,3);label('NORMAL SPEED / NORMAL CUT / FREE AIM',334,300);
@@ -11856,6 +12354,15 @@ export function drawEmberBurn(c,{x=0,y=0,radius=20,status=null,now=0,motion=true
  seam(c,[[-r*.57,-r*.64],[-r*.29,-r*.49],[-r*.38,-r*.18]],'#f7ad79',1.6);
  seam(c,[[r*.35,r*.64],[r*.57,r*.39],[r*.45,r*.13]],'#ffd3a1',1.6);
  c.fillStyle='#ffb77a';c.fillRect(-2,-r*.83,4,3);
+ if(motion&&Number.isFinite(status.born)){
+  const next=Number.isFinite(status.next)?status.next:status.expires,anticipation=1-clamp((next-now)/6,0,1);
+  for(let i=0;i<3;i++){
+   const a=-Math.PI*.85+i*Math.PI*.36,cs=Math.cos(a),sn=Math.sin(a),flicker=Math.sin((now-status.born)*.65+i*2.1),h=3+anticipation*5+flicker;
+   const xx=cs*r*.85,yy=sn*r*.85;c.globalAlpha=.48+anticipation*.22;
+   c.beginPath();c.moveTo(xx-sn*2,yy+cs*2);c.quadraticCurveTo(xx+cs*h-sn*3,yy+sn*h+cs*3,xx+cs*(h+2),yy+sn*(h+2));c.quadraticCurveTo(xx+cs*h+sn*2,yy+sn*h-cs*2,xx+sn*2,yy-cs*2);c.fill();
+  }
+  c.globalAlpha=1;
+ }
  if(motion&&now-status.born<4){const age=now-status.born;c.globalAlpha*=1-age/4;seam(c,[[-r*.68,-r*.8],[-r*.15,-r*1.03],[r*.5,-r*.77]],'#ffe0ac',2);for(let i=0;i<2;i++)c.fillRect((i?1:-1)*(r*.6+age*1.3),-r-age*1.8,2,2);}
  }finally{c.restore();}
 }
@@ -11923,8 +12430,10 @@ export function drawFrostStatus(c,{x=0,y=0,radius=20,angle=0,status=null,now=0,m
  const r=radius+4,freeze=status.kind==='freeze',age=now-status.born;
  c.save();try{c.translate(x,y);c.rotate(angle);c.lineJoin='miter';c.lineCap='butt';
  if(active){
+  if(motion&&age>=0&&age<5){const ease=1-(1-age/5)**3;c.save();c.globalAlpha*=.25+.75*ease;c.scale(1+(1-ease)*.22,1+(1-ease)*.22);}
   if(freeze){seam(c,[[-r*.78,-r*.7],[r*.2,-r*.7],[r*.92,0],[r*.2,r*.7],[-r*.78,r*.7],[-r*.78,-r*.7]],'#bce1e4',1.8);}
   else{for(const side of [-1,1])seam(c,[[side*r*.62,-r*.86],[side*r*.92,-r*.62],[side*r*.92,r*.62],[side*r*.62,r*.86]],'#9cc8d8',1.8);}
+  if(motion&&age>=0&&age<5)c.restore();
   if(labels){c.save();c.rotate(-angle);c.fillStyle='#d7e8df';c.font='8px sans-serif';c.textAlign=freeze?'center':'left';c.fillText(freeze?'FROZEN':'SLOWED',freeze?0:r+7,freeze?-r-17:3);c.restore();}
   // A shape-coded stop notch never covers the enemy's active mouth/plates.
   c.save();c.rotate(-angle);seam(c,[[-5,-r-5],[-5,-r-11]],'#e4f1df',2);seam(c,[[freeze?1:5,-r-5],[freeze?1:1,-r-11]],'#e4f1df',2);c.restore();
@@ -11970,7 +12479,7 @@ export function drawFrostLesson(c,w,h,{study={},equipment={},sword=null}={}){
  text('SLOWED EXAMPLE / NO EXTRA DAMAGE OR AIM DISCOUNT',24,389,'#8baab1',10);
  // Production construction is present without obscuring the evidence lanes.
  drawCubeHero(c,{x:345,y:173,radius:18,equipment,motion:false,time:0,pose:{blink:1}});
- if(active&&now<3)drawFrostLaunch(c,{x:345,y:173,vx:-30,vy:0,age:now,radius:18,motion:f.motion});
+ if(active&&now<3)drawElementalDash(c,{x:345,y:173,vx:-30,vy:0,age:now,radius:18,motion:f.motion,equipment:{...equipment,dash:'dash-ice'}});
  }finally{c.restore();}
 }
 
@@ -12000,9 +12509,15 @@ export function drawVoidField(c,{field=null,now=0,motion=true,scale=1,labels=tru
   if(outer){c.globalAlpha=.8;ring(r,'#c0b3da',1.5,8);}
   if(inner){c.globalAlpha=.95;ring(core,'#181428',4,1);ring(core,'#eee2f6',1.9,1);
   for(let i=0;i<4;i++){const a=i*TAU/4,cs=Math.cos(a),sn=Math.sin(a);seam(c,[[cs*(core-5)-sn*3,sn*(core-5)+cs*3],[cs*core,sn*core],[cs*(core-5)+sn*3,sn*(core-5)-cs*3]],'#ddd1ed',1.2*unit);}
+  if(motion)for(let i=0;i<3;i++){
+   const progress=clamp(age/Math.max(.01,field.expires-field.born),0,1),a=i*TAU/3+progress*.7,rr=core*(.8-.25*progress);
+   const cs=Math.cos(a),sn=Math.sin(a);c.globalAlpha=.35+progress*.25;
+   seam(c,[[cs*rr-sn*3*unit,sn*rr+cs*3*unit],[cs*(rr-4*unit),sn*(rr-4*unit)],[cs*rr+sn*3*unit,sn*rr-cs*3*unit]],'#ccbbe0',1.3*unit);
+  }
+  c.globalAlpha=.95;
   // A small timer seam counts actual time to the one pending pulse.
   const progress=clamp(age/Math.max(.01,field.expires-field.born),0,1);c.strokeStyle='#bdb0df';c.lineWidth=2*unit;c.beginPath();c.arc(0,0,core-5,-Math.PI/2,-Math.PI/2+TAU*progress);c.stroke();}
-  if(outer)for(const t of (field.targets||[]).slice(0,3))if(t.moved>0){const dx=t.x-field.x,dy=t.y-field.y,d=Math.hypot(dx,dy);if(d<1)continue;const u=motion?clamp((age%4)/4,0,1):.5,px=dx*(.92-.05*u),py=dy*(.92-.05*u),ux=dx/d,uy=dy/d;c.globalAlpha=.6;seam(c,[[px+ux*5-uy*2,py+uy*5+ux*2],[px,py],[px+ux*5+uy*2,py+uy*5-ux*2]],'#b7acd4',1.2*unit);}
+
   if(labels){c.globalAlpha=.85;c.font=`${8*unit}px sans-serif`;c.textAlign='center';c.fillStyle='#c8bedb';if(outer)c.fillText('PULL',0,-r-5*unit);if(inner){c.textAlign='left';c.fillText('CORE HIT',core+8*unit,core+12*unit);}}
  }else{
   const t=clamp(after/8,0,1);c.globalAlpha=(1-t)*.55;if(outer)ring(r,'#9387b2',1,8);
@@ -12039,7 +12554,7 @@ export function drawVoidLesson(c,w,h,{study={},equipment={},sword=null}={}){
  const inner=s.targets.find(e=>e.id==='inner'),outer=s.targets.find(e=>e.id==='outer');
  text(active&&phase===2?'INNER TARGET: 1 HIT':'SMALL CORE: HIT PENDING',412,242,ink,11);text(`OUTER TARGET: ${active&&phase===2?outer.hp:1} HEALTH / NO HIT`,412,264,ink,10);
  text('BOSSES RESIST / WALLS BLOCK',412,293,ink,10);text('READY AGAIN AFTER 0.6s',412,315,ink,10);
- drawCubeHero(c,{x:57,y:149,radius:19,equipment,motion:false,time:0,pose:{blink:1}});if(active&&s.now<4)drawVoidLaunch(c,{x:57,y:149,vx:30,vy:0,age:s.now,radius:19,motion:q.motion});
+ drawCubeHero(c,{x:57,y:149,radius:19,equipment,motion:false,time:0,pose:{blink:1}});if(active&&s.now<4)drawElementalDash(c,{x:57,y:149,vx:30,vy:0,age:s.now,radius:19,motion:q.motion,equipment:{...equipment,dash:'dash-void'}});
  text(phase===2?'Only the small core strikes. The outer ring never hurts.':'Draw them inward. The small core is the danger zone.',24,367,'#ded1e8',17);
  text('SLOWED REAL FIELD / NO EXTRA ARMOR SCORE / NO PROTECTION OR PROJECTILE ABSORPTION',24,390,'#9eacc2',9);
  }finally{c.restore();}
@@ -12050,4 +12565,1758 @@ export function drawVoidLesson(c,w,h,{study={},equipment={},sword=null}={}){
 export function drawVoidReadiness(c,{x=0,y=0,radius=22,readyIn=0}={}){
  if(![x,y,radius,readyIn].every(Number.isFinite)||radius<=0)return;
  const amount=1-clamp(readyIn/36,0,1);c.save();try{c.translate(x+radius+6,y+radius*.4);c.fillStyle='#1b192b';c.fillRect(-2,-3,7,19);for(let i=0;i<3;i++){c.fillStyle=amount>=(3-i)/3?'#d8cbe8':'#75658b';c.fillRect(0,i*5,3,3);}}finally{c.restore();}
+}
+
+/** Reprise is an old-world cutting lane, not the stationary Core Echo blade
+ * or a sword's free-flying contour. Every endpoint comes from the ledger. */
+export function drawReprisePath(c,{ledger=null,now=0,motion=true,scale=1,layer='all'}={}){
+ if(!ledger||!Number.isFinite(now))return;
+ const unit=1/Math.max(.15,scale);
+ const render=(record,live)=>{
+  if(!record||record.path.length<2)return;const pts=record.path,age=now-record.due,dissolve=live&&record.phase==='dissolve';
+  if(live&&(age<0||age>=6))return;
+  c.save();try{
+   c.lineJoin='bevel';c.lineCap='butt';
+   const stroke=(offset,color,width,dash=[])=>{c.strokeStyle=color;c.lineWidth=width;c.setLineDash(dash);c.beginPath();for(let i=0;i<pts.length;i++){
+    const a=pts[Math.max(0,i-1)],b=pts[Math.min(pts.length-1,i+1)],d=Math.hypot(b.x-a.x,b.y-a.y)||1,x=pts[i].x-(b.y-a.y)/d*offset,y=pts[i].y+(b.x-a.x)/d*offset;if(i)c.lineTo(x,y);else c.moveTo(x,y);
+   }c.stroke();};
+   if(dissolve){
+    // Exactly two dead notches; never a lingering damaging plane or clone.
+    c.globalAlpha=Math.max(0,1-(age-3)/3)*.55;
+    for(const p of [pts[0],pts.at(-1)])seam(c,[[p.x-3*unit,p.y-3*unit],[p.x+3*unit,p.y+3*unit]],'#b4c8c7',1.2*unit);
+    return;
+   }
+   if(live){
+    // The real lane stays legible without painting surviving bodies away.
+    c.globalAlpha=.3;stroke(0,'#afefdd',record.width);
+    for(const side of [-1,1]){c.globalAlpha=.9;stroke(side*record.width/2,'#122f35',3*unit);stroke(side*record.width/2,'#b7efdc',1.2*unit);}
+    c.globalAlpha=.95;stroke(0,'#f4ffe3',1.2*unit);
+    for(const h of record.hits||[]){seam(c,[[h.x-5*unit,h.y-8*unit],[h.x+5*unit,h.y+8*unit]],'#172d33',4*unit);seam(c,[[h.x-5*unit,h.y-8*unit],[h.x+5*unit,h.y+8*unit]],'#f1ffbc',1.8*unit);}
+   }else{
+    c.globalAlpha=.72;stroke(-record.width/2,'#8eb5bc',1.1*unit,[3*unit,3*unit]);stroke(record.width/2,'#8eb5bc',1.1*unit,[3*unit,3*unit]);
+    c.setLineDash([]);const p=pts[0],progress=clamp((now-record.born)/(record.due-record.born),0,1);
+    seam(c,[[p.x-4*unit,p.y-12*unit],[p.x+8*unit,p.y-12*unit],[p.x+8*unit,p.y-8*unit]],'#19333c',3*unit);
+    seam(c,[[p.x-4*unit,p.y-12*unit],[p.x+(-4+12*progress)*unit,p.y-12*unit]],'#c2e5de',1.4*unit);
+   }
+  }finally{c.restore();}
+ };
+ if(layer!=='replay')render(ledger.pending,false);
+ if(layer!=='pending')render(ledger.replay,true);
+}
+
+/** Small source offset only. No duplicated hero silhouettes or fake blades. */
+export function drawRepriseLaunch(c,{x=0,y=0,vx=0,vy=0,angle=null,age=-1,radius=22,motion=true}={}){
+ if(!motion||![x,y,vx,vy,age,radius].every(Number.isFinite)||age<0||age>=7||radius<=0||Math.hypot(vx,vy)<4)return;
+ c.save();try{c.translate(x,y);c.rotate(Number.isFinite(angle)?angle:Math.atan2(vy,vx));c.globalAlpha=(1-age/7)*.8;
+ const r=Math.min(30,radius);seam(c,[[-r*.85,-r*.5],[-r*1.17,-r*.5],[-r*1.17,r*.5],[-r*.85,r*.5]],'#19363d',4);seam(c,[[-r*.85,-r*.5],[-r*1.17,-r*.5],[-r*1.17,r*.5],[-r*.85,r*.5]],'#c5e9df',1.4);
+ }finally{c.restore();}
+}
+export function drawRepriseReadiness(c,{x=0,y=0,radius=22,ready=true}={}){
+ if(![x,y,radius].every(Number.isFinite))return;c.save();try{c.translate(x+radius+7,y+radius*.3);c.strokeStyle='#152c34';c.lineWidth=4;c.strokeRect(0,0,5,11);c.strokeStyle=ready?'#d5f3df':'#77979f';c.lineWidth=1.4;c.strokeRect(0,0,5,11);if(!ready)seam(c,[[0,5],[5,5]],'#d5e7df',1.3);}finally{c.restore();}
+}
+
+/** Enlarged shared-scale path experiment, actual health receipts, and explicit
+ * safe current-player neighborhood. Cycles through arrival, miss and wall. */
+export function drawRepriseLesson(c,w,h,{study={},equipment={},sword=null}={}){
+ const q=study.dash.reprise,s=q.sample,live=s.now>=12,ink='#2d4651';
+ c.save();try{c.fillStyle='#10232d';c.fillRect(0,0,w,h);c.scale(w/640,h/400);
+ const text=(v,x,y,col='#dbe8df',size=12)=>{c.font=`${size}px sans-serif`;c.fillStyle=col;c.textAlign='left';c.fillText(v,x,y);};
+ text('REPRISE / LEAVE A CUT IN THE PAST',24,25,'#9fc2c5',11);text(study.title||'Echo Dash',24,59,'#e9f1df',27);
+ for(let i=0;i<3;i++){c.fillStyle=i===q.phase?'#b7e5d5':'#35515c';c.fillRect(24+i*204,78,188,3);text(['01  TRAVEL / STORE','02  WAIT / OLD PATH','03  REPLAY ONCE'][i],24+i*204,99,i===q.phase?'#d6f3df':'#88a7b0',10);}
+ c.fillStyle='#1d3542';c.fillRect(24,115,366,216);c.fillStyle='#e1e5d7';c.fillRect(402,115,214,216);
+ // The path is enlarged, but its width/targets use exactly the same transform.
+ c.save();c.translate(62,250);c.scale(1.8,1.8);
+ c.strokeStyle='#4f6d79';c.lineWidth=.6;c.setLineDash([2,4]);c.beginPath();c.moveTo(0,0);c.lineTo(140,0);c.stroke();c.setLineDash([]);
+ drawReprisePath(c,{ledger:s.ledger,now:s.now,motion:q.motion,scale:1.8,layer:'pending'});
+ for(const wall of s.geometry){c.fillStyle='#8eabb3';c.fillRect(wall.x,wall.y,wall.w,wall.h);seam(c,[[wall.x,wall.y],[wall.x,wall.y+wall.h]],'#d1ded8',1);}
+ for(const e of s.targets){if(e.hp>0)foe(c,e.kind,e.x,e.y,e.r,0,{hp:e.hp,mode:'idle'});else{seam(c,[[e.x-3,e.y-3],[e.x+3,e.y+3]],'#e0eec9',1);seam(c,[[e.x+3,e.y-3],[e.x-3,e.y+3]],'#e0eec9',1);}}
+ drawReprisePath(c,{ledger:s.ledger,now:s.now,motion:q.motion,scale:1.8,layer:'replay'});
+ drawCubeHero(c,{x:s.hero.x,y:s.hero.y,radius:11,equipment,motion:false,time:0,pose:{blink:1}});
+ c.restore();
+ text('OLD TRAVELED PATH',40,300,'#b9ded7',10);text('YOU NOW',308,123,'#d5e8d4',9);text('SAFE HERE',269,177,'#88a9b5',9);
+ text(['LATE ARRIVAL','A REAL MISS','WALL STOPS THE CUT'][q.scene],418,141,ink,12);
+ text(live?'REPLAY: 1 HIT EACH':'AFTER 0.2s / ONE CUT',418,166,ink,11);
+ const old=s.targets[0],late=s.targets[1];
+ text(`SURVIVOR: ${old.hp} HEALTH`,418,193,ink,11);text(`LATE ARRIVAL: ${late.hp} HEALTH`,418,216,ink,11);
+ text('BESIDE YOU: NO HIT',418,239,ink,11);text('UP TO 2 / OLD PATH ONLY',418,265,ink,10);
+ text(s.busy===false?'SECOND DASH: SLOT BUSY':'ONE PENDING REPLAY',418,290,ink,10);text('NO QUEUE / NO LOST CUT',418,311,ink,9);
+ text(live?q.scene===2?'The wall clips the stored path. The far target stays safe.':q.scene===1?'Miss the old path and the delayed cut misses too.':'The old path strikes. Your current position is not the source.':'Watch the outlined path, then the single bright replay.',24,357,'#d5edcc',15);
+ text('DASH: TRAVELED LANE   /   CORE ECHO: FIXED BLADE   /   SWORD ECHO: ITS OWN ATTACK',24,381,'#9cb8be',9);
+ text('SLOWED REAL REPLAY / NO REWIND, HOMING, EDGE REFILL OR EXTRA COMBO TIME',24,395,'#829fa9',8);
+ }finally{c.restore();}
+}
+
+/** Compact split terminal and authored launch lance, never a homing bolt.
+ * Only measured traveled distance can reveal the two separated rear rails. */
+export function drawVoltLaunch(c,{x=0,y=0,vx=0,vy=0,angle=null,age=-1,travel=0,radius=22,motion=true}={}){
+ if(!motion||![x,y,vx,vy,age,travel,radius].every(Number.isFinite)||age<0||age>=10||radius<=0||Math.hypot(vx,vy)<4)return;
+ const a=Number.isFinite(angle)?angle:Math.atan2(vy,vx),r=Math.min(30,radius),fade=(1-age/10)**2,length=Math.min(64,Math.max(8,travel*.5));
+ c.save();try{c.translate(x,y);c.rotate(a);c.globalAlpha=fade*.9;
+ const edge=(pts,width=1.5)=>{seam(c,pts,'#243342',width+2.6);seam(c,pts,'#e5ef9d',width);};
+ edge([[-r*.15,-r*.45],[r*.85,-r*.2],[r*1.75,0],[r*.85,r*.2],[-r*.15,r*.45]],1.6);
+ for(const side of [-1,1]){edge([[-r*.65,side*r*.6],[-r*.9,side*r*.6],[-r*.9,side*r*.3]],1.2);
+ if(travel>10)edge([[-r-5,side*r*.2],[-r-length*.55,side*r*.2]],1.1);
+ if(travel>45)edge([[-r-length*.75,side*r*.2],[-r-length,side*r*.2]],1);}
+ }finally{c.restore();}
+}
+/** One actual conduction network, at most two accepted endpoints. No ambient
+ * buzz, target following, range ring or surviving decoration hit authority. */
+export function drawVoltArc(c,{conduction=null,now=0,motion=true,scale=1}={}){
+ const arc=conduction?.arc;if(!arc||!Number.isFinite(now)||now<arc.born||now>=arc.expires||!arc.links.length)return;
+ const unit=1/Math.max(.15,scale),fade=motion?1-(now-arc.born)/(arc.expires-arc.born):1;
+ c.save();try{c.globalAlpha=fade*.95;c.lineCap='butt';
+ for(const link of arc.links.slice(0,2)){
+  const {origin:o}=arc,t=motion?.28+.44*clamp((now-arc.born)/(arc.expires-arc.born),0,1):.55,dx=link.x-o.x,dy=link.y-o.y,d=Math.hypot(dx,dy)||1,nx=-dy/d,ny=dx/d;
+  const pts=[[o.x,o.y],[o.x+dx*t,o.y+dy*t],[o.x+dx*t+nx*2*unit,o.y+dy*t+ny*2*unit],[link.x,link.y]];
+  seam(c,pts,'#1b2b3a',4.6*unit);seam(c,pts,link.role==='coil'?'#c6e6ed':'#e8f7a8',1.7*unit);
+  seam(c,[[link.x-3*unit,link.y-5*unit],[link.x+3*unit,link.y+5*unit]],'#efffc0',1.5*unit);
+ }
+ }finally{c.restore();}
+}
+export function drawVoltReadiness(c,{x=0,y=0,radius=22,ready=true}={}){
+ if(![x,y,radius].every(Number.isFinite))return;c.save();try{c.translate(x+radius+7,y+radius*.3);for(const side of [-1,1]){const pts=[[side*4,0],[side*4,8],[side,8]];seam(c,pts,'#1c303b',4);seam(c,pts,ready?'#e7efac':'#6d8790',1.5);}}finally{c.restore();}
+}
+
+/** Large actual-flight and actual-conduction cutaway. The wall/miss/Coil
+ * receipts come from the source ledger, not an art-owned damage timer. */
+export function drawVoltLesson(c,w,h,{study={},equipment={},sword=null}={}){
+ const q=study.dash.volt,s=q.sample,ink='#31474c',active=q.phase===2;
+ c.save();try{c.fillStyle='#10232c';c.fillRect(0,0,w,h);c.scale(w/640,h/400);
+ const text=(v,x,y,col='#dbe7df',size=12)=>{c.fillStyle=col;c.font=`${size}px sans-serif`;c.textAlign='left';c.fillText(v,x,y);};
+ text('ARC LANCE / SPEED HAS A SHARPER EDGE',24,25,'#bfcea7',11);text(study.title||'Volt Dash',24,59,'#edf2d6',27);
+ for(let i=0;i<3;i++){c.fillStyle=i===q.phase?'#dbeaa1':'#344e54';c.fillRect(24+i*204,78,188,3);text(['01  TERMINAL READY','02  BURST / NARROW CUT','03  FIRST-HIT ARC'][i],24+i*204,99,i===q.phase?'#e2edb5':'#8aa6ac',10);}
+ c.fillStyle='#1c3540';c.fillRect(24,115,366,225);c.fillStyle='#e1e4d3';c.fillRect(402,115,214,225);
+ text('SAME RELEASE / MEASURED FLIGHT',38,133,'#a5bec0',9);
+ const travel=.55,baseX=45+q.baseline.x*travel,voltX=45+q.flight.x*travel;
+ seam(c,[[44,155],[360,155]],'#4e6a70',1);seam(c,[[44,177],[360,177]],'#4e6a70',1);
+ c.fillStyle='#78929b';c.fillRect(baseX-3,151,6,8);c.fillStyle='#e7eda6';c.fillRect(voltX-3,173,6,8);
+ text('USUAL',316,151,'#a4b8bc',8);text('VOLT',316,173,'#e5eeb5',8);
+ c.save();c.translate(85,253);c.scale(1.4,1.4);
+ for(const wall of s.geometry){c.fillStyle='#839ca3';c.fillRect(wall.x,wall.y,wall.w,wall.h);}
+ for(const e of s.targets){if(e.hp>0)foe(c,e.kind,e.x,e.y,9,0,{hp:e.hp,mode:'idle'});else{seam(c,[[e.x-3,e.y-3],[e.x+3,e.y+3]],'#dceca6',1);seam(c,[[e.x+3,e.y-3],[e.x-3,e.y+3]],'#dceca6',1);}}
+ drawVoltArc(c,{conduction:s.ledger,now:s.now,motion:q.motion,scale:1.4});
+ drawCubeHero(c,{x:-23,y:0,radius:11,equipment:q.scene===2?{...equipment,head:'coil'}:equipment,motion:false,time:0,pose:{blink:1}});
+ if(q.phase===1)drawElementalDash(c,{x:-23,y:0,vx:30,age:2,travel:70,radius:11,motion:q.motion,equipment:{...equipment,dash:'dash-lightning'}});c.restore();
+ text('DIRECT HIT',42,285,'#c0d2c8',9);text('WALL BLOCKS',112,335,'#a7c1c1',9);text('TOO FAR',333,231,'#9eb7bd',8);
+ text(['ONE NEARBY ARC','BLOCKED / NO LINK','COIL / SHARED VICTIMS'][q.scene],418,141,ink,11);
+ text('BURST +12%',418,168,ink,15);text('0.07s BURST / 0.1s EASE',418,187,ink,9);
+ text('CUTTING LANE −15%',418,211,ink,12);
+ c.fillStyle='#a7b7ad';c.fillRect(418,222,174,9);c.fillStyle='#577574';c.fillRect(418,236,174*.85,9);
+ const near=s.targets.find(e=>e.id==='near'),far=s.targets.find(e=>e.id==='coil');
+ text(`NEAR ENEMY: ${near.hp} HEALTH`,418,266,ink,10);text(`FAR ENEMY: ${far.hp} HEALTH`,418,286,ink,10);text(q.scene===2?'TWO DIFFERENT TARGETS':'ONE EXTRA HIT / NO CHAIN',418,307,ink,10);
+ text('BOSSES RESIST / WALLS BLOCK',418,328,ink,9);
+ text(active?q.scene===1?'No clear link, no shock. Electricity cannot cross the wall.':q.scene===2?'Volt and Coil share one contact. Neither victim is hit twice.':'The hit connects. Only the accepted neighbor receives the arc.':'A brief burst rewards a precise, narrower cut.',24,363,'#e1edbd',15);
+ text('FASTER BANK / HYPER MOMENTUM KEPT / NO HOMING, EDGE REFILL OR SPEED-SCORE BONUS',24,386,'#9eb8bd',9);
+ text('SLOWED ISOLATED FLIGHT + REAL CONDUCTION RECEIPTS / FREE PREVIEW',24,398,'#819fa9',8);
+ }finally{c.restore();}
+}
+
+/** Shared equipment, one changed slot. Power studies keep their canonical rules
+ * and the same story clock; this view never manufactures a stat delta. */
+export function drawPartComparison(c,w,h,{before={},after={},slot='head',mode='look',beforeStudy=null,afterStudy=null,beforeSword=null,afterSword=null,frame={},surface=null}={}){
+ if(!c||!(w>0&&h>0))return;
+ c.save();try{c.scale(w/640,h/400);c.fillStyle='#e8e9df';c.fillRect(0,0,640,400);
+ for(const [i,eq,study,sword]of [[0,before,beforeStudy,beforeSword],[1,after,afterStudy,afterSword]]){
+  const x=10+i*320;c.save();c.beginPath();c.roundRect(x,10,300,380,12);c.clip();
+  c.fillStyle=i?'#e8ebdc':'#e8e9df';c.fillRect(x,10,300,380);
+  c.fillStyle=i?'#6b804b':'#a4afae';c.fillRect(x,10,300,3);
+  if(mode==='power'&&study){
+   c.save();c.translate(x-42,46);drawVisualShopStory(c,384,280,{equipment:eq,study,sword,frame:{...frame,externalRail:true},surface});c.restore();
+  }else{
+   c.fillStyle='#152b3818';c.beginPath();c.ellipse(x+152,242,100,19,0,0,TAU);c.fill();
+   drawCubeHero(c,{x:x+166,y:148,radius:65,equipment:eq,motion:false,pose:{blink:1,breathe:0}});
+   c.save();c.translate(x+12,261);drawShopPartPortrait(c,276,118,{equipment:eq,slot});c.restore();
+   c.strokeStyle=i?'#617846':'#8b9b99';c.lineWidth=1;c.beginPath();c.moveTo(x+150,242);c.lineTo(x+150,256);c.stroke();
+  }
+  c.restore();
+ }
+ c.strokeStyle='#69818b';c.lineWidth=1;c.beginPath();c.moveTo(315,200);c.lineTo(325,200);c.moveTo(321,196);c.lineTo(325,200);c.lineTo(321,204);c.stroke();
+ }finally{c.restore();}
+}
+
+/** Shop-only text-free drawing adapter. ARIA and optional rule sheets live in UI. */
+const visualContexts=new WeakMap();
+export function visualOnlyContext(context){
+ if(visualContexts.has(context))return visualContexts.get(context);
+ const methods=new Map(),view=new Proxy(context,{get(target,key){if(key==='fillText'||key==='strokeText')return ()=>{};const v=Reflect.get(target,key,target);if(typeof v!=='function')return v;if(!methods.has(key))methods.set(key,v.bind(target));return methods.get(key);},set(target,key,value){return Reflect.set(target,key,value,target);}});
+ visualContexts.set(context,view);return view;
+}
+/** Wordless product theatre. Real fitted parts, restrained contact receipts,
+ * and shared rule-derived studies. No shop scene can mutate a run or profile. */
+export function drawVisualShopStory(c,w,h,{equipment={},study={},sword=null,frame={},surface=null}={}){
+ const beat=frame.beat||0,p=clamp(frame.progress||0,0,1),active=beat>0,result=beat===2;
+ const q=study.showcase,v=q?.values||{},id=study.id,slot=study.slot;
+ const green='#526b38',cyan='#2d727c',red='#b6465e',gold='#8c6e36';
+ c.save();try{c.scale(w/640,h/400);c.fillStyle='#e8e9df';c.fillRect(0,0,640,400);
+ const ln=(points,color=cyan,width=2)=>seam(c,points,color,width);
+ const ring=(x,y,r,color,width=2)=>{c.strokeStyle=color;c.lineWidth=width;c.beginPath();c.arc(x,y,r,0,TAU);c.stroke();};
+ const dot=(x,y,r,color)=>{c.fillStyle=color;c.beginPath();c.arc(x,y,r,0,TAU);c.fill();};
+ const arrow=(x,y,color=cyan)=>ln([[x-8,y-6],[x,y],[x-8,y+6]],color,2);
+ const enemy=(x,y,r=24,kind='fang')=>foe(c,kind,x,y,r,Math.PI,{hp:1,time:0});
+ const burst=(x,y,color=gold)=>{for(let i=0;i<7;i++){const a=i*TAU/7,d=12+Math.min(.8,p)*16;ln([[x+Math.cos(a)*d,y+Math.sin(a)*d],[x+Math.cos(a)*(d+8),y+Math.sin(a)*(d+8)]],color,2);}};
+ const coins=(x,y,n=3)=>{for(let i=0;i<n;i++){const xx=x+(i%3)*24,yy=y-Math.floor(i/3)*25;ring(xx,yy,8,gold,2);ln([[xx,yy-3],[xx,yy+3]],gold,2);}};
+ const hero=(x,y,r=42,pose={})=>drawCubeHero(c,{x,y,radius:r,equipment,motion:frame.motion===true,time:frame.motion?(frame.time||0)/16.667:0,pose:{blink:1,breathe:0,coreLive:true,headAbility:{kind:equipment.head,active:slot==='head'&&active&&(id!=='coil'||result)},...pose}});
+ const bar=(x,y,a,color=cyan)=>{c.fillStyle='#233d45';c.fillRect(x,y,134,8);c.fillStyle=color;c.fillRect(x,y,134*clamp(a,0,1),8);};
+ // One soft contact shadow is enough to seat the illustration.
+ c.fillStyle='#17303e12';c.beginPath();c.ellipse(320,319,169,6,0,0,TAU);c.fill();
+ if(!active){
+  if(['head','core','eyes','tail'].includes(slot)&&id!=='none'){c.save();c.translate(-8,52);drawShopPartPortrait(c,395,248,{equipment,slot});c.restore();hero(480,245,74);}
+  else if(slot==='radar'||slot==='trajectory'){c.save();c.translate(100,71);drawSensorPreview(visualOnlyContext(c),440,250,{slot,level:sensorTier(id,slot),time:0,motion:false});c.restore();}
+  else if(slot==='pointer'){c.save();c.translate(70,72);drawDragArrowPreview(visualOnlyContext(c),500,260,{equipment,sword,power:.7});c.restore();}
+  else if(slot==='dash'||slot==='slash'){c.save();c.translate(60,67);const draw=slot==='dash'?drawShopElementDash:drawShopElementSlash;draw(visualOnlyContext(c),520,275,{equipment,sword,time:440,motion:false});c.restore();}
+  else{c.save();c.translate(320,236);c.rotate(frame.motion?Math.sin(frame.time*.002)*.025:0);hero(0,0,82);c.restore();}
+ }else if(q){
+  const a=result?1:p,travel=id==='viper'?Math.min(1,a*v.speed):id==='crown'?a*v.speed:a,x=150+travel*175;
+  if(id==='halo'){
+   ln([[220,105],[220,293]],'#60777b',1);ln([[425,105],[425,293]],'#60777b',1);
+   c.globalAlpha=.22;hero(220,146+a*115,34);c.globalAlpha=1;hero(425,146+a*115*v.gravity,47,{aiming:true});
+   for(let i=0;i<3;i++)arrow(219,175+i*28,'#70878a');ring(425,116+a*115*v.gravity,20,gold,2);
+  }else if(['time','standard'].includes(id)){
+   hero(220,245,63,{coreRecovering:id==='time',coreFocus:v.focus,coreHull:3});
+   if(id==='time'){if(!result&&p<.4){enemy(405,170);drawEquipmentSlash(c,273,240,399,173,equipment.slash||'razor',.8,{progress:.5,reducedMotion:true,equipment});}else burst(405,170,red);bar(396,223,v.without,'#69818a');bar(396,252,v.focus,cyan);arrow(470,200);}
+   else{for(let i=0;i<3;i++){dot(420+i*29,210,8,green);c.fillStyle=gold;c.fillRect(412+i*29,248,18,6);}}
+  }else if(id==='grav'){
+   hero(240,251,61,{aiming:true,corePull:true});const ey=145+(48-(v.pullY??48))*1.8;enemy(460,ey,24);ln([[294,248],[511,248]],cyan,2);
+   c.setLineDash([5,7]);ln([[460,146],[460,ey]],'#71989d',1);c.setLineDash([]);arrow(458,ey+23,cyan);
+  }else if(id==='beacon'){
+   hero(190,260,55);enemy(455,245,35);ln([[423,218],[410,218],[410,272],[423,272]],gold,3);ln([[487,218],[500,218],[500,272],[487,272]],gold,3);
+   ln([[455,176],[455,194]],gold,5);dot(455,205,3,gold);
+  }else if(['oni','glass'].includes(id)){
+   hero(x,260,47,{coreHull:1});if(!result)enemy(440,260);else{burst(440,260);c.globalAlpha=.28;coins(435,136,2);c.globalAlpha=1;coins(435,192,id==='glass'?4:3);}
+   // One red health cell. The missing cells remain visibly empty.
+   for(let i=0;i<3;i++){c.fillStyle=i===0?red:'#34424a';c.fillRect(94+i*24,101,18,13);}if(!result)drawEquipmentSlash(c,x-35,270,x+100,235,equipment.slash||'razor',.8,{progress:.55,reducedMotion:true,equipment});
+  }else if(id==='riot'){
+   const kills=result?4:Math.min(4,Math.floor(a*4));hero(205,255,60,{coreChain:kills,coreDrive:result});
+   for(let i=0;i<4;i++){if(i<kills)burst(370+i*48,165,green);else enemy(370+i*48,165,15);}
+   for(let i=0;i<2;i++){c.fillStyle=green;c.fillRect(183+i*26,330,19,6);}if(result){ring(205,245,85,gold,4);ln([[360,250],[420,250]],gold,3);arrow(428,250,gold);}
+  }else if(id==='echo'){
+   hero(160+a*70,260,50,{coreChain:3,coreEchoes:result?1:0});for(let i=0;i<3;i++){c.fillStyle=i<Math.ceil(a*3)?cyan:'#344850';c.fillRect(150+i*27,112,19,6);}
+   ln([[336,166],[356,166],[356,294],[336,294]],'#9cb3c1',2);drawEquipmentSlash(c,342,284,366,180,equipment.slash||'razor',.75,{progress:.6,reducedMotion:true,equipment});
+   if(!result)enemy(465-a*90,245);else burst(365,245,cyan);
+  }else if(id==='neko'){
+   hero(232,250,63,{combo:3});for(const [i,amount]of [[0,.34],[1,.34+Math.min(.3,(v.chain||0)/100)*a]]){c.strokeStyle=i?green:'#627d84';c.lineWidth=8;c.beginPath();c.arc(455,220,31+i*16,-Math.PI/2,-Math.PI/2+TAU*amount);c.stroke();}ln([[296,240],[371,228]],'#6b8d91',1);arrow(380,226);
+  }else{
+   if(id==='viper'){c.globalAlpha=.2;hero(150+a*145,282,35);c.globalAlpha=1;ln([[118,298],[360,298]],'#63818b',1);}
+   const width=35*(id==='viper'?v.width:id==='samurai'?v.horizontal:id==='magnet'?v.closeWidth:1);
+   c.globalAlpha=.13;c.fillStyle=green;c.fillRect(105,250-width,395,width*2);c.globalAlpha=1;
+   hero(x,252,48);
+   if(id==='crown'){
+    if(!result)enemy(455,253,35,'bastion');for(let i=0;i<3;i++){c.strokeStyle=result&&i<2?red:gold;c.lineWidth=3;c.strokeRect(425+i*18,190,13,35);if(result&&i<2)ln([[423+i*18,189],[440+i*18,227]],red,2);}
+   }else if(result)burst(455,250);else enemy(455,250);
+   drawEquipmentSlash(c,x-30,260,x+107,235,equipment.slash||'razor',.8,{progress:.6,reducedMotion:true,equipment});
+   if(id==='coil'&&result){ln([[456,249],[480,212],[503,233],[521,206]],cyan,4);burst(546,194,cyan);}else if(id==='coil')enemy(546,194,24);
+  }
+ }else if(id==='hypno'){
+  hero(196,250,65,{aiming:true,eyeAbility:study.eye.pose.eyeAbility});
+  enemy(460,228,36);c.setLineDash([3,8]);ln([[280,230],[415,230]],'#9caeb3',1);c.setLineDash([]);
+  c.strokeStyle='#c7b6e3';c.lineWidth=3;c.beginPath();c.arc(460,228,50,-Math.PI/2,-Math.PI/2+TAU*(result?1:p));c.stroke();
+  if(result){ln([[449,149],[449,176]],gold,6);ln([[466,149],[466,176]],gold,6);}
+ }else if(id==='wings'){
+  const touching=result||p>.65,x=result?327:165+p*162;
+  ln([[408,97],[408,301]],'#8da8ad',7);hero(x,243,57,{tailAbility:study.tail.view});
+  if(touching){burst(400,242,cyan);ln([[353,180],[302,140]],cyan,2);arrow(298,138,cyan);}
+  c.strokeStyle=green;c.lineWidth=2;c.strokeRect(250,102,29,10);if(touching){c.fillStyle=green;c.fillRect(252,104,25,6);}
+ }else if(slot==='radar'&&study.aim){
+  const q=study.aim,map=q.radar;c.save();c.translate(155,86);c.scale(1.45,1.45);
+  c.fillStyle='#0c202b';c.fillRect(0,0,234,143);c.strokeStyle='#819e9c';c.lineWidth=1;c.strokeRect(map.viewport.x,map.viewport.y,map.viewport.w,map.viewport.h);
+  for(const b of map.blips){dot(b.x,b.y,b.r+1,b.color);}
+  const x=map.player.x,y=map.player.y;ring(x,y,32,'#45636f',1);ring(x,y,32*(1+(q.range-1)*(result?1:p)),cyan,1.5);dot(x,y,4,green);
+  if(q.tier>=2){ln([[120,65],[138,58]],red,3);ring(169,45,8,'#b993cf',2);}
+  if(q.tier===3){ln([[x,y-8],[x+5,y+4],[x,y],[x-5,y+4],[x,y-8]],green,1.5);ln([[75,31],[70,31],[70,45],[75,45]],gold,2);}
+  c.restore();
+ }else if(study.dash&&(study.dash.ember||study.dash.frost||study.dash.void||study.dash.reprise||study.dash.volt)){
+  const d=study.dash;
+  const plates=(x,y,hp,max=3)=>{for(let i=0;i<max;i++){c.strokeStyle=i<hp?gold:'#47616a';c.fillStyle=i<hp?gold:'#20333c';c.lineWidth=1;c.fillRect(x+i*13,y,9,5);c.strokeRect(x+i*13,y,9,5);}};
+  const gone=(x,y)=>ln([[x-5,y-5],[x+5,y+5],[x,y],[x-5,y+5],[x+5,y-5]],'#809f9d',1.5);
+  if(d.ember){
+   const e=d.ember;hero(150,265,48);drawEquipmentSlash(c,180,260,326,228,equipment.slash||'razor',.8,{progress:.5,reducedMotion:true,equipment});
+   for(const [id,x,y,r,kind]of [['armor',355,238,37,'crown'],['near-a',511,151,23,'fang'],['near-b',511,287,23,'fang']]){
+    const t=e.targets.find(t=>t.id===id);if(t.hp>0){foe(c,kind,x,y,r,0,{hp:t.hp});if(t.burning)drawEmberBurn(c,{x,y,radius:r,status:{born:0,expires:36,lastHit:t.lastHit},now:e.now,motion:frame.motion});}else gone(x,y);
+    plates(x-18,y+r+16,t.hp,id==='armor'?3:1);
+   }
+   ln([[389,222],[481,165]],'#bb8e63',1);ln([[389,252],[481,277]],'#bb8e63',1);
+   for(let i=0;i<2;i++){const x=267+i*55;ring(x,119,16,'#a9b9a2',2);ln([[x,108],[x,119],[x+7,122]],gold,2);dot(x+20,120,4,e.now>=[e.first,e.second][i]?'#f6b378':'#3b555f');}
+  }else if(d.frost){
+   const f=d.frost,s=f.sample;hero(140,264,48);foe(c,'fang',480,155,31,Math.PI,{hp:1,mode:s.fang.mode,clock:s.fang.clock,span:66,aim:Math.PI});
+   drawFrostStatus(c,{x:480,y:155,radius:31,angle:Math.PI,status:s.fang.status,now:f.now,motion:frame.motion,labels:false});
+   const hx=324+Math.min(100,f.travel.cold*.2);foe(c,'bastion',hx,275,30,0,{hp:1,mode:'idle'});drawFrostStatus(c,{x:hx,y:275,radius:30,status:s.heavy.status,now:f.now,motion:frame.motion,labels:false});
+   c.globalAlpha=.3;c.fillStyle=cyan;c.fillRect(324+Math.min(180,f.travel.baseline*.2),258,14,34);c.globalAlpha=1;
+   // Existing projectiles keep moving: no shield or safe-blue projectile.
+   ln([[530-Math.min(170,f.needleTravel*.4),215],[544-Math.min(170,f.needleTravel*.4),215]],red,3);
+  }else if(d.void){
+   const q=d.void,s=q.sample;hero(105,257,44);c.save();c.translate(374,208);c.scale(1.35,1.35);
+   drawVoidField(c,{field:s.field,now:s.now,motion:frame.motion,scale:1.35,labels:false});
+   for(const wall of s.geometry){c.fillStyle='#8ba6ac';c.fillRect(wall.x,wall.y,wall.w,wall.h);}
+   for(const t of s.targets){if(t.hp>0)foe(c,t.kind,t.x,t.y,t.kind==='monolith'?8:t.r,0,{hp:t.hp});else gone(t.x,t.y);}
+   c.restore();
+  }else if(d.reprise){
+   const q=d.reprise,s=q.sample;c.save();c.translate(99,267);c.scale(2.55,2.55);
+   drawReprisePath(c,{ledger:s.ledger,now:s.now,motion:frame.motion,scale:2.55,layer:'pending'});
+   for(const wall of s.geometry){c.fillStyle='#86a4ab';c.fillRect(wall.x,wall.y,wall.w,wall.h);}
+   for(const t of s.targets){if(t.hp>0){foe(c,t.kind,t.x,t.y,t.r,0,{hp:t.hp});plates(t.x-7,t.y+15,t.hp,2);}else gone(t.x,t.y);}
+   drawReprisePath(c,{ledger:s.ledger,now:s.now,motion:frame.motion,scale:2.55,layer:'replay'});
+   drawCubeHero(c,{x:s.hero.x,y:s.hero.y,radius:15,equipment,motion:false,time:0,pose:{blink:1}});c.restore();
+  }else{
+   const q=d.volt,s=q.sample;
+   ln([[100,109],[525,109]],'#527078',1);ln([[100,138],[525,138]],'#527078',1);
+   c.fillStyle='#7f9da5';c.fillRect(100+q.baseline.x*.45,103,8,12);c.fillStyle=gold;c.fillRect(100+q.flight.x*.45,132,8,12);
+   c.save();c.translate(270,248);c.scale(1.8,1.8);
+   for(const wall of s.geometry){c.fillStyle='#819da5';c.fillRect(wall.x,wall.y,wall.w,wall.h);}
+   for(const t of s.targets){if(t.hp>0)foe(c,t.kind,t.x,t.y,12,0,{hp:t.hp});else gone(t.x,t.y);}
+   drawVoltArc(c,{conduction:s.ledger,now:s.now,motion:frame.motion,scale:1.8});
+   drawCubeHero(c,{x:-23,y:0,radius:22,equipment,motion:false,time:0,pose:{blink:1}});c.restore();
+  }
+ }else if(surface){
+  // Keep existing per-item kinetics/receipts, but remove their teaching prose.
+  const sc=surface.getContext('2d');sc.clearRect(0,0,640,400);drawShopItemStudy(visualOnlyContext(sc),640,400,{study,equipment,sword});
+  c.save();c.beginPath();c.roundRect(24,73,592,263,10);c.clip();c.drawImage(surface,10,78,620,263,24,73,592,263);c.restore();
+ }
+ // Standalone studies retain a rail; the shop owns one accessible UI rail.
+ if(!frame.externalRail)for(let i=0;i<3;i++){
+  const x=268+i*52;
+  if(i<2)ln([[x+12,368],[x+39,368]],'#486168',1);
+  ring(x,368,i===beat?9:5,i===beat?gold:'#607d83',i===beat?2:1);if(i===beat)dot(x,368,3,gold);
+ }
+ if(frame.veil){c.fillStyle=`rgba(232,233,223,${frame.veil})`;c.fillRect(0,0,640,400);}
+ }finally{c.restore();}
+}
+
+/** Shop-only product photography: the fitted part owns the frame. No powers,
+ * ownership or recipe resolution; all objects reuse their production artwork. */
+export function drawShopPartPortrait(c,w,h,{equipment={},slot='core',time=0,motion=false}={}){
+ if(!c||![w,h].every(Number.isFinite)||w<=0||h<=0)return;
+ const eq=equipment,accent=partAccent(eq,slot),clock=motion&&Number.isFinite(time)?time:0;
+ c.save();try{c.scale(w/300,h/184);c.beginPath();c.rect(0,0,300,184);c.clip();
+ // Luminous trails need a dark, equally flat field, not washed-out paper.
+ c.fillStyle=['slash','dash'].includes(slot)?'#1c2932':'#e8e9df';c.fillRect(0,0,300,184);
+ c.fillStyle='#152b3820';c.beginPath();c.ellipse(155,151,72,5,0,0,TAU);c.fill();
+ const palette=corePalette(eq.core);
+ if(slot==='core'){
+  c.save();c.translate(150,94);c.rotate(-.065);c.scale(160,160);c.translate(-.075,-.635);
+  drawCoreChamber(c,eq,clock,palette,{artRadius:160,reducedMotion:!motion});c.restore();
+ }else if(slot==='tail'){
+  const scale=eq.tail==='wings'?43:72,anchorX=eq.tail==='thrusters'?248:eq.tail==='wings'?233:285,anchorY=eq.tail==='ribbon'?112:eq.tail==='anchor'?67:94;
+  c.save();c.translate(anchorX,anchorY);c.scale(scale,scale);drawTailToolkit(c,{equipment:eq,pose:{reducedMotion:!motion,tailMotion:{bend:motion?Math.sin(clock*.025)*.035:0}},radius:scale});c.restore();
+ }else if(slot==='eyes'){
+  // One familiar face plate retains the mounting context, not a full outfit.
+  c.save();c.beginPath();c.roundRect(25,47,250,91,12);c.clip();drawCubeHero(c,{x:150,y:115,radius:128,equipment:eq,motion:false,pose:{blink:1,look:[.25,0]}});c.restore();
+ }else if(slot==='head'){
+  if(!eq.head||eq.head==='none')drawCubeHero(c,{x:155,y:100,radius:51,equipment:eq,motion:false,pose:{blink:1}});
+  else{
+   // Same production attachment on a neutral mounting rail, not a rival outfit.
+   c.save();c.translate(153,183);c.rotate(-.055);c.scale(76,76);
+   head(c,eq.head,clock,palette,.055,{reducedMotion:!motion,artRadius:76},eq);c.restore();
+  }
+ }else if(slot==='body'){
+  drawCubeHero(c,{x:163,y:97,radius:67,equipment:eq,time:clock,motion,pose:{blink:1,breathe:0}});
+ }else if(slot==='slash'){
+  drawEquipmentSlash(c,30,146,273,77,eq.slash||'razor',1,{progress:.34,equipment:eq,reducedMotion:true});
+ }else if(slot==='dash'){
+  // Frozen launch reference. Paint the actual leading facets in FRONT of
+  // the shell: a large outfit must not hide the very FX being sold.
+  c.save();c.translate(210,92);c.scale(1.6,1.6);
+  drawCubeHero(c,{radius:28,equipment:eq,motion:false,pose:{blink:1}});
+  drawElementalDash(c,{vx:60,age:1.5,travel:100,radius:28,equipment:eq,element:dashElement(eq),motion:true});c.restore();
+ }else if(slot==='pointer')drawDragArrowPreview(visualOnlyContext(c),300,184,{equipment:eq,power:.8});
+ else if(slot==='radar'||slot==='trajectory')drawSensorPreview(visualOnlyContext(c),300,184,{slot,level:sensorTier(eq[slot],slot),motion:false,time:0});
+ else if(slot==='world')drawEquipmentWorld(c,300,184,eq.world,0);
+ }finally{c.restore();}
+}
+/** Store-only, authored performances. Each catalogue item owns a particle
+ * silhouette and three distinct motion beats; these are illustrations, never
+ * authority callbacks. No item may silently fall back to a generic demo. */
+const STORE_SCORE_ROWS=[
+ ['none','#d9debc','drift','-1,0 -.3,-.5 .8,-.1 .3,.5 -1,0','Fold in|Cloth breath|Light settle'],
+ ['halo','#f4d18a','float','-1,-.2 -.5,-.6 .7,-.5 1,0 .4,.5 -.7,.4 -1,-.2','Ring assemble|Suspended fall|Feather release'],
+ ['neko','#dfa8d1','spring','-1,.8 -.6,-1 0,-.3 .6,-1 1,.8 0,.3 -1,.8','Ears unfold|Chain flick|Twin recoil'],
+ ['viper','#ed8e9d','fan','-1,.8 -.4,-.5 .7,-1 .3,.1 1,.7 -.3,.3 -1,.8','Fin lock|Forward snap|Venom slivers'],
+ ['oni','#e59a90','split','-1,-.8 -.2,-.7 0,.1 .8,-.1 .4,.9 -.7,.5 -1,-.8','Broken join|Last-heart flare|Crack scatter'],
+ ['crown','#e6c681','drop','-1,-.5 -.5,.6 0,0 .5,.6 1,-.5 0,-.2 -1,-.5','Crown seat|Armor jaws|Gold plates'],
+ ['samurai','#e6cfa3','fan','-1,.4 .6,-1 1,-.5 -.4,.5 -1,.4','Crest unfurl|Wide sweep|Blade needles'],
+ ['coil','#9cdbe7','zig','-1,-.6 -.3,.2 .1,-.7 .5,.6 1,-.1','Wind inductors|Contact relay|Charge shed'],
+ ['beacon','#edc28b','scan','-.7,.8 -.7,-.6 0,-1 .7,-.6 .7,.8 0,.4 -.7,.8','Lamp rise|Threat tell|Signal glints'],
+ ['ninja','#d7dfaa','fan','-1,-.2 .4,-.6 1,-.1 .3,.4 -1,-.2','Apertures open|Focused glance|Ink whiskers'],
+ ['visor','#8fdbe0','scan','-1,-.5 1,-.5 .7,.5 -.8,.5 -1,-.5','Lens slide|Scan sweep|Light traces'],
+ ['blaze','#f1b380','rise','-1,.7 -.7,-.2 -.2,.1 0,-1 .4,-.1 1,-.4 .6,.8 -1,.7','Flame wake|Hot entry|Ember eyelids'],
+ ['glitch','#d9a1d9','step','-1,-.8 -.2,-.8 -.2,0 .8,0 .8,.8 .1,.8 .1,.2 -1,.2','Pixel boot|Broken scan|Color tear'],
+ ['smug','#dfc280','float','-1,-.4 1,-.4 .7,.2 -.6,.2 -1,-.4','Lids lift|Confident squint|Gold wink'],
+ ['hypno','#c9a4e5','orbit','-1,0 -.7,-.7 .3,-.8 1,-.1 .5,.7 -.2,.6 -.4,.1 .1,-.2','Spiral unwind|Hold spiral|Daze fragments'],
+ ['sniper','#f1a3b1','inward','-1,-.7 -.2,-.7 -.2,-.2 .7,-.2 .7,.7 .2,.7 .2,.2 -1,.2','Scope extend|Crosshair close|Needle glint'],
+ ['paper','#e2d7c0','fold','-1,-.8 .8,-.8 1,-.4 .2,.1 -.8,.9 -1,-.8','Fold planes|Paper flex|Crease dust'],
+ ['obsidian','#b2b4d7','split','-1,.8 -.4,-1 .5,-.6 1,.5 -.2,.1 -1,.8','Facet emerge|Edge turn|Dark shards'],
+ ['hologram','#84d6df','scan','-1,.7 -1,-.7 .7,-.7 .7,-.1 0,-.1 0,.7 -1,.7','Projection build|Phase scan|Projection slices'],
+ ['prism','#c6abe9','orbit','0,-1 1,-.2 .4,.9 -.6,.7 -1,-.3 0,-1','Crystal grow|Facet split|Prismatic chips'],
+ ['iron','#b8cbd1','drop','-.8,-.8 .8,-.8 1,0 .5,.8 -.7,.6 -.8,-.8','Plates clamp|Guard contact|Steel rivets'],
+ ['lava','#edaa80','rise','-.8,-1 -.2,-.3 -.5,.1 .4,.3 .1,1 .9,.2','Rock cool|Seam breathe|Lava embers'],
+ ['gold','#eacb85','glint','-1,-.3 -.1,-.8 1,0 .4,.8 -.6,.7 -1,-.3','Gold cast|Burnished pass|Golden leaf'],
+ ['chamfer','#b3d2e6','fan','-.6,-1 .6,-1 1,-.6 1,.6 .6,1 -.6,1 -1,.6 -1,-.6 -.6,-1','Bevel align|Glance away|Armor splints'],
+ ['notched','#dfb5cb','vent','-1,-.8 .7,-.8 .7,-.2 .2,-.2 .2,.3 .8,.3 .8,.8 -1,.8','Vent seat|Cooling breath|Vapor cuts'],
+ ['segmented','#a8d2bc','spring','-1,-.8 .4,-.8 .4,-.2 1,-.2 1,.8 -.5,.8 -.5,.2 -1,.2 -1,-.8','Segments seat|Spring compress|Ratchet release'],
+ ['standard','#d4e88b','pulse','-1,0 -.5,0 -.2,-.6 .2,.6 .5,0 1,0','Heart assemble|Quiet heartbeat|Balanced motes'],
+ ['time','#96d8f0','orbit','-.7,-.8 .7,-.8 0,0 .7,.8 -.7,.8 0,0 -.7,-.8','Crystal tune|Time calibration|Clock facets'],
+ ['riot','#d7ed8e','zig','.2,-1 -1,.1 -.1,.1 -.3,1 1,-.2 .1,-.2','Reactor clamp|Piston surge|Reactor sparks'],
+ ['glass','#eab0cf','split','0,-1 1,-.1 .4,.8 -.5,.8 -1,-.1 0,-1 .1,.1 .4,.8','Glass form|Fracture glint|Fragile splinters'],
+ ['grav','#bba0ec','inward','-1,-.5 .1,-.8 .8,-.1 .2,.8 -1,.5 -.3,0 -1,-.5','Iris assemble|Gravity turn|Inward arcs'],
+ ['magnet','#98d5d3','inward','-1,-.8 -.2,-.8 -.2,.2 .2,.2 .2,-.8 1,-.8 1,.8 -1,.8 -1,-.8','Poles align|Opposed dynamo|Pole filings'],
+ ['echo','#cdb6ec','step','-1,-.8 .1,-.8 .1,.1 1,.1 1,.8 -.1,.8 -.1,-.1 -1,-.1','Echo stack|Delayed trace|Offset echoes'],
+ ['ribbon','#c5d394','ribbon','-1,-.4 -.2,-.1 .4,-.5 1,0 .4,.5 -.3,.2 -1,.4','Knot tie|Cloth wave|Hem threads'],
+ ['wings','#cfb8ed','fan','-1,.8 -.7,-1 -.2,-.3 .2,-.8 .5,-.1 1,-.5 .4,.8 -1,.8','Feathers unfold|Wall feather|Feather scatter'],
+ ['ghost','#a4dfe9','phase','-1,-.7 .4,-.7 1,-.2 .4,.2 1,.7 -.6,.7 -1,-.7','Ghost extrude|Aftercloth drift|Phase threads'],
+ ['viper-tails','#e8a5ab','ribbon','-1,-.8 -.4,-.1 .2,-.5 1,-.1 .3,.2 .8,.8 -.3,.4 -1,-.8','Twin tails split|Retention whip|Twin-tip shed'],
+ ['anchor','#c4bca8','drop','0,-1 .5,-.5 .2,.3 1,.1 .5,.8 -.5,.8 -1,.1 -.2,.3 -.5,-.5 0,-1','Links descend|Weight swing|Floor grit'],
+ ['thrusters','#f0bc92','rise','-1,-.7 .4,-.7 1,0 .4,.7 -1,.7 -.4,0 -1,-.7','Nozzles seat|Jet opening|Exhaust flecks'],
+ ['spectrum','#d6b9d5','ribbon','-1,-.8 1,-.5 -1,-.1 1,.2 -1,.5 1,.8','Bands weave|Three-band wave|Spectrum threads'],
+ ['razor','#c3e8f1','fan','-1,.7 -.4,-.3 1,-.7 .2,.1 -1,.7','Edge draw|Razor sweep|Cold slivers'],
+ ['katana','#e6dbc2','fold','-1,.8 .1,-.3 1,-.8 .5,-.1 -.7,.7 -1,.8','Ink load|Brush cut|Ink flecks'],
+ ['laser','#8de7ef','scan','-1,-.6 1,-.6 .4,-.1 1,.5 -1,.5 -.4,0 -1,-.6','Filament grow|Neon sweep|Laser sparks'],
+ ['glitch-fx','#ef9cb8','step','-1,-.9 .2,-.9 .2,-.3 1,-.3 1,.3 -.2,.3 -.2,.9 -1,.9','Tear open|Offset slash|RGB fragments'],
+ ['confetti','#edcb83','drop','-1,-.5 .4,-.8 1,.3 -.5,.8 -1,-.5','Gold ribbon|Paper flourish|Tumbling confetti'],
+ ['comic','#f0d477','burst','0,-1 .3,-.3 1,-.5 .5,.2 1,.7 .2,.5 -.2,1 -.4,.2 -1,.4 -.5,-.2 0,-1','Ink wedge|Graphic sweep|Comic wedges'],
+ ['pixel','#cbb4ef','step','-1,-1 0,-1 0,-.3 1,-.3 1,1 .3,1 .3,.3 -1,.3 -1,-1','Pixel build|Stepped cut|Pixel chips'],
+ ['dash-auto','#d9dfbd','drift','-1,-.7 0,-.7 1,0 0,.7 -1,.7 -.3,0 -1,-.7','Slip align|Adaptive launch|Slip flecks'],
+ ['dash-ink','#d8d1bd','fold','-1,-.8 .3,-.5 1,0 .1,.2 -.6,.8 -.3,.1 -1,-.8','Ink compress|Wide ink launch|Ink chips'],
+ ['dash-fire','#f1aa78','rise','-1,.7 -.4,-.5 0,-1 .3,-.1 1,-.5 .6,.8 -1,.7','Heat gather|Ember launch|Rising embers'],
+ ['dash-lightning','#a3e7ed','zig','-.1,-1 -1,.3 .1,0 -.2,1 1,-.5 .2,-.2','Fork align|Volt lance|Split sparks'],
+ ['dash-ice','#b9e2ed','fan','-1,0 0,-1 1,0 0,1 -1,0 -.5,0 .1,-.5','Frost facet|Frost launch|Ice splinters'],
+ ['dash-water','#9bdacb','wave','-1,.1 -.4,-.7 .2,-.1 .6,-.5 1,.4 .2,.8 -.6,.6 -1,.1','Tide gather|Water launch|Droplet wake'],
+ ['dash-void','#bda6e8','inward','-1,-.5 0,-.9 .8,-.3 1,.5 .1,.9 -.8,.3 -.4,-.1','Void fold|Well launch|Inward fragments'],
+ ['dash-echo','#dfb7df','phase','-1,-.8 .5,-.8 .5,.1 1,.1 1,.8 -.5,.8 -.5,-.1 -1,-.1','Echo align|Reprise launch|Trailing corners'],
+ ['pointer-reticle','#d1dfaa','pulse','-1,0 -.3,0 0,-.3 0,-1 0,-.3 .3,0 1,0 .3,0 0,.3 0,1 0,.3 -.3,0','Reticle build|Pull focus|Aim pinpricks'],
+ ['pointer-diamond','#d4c4ef','inward','0,-1 .8,0 0,1 -.8,0 0,-1 0,-.4 .3,0 0,.4 -.3,0 0,-.4','Diamond join|Diamond focus|Facet pins'],
+ ['pointer-orbit','#a6dcd3','orbit','-1,0 -.6,-.7 .4,-.8 1,0 .6,.7 -.4,.8 -1,0 .1,0','Orbit unfurl|Orbit aim|Orbital ticks'],
+ ['pointer-cross','#efbfaa','scan','-.8,-1 -.8,-.3 -1,-.3 -1,.3 -.3,.3 -.3,1 .3,1 .3,.3 1,.3 1,-.3 .3,-.3 .3,-1','Cross lock|Cross focus|Cross splints'],
+ ['radar-base','#adc6b3','pulse','0,-1 .2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2 0,-1','Map open|Player pulse|Map dust'],
+ ['radar-1','#a6d0d5','scan','-1,-.8 0,-.8 0,0 1,0 1,.8 -1,.8 -1,-.8','Sweep reveal|Extended sweep|Range ticks'],
+ ['radar-2','#d2b6e6','orbit','-1,-.5 -.5,-1 .2,-.5 .8,-.8 1,.2 .3,.8 -.6,.5 -1,-.5','Blips arrive|Threat sweep|Typed blips'],
+ ['radar-3','#e3cd91','fan','0,-1 1,.7 0,.3 -1,.7 0,-1 -.1,-.4','Field arrange|Direction sweep|Bearing flecks'],
+ ['trajectory-base','#c0cfba','drift','-1,.6 -.4,.2 .2,-.1 1,-.3 .4,.2 -1,.6','Guide unfold|Short guide|Guide motes'],
+ ['trajectory-1','#a8d5e2','fan','-1,.8 -.4,-.1 .2,-.6 1,-.8 .5,-.3 -.2,.1 -1,.8','Path extend|Long guide|Path dashes'],
+ ['trajectory-2','#c4b4ea','split','-1,.8 -.3,-.6 .2,-.8 .4,.1 1,.7 .3,.5 -.2,-.2 -1,.8','Rail reveal|Bank trace|Bounce pins'],
+ ['trajectory-3','#e2c391','zig','-1,.7 -.3,-.8 .3,.6 1,-.7 .4,-.5 -.2,.8 -1,.7','Route weave|Multi-bank trace|Route facets'],
+ ['twilight','#b3c7bd','float','0,-1 .6,-.4 1,.2 .3,.8 -.5,.6 -.8,-.2 0,-1','Dusk reveal|Dust travel|Evening drift'],
+ ['tokyo','#9dd8e1','scan','-1,-.8 -.6,-.8 .2,.8 -.2,.8 -1,-.8','Neon ignite|Rain passage|Rain streaks'],
+ ['foundry','#e9ad87','rise','-1,.8 -.5,-.5 .2,-1 .1,-.1 1,.5 .3,.9 -1,.8','Furnace wake|Heat passage|Foundry cinders'],
+ ['manga','#d0c5b2','fold','-1,-.7 -.1,-.8 1,.7 .2,.8 -1,-.7','Ink print|Panel passage|Paper scratches'],
+ ['synth','#e5acd4','step','-1,.7 -1,-.1 -.3,-.1 -.3,-.8 .5,-.8 .5,0 1,0 1,.7','Grid boot|Synth passage|Neon pixels'],
+ ['void','#bdb3e6','inward','-1,-.2 -.3,-.8 .6,-.5 1,.2 .2,.8 -.7,.4 -1,-.2','Void emerge|Star passage|Imploding stars']
+];
+export const STORE_PERFORMANCES=Object.freeze(Object.fromEntries(STORE_SCORE_ROWS.map(([id,color,route,points,names],index)=>[id,Object.freeze({id,color,route,index,path:Object.freeze(points.split(' ').map(p=>Object.freeze(p.split(',').map(Number)))),beats:Object.freeze(names.split('|'))})])));
+export function storePerformanceFrame(id,time=0,motion=true,step=null,progress=null){
+ const d=STORE_PERFORMANCES[id];if(!d)return null;
+ const fixed=Number.isInteger(step)&&step>=0&&step<3,t=Number.isFinite(time)?Math.max(0,time):0,
+  beat=fixed?step:motion?Math.floor(t/100)%3:2,
+  u=Number.isFinite(progress)?clamp(progress,0,1):fixed||!motion?.55:(t%100)/100;
+ return Object.freeze({id,beat,progress:u,time:motion?t:0,motion:motion&&!fixed,descriptor:d,name:d.beats[beat]});
+}
+function storeParticle(c,d,x,y,size,angle,alpha=1){
+ c.save();c.translate(x,y);c.rotate(angle);c.scale(size,size);c.globalAlpha*=alpha;c.strokeStyle=d.color;c.fillStyle=d.color;c.lineWidth=.28;c.lineJoin='miter';path(c,d.path);
+ if(['drop','step','burst','rise'].includes(d.route)){c.globalAlpha*=.7;c.fill();}else c.stroke();c.restore();
+}
+/** Deliberately item-authored trajectories, phase-owned and finite. No RNG,
+ * mutable emitters, external images, filters or offscreen readbacks. */
+function storeAtmosphere(c,d,beat,u,clock,still=false){
+ const count=beat===0?9:beat===1?12:16;
+ for(let i=0;i<count;i++){
+  const q=(i+.5)/count,side=i%2?1:-1,
+   age=still?.45:((u+i*.071)%1),a=q*TAU+d.index*.17,
+   inbound=beat===0||d.route==='inward',spread=inbound?1-age:age,
+   radius=70+spread*(beat===2?150:110);
+  let x=320+Math.cos(a)*radius,y=205+Math.sin(a)*radius*.62,spin=side*age;
+  switch(d.route){
+   case 'rise':x=320+side*(55+q*120);y=300-age*230;spin=side*age*2;break;
+   case 'drop':x=320+side*(55+q*120);y=95+age*age*220;spin=side*age*3;break;
+   case 'scan':x=115+age*410;y=140+q*160;spin=0;break;
+   case 'step':x=130+Math.floor(age*9)*42;y=110+Math.floor(q*5)*40;spin=0;break;
+   case 'zig':x=140+age*360;y=205+side*(35+q*55)+Math.sin(age*11+q)*14;spin=side*.4;break;
+   case 'ribbon':case 'wave':x=100+q*440;y=210+Math.sin(q*7-age*5)*70;spin=Math.cos(q*7-age*5)*.5;break;
+   case 'vent':x=320+side*(80+age*140);y=230+q*50-age*25;spin=side*.15;break;
+   case 'spring':x=320+side*(65+Math.sin(age*Math.PI)*130);y=140+q*140;spin=0;break;
+   case 'phase':x=320+side*(60+Math.floor(age*5)*24);y=115+q*180;spin=0;break;
+   case 'fold':x=320+side*(70+spread*140);y=130+q*140+Math.sin(age*3)*20;spin=side*(1-age)*1.2;break;
+   case 'fan':x=320+Math.cos(-Math.PI*.9+q*Math.PI*.8)*radius;y=260+Math.sin(-Math.PI*.9+q*Math.PI*.8)*radius*.7;spin=a;break;
+   case 'split':x=320+side*(60+spread*150);y=140+q*140;spin=side*age*2;break;
+   case 'float':y-=Math.sin(age*Math.PI)*45;break;
+   case 'glint':x=180+q*280;y=280-age*170;spin=Math.PI/4;break;
+   case 'drift':x=130+q*380-age*35;y=160+Math.sin(q*9+age*3)*90;break;
+  }
+  const fade=still?.38:Math.sin(Math.PI*age)*.7,size=2.7+(i%3)*1.2;
+  storeParticle(c,d,x,y,size,spin,fade);
+ }
+ // Local, open light trails replace oversized wireframe outlines. Item
+ // silhouettes remain in the particles, so the subject stays the focal point.
+ c.save();c.globalAlpha=still?.24:.2+Math.sin(u*Math.PI)*.2;
+ for(let j=0;j<2;j++){
+  const side=j?1:-1,start=side<0?-.9:2.25,turn=still?0:u*.7;
+  c.strokeStyle=d.color+'40';c.lineWidth=5;c.beginPath();c.ellipse(320,218,156+j*18,77+j*8,-.16,start+turn,start+.85+turn);c.stroke();
+  c.strokeStyle=d.color;c.lineWidth=1;c.stroke();
+  const a=start+.85+turn;storeParticle(c,d,320+Math.cos(a)*(156+j*18),218+Math.sin(a)*(77+j*8),4,turn,.8);
+ }
+ c.restore();
+}
+
+function storeSensor(c,id,slot,beat,u,clock,color){
+ const active=beat>0,amount=active?u:0;
+ c.save();c.translate(320,205);
+ if(slot==='pointer'){
+  c.rotate(id==='pointer-orbit'?amount*1.4:0);
+  const mark=pointerVisual({equipment:{pointer:id},power:active?.25+amount*.65:.15});
+  c.scale(4.5,4.5);c.strokeStyle=color;c.lineWidth=.65;for(const points of mark.paths){c.beginPath();points.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.stroke();}
+ }else if(slot==='radar'){
+  const tier=Math.max(0,Number(id.at(-1))||0),R=100+tier*7;
+  c.strokeStyle='#526c74';c.lineWidth=1.2;for(const r of [R*.42,R*.75,R]){c.beginPath();c.arc(0,0,r,0,TAU);c.stroke();}
+  c.save();c.rotate(active?amount*TAU:-.6);c.fillStyle=color+'20';c.beginPath();c.moveTo(0,0);c.arc(0,0,R,-.7,0);c.closePath();c.fill();seam(c,[[0,0],[R,0]],color,2);c.restore();
+  const n=tier===0?1:3+tier;for(let i=0;i<n;i++){const a=i*2.4+.6,r=25+i*13,x=Math.cos(a)*r,y=Math.sin(a)*r;c.fillStyle=i%2?color:'#e3bb98';if(tier>=2)panel(c,[[x-4,y+3],[x,y-5],[x+4,y+3]],c.fillStyle,0);else circle(c,x,y,3.5,c.fillStyle);if(tier===3)seam(c,[[x,y],[x+Math.cos(a)*10,y+Math.sin(a)*10]],color,1);}
+  circle(c,0,0,4,'#eef0cc');
+ }else{
+  const tier=Math.max(0,Number(id.at(-1))||0),n=24+tier*10,head=active?amount:1;
+  c.translate(-145,55);c.strokeStyle=color;c.lineWidth=3;c.setLineDash([6,6]);c.beginPath();
+  for(let i=0;i<=n;i++){const q=i/n;if(q>head+.12)break;let x=q*290,y=-Math.sin(q*Math.PI)*90;if(tier===2&&q>.6)y=-85+(q-.6)*180;if(tier===3){y=-Math.abs(Math.sin(q*Math.PI*2))*100;}if(i)c.lineTo(x,y);else c.moveTo(x,y);}c.stroke();c.setLineDash([]);
+  for(let i=0;i<tier;i++){const x=110+i*55;seam(c,[[x,-110],[x,-80]],'#728990',3);}
+ }
+ c.restore();
+}
+/** Store lighting is an illustration layer, never extra equipment state. */
+function storeStageLight(c,d,beat,u){
+ const sky=c.createRadialGradient(320,200,0,320,200,198);sky.addColorStop(0,'#203b46');sky.addColorStop(.6,'#1a303a');sky.addColorStop(1,'#162b35');c.fillStyle=sky;c.fillRect(0,0,640,400);
+ c.save();c.globalAlpha=.12;const beam=c.createLinearGradient(100,10,420,290);beam.addColorStop(0,d.color+'00');beam.addColorStop(.35,d.color);beam.addColorStop(1,d.color+'00');c.fillStyle=beam;panel(c,[[65,0],[263,0],[535,325],[211,325]],beam,0);c.restore();
+ c.save();c.translate(320,324);c.scale(1,.18);const floor=c.createRadialGradient(0,0,5,0,0,205);floor.addColorStop(0,d.color+'35');floor.addColorStop(.45,d.color+'12');floor.addColorStop(1,d.color+'00');c.fillStyle=floor;c.fillRect(-210,-210,420,420);c.restore();
+
+}
+function storeMaterialFinish(c,id,slot,u,moving,color){
+ c.save();try{
+ if(slot==='body'){
+  // The front plane only: no colored box washing over the attachment/eyes.
+  path(c,[[275,119],[432,119],[444,132],[444,289],[275,289]]);c.clip();
+  const polished=['gold','iron','obsidian','prism','hologram','chamfer'].includes(id),x=moving?230+u*240:330;
+  if(polished){const g=c.createLinearGradient(x-35,0,x+45,0);g.addColorStop(0,'#ffffff00');g.addColorStop(.48,id==='gold'?'#ffedb845':'#c7efff2b');g.addColorStop(.55,'#ffffff48');g.addColorStop(1,'#ffffff00');c.fillStyle=g;c.transform(1,0,-.3,1,55,0);c.fillRect(250,115,250,180);}
+  if(id==='lava'){for(let i=0;i<3;i++)seam(c,[[293+i*53,124],[284+i*53,146],[298+i*53,166]],'#ffd19a',1.7);}
+  if(id==='hologram'){c.fillStyle='#b4faff22';for(let i=0;i<7;i++)c.fillRect(274,123+i*25+(moving?u*8:0),174,1);}
+  if(id==='iron'||id==='segmented'){for(const x of [282,431])for(const y of [129,276]){circle(c,x,y,3,'#132834');seam(c,[[x-1,y-1],[x+1,y+1]],'#c4d7d4',1);}}
+ }else if(slot==='core'){
+  path(c,[[142,166],[464,166],[490,191],[475,254],[142,254]]);c.clip();
+  const x=moving?100+u*440:290,g=c.createLinearGradient(x-40,0,x+30,0);g.addColorStop(0,'#efffff00');g.addColorStop(.5,'#efffff20');g.addColorStop(1,'#efffff00');c.fillStyle=g;c.fillRect(120,165,380,90);
+  seam(c,[[160,174],[225,174]],'#ffffff65',1.4);seam(c,[[396,245],[458,245]],color+'66',1);
+ }else if(slot==='eyes'){
+  seam(c,[[143,159],[159,145],[477,145]],'#fffcec85',2);seam(c,[[153,247],[489,247],[502,234]],'#907b6970',3);
+  for(const x of [148,489]){circle(c,x,197,4,'#9b988c');seam(c,[[x-2,197],[x+2,197]],'#353e43',1.3);}
+ }
+ }finally{c.restore();}
+}
+/** Eight illustrative wakes. No common green-core lamination obscures which
+ * dash is being sold; native leading/contact artwork is drawn separately. */
+function storeElementWake(c,id,x,u,beat,moving,color){
+ const swell=beat===0?.65:beat===1?1:.65,phase=moving?u: .5,L=(130+swell*80),t=moving?u*TAU:1;
+ c.save();c.translate(x-40,207);c.lineCap='round';
+ if(id==='dash-fire'){
+  for(const side of [-1,1])for(let i=0;i<3;i++){const yy=side*(24+i*10),len=L-i*32,lick=Math.sin(t+i)*8;c.globalAlpha=.75-i*.18;panel(c,[[5,yy-side*10],[-len*.5,yy-side*8],[-len,yy+lick],[-len*.6,yy+side*13],[-len*.24,yy+side*6]],i===0?'#ffe1a0':i===1?'#f2a364':'#bc6255',0);}
+ }else if(id==='dash-lightning'){
+  for(const side of [-1,1]){const p=[[9,side*29],[-35,side*41],[-58,side*27],[-93,side*49],[-115,side*37],[-L,side*57]];seam(c,p,'#91ddea44',9);seam(c,p,'#9aeaf2',2.7);seam(c,p,'#e6ffff',.8);seam(c,[p[3],[-109,side*72],[-147,side*67]],'#aadce9',1.3);}
+ }else if(id==='dash-ice'){
+  for(let i=0;i<6;i++){const side=i%2?1:-1,xx=-28-i*30,yy=side*(34+i*3),s=9+i%3*3;c.globalAlpha=.9-i*.09;panel(c,[[xx+s*1.4,yy],[xx-s,yy-s*.45],[xx-s*1.8,yy],[xx-s,yy+s*.45]],i%2?'#b4e1eb':'#effbfa',0);seam(c,[[xx-s,yy],[xx+s*.6,yy]],'#78a5c1',1);}
+ }else if(id==='dash-water'){
+  for(const side of [-1,1]){c.globalAlpha=.6;c.fillStyle='#7fcebd';c.beginPath();c.moveTo(10,side*25);c.bezierCurveTo(-70,side*80,-135,-side*24,-L,side*14);c.bezierCurveTo(-126,-side*4,-68,side*53,10,side*18);c.fill();c.globalAlpha=.9;c.strokeStyle='#c6f3dc';c.lineWidth=1.8;c.beginPath();c.moveTo(-10,side*29);c.bezierCurveTo(-70,side*68,-128,-side*10,-L,side*14);c.stroke();}
+ }else if(id==='dash-void'){
+  for(let i=0;i<4;i++){c.globalAlpha=.65-i*.1;c.strokeStyle=i%2?'#d8c0f2':'#9473bd';c.lineWidth=3-i*.4;c.beginPath();c.ellipse(-32-i*47,0,10+i*3,28+i*6,-.15,-1.4,1.4);c.stroke();}c.fillStyle='#0d152c';panel(c,[[-2,-20],[-100,-9],[-L,0],[-100,9],[-2,20]],c.fillStyle,0);
+ }else if(id==='dash-echo'){
+  for(let i=0;i<3;i++){const xx=-42-i*58,r=27-i*4;c.globalAlpha=.48-i*.12;seam(c,[[xx+r,-r],[xx-r,-r],[xx-r,r],[xx+r,r]],'#d3b6ec',3);seam(c,[[xx-r-7,-r+8],[xx-r-7,r+6],[xx+r-7,r+6]],'#86bdc9',1.2);}
+ }else{
+  for(const side of [-1,1]){c.globalAlpha=.7;panel(c,[[5,side*29],[-L,side*11],[-L*.64,side*31],[-L*.85,side*43],[-28,side*40]],id==='dash-ink'?'#080f19':'#637e80',0);seam(c,[[-14,side*31],[-L*.78,side*19]],color,1.5);}
+ }
+ c.restore();
+}
+
+/** The actual default store renderer, including animated catalogue thumbnails.
+ * Illustrative item-only stage, NOT a second gameplay simulation. */
+export function drawStoreItem(c,w,h,{equipment={},slot='head',time=0,motion=true,step=null,progress=null,thumbnail=false,zoom=1}={}){
+ if(!c||![w,h].every(Number.isFinite)||w<=0||h<=0)return;
+ const id=equipment[slot]||ITEMS.find(i=>i.slot===slot)?.id,f=storePerformanceFrame(id,time,motion,step,progress);if(!f)return;
+ const d=f.descriptor,beat=f.beat,u=f.progress,clock=f.motion?f.time:0,
+  // Fixed rail steps and reduced motion freeze ALL secondary animation too.
+  moving=f.motion,active=beat===1,result=beat===2,cycle=moving?Math.sin(u*TAU):0,
+  eq={head:'none',eyes:'ninja',body:'paper',core:'standard',tail:'ribbon',slash:'razor',dash:'dash-auto',world:'twilight',[slot]:id},palette=corePalette(eq.core);
+ c.save();try{c.scale(w/640,h/400);c.beginPath();c.rect(0,0,640,400);c.clip();
+ c.fillStyle='#162b35';c.fillRect(0,0,640,400);
+ const magnify=Number.isFinite(zoom)?clamp(zoom,1,1.4):1;c.translate(320,200);c.scale(magnify,magnify);c.translate(-320,-200);
+ if(slot==='world'){
+  c.save();const z=1.04+(moving?.025*Math.sin(u*Math.PI):0);c.translate(320,200);c.scale(z,z);c.translate(-320,-200);const travel=moving?u*95:0,camera={x:id==='twilight'?travel:id==='manga'?Math.floor(travel/12)*12:0,y:id==='tokyo'?travel:id==='foundry'?-travel*.4:0,scale:id==='synth'?1+travel*.001:id==='void'?1-travel*.0007:1};drawEquipmentWorld(c,640,400,id,moving?clock*.65:0,camera);c.restore();
+  storeAtmosphere(c,d,beat,u,clock,!moving);return;
+ }
+ storeStageLight(c,d,beat,u);
+ const glow=c.createRadialGradient(320,200,10,320,200,265);glow.addColorStop(0,d.color+'15');glow.addColorStop(1,'#162b3500');c.fillStyle=glow;c.fillRect(0,0,640,400);
+ c.fillStyle='#09161d44';c.beginPath();c.ellipse(320,320,145,9,0,0,TAU);c.fill();
+ storeAtmosphere(c,d,beat,u,clock,!moving);
+ const rise=beat===0&&moving?(1-u)*16:0,bob=moving?Math.sin(clock*.035)*4:0;
+ let dx=0,dy=bob+rise,turn=0,sx=1,sy=1;
+ if(active&&moving){
+  if(['float','orbit'].includes(d.route)){dy-=Math.sin(u*Math.PI)*16;turn=cycle*.025;}
+  if(['fan','split','fold'].includes(d.route)){turn=cycle*.055;dx=cycle*7;}
+  if(['spring','pulse'].includes(d.route)){sx=1+cycle*.045;sy=1-cycle*.055;}
+  if(d.route==='step'||d.route==='phase')dx=Math.round(cycle*3)*4;
+  if(d.route==='ribbon'||d.route==='wave')dy+=cycle*8;
+  if(d.route==='inward'){sx=1-Math.sin(u*Math.PI)*.035;sy=sx;turn=cycle*.025;}
+  if(d.route==='rise'||d.route==='vent'){dy-=Math.sin(u*Math.PI)*10;sx=1+cycle*.018;}
+  if(d.route==='scan'||d.route==='glint'){dx=cycle*4;turn=cycle*.015;}
+  if(d.route==='drop'){dy+=Math.sin(u*Math.PI)*12;turn=cycle*.035;}
+  if(d.route==='zig'||d.route==='burst'){dx=cycle*6;sy=1-Math.sin(u*Math.PI)*.03;}
+  if(d.route==='drift'){turn=cycle*.018;dx=cycle*4;}
+ }
+ if(beat===0&&moving){sx*=.93+.07*u;sy*=.93+.07*u;turn+=(1-u)*.035*(d.index%2?1:-1);}
+ if(result&&moving){const settle=Math.sin(u*Math.PI)*Math.exp(-u*3);dx+=settle*(d.index%2?8:-8);turn+=settle*.035;}
+ const pose={blink:1,breathe:0,look:[moving?Math.sin(clock*.02)*.5:0,0],reducedMotion:!moving,artClock:clock,artRadius:100,
+  headAbility:{kind:id,active:beat>0},eyeAbility:{kind:id,active:beat>0,age:u*18,remaining:result?8:0,flash:active?.7:0},eyePower:u,overdrive:id==='blaze'&&beat>0,
+  focusRecovering:beat>0,focusLevel:1-u,recoveryAge:u*8,
+  coreLive:beat>0,coreDrive:id==='riot'&&result,corePull:id==='grav'&&active,coreRecovering:id==='time'&&beat>0,coreFocus:u,coreChain:Math.min(2,Math.floor(u*3)),coreEchoes:result?1:0,coreHull:3,
+  shellAbility:{kind:id,ready:!result,spent:result,window:active,flash:active?.7:0},shellAmount:active?u*4:0,shellReleasedAmount:result?3:0,shellReleaseAge:u*8,shellGlanceAge:active?3:-1,shellContactAngle:-.3,
+  tailAbility:{kind:id,active:beat>0,ready:!result,flash:active?.7:0,action:id==='thrusters'?'jet':id==='anchor'?'floor':id==='viper-tails'?'retention':'wall',count:Math.min(2,Math.floor(u*3))},tailMotion:{bend:moving?cycle*.12:0},speed:active?25:0,attackProgress:active?u:-1};
+ c.save();c.translate(dx,dy);c.translate(320,210);c.rotate(turn);c.scale(sx,sy);c.translate(-320,-210);
+ if(slot==='head'){
+  if(id==='none')drawCubeHero(c,{x:345,y:205,radius:92,equipment:eq,time:clock,motion:moving,pose});
+  else{c.save();c.translate(320,345);c.scale(138,138);head(c,id,clock,palette,.045,pose,eq);c.restore();}
+  if(id==='halo'&&beat>0){c.save();c.globalAlpha=.4;for(let i=0;i<3;i++)seam(c,[[286+i*34,270],[286+i*34,289]],d.color,1.7);c.restore();}
+  if(id==='coil'&&beat>0){for(const side of [-1,1]){circle(c,320+side*155,220,7,'#e2b6a4');seam(c,[[320+side*60,190],[320+side*87,211],[320+side*105,201],[320+side*147,220]],d.color,2);}}
+  if(id==='beacon'&&beat>0){seam(c,[[463,136],[463,160]],'#edc28b',4);circle(c,463,172,3,'#edc28b');}
+ }else if(slot==='eyes'){
+  panel(c,[[137,135],[490,135],[512,160],[500,256],[151,256],[129,234]],'#c5c7b8',2);
+  panel(c,[[143,140],[486,140],[505,161],[494,244],[153,244],[136,229]],'#e2ddc7',0);
+  c.save();c.translate(320,218);c.scale(205,205);eyes(c,id,clock,pose,palette);c.restore();
+ }else if(slot==='core'){
+  c.save();c.translate(304,210);c.scale(255,255);c.translate(-.075,-.635);drawCoreChamber(c,eq,clock,palette,pose);c.restore();
+ }else if(slot==='tail'){
+  c.save();c.translate(id==='wings'?470:510,id==='anchor'?160:210);const scale=id==='wings'?85:id==='anchor'?100:125;c.scale(scale,scale);drawTailToolkit(c,{equipment:eq,pose:{...pose,reducedMotion:false},radius:scale});c.restore();
+ }else if(slot==='body'){
+  const shellPose={...pose,headAbility:null};drawCubeHero(c,{x:350,y:205,radius:96,equipment:eq,time:clock,motion:moving,pose:shellPose});
+ }else if(slot==='slash'){
+  const p=active&&moving?.08+u*.84:beat===0?.25:.44;
+  drawEquipmentSlash(c,110,285,548,158,id,1,{progress:p,equipment:eq,time:clock,reducedMotion:!moving});
+  if(beat>0){for(let i=0;i<6;i++){const q=i/5,xx=185+q*330,yy=246-Math.sin(q*Math.PI*.7)*86;storeParticle(c,d,xx,yy+(moving?Math.sin(u*TAU+i)*12:0),2.5+i%2,u+i,.5);}}
+  if(result)for(let i=0;i<5;i++)storeParticle(c,d,420+i*22,225+(i%2?1:-1)*(15+u*30),4,u+i,.7);
+ }else if(slot==='dash'){
+  const x=active&&moving?265+u*175:420,age=active&&moving?1+u*11:result?5:2;
+  c.save();c.translate(x,207);c.scale(2.3,2.3);c.save();c.beginPath();c.rect(-34,-37,73,77);c.clip();drawCubeHero(c,{radius:30,equipment:eq,time:clock,motion:moving,pose:{...pose,headAbility:null}});c.restore();const launch={vx:34,angle:0,travel:70,age,radius:30,motion:true};if(id==='dash-fire')drawEmberLaunch(c,launch);else if(id==='dash-lightning')drawVoltLaunch(c,launch);else if(id==='dash-ice')drawFrostLaunch(c,launch);else if(id==='dash-void')drawVoidLaunch(c,launch);else if(id==='dash-echo')drawRepriseLaunch(c,launch);c.restore();
+  storeElementWake(c,id,x,u,beat,moving,d.color);
+ }else if(['pointer','radar','trajectory'].includes(slot))storeSensor(c,id,slot,beat,u,clock,d.color);
+ storeMaterialFinish(c,id,slot,u,moving,d.color);
+ c.restore();
+ // Minimal stage receipt; no frames inside frames, no technical teaching copy.
+ if(!thumbnail){c.save();c.globalAlpha=.45;c.strokeStyle=d.color;c.lineWidth=2;for(let i=0;i<3;i++){const x=292+i*28;c.beginPath();c.moveTo(x,363);c.lineTo(x+(i===beat?18:8),363);c.stroke();}c.restore();}
+ }finally{c.restore();}
+}
+
+/** LIVE COMBAT v2. These are production combat projections, not store demos.
+ * All clocks and contacts come from the run. No persistent emitters, random
+ * draws, damage, collision, resource changes, full-screen flashes or hit-stop. */
+export function drawLiveCombatSlash(c,{x=0,y=0,radius=23,angle=0,age=-1,equipment={},motion=true}={}){
+ if(!c||![x,y,radius,angle,age].every(Number.isFinite)||radius<=0||age<0||age>=12)return;
+ const u=motion?age/12:.38,fade=motion?(1-u)**.7:.55,r=Math.min(38,radius),reach=r*3.05,
+  color=corePalette(equipment.core).primary,sweep=-1.25+u*1.65;
+ c.save();try{c.translate(x,y);c.rotate(angle);c.lineJoin='round';
+ // Two tapered surfaces, not a circle or a projectile. The outer cutting lip
+ // remains white so even the free Razor reads against a busy dark arena.
+ for(let layer=0;layer<2;layer++){
+  const outer=reach-layer*r*.18,inner=outer-r*(layer?.13:.35),span=1.25-layer*.1;
+  c.globalAlpha=fade*(layer?.9:.2);c.fillStyle=layer?'#fff3d6':color;c.beginPath();
+  for(let i=0;i<=22;i++){const q=i/22,a=sweep-span+q*span,rr=inner+(outer-inner)*Math.sin(q*Math.PI*.5);const px=Math.cos(a)*rr,py=Math.sin(a)*rr;i?c.lineTo(px,py):c.moveTo(px,py);}
+  for(let i=22;i>=0;i--){const q=i/22,a=sweep-span+q*span,rr=inner-r*.12*Math.sin(q*Math.PI);c.lineTo(Math.cos(a)*rr,Math.sin(a)*rr);}c.closePath();c.fill();
+ }
+ c.globalAlpha=fade*.8;c.strokeStyle='#fff9e9';c.lineWidth=1.4;c.beginPath();c.arc(0,0,reach,sweep-.64,sweep);c.stroke();
+ if(motion)for(let i=0;i<4;i++){const a=sweep-.25-i*.24,rr=reach+2+u*9;seam(c,[[Math.cos(a)*rr,Math.sin(a)*rr],[Math.cos(a)*(rr-6),Math.sin(a)*(rr-6)]],i%2?color:'#fff2ce',1.3*fade);}
+ }finally{c.restore();}
+}
+export function drawLiveCombatDash(c,{x=0,y=0,radius=23,angle=0,age=-1,equipment={},motion=true}={}){
+ if(!c||!motion||![x,y,radius,angle,age].every(Number.isFinite)||radius<=0||age<0||age>=9)return;
+ const r=Math.min(34,radius),style=DASH_WAKE_STYLES[dashElement(equipment)],u=age/9;
+ c.save();try{c.translate(x,y);c.rotate(angle);c.globalAlpha=(1-u)**1.4;
+ // Anticipation compresses behind the shell; release opens laterally. No
+ // permanent collar and no giant fins competing with the elemental silhouette.
+ if(age<2){const k=(age+1)/3;for(const side of [-1,1])seam(c,[[-r*.9,side*r*(.8-k*.2)],[-r*1.25,side*r*.3]],style.color,1.6);}
+ else for(const side of [-1,1]){const open=(age-2)/7;seam(c,[[-r*.5,side*r*(.7+open*.5)],[-r*(1.2+open*.8),side*r*(.48+open*.4)]],style.color,2*(1-open*.5));}
+ }finally{c.restore();}
+}
+export function drawLiveCombatImpact(c,hit={},age=0,motion=true){
+ if(!c||!['cut','armor','hurt','break'].includes(hit.type)||![hit.x,hit.y,age].every(Number.isFinite)||age<0||age>=16)return;
+ const hurt=['hurt','break'].includes(hit.type),armor=hit.type==='armor',r=Math.min(38,Math.max(12,hit.r||22)),
+  u=motion?age/16:.2,fade=(1-age/16)**1.6*(hit.secondary?.45:1),a=Number.isFinite(hit.cut)?hit.cut:Number.isFinite(hit.contact?.angle)?hit.contact.angle:0,
+  color=hurt?'#ff9ba5':armor?'#ffd18e':corePalette(hit.equipment?.core).primary;
+ c.save();try{c.translate(hit.x,hit.y);c.rotate(a);c.globalAlpha=fade;
+ if(!motion){seam(c,[[-r*.6,-3],[r*.6,3]],hurt?'#fda9ac':'#fff2d6',2);return;}
+ if(age<5){
+  const z=1+u*1.2;c.save();c.scale(z,z);
+  if(armor){seam(c,[[-r*.5,-r*.6],[-r*.8,0],[-r*.5,r*.6]],'#fff0c3',3);}
+  else{panel(c,[[-r*1.7,-2],[-r*.2,-5],[r*1.6,0],[r*.2,5]],hurt?'#ffb1b8':'#fff7df',0);panel(c,[[-3,-r*.95],[3,-r*.12],[1,r*1.1],[-4,r*.1]],color,0);}
+  c.restore();
+ }
+ const n=armor?6:hurt?7:8;
+ for(let i=0;i<n;i++){
+  const theta=i/n*TAU+.22,spread=r*(.55+u*2.1),px=Math.cos(theta)*spread,py=Math.sin(theta)*spread*.72,
+   len=(armor?8:12)*(1-u);
+  c.save();c.translate(px,py);c.rotate(theta);c.globalAlpha=fade*(i%2?.8:1);
+  if(armor)panel(c,[[-3,-2],[4,-3],[7,0],[1,3]],i%2?'#b3a28d':'#ffe0a5',0);
+  else{seam(c,[[0,0],[len,0]],i%2?color:'#fff2d5',i%2?1.4:2.2);}
+  c.restore();
+ }
+ // Brief broken contact halo; it expands locally, never across the screen.
+ if(age<10){c.globalAlpha=fade*.55;c.strokeStyle=color;c.lineWidth=1.6;for(let j=0;j<3;j++){c.beginPath();c.ellipse(0,0,r*(1+u*1.8),r*(.55+u),0,j*TAU/3+.1,j*TAU/3+.85);c.stroke();}}
+ }finally{c.restore();}
+}
+export function drawLiveThreatAccent(c,e={},p={},scale=1,motion=true){
+ if(!c||!['tell','rush'].includes(e.mode)||![p.x,p.y,e.r].every(Number.isFinite)||e.r<=0)return;
+ const unit=1/Math.max(.25,Number.isFinite(scale)?scale:1),f=e.mode==='rush'?1:1-clamp((e.clock||0)/Math.max(1,e.span||60),0,1),r=e.r+5*unit;
+ c.save();try{c.translate(p.x,p.y);c.rotate(e.aim||0);c.globalAlpha=.5+f*.4;
+ // Body-local charging teeth make imminent attacks legible on every enemy;
+ // exact lanes/zones remain owned by the existing authoritative tell painter.
+ for(const side of [-1,1]){const xx=-r*.45+f*r*.6,yy=side*r*.88;seam(c,[[xx-7*unit,yy+side*4*unit],[xx,yy],[xx+8*unit,yy]],e.mode==='rush'?'#ffe5db':'#e49ca6',1.8*unit);}
+ if(f>.7){seam(c,[[r*.2,-r*.3],[r*.55,0],[r*.2,r*.3]],'#ffdbd8',1.4*unit);}
+ }finally{c.restore();}
+}
+
+/** 122 live object identities. Gear geometry is shared with its real item
+ * construction vocabulary, not with a separate preview animation. Upgrade and
+ * enemy silhouettes are authored below; colors are secondary to geometry. */
+const LIVE_UPGRADE_ROWS=[
+ ['fleet','#bfe2ad','stream','-1,.6 -.2,0 -1,-.6 -.3,-.6 .7,0 -.3,.6 -1,.6'],
+ ['comet','#eab382','stream','-1,-.4 .3,-.2 1,0 .3,.2 -1,.4 -.4,0 -1,-.4'],
+ ['guard','#b7d6ce','float','-1,-.8 -.3,-.8 -.3,.5 .4,.5 .4,-.2 1,-.2 .2,.9 -1,.9 -1,-.8'],
+ ['afterburn','#f0b174','rise','-1,.8 -.5,-.4 -.2,.1 .3,-1 .5,-.1 1,-.5 .7,.8 -1,.8'],
+ ['slashback','#d6b6ed','rewind','1,-.7 -.4,-.7 -.4,-1 -1,-.2 -.3,.4 -.3,.1 .7,.1 .7,.7 1,.7'],
+ ['secondwind','#a5d4c4','wave','-1,.6 -.5,-.5 0,0 .5,-.8 1,.1 .3,.7 -.1,.4 -1,.6'],
+ ['bankloop','#e8cea0','rebound','-1,-1 .8,-1 .8,.8 -.4,.8 -.4,-.2 .1,-.2 .1,.3 .4,.3 .4,-.6 -1,-.6 -1,-1'],
+ ['poise','#bed8cd','float','-1,-.2 -.1,-.2 -.1,-.9 .1,-.9 .1,-.2 1,-.2 .6,.4 .1,.4 .1,.8 -.1,.8 -.1,.4 -.6,.4 -1,-.2'],
+ ['cleaver','#e7ba91','drop','-1,-1 .8,-.8 .8,.4 .2,.8 -.3,.4 -.3,1 -.6,1 -.6,-.3 -1,-.3 -1,-1'],
+ ['reach','#bcdef0','stream','-1,-.2 .2,-.2 .2,-.7 1,0 .2,.7 .2,.2 -1,.2 -1,-.2'],
+ ['breaker','#ebbd88','burst','-1,-.8 -.2,-.8 -.5,-.2 .2,-.3 -.2,.5 .8,.1 .2,.9 -1,.8 -1,-.8'],
+ ['linger','#cbb8eb','orbit','-.9,-.9 .9,-.9 .3,-.3 -.3,.3 -.9,.9 .9,.9 .3,.3 -.3,-.3 -.9,-.9'],
+ ['thinedge','#d2e8ed','stream','-1,.7 .7,-1 1,-.7 -.7,1 -1,.7 -.7,.5 .5,-.7'],
+ ['doublejoint','#c0d2eb','rebound','-1,.6 -.3,-.8 .2,.1 .7,-.7 1,-.2 .2,.8 -.2,0 -.7,.9 -1,.6'],
+ ['restlessedge','#e5c29d','zig','-1,.8 -.7,-.5 -.3,0 .1,-1 .3,-.2 .8,-.6 1,.4 .2,.9 -.2,.5 -1,.8'],
+ ['executioner','#e7a1a7','drop','-1,-.9 1,-.9 .5,-.1 .1,-.1 .1,1 -.1,1 -.1,-.1 -.5,.4 -1,.4 -1,-.9'],
+ ['duelist','#eab6d4','stream','-.8,.8 .2,-.5 .1,-1 .5,-.6 1,-.7 .5,-.1 .6,.3 .2,.2 -.8,.8'],
+ ['bounty','#e8ce85','orbit','-.8,-.6 .2,-1 1,-.4 .8,.6 -.2,1 -1,.4 -.8,-.6 -.2,0 .4,-.3 .2,.4 -.2,0'],
+ ['bastion','#accbdf','rebound','-1,-1 -.1,-.7 -.1,.9 -1,.5 -1,-1 .1,-.7 1,-1 1,.5 .1,.9 .1,-.7'],
+ ['barrier','#c4dfb2','float','0,-1 1,-.5 .8,.5 .3,.9 .1,.3 -.1,.3 -.3,.9 -.8,.5 -1,-.5 0,-1'],
+ ['glassorbit','#d9c0ed','orbit','0,-1 .8,0 0,1 -.8,0 0,-1 -.9,-.7 -1,.2 -.4,.9 .5,.9 1,.2'],
+ ['ironnerve','#bdcbd2','pulse','-1,-.6 -.6,-1 .6,-1 1,-.6 1,.6 .6,1 -.6,1 -1,.6 -1,-.6 0,0 .4,0'],
+ ['hollowbonus','#e3c99b','inward','-1,-.8 1,-.8 .8,-.2 .1,-.2 .1,.2 .8,.2 1,.8 -1,.8 -.8,.2 -.1,.2 -.1,-.2 -.8,-.2 -1,-.8'],
+ ['debtsettlement','#d4c5ad','fold','-.8,-1 .7,-1 .7,.8 -.8,.8 -.8,-1 -.6,-.3 .4,-.3 -.6,.5 .4,.5 -1,.9 1,-.9'],
+ ['memoryofseams','#d4b8cf','stitch','-1,-.5 -.6,-.1 -.2,-.5 .2,-.1 .6,-.5 1,-.1 .6,.4 .2,0 -.2,.4 -.6,0 -1,.4'],
+ ['stampedsteel','#b6cbd6','drop','-.9,-.9 .9,-.9 .9,.9 -.9,.9 -.9,-.9 -.4,-.4 -.4,.4 .4,.4 .4,-.4 -.4,-.4'],
+ ['embertax','#e9ad88','rise','-1,.9 -.7,-.1 -.2,.1 0,-1 .4,-.2 .9,-.4 .7,.9 -.3,.5 -1,.9'],
+ ['covenant','#d9c5a7','orbit','-1,0 -.4,-.8 .4,-.8 1,0 .4,.8 -.4,.8 -1,0 -.4,0 0,.3 .4,0 0,-.3 -.4,0'],
+ ['ashreader','#d7b2a0','rise','-1,-.7 -.1,-.4 .8,-.8 1,.5 .1,.9 -.8,.6 -1,-.7 -.3,-.1 .4,-.1 .2,.3 -.2,.2'],
+ ['sharddividend','#d2b3db','burst','-1,0 -.6,-1 -.1,-.1 .3,-.8 1,.2 .3,.5 0,1 -.4,.3 -1,0'],
+ ['gambler','#e1c8a0','step','-1,-.6 .3,-1 1,.6 -.3,1 -1,-.6 -.4,-.5 -.3,-.1 .1,-.2 0,-.6 -.4,-.5 .2,.2 .3,.6 .7,.5 .6,.1 .2,.2'],
+ ['kingmaker','#edce8a','drop','-1,-.6 -.6,.9 .6,.9 1,-.6 .3,-.1 0,-1 -.3,-.1 -1,-.6 -.4,.4 .4,.4'],
+ ['godsmother','#d1bfec','orbit','0,-1 .8,-.7 .9,-.1 .5,.8 0,1 -.5,.8 -.9,-.1 -.8,-.7 0,-1 -.3,.1 0,.6 .3,.1 0,-1'],
+ ['tearborn','#b2dce8','rise','0,-1 .7,-.1 1,.5 .4,1 -.4,.8 -.8,.2 0,-1 .1,-.3 -.2,.3 .3,.5'],
+ ['phaseline','#b8c4ee','phase','-1,-.8 -.2,-.8 -.2,-.2 .5,-.2 .5,.4 1,.4 1,.8 .2,.8 .2,.2 -.5,.2 -.5,-.4 -1,-.4 -1,-.8'],
+ ['ghostlash','#c5b4e6','phase','-1,.8 -.4,-.3 .2,-.7 1,-.8 .5,-.2 .1,.3 -.6,1 -1,.8 -.4,.5 .6,-.3'],
+ ['crowncinders','#e7b39a','rise','-1,-.7 -.6,.8 .6,.8 1,-.7 .3,-.2 0,-1 -.3,-.2 -1,-.7 -.2,.3 .2,.3'],
+ ['landlordskey','#e4c69a','drop','-1,-.6 -.5,-1 0,-.6 -.1,0 .8,0 .8,.4 .5,.4 .5,.8 .1,.8 .1,.4 -.5,.3 -1,-.1 -1,-.6'],
+ ['wheelofwatcher','#c4b1e7','orbit','-1,0 -.4,-.7 .4,-.7 1,0 .4,.7 -.4,.7 -1,0 -.2,0 0,-.4 .2,0 0,.4 -.2,0'],
+ ['theending','#e2c4d0','inward','0,-1 .2,-.4 .9,-.7 .5,0 1,.6 .2,.4 0,1 -.3,.4 -1,.6 -.6,0 -.9,-.7 -.2,-.4 0,-1']
+];
+const LIVE_ENEMY_ROWS=[
+ ['fang','#e9a5ad','burst','1,0 -.7,-.8 -.4,0 -.7,.8 1,0 .2,0 -.3,-.25'],
+ ['pulse','#ebb1c4','orbit','-1,0 -.7,-.8 .3,-1 1,-.3 .7,.8 -.3,1 -1,.3 -1,0 -.4,0 .1,.4 .4,0 .1,-.4 -.4,0'],
+ ['prism','#cfb6ef','burst','0,-1 .3,-.3 1,0 .3,.3 0,1 -.3,.3 -1,0 -.3,-.3 0,-1'],
+ ['fork','#e6b39b','split','-.3,-1 .3,-1 .3,-.3 1,-.3 1,.3 .3,.3 .3,1 -.3,1 -.3,.3 -1,.3 -1,-.3 -.3,-.3 -.3,-1'],
+ ['bastion','#b8b7d2','drop','-1,-.9 .5,-.9 1,-.4 1,.8 -.5,.8 -1,.3 -1,-.9 -.5,-.2 .5,-.2 .5,.2 -.5,.2'],
+ ['rift','#c9a9e6','phase','-1,-.8 -.4,-1 -.1,-.4 -.5,.1 -.4,.9 -1,.5 -1,-.8 .4,-.9 1,-.5 1,.8 .4,1 .1,.4 .5,-.1 .4,-.9'],
+ ['well','#b5a4e8','inward','-1,-.1 -.6,-.8 .3,-1 1,-.4 .7,.5 0,1 -.7,.6 -.6,-.1 0,-.4 .4,0 .1,.4 -.2,.1'],
+ ['monolith','#ceb9d0','drop','-.9,1 -.9,-.6 -.4,-.6 -.4,-1 .6,-1 .6,-.6 1,-.6 1,1 .3,1 .3,.4 -.2,.4 -.2,1 -.9,1'],
+ ['crown','#e7c78c','burst','-1,-.8 -.5,.2 0,-1 .5,.2 1,-.8 .7,1 -.7,1 -1,-.8 -.4,.6 .4,.6']
+];
+const liveIdentity=(key,source,slot,id,color,route,points,index)=>Object.freeze({key,source,slot,id,color,route,index,path:Object.freeze(points.map(p=>Object.freeze([...p]))),life:source==='enemy'?180:source==='upgrade'?150:120});
+export const LIVE_OBJECT_IDENTITIES=Object.freeze(Object.fromEntries([
+ ...Object.entries(STORE_PERFORMANCES).map(([id,d],i)=>{const slot=ITEMS.find(x=>x.id===id).slot,key='gear:'+id;return[key,liveIdentity(key,'gear',slot,id,d.color,d.route,d.path,i)];}),
+ ...LIVE_UPGRADE_ROWS.map(([id,color,route,points],i)=>{const key='upgrade:'+id;return[key,liveIdentity(key,'upgrade','upgrade',id,color,route,points.split(' ').map(x=>x.split(',').map(Number)),73+i)];}),
+ ...LIVE_ENEMY_ROWS.map(([id,color,route,points],i)=>{const key='enemy:'+id;return[key,liveIdentity(key,'enemy','enemy',id,color,route,points.split(' ').map(x=>x.split(',').map(Number)),113+i)];})
+]));
+/** One recognizable fragment, sized in SCREEN pixels by its caller. */
+function liveObjectGlyph(c,d,x,y,size,angle=0,opacity=1,fill=false){
+ c.save();try{c.translate(x,y);c.rotate(angle);c.scale(size,size);c.globalAlpha*=opacity;c.strokeStyle=d.color;c.fillStyle=d.color;c.lineJoin='round';c.lineWidth=.23;path(c,d.path);if(fill){c.globalAlpha*=.65;c.fill();}else c.stroke();}finally{c.restore();}
+}
+export function drawLiveObjectSignature(c,{key,x=0,y=0,age=0,scale=1,radius=24,motion=true,intensity=1}={}){
+ const d=LIVE_OBJECT_IDENTITIES[key];if(!c||!d||![x,y,age,radius,scale,intensity].every(Number.isFinite)||age<0||age>=d.life||radius<=0||scale<=0)return;
+ const unit=1/Math.max(.25,scale),u=motion?age/d.life:.25,fade=(1-age/d.life)**.8,
+  alpha=Math.min(1,Math.max(0,intensity))*fade,r=Math.min(42,radius),n=motion?6:2;
+ c.save();try{c.globalAlpha*=alpha;
+ for(let i=0;i<n;i++){
+  const q=(i+.5)/n,side=i%2?1:-1,a=q*TAU+d.index*.21,
+   spread=r*(.6+Math.sqrt(u)*1.7),drift=Math.sin(u*Math.PI),size=(5.6+(i%2)*1.8)*unit;
+  let xx=Math.cos(a)*spread,yy=Math.sin(a)*spread*.65,spin=side*u*1.3;
+  if(['rise','vent'].includes(d.route)){xx=side*(r*.5+q*r);yy=15-u*65-q*12;spin=side*u*2;}
+  else if(['drop','spring'].includes(d.route)){xx=side*(r*.5+q*r);yy=-12+u*u*52-q*20;spin=side*u*2.5;}
+  else if(['stream','drift','scan','fan'].includes(d.route)){xx=-r*.4-q*r*2.2-u*r;yy=side*(7+q*22+drift*10);spin=side*.15;}
+  else if(['inward','rewind'].includes(d.route)){xx=Math.cos(a)*r*(2.4-u*1.8);yy=Math.sin(a)*r*(1.7-u);spin=-u*3+side;}
+  else if(['wave','ribbon','stitch'].includes(d.route)){xx=-r*2+q*r*4;yy=Math.sin(q*8-u*5)*r*.6;spin=Math.cos(q*8-u*5)*.4;}
+  else if(['step','phase','zig'].includes(d.route)){xx=side*(15+Math.floor(u*5)*6+q*r);yy=(q-.5)*r*2;spin=0;}
+  else if(['split','fold','rebound'].includes(d.route)){xx=side*(r*.8+u*r*1.8);yy=(q-.5)*r*2;spin=side*drift*.8;}
+  liveObjectGlyph(c,d,x+xx,y+yy,size*(1-u*.35),spin,.82,['rise','drop','burst','step'].includes(d.route));
+  if(motion&&age<24){c.strokeStyle=d.color;c.lineWidth=1.2*unit;c.globalAlpha=alpha*.45;c.beginPath();c.moveTo(x+xx*.65,y+yy*.65);c.lineTo(x+xx*.85,y+yy*.85);c.stroke();c.globalAlpha=alpha;}
+ }
+ // Dissipation remains unmistakably a cosmetic broken seam, not a danger ring.
+ if(motion&&d.source==='enemy'){c.globalAlpha=alpha*.22;c.strokeStyle=d.color;c.lineWidth=1.2*unit;for(let j=0;j<2;j++){c.beginPath();c.ellipse(x,y,r*(1.1+u),r*(.5+u*.4),-.3,j*Math.PI+.2,j*Math.PI+.9);c.stroke();}}
+ }finally{c.restore();}
+}
+const LIVE_GEAR_OFFSETS=Object.freeze({head:[0,-34],eyes:[23,-14],body:[-26,-2],core:[5,19],tail:[-42,6],slash:[40,-14],dash:[-36,24],pointer:[34,-36],radar:[-17,34],trajectory:[39,24],world:[-44,-25]});
+/** Bounded, simulation-tick-owned renderer state. Draws are read-only. */
+export function createLiveObjectJuice({dashWake=false}={}){
+ let echoes=[],tracks=[],gear=[],upgrades=[],pulse=999,ticks=0,lastShot=null,lastPlayer={x:0,y:0},motionOn=true,runRef=null,acquired=null;
+ const reset=()=>{echoes=[];tracks=[];gear=[];upgrades=[];pulse=999;ticks=0;lastShot=null;lastPlayer={x:0,y:0};acquired=null;runRef=null;};
+ const event=(type,d={},motion=true)=>{
+  if(['dash','cut','armor','bank','upgradeApplied','hurt','break'].includes(type))pulse=0;
+  if(type==='upgradeApplied'&&LIVE_OBJECT_IDENTITIES['upgrade:'+d.id])acquired=d.id;
+  if(!motion||!['cut','armor','bank','hurt','break','upgradeApplied'].includes(type))return;
+  const x=Number.isFinite(d.x)?d.x:lastPlayer.x,y=Number.isFinite(d.y)?d.y:lastPlayer.y,
+   key=type==='upgradeApplied'?'upgrade:'+d.id:type==='cut'||type==='armor'?'enemy:'+d.kind:'gear:'+(d.equipment?.core||'standard');
+  if(!LIVE_OBJECT_IDENTITIES[key])return;
+  echoes.push({key,x,y,age:0,radius:Math.min(40,d.r||24),intensity:type==='armor'?.55:d.secondary?.45:.9});if(echoes.length>24)echoes.shift();
+ };
+ const tick=(run,motion=true)=>{
+  if(runRef&&runRef!==run)reset();runRef=run;motionOn=motion;ticks++;pulse++;
+  const s=run.state||{},p=run.world?.player?.position||{x:0,y:0};lastPlayer={x:p.x,y:p.y};
+  gear=Object.entries(s.equipment||{}).filter(([slot,id])=>LIVE_GEAR_OFFSETS[slot]&&LIVE_OBJECT_IDENTITIES['gear:'+id]).map(([slot,id])=>({slot,key:'gear:'+id}));
+  upgrades=[...new Set([...(s.upgrades||[]).map(x=>typeof x==='string'?x:x.id),s.waveBuff?.id].filter(id=>LIVE_OBJECT_IDENTITIES['upgrade:'+id]))];
+  if(lastShot!==null&&lastShot!==s.shots){
+   pulse=0;
+   // Launch owns three world-space echoes; these do NOT follow the player and
+   // cannot be confused with extra hits. Reuse the equipped construction shape.
+   if(motion&&s.phase==='playing')for(const slot of ['slash','dash','core']){
+    const id=s.equipment?.[slot],key='gear:'+id;if(!LIVE_OBJECT_IDENTITIES[key])continue;
+    echoes.push({key,x:p.x,y:p.y,age:0,radius:slot==='slash'?34:25,intensity:slot==='slash'?.9:.55,launch:true});
+   }
+   if(echoes.length>24)echoes.splice(0,echoes.length-24);
+  }lastShot=s.shots;
+  for(const e of echoes)e.age++;echoes=echoes.filter(e=>e.age<LIVE_OBJECT_IDENTITIES[e.key].life);
+  for(const t of tracks)t.age++;tracks=tracks.filter(t=>t.age<90);
+  if(!motion){tracks=[];echoes=[];return;}
+  const velocity=run.world?.player?.velocity||{x:0,y:0};
+  if(!dashWake&&s.phase==='playing'&&Math.hypot(velocity.x,velocity.y)>4&&ticks%4===0){tracks.push({key:'gear:'+(s.equipment?.dash||'dash-auto'),x:p.x,y:p.y,angle:Number.isFinite(s.launchAngle)?s.launchAngle:Math.atan2(velocity.y,velocity.x),age:0});if(tracks.length>28)tracks.shift();}
+ };
+ const drawUnder=(c,{view,scale=1,motion=true}={})=>{
+  if(!motion||!motionOn)return;
+  const unit=1/Math.max(.25,scale),visible=(e,pad=140)=>!view||e.x>view.x-pad&&e.x<view.x+view.w+pad&&e.y>view.y-pad&&e.y<view.y+view.h+pad;
+  c.save();try{
+   for(const t of tracks)if(!dashWake&&visible(t)){const d=LIVE_OBJECT_IDENTITIES[t.key];liveObjectGlyph(c,d,t.x,t.y,(3.8-t.age/90)*unit,t.angle,.32*(1-t.age/90));}
+   let budget=8;for(let i=echoes.length-1;i>=0&&budget>0;i--){const e=echoes[i];if(!visible(e)||dashWake&&e.key.startsWith('gear:dash-'))continue;drawLiveObjectSignature(c,{...e,scale,motion,intensity:e.intensity*(dashWake&&e.launch?.3:.75)});budget--;}
+  }finally{c.restore();}
+ };
+ const drawPlayer=(c,{x=lastPlayer.x,y=lastPlayer.y,scale=1,angle=0,motion=true}={})=>{
+  if(!motion||!motionOn||pulse>=150)return;
+  const unit=1/Math.max(.25,scale),u=Math.min(1,pulse/150),fade=(1-u)**.65;
+  c.save();try{
+   for(const {slot,key}of gear){if(dashWake&&slot==='dash')continue;const d=LIVE_OBJECT_IDENTITIES[key],[ox,oy]=LIVE_GEAR_OFFSETS[slot],main=['dash','slash','core'].includes(slot),wobble=Math.sin(ticks*.035+d.index*.7),drift=u*18;
+    const px=x+ox-Math.cos(angle)*drift,py=y+oy+wobble*6-(d.route==='rise'?u*20:0);
+    liveObjectGlyph(c,d,px,py,(main?5.2:3.8)*unit,main?angle+wobble*.15:wobble*.3,fade*(main?.82:.48),main&&d.route==='rise');
+    if(main)liveObjectGlyph(c,d,px-14,py+10,(main?3.4:2.8)*unit,angle,.3*fade);
+   }
+   const ordered=acquired&&upgrades.includes(acquired)?[acquired,...upgrades.filter(id=>id!==acquired)]:upgrades,
+    n=Math.min(6,ordered.length),offset=ordered.length>6?Math.floor(ticks/120)*6:0;
+   for(let i=0;i<n;i++){const id=ordered[(offset+i)%ordered.length],d=LIVE_OBJECT_IDENTITIES['upgrade:'+id],a=i/Math.max(1,n)*TAU+ticks*.008;
+    liveObjectGlyph(c,d,x+Math.cos(a)*65,y+Math.sin(a)*46,6*unit,a*.12,fade*(id===acquired?.9:.6));
+   }
+  }finally{c.restore();}
+ };
+ return {event,tick,drawUnder,drawPlayer,reset,snapshot:()=>({version:3,identities:122,echoes:echoes.map(e=>({...e})),tracks:tracks.length,pulseAge:pulse,gear:gear.map(x=>x.key),upgrades:[...upgrades],maxEchoes:24,maxTracks:28,drawEchoBudget:8,maxPlayerUpgrades:6})};
+}
+export function drawLiveEnemyMaterial(c,e,p,time=0,scale=1,motion=true){
+ const d=LIVE_OBJECT_IDENTITIES['enemy:'+e.kind];if(!d||![p.x,p.y,e.r,scale,time].every(Number.isFinite)||e.r<=0||scale<=0)return;
+ const unit=1/Math.max(.25,scale),hot=['tell','rush'].includes(e.mode),u=motion?((time+d.index*11)%180)/180:.4;
+ c.save();try{
+  c.translate(p.x,p.y);const glow=c.createRadialGradient(0,0,e.r*.45,0,0,e.r*1.9);glow.addColorStop(0,d.color+(hot?'28':'13'));glow.addColorStop(1,d.color+'00');c.fillStyle=glow;c.fillRect(-e.r*2,-e.r*2,e.r*4,e.r*4);
+  if(motion)for(let i=0;i<3;i++){const a=i*TAU/3+u*.8,rr=e.r*(1.25+u*.35);liveObjectGlyph(c,d,Math.cos(a)*rr,Math.sin(a)*rr,3.2*unit,a,.22*(1-u));}
+ }finally{c.restore();}
+}
+export function drawLiveWorldWeather(c,w,h,{world='twilight',time=0,motion=true}={}){
+ const d=LIVE_OBJECT_IDENTITIES['gear:'+world];if(!c||!d||!motion||![w,h,time].every(Number.isFinite)||w<=0||h<=0)return;
+ c.save();try{for(let i=0;i<18;i++){
+  const q=(i*.618033)%1,age=((time+i*17)%180)/180,side=i%2?1:-1;let x=q*w,y=(i*.317%1)*h;
+  if(world==='tokyo'){y=age*h;x+=age*30;}else if(world==='foundry'){y=h-age*h;x+=Math.sin(age*5+i)*20;}else if(world==='void'){x=w/2+(q-.5)*w*(1-age*.25);y=h/2+(i*.317%1-.5)*h*(1-age*.25);}else if(world==='manga'){x=((q+age*.1)%1)*w;}else if(world==='synth'){x=Math.floor(x/20)*20;y=Math.floor((y+age*40)/20)*20;}else y+=Math.sin(age*TAU+i)*14;
+  liveObjectGlyph(c,d,x,y,world==='tokyo'?2:2.5,world==='tokyo'?1.3:side*age,.12+Math.sin(age*Math.PI)*.12,world==='foundry');
+ }}finally{c.restore();}
+}
+
+/** Dash-only world-space wake. No ambient/falling emitter, no invented
+ * displacement and no connection across banks or teleports. Three old strokes
+ * at most; points and clocks belong to ticks, never to display refresh rate. */
+export const DASH_WAKE_STYLES=Object.freeze({
+ ink:Object.freeze({color:'#e9d9b3',shade:'#211d29',life:90}),
+ fire:Object.freeze({color:'#efab73',shade:'#a45b51',life:84}),
+ lightning:Object.freeze({color:'#a8e4ed',shade:'#637baf',life:72}),
+ ice:Object.freeze({color:'#c6e4e6',shade:'#789eb9',life:100}),
+ water:Object.freeze({color:'#a4dac7',shade:'#547e91',life:96}),
+ void:Object.freeze({color:'#c8b0df',shade:'#7b638f',life:84}),
+ echo:Object.freeze({color:'#d8b9da',shade:'#927994',life:90})
+});
+export function createDashWake(){
+ let strokes=[],pending=null,banked=false,lastShot=null,runRef=null,clock=0;
+ const reset=()=>{strokes=[];pending=null;banked=false;lastShot=null;runRef=null;clock=0;};
+ const event=(type,d={},motion=true)=>{
+  if(!motion)return;
+  if(type==='dash'&&[d.x,d.y,d.angle].every(Number.isFinite))pending={x:d.x,y:d.y,angle:d.angle};
+  if(type==='bank')banked=true;
+ };
+ const tick=(run,motion=true)=>{
+  if(runRef&&runRef!==run)reset();runRef=run;
+  const s=run.state||{},p=run.world?.player?.position;if(!p||![p.x,p.y].every(Number.isFinite))return;
+  if(!motion||s.phase!=='playing'){strokes=[];pending=null;banked=false;lastShot=s.shots;return;}
+  clock++;for(const stroke of strokes)stroke.age++;
+  strokes=strokes.filter(t=>t.age<t.life+18);
+  if(pending||lastShot!==null&&s.shots!==lastShot){
+   const origin=pending||p,element=dashElement(s.equipment,s.sword),style=DASH_WAKE_STYLES[element];
+   strokes.push({element,life:style.life,age:0,points:[{x:origin.x,y:origin.y,at:0,split:true}],angle:pending?.angle??s.launchAngle??0,release:null});
+   if(strokes.length>3)strokes.shift();pending=null;banked=false;
+  }
+  lastShot=s.shots;const t=strokes.at(-1);
+  if(t&&t.age<18&&s.slashAge>=0&&s.slashAge<=15){
+   const prev=t.points.at(-1),dx=p.x-prev.x,dy=p.y-prev.y,dist=Math.hypot(dx,dy);
+   if(dist>=2&&t.points.length<18)t.points.push({x:p.x,y:p.y,at:t.age,split:banked||dist>90});
+   if(s.slashAge>=7&&!t.release)t.release={x:p.x,y:p.y,angle:t.points.length>1?Math.atan2(dy,dx):t.angle,at:t.age};
+  }
+  banked=false;
+ };
+ const snapshot=()=>({version:1,maxStrokes:3,maxPoints:18,clock,strokes:strokes.map(t=>({...t,points:t.points.map(p=>({...p})),release:t.release?{...t.release}:null}))});
+ return {event,tick,reset,snapshot,draw:(c,options={})=>drawDashWake(c,{...options,strokes})};
+}
+/** Pure, world-space measured path painter. Every segment ends on a sampled
+ * player position. Element decoration is lateral, never projected downrange. */
+export function drawDashWake(c,{strokes=[],scale=1,motion=true,view=null}={}){
+ if(!c||!motion||!Number.isFinite(scale)||scale<=0)return;
+ const unit=1/Math.max(.25,scale),visible=(a,b)=>!view||Math.max(a.x,b.x)>=view.x-100&&Math.min(a.x,b.x)<=view.x+view.w+100&&Math.max(a.y,b.y)>=view.y-100&&Math.min(a.y,b.y)<=view.y+view.h+100;
+ c.save();try{c.lineCap='round';c.lineJoin='round';c.setLineDash([]);
+ for(const t of strokes.slice(-3)){
+  const style=DASH_WAKE_STYLES[t.element];if(!style||!Number.isFinite(t.age)||t.age<0||t.age>=style.life+18)continue;
+  for(let i=1;i<Math.min(18,t.points.length);i++){
+   const a=t.points[i-1],b=t.points[i],age=t.age-b.at;if(b.split||age<0||age>=style.life||![a.x,a.y,b.x,b.y].every(Number.isFinite)||!visible(a,b))continue;
+   const dx=b.x-a.x,dy=b.y-a.y,fullLength=Math.hypot(dx,dy);if(fullLength<2||fullLength>90)continue;
+   // Gaps and tapered ends prevent a persistent wire/attack-lane reading.
+   const L=fullLength*.76;
+   const u=age/style.life,fade=(1-u)**1.25,angle=Math.atan2(dy,dx),sway=Math.sin(age*.07+i*.9),decor=i%2===0;
+   c.save();try{c.translate(a.x+dx*.1,a.y+dy*.1);c.rotate(angle);c.globalAlpha=fade*.68;
+    const stroke=(points,color,width,opacity=1)=>{c.save();c.globalAlpha*=opacity;seam(c,points,color,width*unit);c.restore();};
+    const poly=(points,color,opacity=1)=>{c.save();c.globalAlpha*=opacity;panel(c,points,color,0);c.restore();};
+    if(t.element==='ink'){
+     // Uneven brush body, split edge and dry-brush grain instead of icons.
+     const w=(5+(i%3))*unit*(1-u*.7);poly([[0,0],[L*.3,-w*.5],[L*.7,-w],[L,0],[L*.3,w*.65]],style.shade,.62);
+     stroke([[L*.12,-w*.25],[L*.6,-w*.65],[L*.94,-w*.1]],style.color,2.2,.82);
+     if(decor)stroke([[L*.15,w*1.1],[L*.7,w*.65]],style.color,.8,.5);
+    }else if(t.element==='fire'){
+     if(age<20)stroke([[0,0],[L,0]],style.shade,4,.35);stroke([[L*.1,0],[L*.75,-unit],[L,0]],style.color,1.8,.45);
+     if(decor){const side=i%4?1:-1,h=(7+Math.sin(u*Math.PI)*9)*unit;poly([[L*.12,-age*.1*unit],[L*.4,side*h-age*.12*unit],[L*.65,side*2*unit-age*.1*unit],[L*.8,-age*.1*unit]],style.color,.65);stroke([[L*.45,-age*.25*unit],[L*.52,-age*.25*unit-3*unit]],'#e3c593',2,.85);}
+    }else if(t.element==='lightning'){
+     const z=(2+(i%3))*unit*(1-u*.8);stroke([[0,0],[L*.32,-z],[L*.46,z],[L*.7,-z*.4],[L,0]],style.color,1.6);
+     if(decor&&u<.65)stroke([[L*.46,z],[L*.38,z+5*unit],[L*.62,z+7*unit]],style.shade,1.2,.7);
+    }else if(t.element==='ice'){
+     if(age<18)stroke([[0,0],[L,0]],style.shade,1.4,.35);
+     if(decor){const side=i%4?1:-1,h=(9+2*(i%3))*unit*(1-u*.5),xx=L*.55;poly([[xx-3*unit,0],[xx,side*h],[xx+4*unit,0],[xx,-side*2*unit]],style.color,.65);stroke([[xx,0],[xx,side*h]],'#edf0de',.8,.85);}
+    }else if(t.element==='water'){
+     for(const side of [-1,1]){const y=side*(2.5+sway*1.4)*unit;c.strokeStyle=style.color;c.lineWidth=(side===1?1.5:1)*unit;c.globalAlpha=fade*(side===1?.55:.28);c.beginPath();c.moveTo(0,y);c.quadraticCurveTo(L*.5,y+side*3*unit,L,side*2.5*unit);c.stroke();}
+     if(decor){c.globalAlpha=fade*.4;c.strokeStyle=style.color;c.beginPath();c.ellipse(L*.5,8*unit+u*6*unit,3*unit,1.7*unit,0,.2,4.2);c.stroke();}
+    }else if(t.element==='void'){
+     stroke([[0,0],[L,0]],style.shade,3,.28);
+     if(decor)for(const side of [-1,1]){c.globalAlpha=fade*.6;c.strokeStyle=style.color;c.lineWidth=1.4*unit;c.beginPath();c.moveTo(L*.25,side*10*unit*(1-u*.65));c.quadraticCurveTo(L*.7,side*5*unit,L*.8,side*1.4*unit);c.stroke();}
+    }else{
+     // Recorded ticks, not fake body copies or a duplicate attack lane.
+     stroke([[0,0],[L*.7,0]],style.shade,1,.42);
+     if(decor)for(const side of [-1,1]){const y=side*(5+u*5)*unit;stroke([[L*.2,y],[L*.6,y],[L*.6,y-side*2.5*unit]],style.color,1.5,.75);}
+    }
+   }finally{c.restore();}
+  }
+  // An anchored release flick, not a ring/shield nor an assertion that physics
+  // stopped here. It marks the visual recovery beat, then dies in 24 ticks.
+  const f=t.release;if(f&&t.age-f.at>=0&&t.age-f.at<24&&visible(f,f)){
+   const u=(t.age-f.at)/24;c.save();try{c.translate(f.x,f.y);c.rotate(f.angle);c.globalAlpha=.58*(1-u)**1.5;
+    for(const side of [-1,1]){const y=side*(20+u*10)*unit;seam(c,[[-8*unit,y+side*5*unit],[2*unit,y],[6*unit,y-side*3*unit]],style.color,1.8*unit);}
+   }finally{c.restore();}
+  }
+ }
+ }finally{c.restore();}
+}
+
+/**
+ * ELEMENTAL DASH STAGE
+ *
+ * A renderer-only response layer: accepted launch, sampled moving exhaust,
+ * real wall contact, primary cut/armor contact and confirmed elemental proc.
+ * Everything is local to its receipt. No collision queries, target selection,
+ * damage, timers on game entities, imported dependencies or screen effects.
+ *
+ * Launch painters and authoritative elemental telegraphs remain the primary
+ * layer. This stage supplies secondary material motion and finish punctuation.
+ */
+export const DASH_STAGE_LIMITS = Object.freeze({
+  particles: 96,
+  marks: 12,
+  queue: 24,
+  seenContacts: 32,
+  flowWindow: 14,
+  flowSpacing: 9,
+  particleDraws: 64,
+  markDraws: 8,
+  denseParticleDraws: 28,
+  denseMarkDraws: 4
+});
+
+export const DASH_STAGE_MATERIALS = Object.freeze({
+  ink: Object.freeze({
+    color: '#dfd4b8', light: '#f4e7c9', dark: '#24212e',
+    particleLife: 40, markLife: 54, drag: .93, gravity: .035,
+    spin: .045, shape: 'brush', launch: 'split-brush', finish: 'dry-grain'
+  }),
+  fire: Object.freeze({
+    color: '#eda371', light: '#f7d59d', dark: '#965258',
+    particleLife: 47, markLife: 60, drag: .96, gravity: -.045,
+    spin: .08, shape: 'cinder', launch: 'furnace-fan', finish: 'lifting-ash'
+  }),
+  lightning: Object.freeze({
+    color: '#9edce8', light: '#e7edce', dark: '#697fba',
+    particleLife: 25, markLife: 36, drag: .84, gravity: 0,
+    spin: 0, shape: 'fork', launch: 'contact-prongs', finish: 'broken-circuit'
+  }),
+  ice: Object.freeze({
+    color: '#b8d9e5', light: '#e6eddb', dark: '#6f8fa7',
+    particleLife: 66, markLife: 72, drag: .97, gravity: .045,
+    spin: .027, shape: 'facet', launch: 'cleft-facet', finish: 'falling-rime'
+  }),
+  water: Object.freeze({
+    color: '#9ad6c1', light: '#d9e7ca', dark: '#557d91',
+    particleLife: 54, markLife: 64, drag: .96, gravity: .065,
+    spin: .035, shape: 'drop', launch: 'paired-swell', finish: 'broken-eddy'
+  }),
+  void: Object.freeze({
+    color: '#bca1db', light: '#e0c7df', dark: '#665374',
+    particleLife: 46, markLife: 56, drag: .92, gravity: 0,
+    spin: -.055, shape: 'splinter', launch: 'inward-fold', finish: 'closing-seam'
+  }),
+  echo: Object.freeze({
+    color: '#cfb0d3', light: '#e9d2d6', dark: '#7d6b92',
+    particleLife: 58, markLife: 66, drag: .9, gravity: 0,
+    spin: 0, shape: 'record', launch: 'offset-record', finish: 'staggered-erasure'
+  })
+});
+
+/** Only these real game receipts can create a confirmed-proc decoration. */
+export const DASH_STAGE_RECEIPTS = Object.freeze({
+  emberIgnite: Object.freeze({ element: 'fire', admission: 'nonempty-targets' }),
+  frostContact: Object.freeze({ element: 'ice', admission: 'nonempty-targets' }),
+  frostThaw: Object.freeze({ element: 'ice', admission: 'position', quiet: true }),
+  voltContact: Object.freeze({ element: 'lightning', admission: 'accepted-links' }),
+  voidCollapse: Object.freeze({ element: 'void', admission: 'positive-hits' }),
+  repriseFired: Object.freeze({ element: 'echo', admission: 'accepted-hits' })
+});
+
+const dashStageClamp = (value, lo, hi) => Math.max(lo, Math.min(hi, value));
+const dashStagePoint = p => !!p && Number.isFinite(p.x) && Number.isFinite(p.y);
+const dashStageNoise = n => {
+  // Stable scalar noise, independent of Math.random and render order.
+  const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+};
+
+export function resolveDashStageDensity({ enemies = 0, hazards = 0, contacts = 0, width = 1280 } = {}) {
+  const finite = n => Number.isFinite(n) ? Math.max(0, n) : 0;
+  const pressure = finite(enemies) * .055 + finite(hazards) * .12 + finite(contacts) * .08;
+  const portrait = finite(width) > 0 && width < 600;
+  const dense = pressure >= 1.2;
+  return Object.freeze({
+    dense,
+    pressure: Math.min(4, pressure),
+    opacity: dense ? .58 : portrait ? .8 : 1,
+    flowEvery: dense ? 4 : portrait ? 3 : 2,
+    particles: dense ? DASH_STAGE_LIMITS.denseParticleDraws : portrait ? 44 : DASH_STAGE_LIMITS.particleDraws,
+    marks: dense ? DASH_STAGE_LIMITS.denseMarkDraws : DASH_STAGE_LIMITS.markDraws,
+    spawnScale: dense ? .5 : portrait ? .75 : 1
+  });
+}
+
+function dashStageParticleSlot() {
+  return {
+    active: false, serial: 0, priority: 0, element: 'ink', role: 'flow',
+    x: 0, y: 0, px: 0, py: 0, anchorX: 0, anchorY: 0,
+    vx: 0, vy: 0, age: 0, life: 1, size: 1, rotation: 0,
+    spin: 0, side: 1, phase: 0, delay: 0, nx: 0, ny: 0
+  };
+}
+
+/** Fixed-capacity emitter. Events are projected to primitive copies on entry;
+ * changing a caller's payload afterwards cannot change a pending effect. */
+export function createElementalDashStage() {
+  const particles = Array.from({ length: DASH_STAGE_LIMITS.particles }, dashStageParticleSlot);
+  let marks = [], queue = [], contacts = new Set(), runRef = null;
+  let element = 'ink', launch = null, previous = null, frame = 0, serial = 0;
+  let lastShot = null, density = resolveDashStageDensity();
+  const totals = { emitted: 0, rejected: 0, receipts: 0, flow: 0 };
+
+  function reset() {
+    for (const p of particles) p.active = false;
+    marks = []; queue = []; contacts.clear(); runRef = null;
+    element = 'ink'; launch = null; previous = null; frame = 0; serial = 0;
+    lastShot = null; density = resolveDashStageDensity();
+    for (const key of Object.keys(totals)) totals[key] = 0;
+  }
+
+  function enqueue(receipt) {
+    if (!dashStagePoint(receipt)) return false;
+    if (queue.length >= DASH_STAGE_LIMITS.queue) {
+      const replace = queue.findIndex(q => q.priority < receipt.priority);
+      if (replace < 0) { totals.rejected++; return false; }
+      queue.splice(replace, 1);
+    }
+    queue.push(receipt);
+    return true;
+  }
+
+  function event(type, data = {}, motion = true) {
+    if (!motion || !data) return;
+    const angle = Number.isFinite(data.cut) ? data.cut : Number.isFinite(data.angle) ? data.angle : 0;
+    const chosen = data.equipment ? dashElement(data.equipment, data.sword) : null;
+    const common = { x: data.x, y: data.y, angle, element: chosen };
+    if (type === 'dash') {
+      enqueue({ ...common, role: 'launch', priority: 3 });
+      return;
+    }
+    if (type === 'bank') {
+      if (![data.nx, data.ny].every(Number.isFinite) || Math.hypot(data.nx, data.ny) < .5) return;
+      enqueue({ ...common, angle: Math.atan2(data.ny, data.nx), role: 'bank', priority: 2 });
+      return;
+    }
+    if (type === 'cut' || type === 'armor') {
+      if (data.secondary || data.small || !dashStagePoint(data)) return;
+      const target = typeof data.entityId === 'string' || Number.isFinite(data.entityId)
+        ? String(data.entityId) : `${Math.round(data.x)},${Math.round(data.y)}`;
+      const key = `${lastShot}:${type}:${target}`;
+      if (contacts.has(key)) return;
+      contacts.add(key);
+      if (contacts.size > DASH_STAGE_LIMITS.seenContacts) contacts.delete(contacts.values().next().value);
+      enqueue({ ...common, role: type === 'armor' ? 'armor' : 'contact', priority: 4 });
+      return;
+    }
+    const rule = DASH_STAGE_RECEIPTS[type];
+    if (!rule) return;
+    const proc = p => enqueue({ x: p.x, y: p.y, angle, element: rule.element,
+      role: rule.quiet ? 'thaw' : 'proc', priority: rule.quiet ? 1 : 5 });
+    if (rule.admission === 'accepted-links') {
+      // Endpoints only. The actual game arc owns its exact connecting geometry.
+      if (Array.isArray(data.links)) for (const link of data.links.slice(0, 2)) if (dashStagePoint(link)) proc(link);
+    } else if (rule.admission === 'accepted-hits') {
+      if (Array.isArray(data.hits)) for (const hit of data.hits.slice(0, 2)) if (dashStagePoint(hit)) proc(hit);
+    } else if (rule.admission === 'nonempty-targets') {
+      if (Array.isArray(data.targets) && data.targets.length && dashStagePoint(data)) proc(data);
+    } else if (rule.admission === 'positive-hits') {
+      if (data.hits > 0 && dashStagePoint(data)) proc(data);
+    } else if (dashStagePoint(data)) proc(data);
+  }
+
+  function allocate(priority) {
+    let p = particles.find(p => !p.active);
+    if (!p) {
+      let candidate = null;
+      for (const slot of particles) {
+        if (slot.priority > priority) continue;
+        if (!candidate || slot.priority < candidate.priority ||
+          slot.priority === candidate.priority && slot.serial < candidate.serial) candidate = slot;
+      }
+      p = candidate;
+    }
+    if (!p) { totals.rejected++; return null; }
+    return p;
+  }
+
+  function emit(receipt, count) {
+    const selected = DASH_STAGE_MATERIALS[receipt.element] ? receipt.element : element;
+    const material = DASH_STAGE_MATERIALS[selected];
+    const amount = Math.max(1, Math.round(count * density.spawnScale));
+    for (let i = 0; i < amount; i++) {
+      const p = allocate(receipt.priority);
+      if (!p) break;
+      const id = ++serial, side = i % 2 ? 1 : -1;
+      const noise = dashStageNoise(id), spread = (noise - .5) * 1.3;
+      const bank = receipt.role === 'bank', flow = receipt.role === 'flow';
+      const aim = bank ? receipt.angle + side * (.55 + noise * .8)
+        : flow ? receipt.angle + Math.PI + spread
+        : receipt.angle + Math.PI + side * (.25 + noise * 1.05);
+      const speed = flow ? .45 + noise * 1.2 : bank ? 1 + noise * 2 : 1.2 + noise * 2.5;
+      const offset = flow ? 9 : bank ? 4 : 6;
+      Object.assign(p, {
+        active: true, serial: id, priority: receipt.priority, element: selected,
+        role: receipt.role, x: receipt.x + Math.cos(aim) * offset,
+        y: receipt.y + Math.sin(aim) * offset,
+        px: receipt.x, py: receipt.y, anchorX: receipt.x, anchorY: receipt.y,
+        vx: Math.cos(aim) * speed, vy: Math.sin(aim) * speed,
+        age: 0, life: material.particleLife + (id % 7), size: flow ? 2.3 + noise : 3.1 + noise * 2,
+        rotation: aim, spin: material.spin * side, side, phase: noise * Math.PI * 2,
+        delay: selected === 'echo' ? i % 3 * 3 : 0,
+        nx: bank ? Math.cos(receipt.angle) : 0, ny: bank ? Math.sin(receipt.angle) : 0
+      });
+      if (selected === 'fire') p.vy = -Math.abs(p.vy) * .5 - .5;
+      if (selected === 'ice') p.vy -= .55;
+      if (selected === 'water') p.vy -= 1;
+      if (selected === 'void') { p.vx *= .5; p.vy *= .5; }
+      totals.emitted++;
+      if (flow) totals.flow++;
+    }
+  }
+
+  function mark(receipt) {
+    if (receipt.role === 'flow' || receipt.role === 'thaw') return;
+    const selected = DASH_STAGE_MATERIALS[receipt.element] ? receipt.element : element;
+    marks.push({ x: receipt.x, y: receipt.y, angle: receipt.angle,
+      element: selected, role: receipt.role, priority: receipt.priority,
+      age: 0, life: receipt.role === 'bank' ? 42 : DASH_STAGE_MATERIALS[selected].markLife,
+      serial: ++serial });
+    if (marks.length > DASH_STAGE_LIMITS.marks) {
+      let remove = 0;
+      for (let i = 1; i < marks.length; i++) if (marks[i].priority < marks[remove].priority) remove = i;
+      marks.splice(remove, 1);
+    }
+  }
+
+  function integrate() {
+    for (const p of particles) {
+      if (!p.active) continue;
+      p.age++;
+      if (p.age >= p.life + p.delay) { p.active = false; continue; }
+      if (p.age < p.delay) continue;
+      const m = DASH_STAGE_MATERIALS[p.element];
+      p.px = p.x; p.py = p.y;
+      p.vx *= m.drag; p.vy = p.vy * m.drag + m.gravity;
+      if (p.element === 'fire') p.vx += Math.sin(p.age * .17 + p.phase) * .025;
+      if (p.element === 'water') p.vx += Math.sin(p.age * .1 + p.phase) * .014;
+      if (p.element === 'void') {
+        // Decorative local return, not a game-body force or a damaging field.
+        p.vx += (p.anchorX - p.x) * .008;
+        p.vy += (p.anchorY - p.y) * .008;
+      }
+      if (p.element === 'echo' && p.age % 4 !== 0) continue;
+      p.x += p.vx; p.y += p.vy; p.rotation += p.spin;
+      if (p.role === 'bank' && (p.x - p.anchorX) * p.nx + (p.y - p.anchorY) * p.ny < 0) p.active = false;
+    }
+    for (const m of marks) m.age++;
+    marks = marks.filter(m => m.age < m.life);
+  }
+
+  function tick(run, motion = true) {
+    if (runRef && runRef !== run) reset();
+    runRef = run;
+    const s = run.state || {}, p = run.world?.player?.position;
+    if (!motion || s.phase !== 'playing') {
+      for (const particle of particles) particle.active = false;
+      marks = []; queue = []; launch = null; previous = null; contacts.clear();
+      lastShot = s.shots;
+      return;
+    }
+    if (!dashStagePoint(p)) return;
+    frame++;
+    element = dashElement(s.equipment || {}, s.sword);
+    density = resolveDashStageDensity({
+      enemies: run.combat?.enemies?.size || 0,
+      hazards: run.combat?.hazards?.length || 0,
+      contacts: marks.filter(m => m.role === 'contact' || m.role === 'proc').length,
+      width: run.world?.viewW || 1280
+    });
+    integrate();
+    if (lastShot !== s.shots) contacts.clear();
+    const receipts = queue; queue = [];
+    for (const receipt of receipts) {
+      receipt.element ||= element;
+      if (receipt.role === 'launch') {
+        launch = { x: receipt.x, y: receipt.y, angle: receipt.angle, born: frame };
+        contacts.clear();
+      }
+      totals.receipts++;
+      mark(receipt);
+      emit(receipt, receipt.role === 'launch' ? 8 : receipt.role === 'proc' ? 10
+        : receipt.role === 'bank' ? 6 : receipt.role === 'thaw' ? 2 : 6);
+    }
+    // Flow requires a real dash receipt, actual displacement, and a short
+    // launch envelope. High speed or gravity alone cannot turn it back on.
+    if (launch && frame - launch.born < DASH_STAGE_LIMITS.flowWindow &&
+      s.slashAge >= 1 && s.slashAge <= DASH_STAGE_LIMITS.flowWindow && previous &&
+      frame % density.flowEvery === 0) {
+      const dx = p.x - previous.x, dy = p.y - previous.y, distance = Math.hypot(dx, dy);
+      if (distance >= DASH_STAGE_LIMITS.flowSpacing && distance < 90) emit({ x: p.x, y: p.y,
+        angle: Math.atan2(dy, dx), element, role: 'flow', priority: 1 }, 2);
+    }
+    if (launch && frame - launch.born >= DASH_STAGE_LIMITS.flowWindow) launch = null;
+    previous = { x: p.x, y: p.y };
+    lastShot = s.shots;
+  }
+
+  function snapshot() {
+    return {
+      version: 1, frame, element, density: { ...density }, queued: queue.length,
+      capacity: particles.length, limits: { ...DASH_STAGE_LIMITS }, totals: { ...totals },
+      launch: launch ? { ...launch } : null,
+      marks: marks.map(m => ({ ...m })),
+      particles: particles.filter(p => p.active).map(p => ({ ...p }))
+    };
+  }
+
+  return {
+    event, tick, reset, snapshot,
+    draw(c, options = {}) {
+      drawElementalDashStage(c, { ...options, density, particles, marks });
+    }
+  };
+}
+
+function dashStageLine(c, points, color, width, opacity = 1) {
+  c.save();
+  try {
+    c.globalAlpha *= opacity;
+    c.strokeStyle = color; c.lineWidth = width;
+    c.beginPath();
+    points.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y));
+    c.stroke();
+  } finally { c.restore(); }
+}
+
+function dashStagePolygon(c, points, color, opacity = 1) {
+  c.save();
+  try {
+    c.globalAlpha *= opacity; c.fillStyle = color;
+    c.beginPath();
+    points.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y));
+    c.closePath(); c.fill();
+  } finally { c.restore(); }
+}
+
+/** Element-specific glyphs describe different materials, not arbitrary icons.
+ * Shape coordinates are screen-sized by the caller, movement stays world-sized. */
+export function drawDashStageParticle(c, particle, { scale = 1, opacity = 1, alpha = 1 } = {}) {
+  const p = particle, m = DASH_STAGE_MATERIALS[p?.element];
+  if (!c || !p?.active || !m || ![p.x, p.y, p.age, p.life, p.delay, p.size, p.rotation, scale, opacity, alpha].every(Number.isFinite) ||
+    scale <= 0 || p.life <= 0 || p.age < p.delay || p.age >= p.life + p.delay) return;
+  const u = (p.age - p.delay) / p.life, fade = (1 - u) ** 1.3;
+  const unit = 1 / Math.max(.3, scale), size = Math.max(.4, p.size) * unit;
+  c.save();
+  try {
+    const blend = dashStageClamp(alpha, 0, 1);
+    const px = Number.isFinite(p.px) ? p.px : p.x, py = Number.isFinite(p.py) ? p.py : p.y;
+    c.translate(px + (p.x - px) * blend, py + (p.y - py) * blend); c.rotate(p.rotation);
+    c.globalAlpha *= fade * .72 * dashStageClamp(opacity, 0, 1);
+    const line = (points, color = m.color, width = 1.2, a = 1) => dashStageLine(c, points, color, width * unit, a);
+    const fill = (points, color = m.color, a = 1) => dashStagePolygon(c, points, color, a);
+    if (p.element === 'ink') {
+      fill([[-size * 1.2, 0], [-size * .25, -size * .4], [size, -size * .18], [size * .4, size * .45]], m.dark, .7);
+      line([[-size, 0], [size * .7, -size * .12]], m.color, 1.5);
+      if (p.serial % 3 === 0) line([[-size * .2, size * .5], [size * .5, size * .3]], m.light, .7, .5);
+    } else if (p.element === 'fire') {
+      fill([[-size, size * .15], [-size * .1, -size * .55], [size * 1.15, 0], [0, size * .6]], m.color);
+      line([[-size * .35, 0], [size * .45, 0]], m.light, 1.3, .85);
+    } else if (p.element === 'lightning') {
+      const offset = Math.floor(p.age / 3) % 2 ? size * .6 : -size * .4;
+      line([[-size * 1.7, 0], [-size * .3, offset], [size * .2, -offset], [size * 1.5, 0]], m.color, 1.3);
+      if (u < .5) line([[0, 0], [-size * .15, size], [size * .5, size * .8]], m.light, .8, .7);
+    } else if (p.element === 'ice') {
+      fill([[-size, 0], [0, -size * .55], [size * 1.4, 0], [0, size * .6]], m.dark, .65);
+      fill([[-size * .7, 0], [0, -size * .5], [size * 1.3, 0], [0, size * .2]], m.color);
+      line([[0, -size * .45], [size * 1.2, 0]], m.light, .9, .8);
+    } else if (p.element === 'water') {
+      c.fillStyle = m.color;
+      c.beginPath(); c.moveTo(size * 1.1, 0);
+      c.bezierCurveTo(0, -size, -size, -size * .6, -size, 0);
+      c.bezierCurveTo(-size, size * .6, 0, size, size * 1.1, 0);
+      c.fill();
+      line([[-size * .5, -size * .18], [size * .1, -size * .35]], m.light, .85, .8);
+    } else if (p.element === 'void') {
+      fill([[-size, -size * .5], [size, 0], [-size * .2, size * .45], [-size * .4, 0]], m.dark, .8);
+      line([[-size, -size * .5], [size, 0], [-size * .2, size * .45]], m.color, 1.15);
+    } else {
+      const erasure = Math.floor(u * 4);
+      if (erasure < 3) line([[-size, -size * .7], [size * .4, -size * .7], [size * .4, -size * .3]], m.color, 1.2);
+      line([[-size * .4, size * .7], [size, size * .7], [size, size * .2]], m.light, 1.1, .7);
+    }
+  } finally { c.restore(); }
+}
+
+/** Local launch/contact/wall composition. These are broken asymmetric marks,
+ * never closed AoE circles, persistent shield halos or new targeting lines. */
+export function drawDashStageMark(c, mark, { scale = 1, opacity = 1 } = {}) {
+  const m = DASH_STAGE_MATERIALS[mark?.element];
+  if (!c || !m || ![mark.x, mark.y, mark.angle, mark.age, mark.life, scale, opacity].every(Number.isFinite) ||
+    scale <= 0 || mark.age < 0 || mark.life <= 0 || mark.age >= mark.life) return;
+  const unit = 1 / Math.max(.3, scale), u = mark.age / mark.life;
+  const release = 1 - Math.exp(-u * 8), fade = (1 - u) ** 1.5;
+  const bank = mark.role === 'bank', launch = mark.role === 'launch', proc = mark.role === 'proc';
+  const size = (bank ? 14 : launch ? 18 : proc ? 16 : 12) * unit;
+  c.save();
+  try {
+    c.translate(mark.x, mark.y); c.rotate(mark.angle);
+    c.globalAlpha *= fade * (launch ? .5 : .64) * dashStageClamp(opacity, 0, 1);
+    const line = (points, color = m.color, width = 1.5, a = 1) => dashStageLine(c, points, color, width * unit, a);
+    const fill = (points, color = m.color, a = 1) => dashStagePolygon(c, points, color, a);
+    // A wall hit uses its authoritative inward normal. All material motion is
+    // in the playable half-plane; no decorative beam escapes through the wall.
+    if (bank) {
+      const height = size * (1 + release * .7), depth = (3 + release * 8) * unit;
+      line([[depth * .3, -height], [depth, -height * .35], [depth * .5, height * .6]], m.dark, 3, .55);
+      line([[depth * .3, -height], [depth, -height * .35], [depth * .5, height * .6]], m.color, 1.5);
+      for (const side of [-1, 1]) {
+        const end = side * height * (side === 1 ? .7 : 1.1);
+        line([[depth * .6, side * 4 * unit], [depth * 1.5, end * .5], [depth, end]], m.light, 1, .6);
+      }
+      return;
+    }
+    const width = size * (.7 + release * .6), back = -size * (.35 + release * .7);
+    if (mark.element === 'ink') {
+      for (const side of [-1, 1]) {
+        const y = side * width;
+        fill([[back - size * .6, y * .4], [back + size * .4, y * .75], [size * .1, y], [back, y * .65]], m.dark, .65);
+        line([[back - size * .4, y * .5], [back + size * .3, y * .72]], m.color, 2);
+        line([[back, y * .9], [back + size * .5, y]], m.light, .7, .55);
+      }
+    } else if (mark.element === 'fire') {
+      for (let i = 0; i < 3; i++) {
+        const side = i === 1 ? -1 : 1, y = (i - 1) * size * .65;
+        const length = size * (1.05 - i * .17 + release * .7);
+        fill([[0, y - 2 * unit], [-length * .4, y - side * size * .4], [-length, y - side * size * .2], [-length * .35, y + 3 * unit]], m.color, .8);
+        line([[-length * .2, y], [-length * .6, y - side * 2 * unit]], m.light, 1, .7);
+      }
+    } else if (mark.element === 'lightning') {
+      for (const side of [-1, 1]) {
+        const y = side * width * .65;
+        line([[0, y * .45], [back * .5, y], [back, y * .7], [back - size * .5, y * 1.2]], m.color, 1.8);
+        if (u < .55) line([[back * .5, y], [back * .8, y + side * size * .4]], m.light, .9, .7);
+      }
+    } else if (mark.element === 'ice') {
+      for (let i = 0; i < 3; i++) {
+        const side = i % 2 ? -1 : 1, x = back - i * size * .45, y = side * width * (.45 + i * .2);
+        fill([[x + 5 * unit, y], [x, y - side * 9 * unit], [x - 4 * unit, y], [x, y + side * 3 * unit]], m.color, .7);
+        line([[x, y - side * 8 * unit], [x, y]], m.light, .8);
+      }
+    } else if (mark.element === 'water') {
+      for (const side of [-1, 1]) {
+        const y = side * width * .6;
+        c.strokeStyle = m.color; c.lineWidth = 1.7 * unit;
+        c.beginPath(); c.moveTo(size * .15, y * .6);
+        c.bezierCurveTo(back * .6, y * 1.6, back - size * .55, y * 1.3, back - size * .35, y * .5);
+        c.stroke();
+        line([[back * .4, y * .9], [back * .9, y * 1.1]], m.light, .8, .6);
+      }
+    } else if (mark.element === 'void') {
+      for (const side of [-1, 1]) {
+        const y = side * width * (1.2 - release * .65);
+        c.strokeStyle = m.color; c.lineWidth = 1.8 * unit;
+        c.beginPath(); c.moveTo(-size, y);
+        c.quadraticCurveTo(back * .4, y * .9, size * .15, y * .2); c.stroke();
+        fill([[back, y * .8], [back + 4 * unit, y * .5], [back - 2 * unit, y * .3]], m.dark, .7);
+      }
+    } else {
+      const erase = Math.floor(u * 3);
+      for (let i = erase; i < 3; i++) {
+        const x = back - i * size * .5, y = width * (1 - i * .17);
+        line([[x + size * .35, -y], [x, -y], [x, -y * .6]], m.color, 1.5, 1 - i * .18);
+        line([[x, y * .6], [x, y], [x + size * .35, y]], m.light, 1.2, .65 - i * .12);
+      }
+    }
+    if (proc && mark.age < 8) {
+      // Small accepted-response tick, no predicted extra victim or fake proc.
+      line([[size * .45, -size * .25], [size * .75, 0], [size * .45, size * .25]], m.light, 1.6, 1 - mark.age / 8);
+    }
+  } finally { c.restore(); }
+}
+
+/** Read-only bounded drawing. Culling/budgeting never deletes simulation-owned
+ * visuals and never uses the number of previous draw calls as an input. */
+export function drawElementalDashStage(c, {
+  particles = [], marks = [], density = resolveDashStageDensity(),
+  view = null, scale = 1, motion = true, hero = null, alpha = 1
+} = {}) {
+  if (!c || !motion || !Number.isFinite(scale) || scale <= 0 || !Array.isArray(particles) || !Array.isArray(marks)) return;
+  const visible = p => !!p && (!view || p.x >= view.x - 120 && p.x <= view.x + view.w + 120 &&
+    p.y >= view.y - 120 && p.y <= view.y + view.h + 120);
+  const nearHero = p => dashStagePoint(hero) && Math.hypot(p.x - hero.x, p.y - hero.y) < 27;
+  const markBudget = dashStageClamp(density.marks || 0, 0, DASH_STAGE_LIMITS.markDraws);
+  const particleBudget = dashStageClamp(density.particles || 0, 0, DASH_STAGE_LIMITS.particleDraws);
+  c.save();
+  try {
+    c.lineCap = 'round'; c.lineJoin = 'round'; c.setLineDash([]);
+    let drawn = 0;
+    // New confirmed contacts win the budget over old launch decoration.
+    for (const role of ['proc', 'contact', 'armor', 'bank', 'launch']) {
+      for (let i = marks.length - 1, end = Math.max(0, marks.length - DASH_STAGE_LIMITS.marks); i >= end && drawn < markBudget; i--) {
+        const mark = marks[i];
+        if (!mark || mark.role !== role || !visible(mark)) continue;
+        drawDashStageMark(c, mark, { scale, opacity: density.opacity }); drawn++;
+      }
+    }
+    drawn = 0;
+    // A bounded copied reference list: never sort the caller's pool in place.
+    // Recency matters when low slots have been recycled during a busy fight.
+    const selected = particles.slice(-DASH_STAGE_LIMITS.particles)
+      .filter(p => p?.active && p.age >= p.delay && visible(p))
+      .sort((a, b) => b.priority - a.priority || b.serial - a.serial);
+    for (const p of selected) {
+      if (drawn >= particleBudget) break;
+      // Leave the hero's face and active blade footprint clear of old motes.
+      if (p.age > 8 && nearHero(p)) continue;
+      drawDashStageParticle(c, p, { scale, opacity: density.opacity, alpha }); drawn++;
+    }
+  } finally { c.restore(); }
+}
+
+/** Usable-focus lens ticks, not a target lock or an extra damage prediction.
+ * All marks stay close to the hero, leaving the aim trajectory unobstructed. */
+export function drawFocusAimJuice(c,{x=0,y=0,angle=0,power=0,focus=1,active=false,time=0,scale=1,motion=true}={}){
+ if(!c||!active||![x,y,angle,power,focus,time,scale].every(Number.isFinite)||scale<=0)return;
+ const unit=1/Math.max(.3,scale),amount=Math.max(0,Math.min(1,power)),available=Math.max(0,Math.min(1,focus)),
+  color=available<.18?'#e5bb8c':'#d9edb0',r=(32+amount*4)*unit,phase=motion?time*.035:0;
+ c.save();try{c.translate(x,y);c.lineCap='round';
+ // Four short convergent brackets; two tiny facets underline the launch axis.
+ for(let i=0;i<4;i++){
+  const a=angle+Math.PI*.25+i*Math.PI*.5,breath=motion?Math.sin(phase+i)*1.4*unit:0,
+   rr=r+breath,xx=Math.cos(a)*rr,yy=Math.sin(a)*rr;
+  c.globalAlpha=.48+amount*.2;c.strokeStyle=color;c.lineWidth=1.5*unit;c.beginPath();
+  c.moveTo(xx+Math.cos(a)*5*unit,yy+Math.sin(a)*5*unit);c.lineTo(xx,yy);
+  c.lineTo(xx-Math.sin(a)*4*unit,yy+Math.cos(a)*4*unit);c.stroke();
+ }
+ c.rotate(angle);c.globalAlpha=.6;c.fillStyle=color;
+ for(const side of [-1,1]){c.beginPath();c.moveTo(r+8*unit,side*7*unit);c.lineTo(r+12*unit,side*5*unit);c.lineTo(r+9*unit,side*4*unit);c.closePath();c.fill();}
+ // Focus reserve remains the real scalar, never a synthetic charge-up meter.
+ c.globalAlpha=.28;c.strokeStyle=color;c.lineWidth=1.1*unit;c.beginPath();c.arc(0,0,r+4*unit,Math.PI*.65,Math.PI*.65+available*Math.PI*.35);c.stroke();
+ }finally{c.restore();}
+}
+
+/** Earned-chain accents. Actual live chain and remaining chain time own their
+ * existence. No marks for a bank streak, missed shot or expired chain. */
+export function drawStreakJuice(c,{x=0,y=0,vx=0,vy=0,chain=0,remaining=0,max=60,time=0,scale=1,motion=true}={}){
+ if(!c||!motion||![x,y,vx,vy,chain,remaining,max,time,scale].every(Number.isFinite)||chain<3||remaining<=0||scale<=0||Math.hypot(vx,vy)<5)return;
+ const unit=1/Math.max(.3,scale),level=Math.min(3,1+Math.floor((chain-3)/3)),fade=Math.min(1,remaining/Math.max(1,max)*3),angle=Math.atan2(vy,vx);
+ c.save();try{c.translate(x,y);c.rotate(angle);c.strokeStyle='#e1ce96';c.lineWidth=1.4*unit;c.lineCap='round';
+ for(let i=0;i<level;i++)for(const side of [-1,1]){
+  const xx=-(31+i*13)*unit,yy=side*(20+i*2.5)*unit;
+  c.globalAlpha=fade*(.4-i*.07);c.beginPath();c.moveTo(xx-7*unit,yy+side*3*unit);c.lineTo(xx,yy);c.lineTo(xx+4*unit,yy-side*2*unit);c.stroke();
+ }
+ }finally{c.restore();}
+}
+
+/** Power choreography reads real effect ledgers. Shape says what the power
+ * does; clocks and positions say what is actually happening right now. */
+export function powerChoreography({state={},enemies=[],now=0,alpha=1,view=null}={}){
+ const burn=[],cold=[];if(!Number.isFinite(now))return {burn,cold,volt:null,well:null,reprise:null};
+ const lerp=(a,b)=>Number.isFinite(a)?a+(b-a)*Math.max(0,Math.min(1,alpha)):b;
+ for(const e of enemies){
+  if(!e||!Number.isFinite(e.x)||!Number.isFinite(e.y)||e.hp<=0)continue;
+  const x=lerp(e.px,e.x),y=lerp(e.py,e.y),r=Number.isFinite(e.r)?e.r:20;
+  if(view&&(x<view.x-r-50||x>view.x+view.w+r+50||y<view.y-r-50||y>view.y+view.h+r+50))continue;
+  const b=e.emberBurn,f=e.frostCold;
+  if(b&&burn.length<10&&Number.isFinite(b.born)&&now>=b.born&&now<b.expires){
+   const span=(b.expires-b.born)/2;
+   // Two spent/unspent timing cells, not a second health meter. A bright hit
+   // response requires lastHit from the actual damage callback, not a deadline.
+   const first=b.born+span,second=b.expires;
+   burn.push({id:e.id,x,y,r,remaining:[first,second].map(t=>Math.max(0,Math.min(1,(t-now)/Math.max(1,span)))),
+    hit:Number.isFinite(b.lastHit)&&now>=b.lastHit&&now-b.lastHit<5?1-(now-b.lastHit)/5:0});
+  }
+  if(f&&cold.length<10){
+   const active=f.phase==='active'&&now>=f.born&&now<f.until;
+   const immune=f.phase==='immune'&&now>=f.thawedAt&&now<f.immunityUntil;
+   if(active||immune)cold.push({id:e.id,x,y,r,kind:f.kind,active,immune,
+    remaining:Math.max(0,Math.min(1,active?(f.until-now)/Math.max(1,f.until-f.born):(f.immunityUntil-now)/Math.max(1,f.immunityUntil-f.thawedAt)))});
+  }
+ }
+ const a=state.volt?.conduction?.arc;
+ const volt=a&&now>=a.born&&now<a.expires&&a.origin&&a.links?.length?{
+  origin:{x:a.origin.x,y:a.origin.y},links:a.links.slice(0,2).map(l=>({x:l.x,y:l.y,role:l.role})),progress:Math.max(0,Math.min(1,(now-a.born)/Math.max(1,a.expires-a.born)))}:null;
+ const w=state.voidWell;
+ const well=w?.phase==='pull'&&now>=w.born&&now<w.expires?{
+  x:w.x,y:w.y,core:w.core,progress:Math.max(0,Math.min(1,(now-w.born)/Math.max(1,w.expires-w.born))),
+  targets:(w.targets||[]).filter(t=>t.moved>0&&t.lastMove>0).slice(0,3).map(t=>({x:t.x,y:t.y}))}:null;
+ const record=state.reprise?.pending;
+ const reprise=record&&now>=record.born&&now<record.due&&record.path?.length>1?{
+  progress:Math.max(0,Math.min(1,(now-record.born)/Math.max(1,record.due-record.born))),
+  path:record.path.slice(0,6).map(p=>({x:p.x,y:p.y}))}:null;
+ return {burn,cold,volt,well,reprise};
+}
+
+export function drawPowerClockwork(c,{state={},enemies=[],now=0,alpha=1,view=null,scale=1,motion=true}={}){
+ if(!c||!Number.isFinite(scale)||scale<=0)return;
+ const q=powerChoreography({state,enemies,now,alpha,view}),unit=1/Math.max(.3,scale);
+ c.save();try{c.lineCap='round';c.lineJoin='round';c.setLineDash([]);
+ for(const b of q.burn){
+  c.save();try{c.translate(b.x,b.y);
+   // Two wick cells shrink toward their scheduled beats. Empty cells stay dark;
+   // actual damage causes contraction through the authoritative lastHit stamp.
+   for(let i=0;i<2;i++){
+    const xx=(i?5:-5)*unit,yy=-b.r-9*unit,remain=b.remaining[i],h=(3+remain*5)*unit;
+    c.globalAlpha=.65;c.strokeStyle='#6f534c';c.lineWidth=1.3*unit;c.beginPath();c.moveTo(xx-2*unit,yy);c.lineTo(xx-2*unit,yy+6*unit);c.lineTo(xx+2*unit,yy+6*unit);c.stroke();
+    if(remain>0){c.globalAlpha=.65+remain*.2;c.fillStyle=i?'#f3d3a4':'#eab282';c.beginPath();c.moveTo(xx,yy-h);c.quadraticCurveTo(xx+3*unit,yy,xx,yy+3*unit);c.quadraticCurveTo(xx-3*unit,yy,xx,yy-h);c.fill();}
+   }
+   if(motion&&b.hit>0){c.globalAlpha=b.hit*.75;seam(c,[[-b.r*.55,-b.r*.1],[0,-b.r*.4],[b.r*.4,-b.r*.15]],'#ffe2ad',1.8*unit);}
+  }finally{c.restore();}
+ }
+ for(const f of q.cold){
+  const rr=f.r+7*unit;c.save();try{c.translate(f.x,f.y);
+   if(f.active){
+    // Freeze uses rigid stop teeth. Slow uses unequal drag teeth. Neither paints
+    // over the mouth or claims an already-fired hazard has been frozen.
+    for(let i=0;i<4;i++){
+     const side=i<2?-1:1,yy=(i%2?1:-1)*rr*.5,xx=side*rr;
+     c.globalAlpha=.38+f.remaining*.4;c.strokeStyle=f.kind==='freeze'?'#d0e9eb':'#9ebdce';c.lineWidth=1.4*unit;c.beginPath();
+     c.moveTo(xx+side*4*unit,yy);c.lineTo(xx,yy);c.lineTo(xx,yy+(f.kind==='freeze'?side*4:side*7)*unit);c.stroke();
+    }
+    // A finite horizontal drain seam, deliberately not a complete status ring.
+    c.globalAlpha=.6;c.strokeStyle='#c4e0e1';c.lineWidth=1.2*unit;c.beginPath();c.moveTo(-9*unit,rr+3*unit);c.lineTo((-9+18*f.remaining)*unit,rr+3*unit);c.stroke();
+   }else{
+    c.globalAlpha=.25+f.remaining*.2;seam(c,[[-5*unit,-rr-3*unit],[-2*unit,-rr-6*unit]],'#a0b1b7',unit);seam(c,[[2*unit,-rr-3*unit],[5*unit,-rr-6*unit]],'#a0b1b7',unit);
+   }
+  }finally{c.restore();}
+ }
+ if(q.volt&&motion){
+  const {origin:o,links,progress}=q.volt;
+  for(const link of links){
+   // Actual accepted endpoints only. Two quick beads sit on the existing line;
+   // they do not search for another target or imply a recursive chain.
+   for(let i=0;i<2;i++){
+    const t=Math.max(0,Math.min(1,progress*1.5-i*.22)),x=o.x+(link.x-o.x)*t,y=o.y+(link.y-o.y)*t;
+    c.globalAlpha=(1-progress)*.8;c.fillStyle=link.role==='coil'?'#cfdeed':'#eef3b9';c.fillRect(x-1.5*unit,y-1.5*unit,3*unit,3*unit);
+   }
+  }
+ }
+ if(q.well){
+  const w=q.well;
+  for(const t of w.targets){
+   const dx=t.x-w.x,dy=t.y-w.y,d=Math.hypot(dx,dy);if(d<=w.core||d<1)continue;
+   // A short inward fold next to an actually moving, already-selected victim.
+   // It stops short of the core and never draws an unchecked line through walls.
+   const travel=motion?(now*.12)%1:.5,ux=dx/d,uy=dy/d,px=t.x-ux*(5+travel*9)*unit,py=t.y-uy*(5+travel*9)*unit;
+   c.globalAlpha=.5;c.strokeStyle='#cbb8e0';c.lineWidth=1.4*unit;c.beginPath();c.moveTo(px+ux*5*unit-uy*3*unit,py+uy*5*unit+ux*3*unit);c.lineTo(px,py);c.lineTo(px+ux*5*unit+uy*3*unit,py+uy*5*unit-ux*3*unit);c.stroke();
+  }
+ }
+ if(q.reprise){
+  const {path,progress}=q.reprise;
+  // Measured sample stitches (not fabricated intermediate poses). As replay
+  // approaches, real stored vertices light in recorded order, at most six.
+  for(let i=0;i<path.length;i++){
+   const p=path[i],lit=i/Math.max(1,path.length-1)<=progress;
+   c.globalAlpha=lit?.65:.25;c.strokeStyle=lit?'#cce2d9':'#728e99';c.lineWidth=1.2*unit;c.beginPath();c.moveTo(p.x-2*unit,p.y-4*unit);c.lineTo(p.x+2*unit,p.y+4*unit);c.stroke();
+  }
+ }
+ }finally{c.restore();}
+}
+
+/** A receipt is created only by a real scheduled/secondary damage callback. */
+export function createPowerPayoffs(){
+ let entries=[];
+ const types=Object.freeze({emberHit:'fire',voltHit:'lightning',voidHit:'void',repriseHit:'echo'});
+ return {
+  event(type,data={}){if(!types[type]||![data.x,data.y].every(Number.isFinite))return;entries.push({x:data.x,y:data.y,kind:types[type],index:data.index===1?1:0,age:0,life:24});if(entries.length>8)entries.shift();},
+  tick(active=true){if(!active)return;for(const e of entries)e.age++;entries=entries.filter(e=>e.age<e.life);},
+  reset(){entries=[];},
+  snapshot:()=>entries.map(e=>({...e})),
+  draw(c,{scale=1,motion=true,view=null}={}){for(const e of entries)if(!view||e.x>=view.x-60&&e.x<=view.x+view.w+60&&e.y>=view.y-60&&e.y<=view.y+view.h+60)drawPowerPayoff(c,{...e,scale,motion});}
+ };
+}
+export function drawPowerPayoff(c,{x=0,y=0,kind='fire',index=0,age=0,life=18,scale=1,motion=true}={}){
+ const colors={fire:'#f3c094',lightning:'#c9e7db',void:'#d5c2e2',echo:'#b9dfd4'};
+ if(!c||!colors[kind]||![x,y,age,life,scale].every(Number.isFinite)||scale<=0||life<=0||age<0||age>=life)return;
+ const unit=1/Math.max(.3,scale),u=age/life,spread=motion?(1-Math.exp(-u*7))*9*unit:4*unit;
+ // Sit just above the damaged body instead of disappearing in pale armor.
+ // A dark keyline preserves the motif against either world palette.
+ c.save();try{c.translate(x,y-24*unit);c.globalAlpha=(1-u)**1.5*.95;c.lineWidth=1.7*unit;c.strokeStyle=colors[kind];c.lineCap='round';
+ const stroke=(points,width=1.7*unit)=>{seam(c,points,'#15202b',width+2.8*unit);seam(c,points,colors[kind],width);};
+ if(motion){
+  // An actual damage beat deserves a material reaction, not just a counter.
+  // Detached rim fragments never close into a second hitbox or protection ring.
+  c.save();try{c.translate(0,24*unit);c.globalAlpha=(1-u)**1.3*.8;
+   if(kind==='fire')for(let i=0;i<3;i++){
+    const a=-2.8+i*1.2,cs=Math.cos(a),sn=Math.sin(a),rr=(15+Math.sin(u*Math.PI)*15)*unit,xx=cs*rr,yy=sn*rr;
+    const h=(5+8*(1-u))*unit;
+    // Curl and lift each lick rather than radiating identical sparks.
+    for(const [color,width]of [['#241d27',4.3*unit],[i===1?'#ffe0ac':'#f6ac76',1.8*unit]]){
+     c.strokeStyle=color;c.lineWidth=width;c.beginPath();c.moveTo(xx-sn*3*unit,yy+cs*3*unit);c.bezierCurveTo(xx+cs*h-sn*5*unit,yy+sn*h+cs*5*unit,xx+cs*h+sn*3*unit,yy+sn*h-cs*3*unit,xx+cs*(h+3*unit),yy+sn*(h+3*unit));c.stroke();
+    }
+   }
+   else if(kind==='lightning')for(let i=0;i<3;i++){
+    const a=-2.5+i*2.1,cs=Math.cos(a),sn=Math.sin(a),rr=(19+spread/unit*.6)*unit;
+    const points=[[cs*rr,sn*rr],[cs*(rr+5*unit)-sn*3*unit,sn*(rr+5*unit)+cs*3*unit],[cs*(rr+4*unit)+sn*3*unit,sn*(rr+4*unit)-cs*3*unit],[cs*(rr+10*unit),sn*(rr+10*unit)]];stroke(points,1.6*unit);
+   }
+   else if(kind==='void')for(let i=0;i<4;i++){
+    const a=i*TAU/4+.5,cs=Math.cos(a),sn=Math.sin(a),rr=(30-16*(1-Math.exp(-u*5)))*unit;
+    stroke([[cs*rr-sn*4*unit,sn*rr+cs*4*unit],[cs*(rr-5*unit),sn*(rr-5*unit)],[cs*rr+sn*4*unit,sn*rr-cs*4*unit]],1.8*unit);
+   }
+   else for(const side of [-1,1]){
+    const offset=side*(4+spread/unit*.5)*unit;
+    stroke([[-17*unit,offset-10*unit],[-5*unit,offset-3*unit],[9*unit,offset+8*unit],[18*unit,offset+10*unit]],1.7*unit);
+   }
+  }finally{c.restore();}
+ }
+
+ if(kind==='fire')for(let i=0;i<=index;i++){const xx=(i?1:-1)*4*unit;stroke([[xx-2*unit,-5*unit-spread],[xx,-9*unit-spread],[xx+2*unit,-5*unit-spread]],1.7*unit);}
+ else if(kind==='lightning')stroke([[-9*unit,-3*unit],[-2*unit,unit],[2*unit,-4*unit],[8*unit,2*unit]],1.7*unit);
+ else if(kind==='void')for(const side of [-1,1])stroke([[side*(8*unit-spread*.4),-5*unit],[side*3*unit,0],[side*(8*unit-spread*.4),5*unit]],1.7*unit);
+ else for(const side of [-1,1]){const yy=side*spread;stroke([[-6*unit,yy-3*unit],[0,yy+3*unit],[6*unit,yy-3*unit]],1.5*unit);}
+ }finally{c.restore();}
+}
+
+/** Contact-driven spring → spindle → rebound morph. Fixed six wall imprints,
+ * no game writes, no random spawn, no global postprocess and no extra ghosts.
+ * The cube itself remains upright: only an axis-aligned bounded squeeze is
+ * exposed to its painter; the surrounding material can flow with velocity. */
+export function createReboundMorph(){
+ let banks=[],pending=[],shot=0,flight=0,age=99,normal={x:0,y:0},heading=0,energy=0,held=0,element='ink',lastRun=null,lastClock=null;
+ const reset=()=>{banks=[];pending=[];shot=flight=energy=held=0;age=99;normal={x:0,y:0};heading=0;element='ink';lastRun=null;lastClock=null;};
+ function event(type,d={},motion=true){
+  if(!motion||type!=='bank'||![d.x,d.y,d.nx,d.ny,d.incomingX,d.incomingY,d.outgoingX,d.outgoingY].every(Number.isFinite))return;
+  const n=Math.hypot(d.nx,d.ny),closing=-(d.incomingX*d.nx+d.incomingY*d.ny)/n;
+  if(!Number.isFinite(n)||!Number.isFinite(closing)||n<.5||closing<8)return;
+  pending.push({x:d.x,y:d.y,nx:d.nx/n,ny:d.ny/n,outX:d.outgoingX,outY:d.outgoingY,force:Math.min(1,closing/70),age:0});
+  if(pending.length>6)pending.shift();
+ }
+ function tick(run,motion=true){
+  if(lastRun&&lastRun!==run)reset();lastRun=run;
+  const s=run.state||{},v=run.world?.player?.velocity||{x:0,y:0},clock=run.world?.clock;
+  const dt=lastClock===null?1:Math.max(0,Math.min(1,Number.isFinite(clock)?clock-lastClock:1));lastClock=clock;
+  if(!motion||s.phase!=='playing'){banks=[];pending=[];flight=energy=held=0;age=99;shot=s.shots||0;return;}
+  element=dashElement(s.equipment||{},s.sword);
+  age+=dt;flight=Math.max(0,flight-dt/26);
+  if((s.shots||0)>shot){flight=1;shot=s.shots;}
+  const speed=Math.hypot(v.x,v.y),target=Math.min(1,speed/84);
+  energy+=(target-energy)*(1-Math.exp(-dt*.22));held+=((s.held?1:0)-held)*(1-Math.exp(-dt*.2));
+  if(speed>1){const a=Math.atan2(v.y,v.x),delta=Math.atan2(Math.sin(a-heading),Math.cos(a-heading));heading+=delta*(1-Math.exp(-dt*.32));}
+  for(const b of banks)b.age+=dt;banks=banks.filter(b=>b.age<48);
+  for(const b of pending){banks.push({...b,element});age=0;normal={x:b.nx,y:b.ny};heading=Math.atan2(b.outY,b.outX);flight=Math.max(flight,.8);}
+  pending=[];if(banks.length>6)banks.splice(0,banks.length-6);
+ }
+ function bodyScale(){
+  const q=age<9?Math.sin(Math.PI*Math.min(1,(age+1)/10))*.14:0;
+  return {x:1-q*Math.abs(normal.x)+q*.7*Math.abs(normal.y),y:1-q*Math.abs(normal.y)+q*.7*Math.abs(normal.x)};
+ }
+ function snapshot(){return {version:1,flight,energy,held,heading,age,element,body:bodyScale(),banks:banks.map(b=>({...b})),queued:pending.length};}
+ function draw(c,{hero,aim=null,scale=1,motion=true}={}){
+  if(!motion||!hero||![hero.x,hero.y].every(Number.isFinite))return;const m=DASH_STAGE_MATERIALS[element]||DASH_STAGE_MATERIALS.ink,unit=1/Math.max(.25,scale);
+  c.save();try{
+   // A flat rail ribbon blossoms inward and leans into the measured exit.
+   // Three phase-shifted curves morph continuously; no concentric shock ring.
+   for(const b of banks){
+    const t=b.age/48,fade=(1-t)*(1-t),mat=DASH_STAGE_MATERIALS[b.element]||m;
+    c.save();c.translate(b.x,b.y);c.rotate(Math.atan2(b.ny,b.nx));
+    const tangent=(-b.outX*b.ny+b.outY*b.nx)/Math.max(1,Math.hypot(b.outX,b.outY));
+    for(let layer=0;layer<3;layer++){
+     c.globalAlpha=fade*(.46-layer*.1);c.strokeStyle=layer===0?mat.light:mat.color;c.lineWidth=(layer===0?2.4:1.3)*unit;c.beginPath();
+     for(let i=0;i<=20;i++){
+      const u=i/20,z=(u*2-1),bell=Math.sin(Math.PI*u),depth=bell*(7+(26+38*b.force)*Math.sin(Math.PI*Math.min(1,t*1.1)))*(1-layer*.2);
+      const x=2+layer*4+depth,y=z*(22+t*86)+tangent*depth*(.4+t);
+      if(i)c.lineTo(x,y);else c.moveTo(x,y);
+     }c.stroke();
+    }
+    c.restore();
+   }
+   const spring=age<18?1-age/18:0,intensity=Math.max(flight*.68,held*Math.max(0,Math.min(1,aim?.power||0))*.55,spring*.85);
+   if(intensity<.015)return;
+   c.translate(hero.x,hero.y);c.rotate(held>.05&&aim?Math.atan2(aim.y,aim.x):heading);
+   const morph=Math.min(1,flight*.75+energy*.4),rx=32+energy*13+flight*13,ry=31-energy*8-held*3;
+   c.globalAlpha=Math.min(.52,intensity*.6);c.lineWidth=1.6*unit;c.strokeStyle=m.color;c.beginPath();
+   for(let i=0;i<=32;i++){
+    const a=i/32*Math.PI*2,co=Math.cos(a),si=Math.sin(a),squareX=Math.sign(co)*Math.sqrt(Math.abs(co))*32,squareY=Math.sign(si)*Math.sqrt(Math.abs(si))*32;
+    const spindleX=co*rx-(1-co)*energy*7,spindleY=si*ry*(.72-.22*co),x=squareX*(1-morph)+spindleX*morph,y=squareY*(1-morph)+spindleY*morph;
+    if(i)c.lineTo(x,y);else c.moveTo(x,y);
+   }c.closePath();c.stroke();
+   // Two open flowing folds replace a solid aura over the actor/sight.
+   c.globalAlpha=intensity*.33;c.strokeStyle=m.light;c.lineWidth=1.1*unit;
+   for(const side of [-1,1]){c.beginPath();c.moveTo(-rx-12,side*ry*.6);c.bezierCurveTo(-rx*.7,side*(ry+12),rx*.25,side*ry,rx*.78,side*ry*.32);c.stroke();}
+  }finally{c.restore();}
+ }
+ return {event,tick,draw,bodyScale,snapshot,reset};
 }

@@ -124,7 +124,7 @@ function gestureRig(){
  const canvas={style:{},clientWidth:800,clientHeight:600,focus(){},hasPointerCapture:()=>false,setPointerCapture(){},releasePointerCapture(){},addEventListener:(k,f)=>canvasEvents.set(k,f)};
  let accepting=true;
  const input=createInput(canvas,{get:()=>run,active:()=>true,point:(x,y)=>({x,y}),assist:()=>false,engage(){},commit:v=>{if(!accepting)return false;shots.push(v);return true;},lock:{tick(){}}});
- const ev=(x,y)=>({isPrimary:true,pointerId:1,pointerType:'mouse',button:0,clientX:x,clientY:y,preventDefault(){}});
+ const ev=(x,y)=>({isPrimary:true,pointerId:1,pointerType:'touch',button:0,clientX:x,clientY:y,preventDefault(){}});
  return {input,shots,events,canvasEvents,ev,accept:v=>accepting=v,restore:()=>globalThis.window=previous};
 }
 test('dragging back to the origin cancels rather than firing an accidental tap',()=>{
@@ -183,7 +183,7 @@ test('short intentional pulls have a visible launch floor in every direction',()
 });
 
 test('release just below acquisition remains a pull, not a dropped shot or target tap',()=>{
- for(const type of ['mouse','touch']){const r=gestureRig(),ev=(x,y)=>({...r.ev(x,y),pointerType:type});try{
+ for(const type of ['touch']){const r=gestureRig(),ev=(x,y)=>({...r.ev(x,y),pointerType:type});try{
  r.canvasEvents.get('pointerdown')(ev(200,200));r.events.get('pointermove')(ev(200,224));r.events.get('pointermove')(ev(200,213));const preview=r.input.aim;
  assert.ok(preview&&preview.y<0);r.events.get('pointerup')(ev(200,213));assert.equal(r.shots.length,1);assert.deepEqual(r.shots[0],preview);assert.ok(Math.hypot(preview.x,preview.y)>=11);
  }finally{r.restore();}}

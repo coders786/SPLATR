@@ -1,0 +1,214 @@
+{
+  "power": "fire",
+  "method": "Normal main.js Start Run. Optional POWER_ID seeds only an owned/equipped save before navigation; simulation untouched. Default free baseline otherwise. Pointer clicks and Shift focus, read-only debug/trace and power observation. Tutorial flag and PostFX On seeded. Actual postfx canvas recording; screenshots include DOM HUD. Software-GPU automation, not human play or mobile FPS certification.",
+  "rows": [
+    {
+      "width": 960,
+      "height": 540,
+      "samples": [
+        {
+          "kind": "play",
+          "shots": 2,
+          "kills": 0,
+          "chain": 0,
+          "phase": "playing",
+          "postfxVisible": "block",
+          "sourceOpacity": "0"
+        },
+        {
+          "kind": "focus",
+          "held": true
+        },
+        {
+          "kind": "play",
+          "shots": 3,
+          "kills": 1,
+          "chain": 1,
+          "phase": "playing",
+          "postfxVisible": "block",
+          "sourceOpacity": "0"
+        },
+        {
+          "kind": "play",
+          "shots": 4,
+          "kills": 1,
+          "chain": 1,
+          "phase": "playing",
+          "postfxVisible": "block",
+          "sourceOpacity": "0"
+        },
+        {
+          "kind": "play",
+          "shots": 5,
+          "kills": 1,
+          "chain": 1,
+          "phase": "playing",
+          "postfxVisible": "block",
+          "sourceOpacity": "0"
+        },
+        {
+          "kind": "focus",
+          "held": true
+        },
+        {
+          "kind": "play",
+          "shots": 6,
+          "kills": 2,
+          "chain": 2,
+          "phase": "playing",
+          "postfxVisible": "block",
+          "sourceOpacity": "0"
+        },
+        {
+          "kind": "play",
+          "shots": 6,
+          "kills": 2,
+          "chain": 2,
+          "phase": "playing",
+          "postfxVisible": "block",
+          "sourceOpacity": "0"
+        },
+        {
+          "kind": "play",
+          "shots": 6,
+          "kills": 2,
+          "chain": 2,
+          "phase": "playing",
+          "postfxVisible": "block",
+          "sourceOpacity": "0"
+        },
+        {
+          "kind": "focus",
+          "held": true
+        },
+        {
+          "kind": "play",
+          "shots": 7,
+          "kills": 3,
+          "chain": 3,
+          "phase": "playing",
+          "postfxVisible": "block",
+          "sourceOpacity": "0"
+        },
+        {
+          "kind": "play",
+          "shots": 8,
+          "kills": 3,
+          "chain": 3,
+          "phase": "playing",
+          "postfxVisible": "block",
+          "sourceOpacity": "0"
+        },
+        {
+          "kind": "play",
+          "shots": 8,
+          "kills": 3,
+          "chain": 3,
+          "phase": "playing",
+          "postfxVisible": "block",
+          "sourceOpacity": "0"
+        },
+        {
+          "kind": "focus",
+          "held": true
+        },
+        {
+          "kind": "play",
+          "shots": 9,
+          "kills": 4,
+          "chain": 4,
+          "phase": "playing",
+          "postfxVisible": "block",
+          "sourceOpacity": "0"
+        },
+        {
+          "kind": "play",
+          "shots": 10,
+          "kills": 4,
+          "chain": 4,
+          "phase": "playing",
+          "postfxVisible": "block",
+          "sourceOpacity": "0"
+        },
+        {
+          "kind": "play",
+          "shots": 10,
+          "kills": 4,
+          "chain": 4,
+          "phase": "playing",
+          "postfxVisible": "block",
+          "sourceOpacity": "0"
+        },
+        {
+          "kind": "focus",
+          "held": false
+        },
+        {
+          "kind": "play",
+          "shots": 10,
+          "kills": 6,
+          "chain": 6,
+          "phase": "playing",
+          "postfxVisible": "block",
+          "sourceOpacity": "0"
+        },
+        {
+          "kind": "play",
+          "shots": 11,
+          "kills": 7,
+          "chain": 7,
+          "phase": "playing",
+          "postfxVisible": "block",
+          "sourceOpacity": "0"
+        },
+        {
+          "kind": "play",
+          "shots": 12,
+          "kills": 8,
+          "chain": 8,
+          "phase": "playing",
+          "postfxVisible": "block",
+          "sourceOpacity": "0"
+        },
+        {
+          "kind": "focus",
+          "held": true
+        },
+        {
+          "kind": "play",
+          "shots": 13,
+          "kills": 8,
+          "chain": 0,
+          "phase": "playing",
+          "postfxVisible": "block",
+          "sourceOpacity": "0"
+        },
+        {
+          "kind": "play",
+          "shots": 14,
+          "kills": 8,
+          "chain": 0,
+          "phase": "playing",
+          "postfxVisible": "block",
+          "sourceOpacity": "0"
+        }
+      ],
+      "result": {
+        "equipped": "dash-fire",
+        "powerObserved": {
+          "burn": 0,
+          "cold": 0,
+          "volt": 0,
+          "well": 0,
+          "pending": 0,
+          "replay": 0
+        },
+        "phase": "playing",
+        "shots": 14,
+        "kills": 8,
+        "errors": []
+      },
+      "errors": []
+    }
+  ]
+}

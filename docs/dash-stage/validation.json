@@ -1,0 +1,71 @@
+{
+  "scope": {
+    "runtimeLinesAdded": 530,
+    "runtimeLinesReplaced": 6,
+    "newTestLines": 177,
+    "newTests": 17,
+    "elementProfiles": 7,
+    "poolCapacity": 96,
+    "marks": 12,
+    "queue": 24
+  },
+  "tests": {
+    "full": "1..1489\n# tests 1489\n# suites 0\n# pass 1489\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 253530.50526\n",
+    "focused": "1..39\n# tests 39\n# suites 0\n# pass 39\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 8653.549388\n",
+    "build": "computing gzip size...\ndist/index.html  1,351.52 kB │ gzip: 485.98 kB\n✓ built in 3.40s\nVerified dist/index.html: one file, vector art, embedded fonts/scripts, 1319.8 KiB.\n",
+    "diffWhitespace": "PASS"
+  },
+  "ordinaryPlay": {
+    "method": "Ordinary main.js Start Run. Real Puppeteer pointer clicks. Read-only debug/renderer trace used for aiming and timing receipts; no state, renderer or enemies injected. Tutorial flag only seeded. Canvas recorded at 30fps. Not human play or device FPS certification.",
+    "rows": [
+      {
+        "width": 1280,
+        "height": 720,
+        "final": {
+          "shots": 10,
+          "kills": 7,
+          "hp": 3,
+          "phase": "playing"
+        },
+        "sampledFrames": 72,
+        "errors": [],
+        "frameErrors": []
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "final": {
+          "shots": 12,
+          "kills": 5,
+          "hp": 3,
+          "phase": "playing"
+        },
+        "sampledFrames": 72,
+        "errors": [],
+        "frameErrors": []
+      }
+    ]
+  },
+  "nativeScenarios": {
+    "count": 32,
+    "method": "Controlled native createRun/createRenderer plus real dash and physics ticks. Seeded equipment, protected health, stable sentinel. Separate from ordinary Start Run recordings. No performance certification.",
+    "errors": [],
+    "allDrawsReadOnly": true,
+    "allResetsCleared": true,
+    "allWithinCapacity": true,
+    "allReducedMotionClear": true
+  },
+  "reviewedFrames": [
+    "elements/fire-1280-4.jpg",
+    "elements/ice-390-4.jpg",
+    "ordinary/play-1280-3-66.jpg"
+  ],
+  "regressionNote": "The initial full run had 1488 passes and one source portability check failure: a comment containing the word window followed by a period matched its DOM-global regex. Changed only that comment wording, preserved the guard, reran the portability tests and the entire suite successfully.",
+  "limits": [
+    "Automated play and visual frame review, not a human playtest",
+    "Portrait browser viewport is not mobile hardware FPS certification",
+    "Controlled native fixtures are not ordinary shop progression",
+    "No new mechanics or gameplay balance claims",
+    "Line counts describe authored scope, not evidence of graphical quality"
+  ]
+}

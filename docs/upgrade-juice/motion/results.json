@@ -1,0 +1,134 @@
+{
+  "rows": [
+    {
+      "mode": "body",
+      "id": "paper"
+    },
+    {
+      "mode": "body",
+      "id": "obsidian"
+    },
+    {
+      "mode": "body",
+      "id": "hologram"
+    },
+    {
+      "mode": "core",
+      "id": "standard"
+    },
+    {
+      "mode": "core",
+      "id": "time"
+    },
+    {
+      "mode": "core",
+      "id": "riot"
+    },
+    {
+      "mode": "core",
+      "id": "glass"
+    },
+    {
+      "mode": "slash",
+      "id": "razor"
+    },
+    {
+      "mode": "slash",
+      "id": "katana"
+    },
+    {
+      "mode": "slash",
+      "id": "laser"
+    },
+    {
+      "mode": "body",
+      "id": "prism"
+    },
+    {
+      "mode": "body",
+      "id": "iron"
+    },
+    {
+      "mode": "body",
+      "id": "lava"
+    },
+    {
+      "mode": "body",
+      "id": "gold"
+    },
+    {
+      "mode": "core",
+      "id": "grav"
+    },
+    {
+      "mode": "core",
+      "id": "magnet"
+    },
+    {
+      "mode": "core",
+      "id": "echo"
+    },
+    {
+      "mode": "slash",
+      "id": "glitch-fx"
+    },
+    {
+      "mode": "slash",
+      "id": "confetti"
+    },
+    {
+      "mode": "slash",
+      "id": "comic"
+    },
+    {
+      "mode": "slash",
+      "id": "pixel"
+    },
+    {
+      "mode": "body",
+      "id": "chamfer"
+    },
+    {
+      "mode": "body",
+      "id": "notched"
+    },
+    {
+      "mode": "body",
+      "id": "segmented"
+    },
+    {
+      "mode": "dash",
+      "id": "dash-auto"
+    },
+    {
+      "mode": "dash",
+      "id": "dash-ink"
+    },
+    {
+      "mode": "dash",
+      "id": "dash-fire"
+    },
+    {
+      "mode": "dash",
+      "id": "dash-lightning"
+    },
+    {
+      "mode": "dash",
+      "id": "dash-ice"
+    },
+    {
+      "mode": "dash",
+      "id": "dash-water"
+    },
+    {
+      "mode": "dash",
+      "id": "dash-void"
+    },
+    {
+      "mode": "dash",
+      "id": "dash-echo"
+    }
+  ],
+  "errors": [],
+  "method": "Native browser captures and MediaRecorder Canvas recording of a labeled production-art study. Not a gameplay video or a physical-device performance test."
+}

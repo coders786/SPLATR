@@ -46,7 +46,7 @@ test('Rift objective names the current input, retry, progress and physical gate'
  const v={stage:2,dodged:false,gateReady:false,guide:{kind:'watch'}},e=new Map([['tutorial/rift',{}]]);
  assert.equal(riftObjective(v,e),'1/3 · WAIT FOR THE RED CIRCLE');
  v.guide={kind:'dodge',dx:-1,dy:0};assert.equal(riftObjective(v,e),'1/3 · TAP THE GREEN DIAMOND');
- assert.equal(riftObjective(v,e,'mouse'),'1/3 · CLICK THE GREEN DIAMOND');assert.equal(riftObjective(v,e,'keys'),'1/3 · HOLD LEFT ARROW + SPACE');
+ assert.equal(riftObjective(v,e,'mouse'),'1/3 · SHIFT+CLICK THE GREEN DIAMOND');assert.equal(riftObjective(v,e,'keys'),'1/3 · HOLD LEFT ARROW + SPACE');
  assert.equal(tutorialAnnouncement(v,'x','touch'),'Tap to the left of your cube, outside the red circle.');assert.equal(tutorialAnnouncement(v,'x','keys'),'Hold the left arrow key and press Space to escape the red circle.');v.guide={kind:'dodge',dx:0,dy:-1};assert.equal(tutorialAnnouncement(v,'x','touch'),'Tap above your cube, outside the red circle.');
  v.guide.kind='resolve';assert.equal(riftObjective(v,e),'1/3 · STAY OUTSIDE UNTIL IT STRIKES');
  v.guide.kind='wait-next';assert.equal(riftObjective(v,e),'1/3 · WAIT FOR THE NEXT RED CIRCLE');
